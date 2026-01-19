@@ -1,0 +1,17 @@
+<div class="container">
+  <div class="header">
+    <h1>Avisos de la Revista</h1>
+    <p>Información actualizada sobre HUELLAS</p>
+  </div>
+
+  <div class="avisos-list">
+    <div class="aviso-item" *ngFor="let aviso of avisos" [class]="'tipo-' + aviso.tipo">
+      <div class="aviso-tipo">{{ aviso.tipo | uppercase }}</div>
+      <div class="aviso-content">
+        <h3>{{ aviso.titulo }}</h3>
+        <p class="fecha">{{ aviso.fecha }}</p>
+        <p class="contenido">{{ aviso.contenido }}</p>
+      </div>
+    </div>
+  </div>
+</div>

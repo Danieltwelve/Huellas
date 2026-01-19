@@ -1,0 +1,18 @@
+<div class="container">
+  <div class="header">
+    <h1>Indización</h1>
+    <p>Bases de datos y directorios donde está indexada HUELLAS</p>
+  </div>
+
+  <div class="indice-list">
+    <div class="indice-item" *ngFor="let db of indice">
+      <div class="indice-info">
+        <h3>{{ db.nombre }}</h3>
+        <span class="estado" [class.indexada]="db.estado === 'Indexada'" [class.evaluacion]="db.estado === 'En evaluación'">
+          {{ db.estado }}
+        </span>
+      </div>
+      <a [href]="db.enlace" target="_blank" class="btn-visitar" *ngIf="db.enlace !== '#'">Visitar</a>
+    </div>
+  </div>
+</div>

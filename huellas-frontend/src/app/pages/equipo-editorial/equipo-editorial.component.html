@@ -1,0 +1,20 @@
+<div class="container">
+  <div class="header">
+    <h1>Equipo Editorial</h1>
+    <p>Conoce a los profesionales detrás de HUELLAS</p>
+  </div>
+
+  <div class="equipo-grid">
+    <div class="miembro-card" *ngFor="let miembro of equipo">
+      <div class="card-header">
+        <div class="avatar">{{ miembro.nombre.charAt(0) }}</div>
+      </div>
+      <div class="card-content">
+        <h3>{{ miembro.nombre }}</h3>
+        <p class="cargo">{{ miembro.cargo }}</p>
+        <p class="especialidad">{{ miembro.especialidad }}</p>
+        <a [href]="'mailto:' + miembro.email" class="email-link">{{ miembro.email }}</a>
+      </div>
+    </div>
+  </div>
+</div>
