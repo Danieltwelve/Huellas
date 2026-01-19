@@ -1,0 +1,26 @@
+<div class="container">
+  <div class="header">
+    <h1>Desarrollado por</h1>
+    <p>Conoce la tecnología detrás de HUELLAS</p>
+  </div>
+
+  <div class="tech-section">
+    <h2>Tecnologías Utilizadas</h2>
+    <div class="tech-grid">
+      <div class="tech-card" *ngFor="let tech of tecnologias">
+        <h3>{{ tech.nombre }}</h3>
+        <p>{{ tech.descripcion }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="team-section">
+    <h2>Equipo de Desarrollo</h2>
+    <div class="team-list">
+      <div class="team-item" *ngFor="let member of equipo">
+        <h3>{{ member.nombre }}</h3>
+        <p>{{ member.rol }}</p>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,34 @@
+<nav class="navbar">
+  <div class="navbar-container">
+    <div class="logo" routerLink="/">HUELLAS</div>
+
+    <button class="menu-toggle" (click)="toggleMenu()" [class.active]="menuOpen">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <ul class="links" [class.active]="menuOpen">
+      <li><a routerLink="/" (click)="closeMenu()" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Inicio</a></li>
+      <li><a routerLink="/actual" (click)="closeMenu()" routerLinkActive="active">Actual</a></li>
+      <li><a routerLink="/archivos" (click)="closeMenu()" routerLinkActive="active">Archivos</a></li>
+      <li><a routerLink="/envios" (click)="closeMenu()" routerLinkActive="active">Envíos</a></li>
+      <li><a routerLink="/avisos" (click)="closeMenu()" routerLinkActive="active">Avisos</a></li>
+      <li><a routerLink="/equipo-editorial" (click)="closeMenu()" routerLinkActive="active">Equipo Editorial</a></li>
+      <li class="dropdown-mobile" (click)="toggleDropdown('info')">
+        <a href="javascript:void(0)" routerLinkActive="active" [class.active]="openDropdown === 'info'">Más Info</a>
+        <ul class="submenu-mobile" [class.active]="openDropdown === 'info'">
+          <li><a routerLink="/desarrollado-por" (click)="closeMenu()">Desarrollado por</a></li>
+          <li><a routerLink="/etica-publicacion" (click)="closeMenu()">Ética de Publicación</a></li>
+          <li><a routerLink="/indexacion" (click)="closeMenu()">Indización</a></li>
+          <li><a routerLink="/acerca-de" (click)="closeMenu()">Acerca de</a></li>
+        </ul>
+      </li>
+    </ul>
+
+    <div class="auth">
+      <a routerLink="/login" class="btn-outline">Iniciar sesión</a>
+      <a routerLink="/register" class="btn">Registrarse</a>
+    </div>
+  </div>
+</nav>

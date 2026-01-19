@@ -1,0 +1,35 @@
+<div class="container">
+  <div class="header">
+    <h1>Ediciones Actuales</h1>
+    <p>Últimas publicaciones de la revista HUELLAS</p>
+  </div>
+
+  <div class="ediciones-grid">
+    <div class="edicion-card" *ngFor="let edicion of ediciones">
+      <div class="card-header">
+        <h2>{{ edicion.titulo }}</h2>
+        <span class="fecha">{{ edicion.fecha }}</span>
+      </div>
+      
+      <div class="card-content">
+        <p class="descripcion">{{ edicion.descripcion }}</p>
+        
+        <div class="stats">
+          <div class="stat">
+            <span class="label">Autores</span>
+            <span class="value">{{ edicion.autores }}</span>
+          </div>
+          <div class="stat">
+            <span class="label">Artículos</span>
+            <span class="value">{{ edicion.articulos }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card-actions">
+        <button class="btn-primary">Ver Edición</button>
+        <button class="btn-secondary">Descargar PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
