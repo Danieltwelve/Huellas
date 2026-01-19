@@ -1,0 +1,21 @@
+<div class="container">
+  <div class="header">
+    <h1>Archivo de Ediciones</h1>
+    <p>Consulta todas las ediciones anteriores de la revista HUELLAS</p>
+  </div>
+
+  <div class="archivos-list">
+    <div class="year-section" *ngFor="let archivo of archivos">
+      <h2 class="year-title">{{ archivo.year }}</h2>
+      <div class="ediciones-grid">
+        <div class="edicion-item" *ngFor="let edicion of archivo.ediciones">
+          <div class="edicion-number">Vol. {{ edicion.numero }}</div>
+          <h3>{{ edicion.titulo }}</h3>
+          <p class="fecha">{{ edicion.fecha }} {{ archivo.year }}</p>
+          <p class="articulos">{{ edicion.articulos }} artículos</p>
+          <button class="btn-download">Descargar PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

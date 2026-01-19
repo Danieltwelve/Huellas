@@ -1,0 +1,19 @@
+<div class="container">
+  <div class="header">
+    <h1>Ética de Publicación</h1>
+    <p>Compromiso con la excelencia académica</p>
+  </div>
+
+  <div class="principios-grid">
+    <div class="principio-card" *ngFor="let principio of principios">
+      <div class="icon">✓</div>
+      <h3>{{ principio.titulo }}</h3>
+      <p>{{ principio.descripcion }}</p>
+    </div>
+  </div>
+
+  <div class="content-section">
+    <h2>Nuestro Compromiso Ético</h2>
+    <p>HUELLAS se compromete a mantener los más altos estándares éticos en todas sus publicaciones. Seguimos las directrices de COPE (Comité de Ética en Publicaciones) y verificamos la originalidad de todos los manuscritos mediante Turnitin.</p>
+  </div>
+</div>
