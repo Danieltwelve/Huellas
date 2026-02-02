@@ -11,6 +11,7 @@ import { DesarrolladoPorComponent } from './pages/desarrollado-por/desarrollado-
 import { EticaPublicacionComponent } from './pages/etica-publicacion/etica-publicacion.component';
 import { IndexacionComponent } from './pages/indexacion/indexacion.component';
 import { AcercaDeComponent } from './pages/acerca-de/acerca-de.component';
+import { MiembroBiografia } from './pages/miembro-biografia/miembro-biografia';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -21,6 +22,7 @@ export const routes: Routes = [
   { path: 'envios', component: EnviosComponent },
   { path: 'avisos', component: AvisosComponent },
   { path: 'equipo-editorial', component: EquipoEditorialComponent },
+  { path: 'equipo/:id', component: MiembroBiografia },
   { path: 'desarrollado-por', component: DesarrolladoPorComponent },
   { path: 'etica-publicacion', component: EticaPublicacionComponent },
   { path: 'indexacion', component: IndexacionComponent },
