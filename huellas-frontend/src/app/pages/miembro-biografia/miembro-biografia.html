@@ -1,0 +1,31 @@
+<div class="biografia-container" *ngIf="miembro">
+    <div class="header-section">
+        <a routerLink="/equipo-editorial" class="back-link">
+            <span class="back-arrow">‹</span> Volver al equipo
+        </a>
+    </div>
+
+    <div class="content-wrapper">
+        <div class="text-section">
+            <h1 class="nombre">{{ miembro.nombre }}</h1>
+            <h2 class="cargo">{{ miembro.cargo }}</h2>
+            <p class="especialidad">{{ miembro.especialidad }}</p>
+
+            <div class="biografia-text">
+                <p *ngFor="let parrafo of getBiografiaParrafos()">{{ parrafo }}</p>
+            </div>
+        </div>
+
+        <div class="photo-section">
+            <div class="photo-wrapper">
+                <img [src]="miembro.imagen" [alt]="miembro.nombre" class="member-photo"
+                    (error)="$any($event.target).src='equipo/placeholder.jpg'" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="not-found" *ngIf="!miembro">
+    <h2>Miembro no encontrado</h2>
+    <a routerLink="/equipo-editorial" class="back-link">Volver al equipo editorial</a>
+</div>
