@@ -1,0 +1,215 @@
+.biografia-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.header-section {
+    margin-bottom: 40px;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #00b2a9;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+
+    &:hover {
+        color: #008a82;
+        gap: 12px;
+    }
+}
+
+.back-arrow {
+    font-size: 24px;
+    font-weight: 300;
+}
+
+.content-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 60px;
+    align-items: start;
+}
+
+.text-section {
+    .nombre {
+        font-size: 42px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin: 0 0 16px 0;
+        line-height: 1.2;
+    }
+
+    .cargo {
+        font-size: 24px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin: 0 0 8px 0;
+    }
+
+    .especialidad {
+        font-size: 18px;
+        color: #666;
+        margin: 0 0 40px 0;
+    }
+
+    .biografia-text {
+        p {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: justify;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+}
+
+.photo-section {
+    position: sticky;
+    top: 40px;
+}
+
+.photo-wrapper {
+    background: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.member-photo {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+}
+
+.not-found {
+    max-width: 600px;
+    margin: 100px auto;
+    text-align: center;
+    padding: 40px 20px;
+
+    h2 {
+        font-size: 32px;
+        color: #1a1a1a;
+        margin-bottom: 24px;
+    }
+
+    .back-link {
+        display: inline-block;
+        color: #00b2a9;
+        text-decoration: none;
+        font-size: 18px;
+        font-weight: 500;
+        padding: 12px 24px;
+        border: 2px solid #00b2a9;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+
+        &:hover {
+            background: #00b2a9;
+            color: white;
+        }
+    }
+}
+
+// Responsive Design
+@media (max-width: 968px) {
+    .content-wrapper {
+        grid-template-columns: 1fr 350px;
+        gap: 40px;
+    }
+
+    .text-section {
+        .nombre {
+            font-size: 36px;
+        }
+
+        .cargo {
+            font-size: 20px;
+        }
+
+        .especialidad {
+            font-size: 16px;
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .biografia-container {
+        padding: 30px 20px;
+    }
+
+    .content-wrapper {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+
+    .photo-section {
+        position: relative;
+        top: 0;
+        order: -1;
+    }
+
+    .photo-wrapper {
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .text-section {
+        .nombre {
+            font-size: 32px;
+        }
+
+        .cargo {
+            font-size: 18px;
+        }
+
+        .biografia-text p {
+            text-align: left;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .biografia-container {
+        padding: 20px 15px;
+    }
+
+    .header-section {
+        margin-bottom: 30px;
+    }
+
+    .text-section {
+        .nombre {
+            font-size: 28px;
+        }
+
+        .cargo {
+            font-size: 16px;
+        }
+
+        .especialidad {
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .biografia-text p {
+            font-size: 15px;
+            line-height: 1.7;
+        }
+    }
+
+    .photo-wrapper {
+        max-width: 100%;
+    }
+}

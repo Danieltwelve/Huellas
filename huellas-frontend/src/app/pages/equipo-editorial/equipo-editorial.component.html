@@ -1,19 +1,25 @@
 <div class="container">
   <div class="header">
     <h1>Equipo Editorial</h1>
-    <p>Conoce a los profesionales detrás de HUELLAS</p>
+    
   </div>
 
   <div class="equipo-grid">
     <div class="miembro-card" *ngFor="let miembro of equipo">
-      <div class="card-header">
-        <div class="avatar">{{ miembro.nombre.charAt(0) }}</div>
+      <div class="card-image">
+        <img [src]="miembro.imagen" [alt]="miembro.nombre" />
       </div>
       <div class="card-content">
-        <h3>{{ miembro.nombre }}</h3>
+        <h3 class="miembro-numero">{{ miembro.id }}. {{ miembro.nombre }}</h3>
         <p class="cargo">{{ miembro.cargo }}</p>
-        <p class="especialidad">{{ miembro.especialidad }}</p>
-        <a [href]="'mailto:' + miembro.email" class="email-link">{{ miembro.email }}</a>
+        <p class="especialidad" *ngIf="miembro.especialidad">{{ miembro.especialidad }}</p>
+        <p class="descripcion" *ngIf="miembro.descripcion">{{ miembro.descripcion }}</p>
+        <a class="conocelo-link" [routerLink]="['/equipo', miembro.id]">
+          Conócelo
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </a>
       </div>
     </div>
   </div>
