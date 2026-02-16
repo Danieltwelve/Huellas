@@ -1,29 +1,60 @@
+version: '3.8'
+
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgres:15
+    container_name: huellas_db
+    restart: always
     environment:
-      POSTGRES_DB: my_blog_db
-      POSTGRES_USER: blog_user
-      POSTGRES_PASSWORD: blog_password
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U huellas_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Optional: pgAdmin for database management
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4
+    container_name: huellas_pgadmin
+    restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@myblog.com
-      PGADMIN_DEFAULT_PASSWORD: admin_password
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
-      - '5050:80'
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - "5050:80"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./huellas-backend
+      dockerfile: Dockerfile
+    container_name: huellas_backend
+    restart: always
+    ports:
+      - "${BACKEND_PORT:-3333}:3000"
+    environment:
+      PORT: ${PORT:-3000}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_SYNCHRONIZE: ${DATABASE_SYNCHRONIZE}
+      NODE_ENV: ${NODE_ENV}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./huellas-backend/src:/app/src
+    command: npm run start:dev
 
 volumes:
   postgres_data:
-  pgadmin_data:
