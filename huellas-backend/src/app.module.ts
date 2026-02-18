@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './modules/users/users.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -15,17 +16,23 @@ import { UsersModule } from './modules/users/users.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get<string>('DATABASE_HOST'),
-        port: Number(configService.get<string>('DATABASE_PORT', '5432')),
-        username: configService.get<string>('DATABASE_USER'),
-        password: configService.get<string>('DATABASE_PASSWORD'),
-        database: configService.get<string>('DATABASE_NAME'),
+        // host: configService.get<string>('DATABASE_HOST'),
+        // port: Number(configService.get<string>('DATABASE_PORT', '5432')),
+        // username: configService.get<string>('DATABASE_USER'),
+        // password: configService.get<string>('DATABASE_PASSWORD'),
+        // database: configService.get<string>('DATABASE_NAME'),
+        host: 'localhost',
+        port: 5432,
+        username: 'huellas_user',
+        password: 'huellas_password',
+        database: 'huellas_db',
         autoLoadEntities: true,
         synchronize:
           configService.get<string>('DATABASE_SYNCHRONIZE', 'true') === 'true', //solo para desarrollo, false en producción
       }),
     }),
     UsersModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

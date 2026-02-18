@@ -22,34 +22,34 @@ export class User {
     example: 1,
   })
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ApiProperty({
     description: 'User email',
     example: 'user@example.com',
   })
   @Column({ unique: true, type: 'varchar', length: 255 })
-  email: string;
+  email!: string;
 
   @ApiProperty({
     description: 'User password hash',
   })
   @Column({ type: 'varchar', length: 255 })
-  password: string;
+  password!: string;
 
   @ApiProperty({
     description: 'First name',
     example: 'Juan',
   })
   @Column({ type: 'varchar', length: 100, nullable: true })
-  firstName: string;
+  firstName!: string;
 
   @ApiProperty({
     description: 'Last name',
     example: 'Pérez',
   })
   @Column({ type: 'varchar', length: 100, nullable: true })
-  lastName: string;
+  lastName!: string;
 
   @ApiProperty({
     description: 'User roles stored as JSONB',
@@ -61,21 +61,21 @@ export class User {
     default: [UserRole.USER],
     array: false,
   })
-  roles: UserRole[];
+  roles!: UserRole[];
 
   @ApiProperty({
     description: 'User is active',
     example: true,
   })
   @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @ApiProperty({
     description: 'Email verified',
     example: false,
   })
   @Column({ type: 'boolean', default: false })
-  emailVerified: boolean;
+  emailVerified!: boolean;
 
   @ApiProperty({
     description: 'User profile as JSONB',
@@ -85,17 +85,17 @@ export class User {
     type: 'jsonb',
     nullable: true,
   })
-  profile: Record<string, any>;
+  profile!: Record<string, any>;
 
   @ApiProperty({
     description: 'Account created date',
   })
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({
     description: 'Account last updated date',
   })
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
