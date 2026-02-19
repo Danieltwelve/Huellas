@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -10,8 +11,12 @@ import { RouterModule } from '@angular/router';
   imports: [CommonModule, RouterModule],
 })
 export class NavbarComponent {
+  private authService = inject(AuthService);
   menuOpen = false;
   openDropdown: string | null = null;
+
+  claims$ = this.authService.claims$;
+  user$ = this.authService.user$;
 
   toggleMenu() {
     this.menuOpen = !this.menuOpen;

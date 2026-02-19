@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && request.auth.token.roles != null && role in request.auth.token.roles;
+    }
+
+    function hasAnyRole(roles) {
+      return isSignedIn() && request.auth.token.roles != null && request.auth.token.roles.hasAny(roles);
+    }
+
+    function hasClaim(claimName) {
+      return isSignedIn() && request.auth.token[claimName] == true;
+    }
+
+    match /archivos/{documentId} {
+      allow read: if hasClaim('canViewArchivos') || hasAnyRole(['admin', 'editor', 'reviewer']);
+      allow create, update: if hasAnyRole(['admin', 'editor']);
+      allow delete: if hasRole('admin');
+    }
+
+    match /envios/{documentId} {
+      allow read: if hasAnyRole(['admin', 'editor', 'reviewer'])
+                  || (isSignedIn() && resource.data.authorUid == request.auth.uid);
+
+      allow create: if hasClaim('canSubmitEnvios') || hasAnyRole(['admin', 'author']);
+
+      allow update: if hasAnyRole(['admin', 'editor'])
+                  || (isSignedIn() && resource.data.authorUid == request.auth.uid);
+    }
+
+    match /usuarios/{uid} {
+      allow read: if isSignedIn() && uid == request.auth.uid;
+      allow write: if hasRole('admin');
+    }
+  }
+}

@@ -29,6 +29,15 @@ export class LoginComponent {
     this.isRegisterMode = true;
   }
 
+  async logout() {
+    try {
+      await this.authService.logout();
+      this.router.navigate(['/']);
+    } catch (error) {
+      alert('Hubo un problema al cerrar sesión.');
+    }
+  }
+
   async onGoogleLogin() {
     try {
       const user = await this.authService.loginWithGoogle();

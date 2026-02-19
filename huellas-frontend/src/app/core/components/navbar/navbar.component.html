@@ -9,10 +9,16 @@
     </button>
 
     <ul class="links" [class.active]="menuOpen">
-      <li><a routerLink="/" (click)="closeMenu()" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Inicio</a></li>
+      <li><a routerLink="/" (click)="closeMenu()" routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }">Inicio</a></li>
       <li><a routerLink="/actual" (click)="closeMenu()" routerLinkActive="active">Actual</a></li>
-      <li><a routerLink="/archivos" (click)="closeMenu()" routerLinkActive="active">Archivos</a></li>
-      <li><a routerLink="/envios" (click)="closeMenu()" routerLinkActive="active">Envíos</a></li>
+      <li *ngIf="(claims$ | async)?.canViewArchivos">
+        <a routerLink="/archivos" (click)="closeMenu()" routerLinkActive="active">Archivos</a>
+      </li>
+
+      <li *ngIf="(claims$ | async)?.canSubmitEnvios">
+        <a routerLink="/envios" (click)="closeMenu()" routerLinkActive="active">Envíos</a>
+      </li>
       <li><a routerLink="/avisos" (click)="closeMenu()" routerLinkActive="active">Avisos</a></li>
       <li><a routerLink="/equipo-editorial" (click)="closeMenu()" routerLinkActive="active">Equipo Editorial</a></li>
       <li class="dropdown-mobile" (click)="toggleDropdown('info')">
@@ -27,7 +33,8 @@
     </ul>
 
     <div class="auth">
-      <a routerLink="/login" class="btn-outline">Iniciar sesión</a>
+      <a routerLink="/login" class="btn-outline" *ngIf="!(user$ | async)">Iniciar sesión</a>
+      <span *ngIf="user$ | async">Acceso por rol activo</span>
     </div>
   </div>
 </nav>

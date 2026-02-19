@@ -12,14 +12,25 @@ import { EticaPublicacionComponent } from './pages/etica-publicacion/etica-publi
 import { IndexacionComponent } from './pages/indexacion/indexacion.component';
 import { AcercaDeComponent } from './pages/acerca-de/acerca-de.component';
 import { MiembroBiografia } from './pages/miembro-biografia/miembro-biografia';
+import { claimsGuard } from './core/auth/claims.guard';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'actual', component: ActualComponent },
-  { path: 'archivos', component: ArchivosComponent },
-  { path: 'envios', component: EnviosComponent },
+  {
+    path: 'archivos',
+    component: ArchivosComponent,
+    canActivate: [claimsGuard],
+    data: { requiredClaim: 'canViewArchivos', allowedRoles: ['admin', 'editor', 'reviewer'] },
+  },
+  {
+    path: 'envios',
+    component: EnviosComponent,
+    canActivate: [claimsGuard],
+    data: { requiredClaim: 'canSubmitEnvios', allowedRoles: ['admin', 'author', 'teacher'] },
+  },
   { path: 'avisos', component: AvisosComponent },
   { path: 'equipo-editorial', component: EquipoEditorialComponent },
   { path: 'equipo/:id', component: MiembroBiografia },
@@ -27,5 +38,5 @@ export const routes: Routes = [
   { path: 'etica-publicacion', component: EticaPublicacionComponent },
   { path: 'indexacion', component: IndexacionComponent },
   { path: 'acerca-de', component: AcercaDeComponent },
-  { path: '**', redirectTo: '' }
+  { path: '**', redirectTo: '' },
 ];
