@@ -32,9 +32,6 @@ export class LoginComponent {
   async onGoogleLogin() {
     try {
       const user = await this.authService.loginWithGoogle();
-      if (user) {
-        this.router.navigate(['/home']);
-      }
     } catch (error) {
       alert('Hubo un problema al iniciar sesión.');
     }

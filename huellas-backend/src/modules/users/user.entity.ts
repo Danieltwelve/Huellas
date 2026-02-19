@@ -34,7 +34,7 @@ export class User {
   @ApiProperty({
     description: 'User password hash',
   })
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   password!: string;
 
   @ApiProperty({
