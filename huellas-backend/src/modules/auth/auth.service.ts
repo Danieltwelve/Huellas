@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { User, UserRole } from '../users/user.entity';
+import { User } from '../users/user.entity';
 import { google } from 'googleapis';
 
 interface FirebaseTokenLookupResponse {
@@ -27,6 +27,7 @@ export class AuthService {
   private client = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/cloud-platform'],
   });
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
@@ -50,19 +51,25 @@ export class AuthService {
   ): Promise<{ accessToken: string; customClaims: CustomClaims }> {
     try {
       const firebaseUserData = await this.validateFirebaseToken(idToken);
+
       let user = await this.usersService.findByEmail(firebaseUserData.email);
+
       if (!user) {
         user = await this.usersService.create({
-          email: firebaseUserData.email,
+          nombre: '',
+          apellido: '',
+          contraseña: '',
+          correo: firebaseUserData.email,
         });
       }
+
       const customClaims = this.buildCustomClaims(user);
       await this.setFirebaseCustomClaims(firebaseUserData.uid, customClaims);
 
       const payload = {
         userId: user.id,
-        email: firebaseUserData.email,
-        roles: user.roles,
+        email: user.correo,
+        roles: user.roles?.map((r) => r.rol) ?? [],
       };
 
       return {
@@ -70,7 +77,7 @@ export class AuthService {
         customClaims,
       };
     } catch (error) {
-      console.error('ERROR DETALLADO:', error); // agrega esto temporalmente
+      console.error('ERROR DETALLADO:', error);
       throw error;
     }
   }
@@ -95,28 +102,30 @@ export class AuthService {
 
     const payload = (await response.json()) as FirebaseTokenLookupResponse;
     const user = payload.users?.[0];
+
     if (!user?.email || !user.localId) {
       throw new BadRequestException('Invalid Firebase token payload');
     }
+
     return { uid: user.localId, email: user.email };
   }
 
   private buildCustomClaims(user: User): CustomClaims {
-    const roles = user.roles ?? [UserRole.USER];
+    const roleNames: string[] = user.roles?.map((r) => r.rol) ?? [];
 
-    const canViewArchivos = roles.some((item) =>
-      [UserRole.ADMIN, UserRole.EDITOR, UserRole.REVIEWER].includes(item),
+    const canViewArchivos = roleNames.some((rol) =>
+      ['admin', 'editor', 'reviewer'].includes(rol),
     );
 
-    const canSubmitEnvios = roles.some((item) =>
-      [UserRole.ADMIN, UserRole.AUTHOR].includes(item),
+    const canSubmitEnvios = roleNames.some((rol) =>
+      ['admin', 'author'].includes(rol),
     );
 
     return {
-      roles,
+      roles: roleNames,
       canViewArchivos,
       canSubmitEnvios,
-      externalSystemUid: `huellas-db-${user.id}`, // vincula Firebase con tu DB interna
+      externalSystemUid: `huellas-db-${user.id}`,
     };
   }
 

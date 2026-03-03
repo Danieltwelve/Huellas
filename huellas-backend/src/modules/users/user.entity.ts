@@ -1,101 +1,48 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
+import { Role } from '../roles/roles.entity';
 
-export enum UserRole {
-  ADMIN = 'admin',
-  EDITOR = 'editor',
-  AUTHOR = 'author',
-  REVIEWER = 'reviewer',
-  USER = 'user',
-}
-
-@Entity('users')
+@Entity('usuarios')
 export class User {
-  @ApiProperty({
-    description: 'Unique identifier',
-    example: 1,
-  })
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ApiProperty({
-    description: 'User email',
-    example: 'user@example.com',
-  })
-  @Column({ unique: true, type: 'varchar', length: 255 })
-  email!: string;
+  @Column({ type: 'varchar' })
+  nombre!: string;
 
-  @ApiProperty({
-    description: 'User password hash',
-  })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  password!: string;
+  @Column({ type: 'varchar' })
+  apellido!: string;
 
-  @ApiProperty({
-    description: 'First name',
-    example: 'Juan',
-  })
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  firstName!: string;
+  @Column({ type: 'varchar' })
+  contraseña!: string;
 
-  @ApiProperty({
-    description: 'Last name',
-    example: 'Pérez',
-  })
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  lastName!: string;
+  @Column({ type: 'varchar', unique: true })
+  correo!: string;
 
-  @ApiProperty({
-    description: 'User roles stored as JSONB',
-    example: ['user', 'author'],
-    isArray: true,
-  })
-  @Column({
-    type: 'jsonb',
-    default: [UserRole.USER],
-    array: false,
-  })
-  roles!: UserRole[];
-
-  @ApiProperty({
-    description: 'User is active',
-    example: true,
-  })
   @Column({ type: 'boolean', default: true })
-  isActive!: boolean;
+  estado_cuenta!: boolean;
 
-  @ApiProperty({
-    description: 'Email verified',
-    example: false,
-  })
   @Column({ type: 'boolean', default: false })
-  emailVerified!: boolean;
+  correo_verificado!: boolean;
 
-  @ApiProperty({
-    description: 'User profile as JSONB',
-    example: { bio: 'My bio', avatar: 'url' },
-  })
-  @Column({
-    type: 'jsonb',
-    nullable: true,
-  })
-  profile!: Record<string, any>;
+  @UpdateDateColumn({ name: 'updated_at' })
+  updated_at!: Date;
 
-  @ApiProperty({
-    description: 'Account created date',
-  })
-  @CreateDateColumn()
-  createdAt!: Date;
+  @CreateDateColumn({ name: 'created_at' })
+  created_at!: Date;
 
-  @ApiProperty({
-    description: 'Account last updated date',
+  @ManyToMany(() => Role, (role) => role.usuarios, { cascade: true })
+  @JoinTable({
+    name: 'rol_usuarios',
+    joinColumn: { name: 'usuario_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'rol_id', referencedColumnName: 'id' },
   })
-  @UpdateDateColumn()
-  updatedAt!: Date;
+  roles!: Role[];
 }
