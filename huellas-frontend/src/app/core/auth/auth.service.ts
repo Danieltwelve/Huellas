@@ -1,6 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { Auth, authState } from '@angular/fire/auth';
-import { GoogleAuthProvider, signInWithPopup, signOut, User } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  User,
+  UserCredential,
+} from 'firebase/auth';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { environment } from '../../../environments/environments';
 
@@ -10,6 +18,17 @@ export interface AccessClaims {
   canSubmitEnvios?: boolean;
   externalSystemUid?: string;
   [key: string]: unknown;
+}
+
+export interface Credentials {
+  correo: string;
+  contraseña: string;
+}
+
+export interface RegisterUserAttributes {
+  nombre: string;
+  apellido: string;
+  correo: string;
 }
 
 @Injectable({
@@ -51,10 +70,25 @@ export class AuthService {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(this.auth, provider);
       const idToken = await result.user.getIdToken();
-      await this.sendIdTokenToBackend(idToken);
+
+      const nombreCompleto = result.user.displayName || '';
+
+      const partesNombre = nombreCompleto.trim().split(' ');
+      const nombre = partesNombre[0] || '';
+      const apellido = partesNombre.slice(1).join(' ') || '';
+      const correo = result.user.email || '';
+
+      await this.sendIdTokenToBackend(idToken, {
+        nombre: nombre,
+        apellido: apellido,
+        correo: correo,
+      });
+
       await result.user.getIdToken(true);
       const refreshedTokenResult = await result.user.getIdTokenResult();
       this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
+
+      console.log('Inicio de sesión exitoso con Google:', result.user);
       return result.user;
     } catch (error) {
       console.error('Error al iniciar sesión con Google:', error);
@@ -62,10 +96,16 @@ export class AuthService {
     }
   }
 
-  async sendIdTokenToBackend(idToken: string): Promise<void> {
+  async sendIdTokenToBackend(
+    idToken: string,
+    registerData?: RegisterUserAttributes,
+  ): Promise<void> {
     await fetch(`${environment.apiUrlBackend}/auth/google`, {
       method: 'POST',
-      body: JSON.stringify({ idToken }),
+      body: JSON.stringify({
+        idToken,
+        ...registerData,
+      }),
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
@@ -84,5 +124,28 @@ export class AuthService {
       console.error('Error al cerrar sesión:', error);
       throw error;
     }
+  }
+
+  async signUpWithEmailAndPassword(
+    credential: Credentials,
+    registerData: RegisterUserAttributes,
+  ): Promise<UserCredential> {
+    const userCredential = await createUserWithEmailAndPassword(
+      this.auth,
+      credential.correo,
+      credential.contraseña,
+    );
+
+    const idToken = await userCredential.user.getIdToken();
+    await this.sendIdTokenToBackend(idToken, registerData);
+    await userCredential.user.getIdToken(true);
+    const refreshedTokenResult = await userCredential.user.getIdTokenResult();
+    this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
+
+    return userCredential;
+  }
+
+  logInWithEmailAndPassword(credential: Credentials) {
+    return signInWithEmailAndPassword(this.auth, credential.correo, credential.contraseña);
   }
 }

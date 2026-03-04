@@ -6,10 +6,17 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('google')
-  async googleAuth(@Body('idToken') idToken: string): Promise<{
+  async googleAuth(
+    @Body()
+    body: {
+      idToken: string;
+      nombre?: string;
+      apellido?: string;
+    },
+  ): Promise<{
     accessToken: string;
     customClaims: CustomClaims;
   }> {
-    return this.authService.loginWithGoogle(idToken);
+    return this.authService.loginWithGoogle(body.idToken, body);
   }
 }

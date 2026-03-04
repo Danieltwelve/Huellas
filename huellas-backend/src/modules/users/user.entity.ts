@@ -20,9 +20,6 @@ export class User {
   @Column({ type: 'varchar' })
   apellido!: string;
 
-  @Column({ type: 'varchar' })
-  contraseña!: string;
-
   @Column({ type: 'varchar', unique: true })
   correo!: string;
 

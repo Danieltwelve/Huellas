@@ -48,17 +48,16 @@ export class AuthService {
 
   async loginWithGoogle(
     idToken: string,
+    registerData?: { nombre?: string; apellido?: string },
   ): Promise<{ accessToken: string; customClaims: CustomClaims }> {
     try {
       const firebaseUserData = await this.validateFirebaseToken(idToken);
-
       let user = await this.usersService.findByEmail(firebaseUserData.email);
 
       if (!user) {
         user = await this.usersService.create({
-          nombre: '',
-          apellido: '',
-          contraseña: '',
+          nombre: registerData?.nombre || '',
+          apellido: registerData?.apellido || '',
           correo: firebaseUserData.email,
         });
       }

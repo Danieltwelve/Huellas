@@ -1,17 +1,38 @@
-
-<div class="auth-container">
-  <form class="auth-card">
+<div class="register">
+  <form class="register-card" [formGroup]="registerForm" (ngSubmit)="signUp()">
     <h2>Registro</h2>
 
-    <input type="text" placeholder="Nombre completo" />
-    <input type="email" placeholder="Correo institucional" />
-    <input type="password" placeholder="Contraseña" />
+    <div class="form-group">
+      <label for="nombre">Nombres</label>
+      <input id="nombre" type="text" placeholder="Ingresa tus nombres" formControlName="nombre" />
+    </div>
 
-    <button>Crear cuenta</button>
+    <div class="form-group">
+      <label for="apellido">Apellidos</label>
+      <input id="apellido" type="text" placeholder="Ingresa tus apellidos" formControlName="apellido" />
+    </div>
 
-    <p>
-      ¿Ya tienes cuenta?
-      <a routerLink="/login">Inicia sesión</a>
+    <div class="form-group">
+      <label for="correo">Correo</label>
+      <input id="correo" type="email" placeholder="tucorreo@ejemplo.com" formControlName="correo" />
+    </div>
+
+    <div class="form-group">
+      <label for="contraseña">Contraseña</label>
+      <input id="contraseña" type="password" placeholder="Crea una contraseña" formControlName="contraseña" />
+    </div>
+
+    <div class="form-group">
+      <label for="confirmarContraseña">Confirmar contraseña</label>
+      <input id="confirmarContraseña" type="password" placeholder="Repite tu contraseña"
+        formControlName="confirmarContraseña" />
+    </div>
+
+    <button class="register-btn" type="submit" [disabled]="registerForm.invalid">Registrarse</button>
+
+    <p class="register-footer">
+      ¿Ya tienes una cuenta?
+      <a [routerLink]="['/login']">Iniciar Sesión</a>
     </p>
   </form>
 </div>

@@ -1,32 +1,35 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AuthService } from '../../core/auth/auth.service';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService, Credentials } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css'],
 })
 export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
-  isRegisterMode = false;
-  email = '';
-  password = '';
-  fullName = '';
-  phoneNumber = '';
-  confirmPassword = '';
 
-  switchToLogin(): void {
-    this.isRegisterMode = false;
-  }
+  correo = '';
+  contrasena = '';
 
-  switchToRegister(): void {
-    this.isRegisterMode = true;
+  async loginWithEmailAndPassword(): Promise<void> {
+    try {
+      const credentials: Credentials = {
+        correo: this.correo,
+        contraseña: this.contrasena,
+      };
+
+      await this.authService.logInWithEmailAndPassword(credentials);
+      await this.router.navigate(['/']);
+    } catch (error) {
+      alert('Hubo un problema al iniciar sesión con correo y contraseña.');
+    }
   }
 
   async logout() {
