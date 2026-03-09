@@ -46,9 +46,9 @@ export class AuthService {
     return { webApiKey, projectId };
   }
 
-  async loginWithGoogle(
+  async loginWithSocialProvider(
     idToken: string,
-    registerData?: { nombre?: string; apellido?: string },
+    registerData?: { nombre?: string },
   ): Promise<{ accessToken: string; customClaims: CustomClaims }> {
     try {
       const firebaseUserData = await this.validateFirebaseToken(idToken);
@@ -57,7 +57,6 @@ export class AuthService {
       if (!user) {
         user = await this.usersService.create({
           nombre: registerData?.nombre || '',
-          apellido: registerData?.apellido || '',
           correo: firebaseUserData.email,
         });
       }

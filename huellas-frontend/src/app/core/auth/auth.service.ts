@@ -3,9 +3,12 @@ import { Auth, authState } from '@angular/fire/auth';
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
+  OAuthProvider,
+  sendEmailVerification,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  updateProfile,
   User,
   UserCredential,
 } from 'firebase/auth';
@@ -27,7 +30,6 @@ export interface Credentials {
 
 export interface RegisterUserAttributes {
   nombre: string;
-  apellido: string;
   correo: string;
 }
 
@@ -71,16 +73,11 @@ export class AuthService {
       const result = await signInWithPopup(this.auth, provider);
       const idToken = await result.user.getIdToken();
 
-      const nombreCompleto = result.user.displayName || '';
-
-      const partesNombre = nombreCompleto.trim().split(' ');
-      const nombre = partesNombre[0] || '';
-      const apellido = partesNombre.slice(1).join(' ') || '';
+      const nombre = result.user.displayName || '';
       const correo = result.user.email || '';
 
       await this.sendIdTokenToBackend(idToken, {
         nombre: nombre,
-        apellido: apellido,
         correo: correo,
       });
 
@@ -96,11 +93,41 @@ export class AuthService {
     }
   }
 
+  /**
+   * Inicia sesión con Microsoft usando una ventana emergente
+   */
+  async loginWithMicrosoft() {
+    try {
+      this.auth.useDeviceLanguage();
+      const provider = new OAuthProvider('microsoft.com');
+      const result = await signInWithPopup(this.auth, provider);
+      const idToken = await result.user.getIdToken();
+
+      const nombre = result.user.displayName || '';
+      const correo = result.user.email || '';
+
+      await this.sendIdTokenToBackend(idToken, {
+        nombre: nombre,
+        correo: correo,
+      });
+
+      await result.user.getIdToken(true);
+      const refreshedTokenResult = await result.user.getIdTokenResult();
+      this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
+
+      console.log('Inicio de sesión exitoso con Microsoft:', result.user);
+      return result.user;
+    } catch (error) {
+      console.error('Error al iniciar sesión con Microsoft:', error);
+      throw error;
+    }
+  }
+
   async sendIdTokenToBackend(
     idToken: string,
     registerData?: RegisterUserAttributes,
   ): Promise<void> {
-    await fetch(`${environment.apiUrlBackend}/auth/google`, {
+    await fetch(`${environment.apiUrlBackend}/auth/social`, {
       method: 'POST',
       body: JSON.stringify({
         idToken,
@@ -126,15 +153,49 @@ export class AuthService {
     }
   }
 
+  async sendVerificationEmail(user: User): Promise<void> {
+    await sendEmailVerification(user);
+  }
+
   async signUpWithEmailAndPassword(
     credential: Credentials,
     registerData: RegisterUserAttributes,
-  ): Promise<UserCredential> {
+  ): Promise<void> {
     const userCredential = await createUserWithEmailAndPassword(
       this.auth,
       credential.correo,
       credential.contraseña,
     );
+
+    await updateProfile(userCredential.user, {
+      displayName: registerData.nombre.trim(),
+    });
+    await this.sendVerificationEmail(userCredential.user);
+    await signOut(this.auth);
+    this.claimsSubject.next({});
+  }
+
+  async logInWithEmailAndPassword(
+    credential: Credentials,
+  ): Promise<UserCredential> {
+    const userCredential = await signInWithEmailAndPassword(
+      this.auth,
+      credential.correo,
+      credential.contraseña,
+    );
+
+    if (!userCredential.user.emailVerified) {
+      await signOut(this.auth);
+      this.claimsSubject.next({});
+      throw new Error('EMAIL_NOT_VERIFIED');
+    }
+
+    const correo = userCredential.user.email ?? credential.correo;
+    const fallbackNombre = correo.split('@')[0] || '';
+    const registerData: RegisterUserAttributes = {
+      nombre: userCredential.user.displayName?.trim() || fallbackNombre,
+      correo,
+    };
 
     const idToken = await userCredential.user.getIdToken();
     await this.sendIdTokenToBackend(idToken, registerData);
@@ -143,9 +204,5 @@ export class AuthService {
     this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
 
     return userCredential;
-  }
-
-  logInWithEmailAndPassword(credential: Credentials) {
-    return signInWithEmailAndPassword(this.auth, credential.correo, credential.contraseña);
   }
 }

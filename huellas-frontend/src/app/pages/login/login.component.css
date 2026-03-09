@@ -102,6 +102,73 @@
     animation: fadeInUp 0.6s ease-out;
 }
 
+/* Modal */
+.verification-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+}
+
+.verification-modal {
+  position: relative;
+  width: min(500px, 75vw);
+  background: #ffffff;
+  border-radius: 36px;
+  padding: 2.5rem 2rem 1.8rem;
+  text-align: center;
+  box-sizing: border-box;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
+}
+
+.verification-modal p {
+  margin: 0 0 2rem;
+  color: #111;
+  font-size: 1rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.continue-btn {
+  width: min(200px, 80%);
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: #FFBB00;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+.wrong-btn {
+  width: min(200px, 80%);
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: #E74C3C;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+.wrong-btn:hover{
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+
+.continue-btn:hover {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -349,6 +416,23 @@
     .logo-container {
         margin-bottom: 40px;
     }
+
+    .verification-modal {
+    border-radius: 20px;
+    padding: 2rem 1rem 1.4rem;
+  }
+
+  .close-btn {
+    width: 42px;
+    height: 42px;
+    border-width: 3px;
+    font-size: 1.8rem;
+  }
+
+  .continue-btn {
+    font-size: 1.4rem;
+    height: 48px;
+  }
 }
 
 @media (max-width: 480px) {

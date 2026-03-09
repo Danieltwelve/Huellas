@@ -1,38 +1,152 @@
-<div class="register">
-  <form class="register-card" [formGroup]="registerForm" (ngSubmit)="signUp()">
-    <h2>Registro</h2>
+<div class="register-layout">
+  <!-- Columna izquierda -->
+  <section class="register-left">
 
-    <div class="form-group">
-      <label for="nombre">Nombres</label>
-      <input id="nombre" type="text" placeholder="Ingresa tus nombres" formControlName="nombre" />
+    <form class="register-card" [formGroup]="registerForm" (ngSubmit)="signUp()">
+      <h2>Regístrate ahora</h2>
+      <p class="subtitle">Crear una cuenta</p>
+
+      <div class="social-row">
+        <button type="button" class="social-btn" (click)="signUpWithGoogle()">
+          <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              fill="#4285F4" />
+            <path
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              fill="#34A853" />
+            <path
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              fill="#FBBC05" />
+            <path
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              fill="#EA4335" />
+          </svg>
+          <span>Registrar con Google</span>
+        </button>
+        <button type="button" class="social-btn" (click)="signUpWithMicrosoft()">
+          <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="10" height="10" fill="#F25022" />
+            <rect x="12" y="2" width="10" height="10" fill="#7FBA00" />
+            <rect x="2" y="12" width="10" height="10" fill="#00A4EF" />
+            <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
+          </svg>
+          <span>Registrar con Microsoft</span>
+        </button>
+      </div>
+
+      <div class="divider">
+        <span></span>
+        <p>O</p>
+        <span></span>
+      </div>
+
+      <div class="form-group">
+        <label for="nombre">Nombre completo</label>
+        <input id="nombre" type="text" placeholder="Nombre completo" formControlName="nombre"
+          [class.is-invalid]="registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched" />
+        @if (registerForm.get('nombre')?.touched && registerForm.get('nombre')?.hasError('required')) {
+        <small class="field-error">El nombre es obligatorio.</small>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="correo">Correo electrónico</label>
+        <input id="correo" type="email" placeholder="ejemplo@correo.com" formControlName="correo"
+          [class.is-invalid]="registerForm.get('correo')?.invalid && registerForm.get('correo')?.touched" />
+        @if (registerForm.get('correo')?.touched && registerForm.get('correo')?.hasError('required')) {
+        <small class="field-error">El correo electrónico es obligatorio.</small>
+        }
+        @if (registerForm.get('correo')?.touched && registerForm.get('correo')?.hasError('email')) {
+        <small class="field-error">Ingresa un correo electrónico válido.</small>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="contraseña">Contraseña</label>
+        <input id="contraseña" type="password" placeholder="Contraseña" formControlName="contraseña"
+          [class.is-invalid]="registerForm.get('contraseña')?.invalid && registerForm.get('contraseña')?.touched" />
+        @if (registerForm.get('contraseña')?.touched && registerForm.get('contraseña')?.hasError('required')) {
+        <small class="field-error">La contraseña es obligatoria.</small>
+        }
+        @if (registerForm.get('contraseña')?.touched && registerForm.get('contraseña')?.hasError('minlength')) {
+        <small class="field-error">La contraseña debe tener al menos 6 caracteres.</small>
+        }
+      </div>
+
+      <div class="form-group">
+        <label class="terms">
+          <input type="checkbox" formControlName="autorizacionDatos" />
+          <span>
+            Acepto los Términos y Condiciones y autorizo el tratamiento de mis datos
+            personales según la Política de Privacidad.
+          </span>
+        </label>
+        @if (registerForm.get('autorizacionDatos')?.touched &&
+        registerForm.get('autorizacionDatos')?.hasError('required')) {
+        <small class="field-error">Debes aceptar los términos y condiciones.</small>
+        }
+      </div>
+
+      <button class="register-btn" type="submit" [disabled]="registerForm.invalid">
+        Registrarse
+      </button>
+
+      <p class="register-footer">
+        ¿Ya tienes una cuenta?
+        <a [routerLink]="['/login']">Iniciar Sesión</a>
+      </p>
+    </form>
+  </section>
+
+  <!-- Columna derecha -->
+  <section class="register-right">
+    <img src="/equipo/portada.jpg" alt="Ilustración Huellas Revista" />
+  </section>
+
+  <!-- MODAL VERIFICACIÓN CORREO -->
+  @if (showVerificationModal) {
+  <div class="verification-modal-backdrop">
+    <div class="verification-modal" role="dialog" aria-modal="true" aria-labelledby="verification-title">
+
+      <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="#27ae60" class="bi bi-check2-circle"
+        viewBox="0 0 16 16">
+        <path
+          d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0" />
+        <path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z" />
+      </svg>
+
+      <p id="verification-title">
+        Gracias por su solicitud. En breve<br />
+        recibirá una confirmación en su correo electrónico.
+      </p>
+
+      <button type="button" class="continue-btn" (click)="continueAfterVerificationNotice()">
+        Continuar
+      </button>
     </div>
+  </div>
+  }
 
-    <div class="form-group">
-      <label for="apellido">Apellidos</label>
-      <input id="apellido" type="text" placeholder="Ingresa tus apellidos" formControlName="apellido" />
+  @if (showWrongModal) {
+  <div class="verification-modal-backdrop">
+    <div class="verification-modal" role="dialog" aria-modal="true" aria-labelledby="verification-title">
+
+      <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="#E74C3C" class="bi bi-emoji-frown"
+        viewBox="0 0 16 16">
+        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+        <path
+          d="M4.285 12.433a.5.5 0 0 0 .683-.183A3.5 3.5 0 0 1 8 10.5c1.295 0 2.426.703 3.032 1.75a.5.5 0 0 0 .866-.5A4.5 4.5 0 0 0 8 9.5a4.5 4.5 0 0 0-3.898 2.25.5.5 0 0 0 .183.683M7 6.5C7 7.328 6.552 8 6 8s-1-.672-1-1.5S5.448 5 6 5s1 .672 1 1.5m4 0c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5S9.448 5 10 5s1 .672 1 1.5" />
+      </svg>
+
+      <p id="verification-title">
+        Hubo un problema al registrarse
+      </p>
+
+      <button type="button" class="wrong-btn" (click)="closeWrongModal()">
+        Cerrar
+      </button>
     </div>
-
-    <div class="form-group">
-      <label for="correo">Correo</label>
-      <input id="correo" type="email" placeholder="tucorreo@ejemplo.com" formControlName="correo" />
-    </div>
-
-    <div class="form-group">
-      <label for="contraseña">Contraseña</label>
-      <input id="contraseña" type="password" placeholder="Crea una contraseña" formControlName="contraseña" />
-    </div>
-
-    <div class="form-group">
-      <label for="confirmarContraseña">Confirmar contraseña</label>
-      <input id="confirmarContraseña" type="password" placeholder="Repite tu contraseña"
-        formControlName="confirmarContraseña" />
-    </div>
-
-    <button class="register-btn" type="submit" [disabled]="registerForm.invalid">Registrarse</button>
-
-    <p class="register-footer">
-      ¿Ya tienes una cuenta?
-      <a [routerLink]="['/login']">Iniciar Sesión</a>
-    </p>
-  </form>
+  </div>
+  }
 </div>

@@ -14,6 +14,8 @@ import { AuthService, Credentials } from '../../core/auth/auth.service';
 export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  showVerificationModal = false;
+  showWrongModal = false;
 
   correo = '';
   contrasena = '';
@@ -28,7 +30,11 @@ export class LoginComponent {
       await this.authService.logInWithEmailAndPassword(credentials);
       await this.router.navigate(['/']);
     } catch (error) {
-      alert('Hubo un problema al iniciar sesión con correo y contraseña.');
+      if (error instanceof Error && error.message === 'EMAIL_NOT_VERIFIED') {
+        this.showVerificationModal = true;
+      } else {
+        this.showWrongModal = true;
+      }
     }
   }
 
@@ -43,9 +49,18 @@ export class LoginComponent {
 
   async onGoogleLogin() {
     try {
-      const user = await this.authService.loginWithGoogle();
+      await this.authService.loginWithGoogle();
+      this.router.navigate(['/']);
     } catch (error) {
       alert('Hubo un problema al iniciar sesión.');
     }
+  }
+
+  closeVerificationModal(): void {
+    this.showVerificationModal = false;
+  }
+
+  closeWrongModal(): void {
+    this.showWrongModal = false;
   }
 }
