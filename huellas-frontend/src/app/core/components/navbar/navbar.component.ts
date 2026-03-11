@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { AuthService } from '../../auth/auth.service';
+import { Router, RouterModule } from '@angular/router';
+import { AccessClaims, AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -12,8 +12,10 @@ import { AuthService } from '../../auth/auth.service';
 })
 export class NavbarComponent {
   private authService = inject(AuthService);
+  private router = inject(Router);
   menuOpen = false;
   openDropdown: string | null = null;
+  userMenuOpen = false;
 
   claims$ = this.authService.claims$;
   user$ = this.authService.user$;
@@ -25,9 +27,42 @@ export class NavbarComponent {
   closeMenu() {
     this.menuOpen = false;
     this.openDropdown = null;
+    this.userMenuOpen = false;
   }
 
   toggleDropdown(dropdown: string) {
     this.openDropdown = this.openDropdown === dropdown ? null : dropdown;
+  }
+
+  toggleUserMenu() {
+    this.userMenuOpen = !this.userMenuOpen;
+  }
+
+  getRoleTitle(claims: AccessClaims | null | undefined): string {
+    const role = claims?.roles?.[0];
+
+    if (!role || typeof role !== 'string') {
+      return 'Rol Sin Asignar';
+    }
+
+    return `Rol ${this.formatRole(role)}`;
+  }
+
+  private formatRole(role: string): string {
+    return role
+      .replace(/[_-]+/g, ' ')
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  async logout() {
+    try {
+      await this.authService.logout();
+      this.userMenuOpen = false;
+      this.router.navigate(['/']);
+    } catch (error) {
+      console.error('No fue posible cerrar sesión desde el navbar.', error);
+    }
   }
 }
