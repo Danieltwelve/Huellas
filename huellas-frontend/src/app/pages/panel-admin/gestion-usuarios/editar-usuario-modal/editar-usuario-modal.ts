@@ -14,6 +14,7 @@ import { Router } from '@angular/router';
 interface EditUserData {
   id: number;
   nombre: string;
+  correo: string;
   telefono: string;
   estado: string;
   rol: string;
@@ -35,7 +36,6 @@ interface EditUserForm {
 })
 export class EditarUsuarioModal implements OnChanges {
   private usersService = inject(UsersService);
-  private router = inject(Router);
 
   @Input() user: EditUserData | null = null;
   @Output() closed = new EventEmitter<void>();
@@ -84,6 +84,7 @@ export class EditarUsuarioModal implements OnChanges {
 
     const payload = {
       nombre: this.editForm.nombre,
+      correo: this.user.correo,
       telefono: this.editForm.telefono,
       estado_cuenta: estadoCuenta,
       roles: [{ id: roleId, rol: this.editForm.rol }],

@@ -1,0 +1,11 @@
+<div class="modal-backdrop" (click)="close()">
+  <div class="modal success-modal" role="dialog" aria-modal="true" aria-label="Correo enviado" (click)="$event.stopPropagation()">
+    <button class="modal-close" type="button" (click)="close()" aria-label="Cerrar">x</button>
+    <div class="success-content">
+      <div class="success-icon">✓</div>
+      <h3>¡Correo enviado exitosamente!</h3>
+      <p>Hemos enviado un enlace a tu correo para que restablezcas tu contraseña.</p>
+      <button class="btn-success" type="button" (click)="close()">Entendido</button>
+    </div>
+  </div>
+</div>

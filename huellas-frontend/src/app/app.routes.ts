@@ -15,10 +15,12 @@ import { MiembroBiografia } from './pages/miembro-biografia/miembro-biografia';
 import { claimsGuard } from './core/auth/claims.guard';
 import { redirectIfAuthenticatedGuard } from './core/auth/redirect-if-authenticated.guard';
 import { GestionUsuarios } from './pages/panel-admin/gestion-usuarios/gestion-usuarios';
+import { RecuperarContrasenaComponent } from './pages/login/recuperar-contraseña/recuperar-contrasena.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'recuperar-contrasena', component: RecuperarContrasenaComponent, canActivate: [redirectIfAuthenticatedGuard] },
   { path: 'register', component: RegisterComponent },
   { path: 'actual', component: ActualComponent },
   {

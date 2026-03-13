@@ -11,6 +11,7 @@ import { CreateUserDto } from './dto/create.users.dto';
 import { Role } from '../roles/roles.entity';
 import { AdminCreateUserDto } from './dto/admin.create.users.dto';
 import { ConfigService } from '@nestjs/config';
+import { google } from 'googleapis';
 
 interface FirebaseErrorResponse {
   error?: {
@@ -22,8 +23,18 @@ interface FirebaseSignUpResponse {
   idToken?: string;
 }
 
+interface FirebaseProjectLookupResponse {
+  users?: Array<{
+    localId?: string;
+  }>;
+}
+
 @Injectable()
 export class UsersService {
+  private client = new google.auth.GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+  });
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -163,7 +174,101 @@ export class UsersService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
+    if (typeof data.estado_cuenta === 'boolean') {
+      const correo = data.correo?.trim() || user.correo;
+      await this.syncFirebaseAccountStatus(correo, data.estado_cuenta);
+    }
+
     Object.assign(user, data);
     return await this.userRepository.save(user);
+  }
+
+  private getFirebaseProjectId(): string {
+    const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID');
+
+    if (!projectId) {
+      throw new InternalServerErrorException(
+        'FIREBASE_PROJECT_ID no está configurada en el backend.',
+      );
+    }
+
+    return projectId;
+  }
+
+  private async getGoogleAccessToken(): Promise<string> {
+    const token = await this.client.getAccessToken();
+
+    if (!token) {
+      throw new InternalServerErrorException(
+        'No fue posible obtener access token de Google.',
+      );
+    }
+
+    return token;
+  }
+
+  private async getFirebaseUidByEmail(correo: string): Promise<string> {
+    const projectId = this.getFirebaseProjectId();
+    const accessToken = await this.getGoogleAccessToken();
+
+    const lookupResponse = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:lookup`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          email: [correo],
+        }),
+      },
+    );
+
+    if (!lookupResponse.ok) {
+      throw new InternalServerErrorException(
+        'No fue posible buscar el usuario en Firebase.',
+      );
+    }
+
+    const lookupPayload =
+      (await lookupResponse.json()) as FirebaseProjectLookupResponse;
+    const firebaseUid = lookupPayload.users?.[0]?.localId;
+
+    if (!firebaseUid) {
+      throw new NotFoundException('Usuario no encontrado en Firebase.');
+    }
+
+    return firebaseUid;
+  }
+
+  private async syncFirebaseAccountStatus(
+    correo: string,
+    estadoCuenta: boolean,
+  ): Promise<void> {
+    const projectId = this.getFirebaseProjectId();
+    const accessToken = await this.getGoogleAccessToken();
+    const firebaseUid = await this.getFirebaseUidByEmail(correo);
+
+    const updateResponse = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:update`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          localId: firebaseUid,
+          disableUser: !estadoCuenta,
+        }),
+      },
+    );
+
+    if (!updateResponse.ok) {
+      throw new InternalServerErrorException(
+        'No fue posible actualizar el estado de la cuenta en Firebase.',
+      );
+    }
   }
 }

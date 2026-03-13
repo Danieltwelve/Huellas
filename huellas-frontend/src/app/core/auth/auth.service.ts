@@ -1,10 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { Auth, authState } from '@angular/fire/auth';
 import {
+  AuthCredential,
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
+  linkWithCredential,
   OAuthProvider,
   sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -41,6 +44,8 @@ export class AuthService {
   readonly user$: Observable<User | null> = authState(this.auth);
   private claimsSubject = new BehaviorSubject<AccessClaims>({});
   readonly claims$ = this.claimsSubject.asObservable();
+  private pendingMicrosoftLinkEmail: string | null = null;
+  private pendingMicrosoftCredential: AuthCredential | null = null;
 
   constructor() {
     this.user$.subscribe(async (user) => {
@@ -94,12 +99,14 @@ export class AuthService {
   }
 
   /**
-   * Inicia sesión con Microsoft usando una ventana emergente
+   * Inicia sesión con Microsoft usando una ventana emergente y vincula cuentas si es necesario
    */
   async loginWithMicrosoft() {
     try {
       this.auth.useDeviceLanguage();
       const provider = new OAuthProvider('microsoft.com');
+      provider.setCustomParameters({ prompt: 'select_account' });
+
       const result = await signInWithPopup(this.auth, provider);
       const idToken = await result.user.getIdToken();
 
@@ -117,9 +124,74 @@ export class AuthService {
 
       console.log('Inicio de sesión exitoso con Microsoft:', result.user);
       return result.user;
-    } catch (error) {
-      console.error('Error al iniciar sesión con Microsoft:', error);
-      throw error;
+    } catch (error: any) {
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        const pendingCredential = OAuthProvider.credentialFromError(error);
+        const email = error.customData?.email;
+
+        if (!email || !pendingCredential) {
+          throw error;
+        }
+
+        this.pendingMicrosoftLinkEmail = email;
+        this.pendingMicrosoftCredential = pendingCredential;
+        throw new Error('MICROSOFT_LINK_REQUIRED');
+      } else {
+        console.error('Error al iniciar sesión con Microsoft:', error);
+        throw error;
+      }
+    }
+  }
+
+  getPendingMicrosoftLinkEmail(): string | null {
+    return this.pendingMicrosoftLinkEmail;
+  }
+
+  clearPendingMicrosoftLink(): void {
+    this.pendingMicrosoftLinkEmail = null;
+    this.pendingMicrosoftCredential = null;
+  }
+
+  async linkMicrosoftWithPassword(password: string): Promise<User> {
+    if (!this.pendingMicrosoftLinkEmail || !this.pendingMicrosoftCredential) {
+      throw new Error('MICROSOFT_LINK_NOT_READY');
+    }
+
+    try {
+      const signInResult = await signInWithEmailAndPassword(
+        this.auth,
+        this.pendingMicrosoftLinkEmail,
+        password,
+      );
+
+      await linkWithCredential(signInResult.user, this.pendingMicrosoftCredential);
+
+      const idToken = await signInResult.user.getIdToken();
+      const nombre = signInResult.user.displayName || '';
+      const correo = signInResult.user.email || '';
+
+      await this.sendIdTokenToBackend(idToken, {
+        nombre,
+        correo,
+      });
+
+      await signInResult.user.getIdToken(true);
+      const refreshedTokenResult = await signInResult.user.getIdTokenResult();
+      this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
+      this.clearPendingMicrosoftLink();
+
+      return signInResult.user;
+    } catch (error: any) {
+      if (
+        error?.code === 'auth/wrong-password' ||
+        error?.code === 'auth/invalid-credential' ||
+        error?.code === 'auth/invalid-login-credentials'
+      ) {
+        throw new Error('MICROSOFT_LINK_INVALID_PASSWORD');
+      }
+
+      console.error('Error al vincular cuenta de Microsoft:', error);
+      throw new Error('MICROSOFT_LINK_FAILED');
     }
   }
 
@@ -201,6 +273,10 @@ export class AuthService {
       console.error('Error al cerrar sesión:', error);
       throw error;
     }
+  }
+
+  async sendPasswordResetEmail(email: string): Promise<void> {
+    return sendPasswordResetEmail(this.auth, email);
   }
 
   async sendVerificationEmail(user: User): Promise<void> {

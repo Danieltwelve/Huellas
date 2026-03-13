@@ -1,0 +1,41 @@
+<div class="auth-wrapper">
+  <!-- Panel izquierdo: formulario -->
+  <div class="auth-form-panel">
+    <div class="form-container">
+
+      <h1>Recuperar contraseña</h1>
+      <p class="subtitle">Ingresa tu correo electrónico para recibir instrucciones</p>
+
+      <form class="auth-form" (ngSubmit)="enviarCorreo()">
+        <div class="form-group">
+          <label for="correo">Correo electrónico</label>
+          <input id="correo" type="email" placeholder="ejemplo@correo.com" class="auth-input" name="correo"
+            [(ngModel)]="correo" required [disabled]="enviando" />
+
+          @if (mensajeError) {
+            <p class="input-error">{{ mensajeError }}</p>
+          }
+        </div>
+
+        <div class="bloque-final">
+          <button type="submit" class="login-btn" [disabled]="!correoValido || enviando">
+            {{ enviando ? 'Enviando...' : 'Enviar instrucciones' }}
+          </button>
+        </div>
+      </form>
+
+      <p class="register-text">
+        <a [routerLink]="['/login']">Volver al inicio de sesión</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Panel derecho: imagen -->
+  <div class="auth-image-panel">
+    <img src="/equipo/portada.jpg" alt="HUELLAS" class="background-image" />
+  </div>
+
+  @if (showSuccessModal) {
+    <app-success-modal (closed)="closeModal()"></app-success-modal>
+  }
+</div>

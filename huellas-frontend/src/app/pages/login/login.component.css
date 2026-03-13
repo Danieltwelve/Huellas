@@ -227,6 +227,33 @@ h1 {
   font-weight: 600;
 }
 
+.link-modal {
+  text-align: left;
+}
+
+.link-modal h3 {
+  font-size: 1.3rem;
+  color: #1d1d1d;
+}
+
+.link-modal .link-description {
+  margin: 0.7rem 0 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.link-form-group {
+  margin-bottom: 0.5rem;
+}
+
+.link-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+
 .continue-btn,
 .wrong-btn {
   width: 180px;
