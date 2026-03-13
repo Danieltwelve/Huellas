@@ -14,34 +14,18 @@ import { AuthService, Credentials } from '../../core/auth/auth.service';
 export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
-  private readonly emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  
   showVerificationModal = false;
   showWrongModal = false;
 
   correo = '';
   contrasena = '';
 
-  get correoVacio(): boolean {
-    return this.correo.trim().length === 0;
-  }
-
-  get correoInvalido(): boolean {
-    return !this.correoVacio && !this.emailRegex.test(this.correo.trim());
-  }
-
-  get contrasenaVacia(): boolean {
-    return this.contrasena.trim().length === 0;
-  }
-
-  get formularioInvalido(): boolean {
-    return this.correoVacio || this.correoInvalido || this.contrasenaVacia;
+  get isFormValid(): boolean {
+    return this.correo.trim().length > 0 && this.contrasena.trim().length > 0;
   }
 
   async loginWithEmailAndPassword(): Promise<void> {
-    if (this.formularioInvalido) {
-      return;
-    }
-
     try {
       const credentials: Credentials = {
         correo: this.correo.trim(),

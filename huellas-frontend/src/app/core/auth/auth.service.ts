@@ -127,17 +127,67 @@ export class AuthService {
     idToken: string,
     registerData?: RegisterUserAttributes,
   ): Promise<void> {
-    await fetch(`${environment.apiUrlBackend}/auth/social`, {
-      method: 'POST',
-      body: JSON.stringify({
-        idToken,
-        ...registerData,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-    });
+    try {
+      const response = await fetch(`${environment.apiUrlBackend}/auth/social`, {
+        method: 'POST',
+        body: JSON.stringify({
+          idToken,
+          ...registerData,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.text();
+        throw new Error(`El backend rechazó la petición: ${response.status} - ${errorPayload}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Conexión con backend exitosa. Respuesta:', data);
+
+      if (data.accessToken) {
+        localStorage.setItem('nestjs_token', data.accessToken);
+      }
+    } catch (error) {
+      console.error('❌ Error de conexión con el backend:', error);
+      throw error;
+    }
+  }
+
+  async sendEmailTokenToBackend(
+    idToken: string,
+    registerData?: RegisterUserAttributes,
+  ): Promise<void> {
+    try {
+      const response = await fetch(`${environment.apiUrlBackend}/auth/sync-email`, {
+        // <-- NUEVA RUTA
+        method: 'POST',
+        body: JSON.stringify({
+          idToken,
+          ...registerData,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.text();
+        throw new Error(`El backend rechazó la petición: ${response.status} - ${errorPayload}`);
+      }
+
+      const data = await response.json();
+      if (data.accessToken) {
+        localStorage.setItem('nestjs_token', data.accessToken);
+      }
+    } catch (error) {
+      console.error('Error al sincronizar usuario de email:', error);
+      throw error;
+    }
   }
   /**
    * Cierra la sesión actual
@@ -170,14 +220,17 @@ export class AuthService {
     await updateProfile(userCredential.user, {
       displayName: registerData.nombre.trim(),
     });
+
     await this.sendVerificationEmail(userCredential.user);
+    const idToken = await userCredential.user.getIdToken();
+    await this.sendEmailTokenToBackend(idToken, registerData);
+
     await signOut(this.auth);
     this.claimsSubject.next({});
+    localStorage.removeItem('nestjs_token');
   }
 
-  async logInWithEmailAndPassword(
-    credential: Credentials,
-  ): Promise<UserCredential> {
+  async logInWithEmailAndPassword(credential: Credentials): Promise<UserCredential> {
     const userCredential = await signInWithEmailAndPassword(
       this.auth,
       credential.correo,
@@ -198,11 +251,12 @@ export class AuthService {
     };
 
     const idToken = await userCredential.user.getIdToken();
-    await this.sendIdTokenToBackend(idToken, registerData);
+    await this.sendEmailTokenToBackend(idToken, registerData);
     await userCredential.user.getIdToken(true);
     const refreshedTokenResult = await userCredential.user.getIdTokenResult();
     this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
 
+    console.log('Inicio de sesión exitoso con email y contraseña:', userCredential.user);
     return userCredential;
   }
 }

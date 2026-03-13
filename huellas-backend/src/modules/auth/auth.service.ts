@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
   Injectable,
@@ -12,6 +13,7 @@ interface FirebaseTokenLookupResponse {
   users?: Array<{
     localId: string;
     email: string;
+    emailVerified: false;
   }>;
 }
 
@@ -19,6 +21,7 @@ export interface CustomClaims {
   roles: string[];
   canViewArchivos: boolean;
   canSubmitEnvios: boolean;
+  canManageUsers: boolean;
   externalSystemUid: string;
 }
 
@@ -58,11 +61,19 @@ export class AuthService {
         user = await this.usersService.create({
           nombre: registerData?.nombre || '',
           correo: firebaseUserData.email,
+          correo_verificado: true,
         });
+      } else if (!user.correo_verificado) {
+        user.correo_verificado = true;
+        await this.usersService.save(user);
       }
 
       const customClaims = this.buildCustomClaims(user);
-      await this.setFirebaseCustomClaims(firebaseUserData.uid, customClaims);
+      await this.setFirebaseCustomClaims(
+        firebaseUserData.uid,
+        customClaims,
+        true,
+      );
 
       const payload = {
         userId: user.id,
@@ -80,9 +91,74 @@ export class AuthService {
     }
   }
 
+  async registerWithEmailAndPassword(
+    idToken: string,
+    registerData?: { nombre?: string },
+  ): Promise<{ accessToken: string; customClaims: CustomClaims }> {
+    try {
+      const firebaseUserData = await this.validateFirebaseToken(idToken);
+      let user = await this.usersService.findByEmail(firebaseUserData.email);
+
+      if (!user) {
+        user = await this.usersService.create({
+          nombre: registerData?.nombre || '',
+          correo: firebaseUserData.email,
+          correo_verificado: firebaseUserData.emailVerified,
+        });
+      } else if (!user.correo_verificado && firebaseUserData.emailVerified) {
+        user.correo_verificado = true;
+        await this.usersService.save(user);
+      }
+
+      const customClaims = this.buildCustomClaims(user);
+
+      await this.setFirebaseCustomClaims(
+        firebaseUserData.uid,
+        customClaims,
+        false,
+      );
+
+      const payload = {
+        userId: user.id,
+        email: user.correo,
+        roles: user.roles?.map((r) => r.rol) ?? [],
+      };
+
+      return {
+        accessToken: this.jwtService.sign(payload),
+        customClaims,
+      };
+    } catch (error) {
+      console.error('Error en syncEmailUser:', error);
+      throw error;
+    }
+  }
+
+  async sendVerificationEmail(idToken: string): Promise<void> {
+    const { webApiKey } = this.getFirebaseConfig();
+
+    const response = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${webApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestType: 'VERIFY_EMAIL',
+          idToken,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new InternalServerErrorException(
+        'No fue posible enviar el correo de verificación desde el login',
+      );
+    }
+  }
+
   async validateFirebaseToken(
     idToken: string,
-  ): Promise<{ uid: string; email: string }> {
+  ): Promise<{ uid: string; email: string; emailVerified: boolean }> {
     const { webApiKey } = this.getFirebaseConfig();
 
     const response = await fetch(
@@ -105,7 +181,11 @@ export class AuthService {
       throw new BadRequestException('Invalid Firebase token payload');
     }
 
-    return { uid: user.localId, email: user.email };
+    return {
+      uid: user.localId,
+      email: user.email,
+      emailVerified: user.emailVerified ?? false,
+    };
   }
 
   private buildCustomClaims(user: User): CustomClaims {
@@ -119,10 +199,13 @@ export class AuthService {
       ['admin', 'author'].includes(rol),
     );
 
+    const canManageUsers = roleNames.some((rol) => ['admin'].includes(rol));
+
     return {
       roles: roleNames,
       canViewArchivos,
       canSubmitEnvios,
+      canManageUsers,
       externalSystemUid: `huellas-db-${user.id}`,
     };
   }
@@ -130,6 +213,7 @@ export class AuthService {
   async setFirebaseCustomClaims(
     firebaseUid: string,
     customClaims: CustomClaims,
+    markAsVerified: boolean = false,
   ): Promise<void> {
     const { projectId } = this.getFirebaseConfig();
     const accessToken = await this.client.getAccessToken();
@@ -140,6 +224,15 @@ export class AuthService {
       );
     }
 
+    const requestBody: any = {
+      localId: firebaseUid,
+      customAttributes: JSON.stringify(customClaims),
+    };
+
+    if (markAsVerified) {
+      requestBody.emailVerified = true;
+    }
+
     const response = await fetch(
       `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:update`,
       {
@@ -148,10 +241,7 @@ export class AuthService {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          localId: firebaseUid,
-          customAttributes: JSON.stringify(customClaims),
-        }),
+        body: JSON.stringify(requestBody),
       },
     );
 

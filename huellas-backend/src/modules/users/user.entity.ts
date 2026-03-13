@@ -23,6 +23,9 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   telefono!: string;
 
+  @Column({ type: 'boolean', default: false })
+  correo_verificado!: boolean;
+
   @Column({ type: 'boolean', default: true })
   estado_cuenta!: boolean;
 

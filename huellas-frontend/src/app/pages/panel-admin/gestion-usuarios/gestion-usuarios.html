@@ -1,0 +1,97 @@
+<section class="users-page">
+  <header class="page-header">
+    <h1>Gestión de usuarios</h1>
+    <p>Gestiona los usuarios del sistema y controla sus permisos de acceso</p>
+  </header>
+
+  <br><br>
+  <section class="users-panel">
+    <h2>Usuarios actuales</h2>
+
+    <div class="toolbar">
+      <div class="search-wrapper">
+        <input type="text" placeholder="Buscar usuario" [(ngModel)]="searchTerm" (input)="onSearch()"
+          aria-label="Buscar usuario" />
+        <span class="search-icon">⌕</span>
+      </div>
+
+      <button class="btn-primary" type="button" (click)="onCreateUser()">
+        Crear usuario
+      </button>
+    </div>
+
+    <div class="table-wrapper">
+      @if (loading) {
+      <p class="loading-state">Cargando usuarios...</p>
+      } @else if (errorMessage) {
+      <p class="error-state">{{ errorMessage }}</p>
+      } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Correo electrónico</th>
+            <th>Teléfono</th>
+            <th>Estado del correo</th>
+            <th>Estado de la cuenta</th>
+            <th>Rol</th>
+            <th class="text-center">Editar</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of filteredUsers; track user.correo) {
+          <tr>
+            <td>{{ user.nombre }}</td>
+            <td>{{ user.correo }}</td>
+            <td>
+              @if (user.telefono !== '') {
+              {{ user.telefono }}
+              } @else {
+              <span class="empty-field">-</span>
+              }
+            </td>
+            <td>
+              <span class="badge"
+                [ngClass]="user.correoVerificado === 'Verificado' ? 'badge-success' : 'badge-warning'">
+                {{ user.correoVerificado }}
+              </span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="user.estado === 'Activa' ? 'badge-success' : 'badge-warning'">
+                {{ user.estado }}
+              </span>
+            </td>
+            <td class="role-cell">{{ user.rol }}</td>
+            <td class="edit-cell">
+              <button type="button" class="edit-btn" (click)="onEditUser(user)" aria-label="Editar usuario">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#44B2A9"
+                  class="bi bi-pencil-square" viewBox="0 0 16 16">
+                  <path
+                    d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                  <path fill-rule="evenodd"
+                    d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
+                </svg>
+              </button>
+            </td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="7" class="empty-state">No hay usuarios que coincidan con la búsqueda.</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+      }
+    </div>
+  </section>
+
+  @if (showCreateModal) {
+  <app-crear-usuario-modal (closed)="closeCreateModal()" (created)="onUserCreated()">
+  </app-crear-usuario-modal>
+  }
+
+  @if (showEditModal) {
+  <app-editar-usuario-modal [user]="selectedUserToEdit" (closed)="closeEditModal()" (updated)="onUserEdited()">
+  </app-editar-usuario-modal>
+  }
+</section>

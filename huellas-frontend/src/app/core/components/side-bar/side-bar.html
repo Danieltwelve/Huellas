@@ -4,7 +4,7 @@
   </button>
 
   <nav class="menu">
-    <a class="menu-item" href="#" *ngFor="let item of (visibleMainItems$ | async) ?? []">
+    <a class="menu-item" *ngFor="let item of (visibleMainItems$ | async) ?? []" [routerLink]="item.route">
       <span class="icon">
 
         <svg *ngIf="item.icon === 'list-check'" xmlns="http://www.w3.org/2000/svg" width="16" height="16"

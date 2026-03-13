@@ -1,0 +1,90 @@
+<div class="modal-backdrop" (click)="closeCreateModal()"></div>
+<div class="modal" role="dialog" aria-modal="true" aria-label="Crear usuario">
+  <button class="modal-close" type="button" (click)="closeCreateModal()" aria-label="Cerrar">
+    x
+  </button>
+  <h3>Crear usuario</h3>
+
+  <br>
+  <form class="modal-form" autocomplete="off" (ngSubmit)="onSubmit()">
+    @if (requestError) {
+    <p class="request-error">{{ requestError }}</p>
+    }
+
+    <div class="field-group">
+      <label for="nombre-completo">Nombre completo</label>
+      <input id="nombre-completo" type="text" placeholder="Nombre completo" [(ngModel)]="createForm.nombre" name="nombre" required #nombreField="ngModel" />
+      @if (nombreField.touched && !isValidName()) {
+        <span class="validation-error">El nombre no puede contener números.</span>
+      }
+    </div>
+
+    <div class="field-group">
+      <label for="correo-electronico">Correo electrónico</label>
+      <input id="correo-electronico" type="email" placeholder="example@gmail.com" [(ngModel)]="createForm.correo" name="correo" required #correoField="ngModel" />
+      @if (correoField.touched && !isValidEmail()) {
+        <span class="validation-error">Formato de correo no válido.</span>
+      }
+    </div>
+
+    <div class="field-group">
+      <label for="contrasena">Contraseña</label>
+      <input id="contrasena" type="password" placeholder="Contraseña" [(ngModel)]="createForm.contrasena" name="contrasena" required #passField="ngModel" />
+      @if (passField.touched && !isValidPassword()) {
+        <span class="validation-error">Mínimo 6 caracteres.</span>
+      }
+    </div>
+
+    <div class="field-group">
+      <label for="telefono">Teléfono</label>
+      <div class="phone-row">
+        <select id="pais" class="phone-prefix" aria-label="Prefijo pais" [(ngModel)]="createForm.prefijoPais" name="prefijoPais">
+          <option value="+57">+57</option>
+          <option value="+54">+54</option>
+          <option value="+52">+52</option>
+          <option value="+34">+34</option>
+          <option value="+1">+1</option>
+        </select>
+        <input id="telefono" type="tel" placeholder="Numero" [(ngModel)]="createForm.telefono" name="telefono" required #telField="ngModel" />
+      </div>
+      @if (telField.touched && !isValidPhone()) {
+        <span class="validation-error">Solo se permiten números.</span>
+      }
+    </div>
+
+    <div class="field-group full-width">
+      <label for="roles">Roles</label>
+      <select id="roles" [(ngModel)]="createForm.rol" name="rol">
+        <option [value]="1">admin</option>
+        <option [value]="2">monitor</option>
+        <option [value]="3">revisor</option>
+        <option [value]="4">autor</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button class="btn-save" type="submit" [disabled]="creatingUser || !isFormValid()">
+        {{ creatingUser ? 'Guardando...' : 'Guardar' }}
+      </button>
+      <button class="btn-cancel" type="button" (click)="closeCreateModal()" [disabled]="creatingUser">
+        Cancelar
+      </button>
+    </div>
+  </form>
+</div>
+
+@if (showSuccessModal) {
+<div class="modal-backdrop" (click)="closeSuccessModal()"></div>
+<div class="modal success-modal" role="dialog" aria-modal="true" aria-label="Usuario creado">
+  <button class="modal-close" type="button" (click)="closeSuccessModal()" aria-label="Cerrar">
+    x
+  </button>
+  <div class="success-content">
+    <div class="success-icon">✓</div>
+    <h3>¡Usuario creado exitosamente!</h3>
+    <p>Se ha enviado un correo de verificación a <strong>{{ createForm.correo }}</strong></p>
+    <p>El usuario deberá verificar su correo electrónico antes de poder acceder al sistema.</p>
+    <button class="btn-success" type="button" (click)="closeSuccessModal()">Entendido</button>
+  </div>
+</div>
+}

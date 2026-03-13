@@ -42,27 +42,18 @@
         <div class="form-group">
           <label for="correo">Correo electrónico</label>
           <input id="correo" type="email" placeholder="Correo electrónico" class="auth-input" name="correo"
-            [(ngModel)]="correo" #correoModel="ngModel" required />
-          @if (correoModel.touched && correoVacio) {
-          <p class="input-error">El correo electrónico es obligatorio.</p>
-          }
-          @if (correoModel.touched && correoInvalido) {
-          <p class="input-error">Ingresa un correo electrónico válido.</p>
-          }
+            [(ngModel)]="correo" required />
         </div>
 
         <div class="form-group">
           <label for="contrasena">Contraseña</label>
           <input id="contrasena" type="password" placeholder="Contraseña" class="auth-input" name="contrasena"
-            [(ngModel)]="contrasena" #contrasenaModel="ngModel" required />
-          @if (contrasenaModel.touched && contrasenaVacia) {
-          <p class="input-error">La contraseña es obligatoria.</p>
-          }
+            [(ngModel)]="contrasena" required />
         </div>
         <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
         <br><br><br>
         <div class="bloque-final">
-          <button type="submit" class="login-btn" [disabled]="formularioInvalido">Iniciar sesión</button>
+          <button type="submit" class="login-btn" [disabled]="!isFormValid">Iniciar sesión</button>
         </div>
       </form>
 

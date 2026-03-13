@@ -2,16 +2,18 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { map } from 'rxjs/operators';
 import { AuthService } from '../../auth/auth.service';
+import { RouterLink } from "@angular/router";
 
 interface MenuItem {
   label: string;
   icon: string;
   adminOnly?: boolean;
+  route?: string;
 }
 
 @Component({
   selector: 'app-side-bar',
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './side-bar.html',
   styleUrl: './side-bar.scss',
 })
@@ -28,10 +30,10 @@ export class SideBar {
   }
 
   mainItems: MenuItem[] = [
-    { label: 'Gestión de Flujo Editorial', icon: 'list-check', adminOnly: true },
-    { label: 'Gestión de Usuarios', icon: 'users', adminOnly: true },
-    { label: 'Artículos', icon: 'file', adminOnly: true },
-    { label: 'Estadísticas', icon: 'chart', adminOnly: true },
+    { label: 'Gestión de Flujo Editorial', icon: 'list-check', adminOnly: true, route: '/gestion-usuarios' },
+    { label: 'Gestión de Usuarios', icon: 'users', adminOnly: true, route: '/gestion-usuarios' },
+    { label: 'Artículos', icon: 'file', adminOnly: true, route: '/articulos' },
+    { label: 'Estadísticas', icon: 'chart', adminOnly: true, route: '/estadisticas' },
   ];
 
   visibleMainItems$ = this.authService.claims$.pipe(

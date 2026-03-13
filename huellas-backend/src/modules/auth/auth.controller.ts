@@ -20,4 +20,12 @@ export class AuthController {
       nombre: body.nombre,
     });
   }
+
+  @Post('sync-email')
+  async syncEmailUser(
+    @Body('idToken') idToken: string,
+    @Body('nombre') nombre?: string,
+  ) {
+    return this.authService.registerWithEmailAndPassword(idToken, { nombre });
+  }
 }
