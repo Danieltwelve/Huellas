@@ -31,7 +31,7 @@
           </li>
         }
 
-        @if (claims.canManageUsers) {
+        @if (claims['canManageUsers']) {
           <li>
             <a routerLink="/gestion-usuarios" (click)="closeMenu()" routerLinkActive="active">Panel Admin</a>
           </li>
@@ -79,7 +79,7 @@
           <div class="user-menu" role="menu" aria-label="Opciones de usuario">
             @if (claims$ | async; as claims) {
               <p class="role-title">{{ getRoleTitle(claims) }}</p>
-              @if (claims.canManageUsers) {
+              @if (claims['canManageUsers']) {
                 <a routerLink="/gestion-usuarios" class="menu-link" (click)="closeMenu()">Ir al panel de administración</a>
               }
             } @else {

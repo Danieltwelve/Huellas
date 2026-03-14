@@ -22,6 +22,7 @@ export interface AccessClaims {
   roles?: string[];
   canViewArchivos?: boolean;
   canSubmitEnvios?: boolean;
+  canManageUsers?: boolean;
   externalSystemUid?: string;
   [key: string]: unknown;
 }
