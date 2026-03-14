@@ -160,6 +160,7 @@
   border: 1px solid rgba(15, 23, 42, 0.15);
   border-radius: 50%;
   background: #ffffff;
+  color: #334155;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -195,6 +196,23 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.menu-link {
+  display: block;
+  padding: 8px 10px;
+  margin: 0 4px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: #f1f5f9;
+}
+
+.menu-link:hover {
+  background: rgba(0, 178, 169, 0.15);
+  color: #00a99d;
 }
 
 .logout-option {
