@@ -17,17 +17,17 @@ export class User {
   @Column({ type: 'varchar' })
   nombre!: string;
 
-  @Column({ type: 'varchar' })
-  apellido!: string;
-
   @Column({ type: 'varchar', unique: true })
   correo!: string;
 
-  @Column({ type: 'boolean', default: true })
-  estado_cuenta!: boolean;
+  @Column({ type: 'varchar', nullable: true })
+  telefono!: string;
 
   @Column({ type: 'boolean', default: false })
   correo_verificado!: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  estado_cuenta!: boolean;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updated_at!: Date;

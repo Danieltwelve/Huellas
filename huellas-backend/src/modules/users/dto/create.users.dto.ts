@@ -4,17 +4,18 @@ export class CreateUserDto {
   @IsString()
   nombre!: string;
 
-  @IsString()
-  apellido!: string;
-
   @IsEmail()
   correo!: string;
 
-  @IsBoolean()
+  @IsString()
   @IsOptional()
-  estado_cuenta?: boolean;
+  telefono?: string;
 
   @IsBoolean()
   @IsOptional()
   correo_verificado?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  estado_cuenta?: boolean;
 }

@@ -5,18 +5,27 @@ import { AuthService, CustomClaims } from './auth.service';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('google')
-  async googleAuth(
+  @Post('social')
+  async socialAuth(
     @Body()
     body: {
       idToken: string;
       nombre?: string;
-      apellido?: string;
     },
   ): Promise<{
     accessToken: string;
     customClaims: CustomClaims;
   }> {
-    return this.authService.loginWithGoogle(body.idToken, body);
+    return this.authService.loginWithSocialProvider(body.idToken, {
+      nombre: body.nombre,
+    });
+  }
+
+  @Post('sync-email')
+  async syncEmailUser(
+    @Body('idToken') idToken: string,
+    @Body('nombre') nombre?: string,
+  ) {
+    return this.authService.registerWithEmailAndPassword(idToken, { nombre });
   }
 }

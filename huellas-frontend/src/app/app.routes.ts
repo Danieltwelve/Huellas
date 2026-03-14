@@ -13,10 +13,14 @@ import { IndexacionComponent } from './pages/indexacion/indexacion.component';
 import { AcercaDeComponent } from './pages/acerca-de/acerca-de.component';
 import { MiembroBiografia } from './pages/miembro-biografia/miembro-biografia';
 import { claimsGuard } from './core/auth/claims.guard';
+import { redirectIfAuthenticatedGuard } from './core/auth/redirect-if-authenticated.guard';
+import { GestionUsuarios } from './pages/panel-admin/gestion-usuarios/gestion-usuarios';
+import { RecuperarContrasenaComponent } from './pages/login/recuperar-contraseña/recuperar-contrasena.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
-  { path: 'login', component: LoginComponent },
+  { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'recuperar-contrasena', component: RecuperarContrasenaComponent, canActivate: [redirectIfAuthenticatedGuard] },
   { path: 'register', component: RegisterComponent },
   { path: 'actual', component: ActualComponent },
   {
@@ -30,6 +34,12 @@ export const routes: Routes = [
     component: EnviosComponent,
     canActivate: [claimsGuard],
     data: { requiredClaim: 'canSubmitEnvios', allowedRoles: ['admin', 'author', 'teacher'] },
+  },
+  {
+    path: 'gestion-usuarios',
+    component: GestionUsuarios,
+    canActivate: [claimsGuard],
+    data: { requiredClaim: 'canManageUsers', allowedRoles: ['admin'] },
   },
   { path: 'avisos', component: AvisosComponent },
   { path: 'equipo-editorial', component: EquipoEditorialComponent },

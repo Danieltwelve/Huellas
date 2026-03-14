@@ -1,0 +1,51 @@
+<div class="modal-backdrop" (click)="closeModal()"></div>
+<div class="modal" role="dialog" aria-modal="true" aria-label="Editar usuario">
+  <button class="modal-close" type="button" (click)="closeModal()" aria-label="Cerrar">
+    X
+  </button>
+
+  <h3>Editar usuario</h3>
+
+  <form class="modal-form" autocomplete="off">
+    @if (errorMessage) {
+    <p class="request-error" style="grid-column: 1 / -1; color: #991b1b; background: #fee2e2; padding: 0.5rem; border-radius: 8px;">
+      {{ errorMessage }}
+    </p>
+    }
+
+    <div class="field-group">
+      <label for="editar-nombre">Nombre</label>
+      <input id="editar-nombre" type="text" name="nombre" [(ngModel)]="editForm.nombre" />
+    </div>
+
+    <div class="field-group">
+      <label for="editar-telefono">Teléfono</label>
+      <input id="editar-telefono" type="tel" name="telefono" [(ngModel)]="editForm.telefono" />
+    </div>
+
+    <div class="field-group">
+      <label for="editar-estado">Estado de la cuenta</label>
+      <select id="editar-estado" name="estado" [(ngModel)]="editForm.estado">
+        <option value="Activa">Activa</option>
+        <option value="Inactiva">Inactiva</option>
+      </select>
+    </div>
+
+    <div class="field-group">
+      <label for="editar-rol">Rol</label>
+      <select id="editar-rol" name="rol" [(ngModel)]="editForm.rol">
+        <option value="admin">admin</option>
+        <option value="monitor">monitor</option>
+        <option value="autor">autor</option>
+        <option value="revisor">revisor</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button class="btn-save" type="button" (click)="onSave()" [disabled]="saving">
+        {{ saving ? 'Guardando...' : 'Guardar' }}
+      </button>
+      <button class="btn-cancel" type="button" (click)="closeModal()" [disabled]="saving">Cancelar</button>
+    </div>
+  </form>
+</div>

@@ -32,29 +32,29 @@ services:
       postgres:
         condition: service_healthy
 
-  backend:
-    build:
-      context: ./huellas-backend
-      dockerfile: Dockerfile
-    container_name: huellas_backend
-    restart: always
-    ports:
-      - "${BACKEND_PORT:-3333}:3000"
-    environment:
-      PORT: ${PORT:-3000}
-      DATABASE_HOST: ${DATABASE_HOST}
-      DATABASE_PORT: ${DATABASE_PORT}
-      DATABASE_USER: ${DATABASE_USER}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-      DATABASE_NAME: ${DATABASE_NAME}
-      DATABASE_SYNCHRONIZE: ${DATABASE_SYNCHRONIZE}
-      NODE_ENV: ${NODE_ENV}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./huellas-backend/src:/app/src
-    command: npm run start:dev
+  # backend:
+  #   build:
+  #     context: ./huellas-backend
+  #     dockerfile: Dockerfile
+  #   container_name: huellas_backend
+  #   restart: always
+  #   ports:
+  #     - "${BACKEND_PORT:-3333}:3000"
+  #   environment:
+  #     PORT: ${PORT:-3000}
+  #     DATABASE_HOST: ${DATABASE_HOST}
+  #     DATABASE_PORT: ${DATABASE_PORT}
+  #     DATABASE_USER: ${DATABASE_USER}
+  #     DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+  #     DATABASE_NAME: ${DATABASE_NAME}
+  #     DATABASE_SYNCHRONIZE: ${DATABASE_SYNCHRONIZE}
+  #     NODE_ENV: ${NODE_ENV}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ./huellas-backend/src:/app/src
+  #   command: npm run start:dev
 
 volumes:
   postgres_data:

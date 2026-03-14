@@ -1,7 +1,15 @@
-<app-navbar></app-navbar>
+<div class="app-layout" [class.sidebar-collapsed]="sidebarCollapsed">
+  @if (user$ | async) {
+    <app-side-bar (collapsedChange)="onSidebarCollapsed($event)"></app-side-bar>
+  }
 
-<main>
-  <router-outlet></router-outlet>
-</main>
+  <div class="content-layout">
+    <app-navbar></app-navbar>
 
-<app-footer *ngIf="showFooter"></app-footer>
+    <main class="page-content">
+      <router-outlet></router-outlet>
+    </main>
+
+    <app-footer *ngIf="showFooter"></app-footer>
+  </div>
+</div>

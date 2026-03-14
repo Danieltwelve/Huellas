@@ -1,0 +1,186 @@
+.users-page {
+  padding: 1.32rem 1.5rem;
+  min-height: calc(100vh - 42px);
+  color: #202124;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  line-height: 1.05;
+  font-weight: 800;
+}
+
+.page-header p {
+  margin: 0.39rem 0 1.44rem;
+  font-size: 0.9rem;
+  color: #666; /* Gris más suave */
+}
+
+.users-panel h2 {
+  margin: 0 0 0.72rem;
+  font-size: 1.14rem;
+  font-weight: 700;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.search-wrapper {
+  width: 100%;
+  max-width: 280px; /* Un poco más ancho */
+  height: 38px; /* Un poco más alto para igualar al botón */
+  border: 1px solid #ccc; /* Borde más sutil */
+  border-radius: 20px; /* Esquinas más redondeadas */
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 0.8rem 0 1rem;
+}
+
+.search-wrapper input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 0.96rem;
+  color: #222;
+  background: transparent;
+}
+
+.search-wrapper input::placeholder {
+  color: #888;
+}
+
+.search-icon {
+  font-size: 1.2rem;
+  color: #888;
+}
+
+/* --- BOTÓN PRIMARIO ACTUALIZADO --- */
+.btn-primary {
+  background-color: #44B2A9; /* Fondo sólido */
+  color: #fff;
+  border: none;
+  border-radius: 20px; /* Estilo píldora */
+  padding: 0.5rem 1.2rem;
+  font-size: 0.96rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #389c93; /* Hover más oscuro */
+}
+
+/* --- TABLA ACTUALIZADA --- */
+.table-wrapper {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid #e0e0e0; /* Borde más claro */
+  border-radius: 8px; /* Bordes más suaves */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02); /* Sombra muy sutil */
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+thead th {
+  background: #f8f9fa; /* Gris muy claro, más moderno */
+  font-weight: 600;
+  color: #4b4b4b;
+  text-align: left;
+  padding: 0.8rem 0.6rem; /* Más respiro */
+  border-bottom: 2px solid #eaeaea; /* Línea separadora clara */
+  font-size: 0.9rem;
+}
+
+tbody td {
+  padding: 0.8rem 0.6rem; /* Aumentado de 0.45 a 0.8 para dar aire */
+  border-bottom: 1px solid #eaeaea;
+  font-size: 0.85rem;
+  color: #333;
+  vertical-align: middle;
+}
+
+tbody tr:hover {
+  background-color: #fcfcfc; /* Hover sutil en la fila */
+}
+
+/* Quitar bordes derechos que hacían la tabla ver pesada */
+thead th, tbody td {
+  border-right: none; 
+}
+
+/* --- BADGES Y ESTADOS --- */
+.badge {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge-warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.empty-field {
+  color: #a0a0a0;
+  font-weight: bold;
+}
+
+.role-cell {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.edit-cell {
+  text-align: center;
+}
+
+.edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-btn:hover {
+  background-color: #f1f5f9; /* Círculo gris al hacer hover */
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
