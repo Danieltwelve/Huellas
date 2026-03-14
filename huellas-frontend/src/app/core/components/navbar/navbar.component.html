@@ -1,40 +1,134 @@
-<nav class="navbar">
-  <div class="navbar-container">
-    <div class="logo" routerLink="/">HUELLAS</div>
+<nav class="navbar"
+[class.hide-navbar]="hideNavbar"
+[class.scrolled]="scrolled">
 
-    <button class="menu-toggle" (click)="toggleMenu()" [class.active]="menuOpen">
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
+<div class="navbar-container">
 
-    <ul class="links" [class.active]="menuOpen">
-      <li><a routerLink="/" (click)="closeMenu()" routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }">Inicio</a></li>
-      <li><a routerLink="/actual" (click)="closeMenu()" routerLinkActive="active">Actual</a></li>
-      <li *ngIf="(claims$ | async)?.canViewArchivos">
-        <a routerLink="/archivos" (click)="closeMenu()" routerLinkActive="active">Archivos</a>
-      </li>
+<!-- LOGO -->
+<div class="logo" routerLink="/">
+<img src="Huellaslogo.png" class="logo-img" alt="Huellas">
+<span></span>
+</div>
 
-      <li *ngIf="(claims$ | async)?.canSubmitEnvios">
-        <a routerLink="/envios" (click)="closeMenu()" routerLinkActive="active">Envíos</a>
-      </li>
-      <li><a routerLink="/avisos" (click)="closeMenu()" routerLinkActive="active">Avisos</a></li>
-      <li><a routerLink="/equipo-editorial" (click)="closeMenu()" routerLinkActive="active">Equipo Editorial</a></li>
-      <li class="dropdown-mobile" (click)="toggleDropdown('info')">
-        <a href="javascript:void(0)" routerLinkActive="active" [class.active]="openDropdown === 'info'">Más Info</a>
-        <ul class="submenu-mobile" [class.active]="openDropdown === 'info'">
-          <li><a routerLink="/desarrollado-por" (click)="closeMenu()">Desarrollado por</a></li>
-          <li><a routerLink="/etica-publicacion" (click)="closeMenu()">Ética de Publicación</a></li>
-          <li><a routerLink="/indexacion" (click)="closeMenu()">Indización</a></li>
-          <li><a routerLink="/acerca-de" (click)="closeMenu()">Acerca de</a></li>
-        </ul>
-      </li>
-    </ul>
+<!-- BOTÓN MENU MOBILE -->
+<button class="menu-toggle"
+(click)="toggleMenu()"
+[class.active]="menuOpen">
 
-    <div class="auth">
-      <a routerLink="/login" class="btn-outline" *ngIf="!(user$ | async)">Iniciar sesión</a>
-      <span *ngIf="user$ | async">Acceso por rol activo</span>
-    </div>
-  </div>
+<span></span>
+<span></span>
+<span></span>
+
+</button>
+
+<!-- LINKS -->
+<ul class="links" [class.active]="menuOpen">
+
+<li>
+<a routerLink="/"
+(click)="closeMenu()"
+routerLinkActive="active"
+[routerLinkActiveOptions]="{ exact: true }">
+Inicio
+</a>
+</li>
+
+<li>
+<a routerLink="/actual"
+(click)="closeMenu()"
+routerLinkActive="active">
+Archivo
+</a>
+</li>
+
+<li *ngIf="(claims$ | async)?.canViewArchivos">
+<a routerLink="/archivos"
+(click)="closeMenu()"
+routerLinkActive="active">
+Archivos
+</a>
+</li>
+
+<li *ngIf="(claims$ | async)?.canSubmitEnvios">
+<a routerLink="/envios"
+(click)="closeMenu()"
+routerLinkActive="active">
+Envíos
+</a>
+</li>
+
+<li>
+<a routerLink="/avisos"
+(click)="closeMenu()"
+routerLinkActive="active">
+Avisos
+</a>
+</li>
+
+<li>
+<a routerLink="/equipo-editorial"
+(click)="closeMenu()"
+routerLinkActive="active">
+Equipo Editorial
+</a>
+</li>
+
+<!-- DROPDOWN MÁS INFO -->
+<li class="dropdown-mobile">
+
+<a href="javascript:void(0)"
+(click)="toggleDropdown('info')"
+[class.active]="openDropdown === 'info'">
+Más Info
+</a>
+
+<ul class="submenu-mobile" [class.active]="openDropdown === 'info'">
+
+<li>
+<a routerLink="/desarrollado-por" (click)="closeMenu()">
+Desarrollado por
+</a>
+</li>
+
+<li>
+<a routerLink="/etica-publicacion" (click)="closeMenu()">
+Ética de publicación
+</a>
+</li>
+
+<li>
+<a routerLink="/indexacion" (click)="closeMenu()">
+Indización
+</a>
+</li>
+
+<li>
+<a routerLink="/acerca-de" (click)="closeMenu()">
+Acerca de
+</a>
+</li>
+
+</ul>
+
+</li>
+
+</ul>
+
+<!-- AUTH -->
+<div class="auth">
+
+<a routerLink="/login"
+class="btn-outline"
+*ngIf="!(user$ | async)">
+Iniciar sesión
+</a>
+
+<span *ngIf="user$ | async">
+Acceso por rol activo
+</span>
+
+</div>
+
+</div>
+
 </nav>

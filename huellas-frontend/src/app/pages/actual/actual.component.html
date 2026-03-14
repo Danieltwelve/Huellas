@@ -1,35 +1,122 @@
 <div class="container">
-  <div class="header">
-    <h1>Ediciones Actuales</h1>
-    <p>Últimas publicaciones de la revista HUELLAS</p>
+
+  <div class="header" *ngIf="!edicionSeleccionada">
+    <h1>Archivo de Ediciones</h1>
+    <p>Consulta todas las publicaciones de la revista HUELLAS</p>
   </div>
 
-  <div class="ediciones-grid">
-    <div class="edicion-card" *ngFor="let edicion of ediciones">
+  <div class="header" *ngIf="edicionSeleccionada">
+    <h1>{{ edicionSeleccionada.titulo }}</h1>
+    <p>{{ edicionSeleccionada.fecha }} - 10 artículos disponibles</p>
+  </div>
+
+  <!-- FILTROS -->
+
+  <div class="filtros-panel" *ngIf="!edicionSeleccionada">
+    <div class="filtros-top">
+      <p>Encuentra una edición por nombre o por año</p>
+      <span class="resultados">{{ edicionesFiltradas().length }} resultados</span>
+    </div>
+
+    <div class="filtros">
+
+      <label class="campo-filtro">
+        <span>Buscar edición</span>
+        <input 
+          type="text" 
+          placeholder="Ejemplo: Revista Huellas No. 21"
+          [(ngModel)]="busqueda"
+          class="buscador"
+        >
+      </label>
+
+      <label class="campo-filtro">
+        <span>Filtrar por año</span>
+        <select [(ngModel)]="anioFiltro" class="selector-anio">
+          <option value="">Todos los años</option>
+          <option *ngFor="let anio of anios">{{anio}}</option>
+        </select>
+      </label>
+
+      <button class="btn-limpiar" (click)="limpiarFiltros()" type="button">
+        Limpiar filtros
+      </button>
+
+    </div>
+
+  </div>
+
+  <p class="sin-resultados" *ngIf="!edicionSeleccionada && !edicionesFiltradas().length">
+    No se encontraron ediciones con los filtros aplicados.
+  </p>
+
+  <div class="ediciones-grid" *ngIf="!edicionSeleccionada && edicionesFiltradas().length">
+
+    <div 
+      class="edicion-card"
+      *ngFor="let edicion of edicionesFiltradas()"
+    >
+
       <div class="card-header">
         <h2>{{ edicion.titulo }}</h2>
         <span class="fecha">{{ edicion.fecha }}</span>
       </div>
-      
+
       <div class="card-content">
-        <p class="descripcion">{{ edicion.descripcion }}</p>
-        
+
+        <p class="descripcion">
+          {{ edicion.descripcion }}
+        </p>
+
         <div class="stats">
+
           <div class="stat">
             <span class="label">Autores</span>
             <span class="value">{{ edicion.autores }}</span>
           </div>
+
           <div class="stat">
             <span class="label">Artículos</span>
             <span class="value">{{ edicion.articulos }}</span>
           </div>
+
         </div>
+
       </div>
-      
+
       <div class="card-actions">
-        <button class="btn-primary">Ver Edición</button>
-        <button class="btn-secondary">Descargar PDF</button>
+
+        <button 
+          class="btn-primary"
+          (click)="verEdicion(edicion)"
+        >
+          Ver Edición
+        </button>
+
       </div>
+
+    </div>
+
+  </div>
+
+  <div class="edicion-detalle" *ngIf="edicionSeleccionada">
+    <button class="btn-volver" (click)="volverAListado()">Volver al listado</button>
+
+    <div class="articulos-grid">
+      <article class="articulo-card" *ngFor="let articulo of articulosDeEdicion">
+        <h3>{{ articulo.titulo }}</h3>
+        <p>{{ articulo.resumen }}</p>
+
+        <div class="articulo-actions">
+          <a class="btn-primary" [href]="articulo.archivo" target="_blank" rel="noopener">
+            Visualizar
+          </a>
+          <a class="btn-secondary" [href]="articulo.archivo" download>
+            Descargar
+          </a>
+        </div>
+      </article>
     </div>
   </div>
+
 </div>
