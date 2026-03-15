@@ -2,17 +2,10 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
-import { JwtModule } from '@nestjs/jwt';
+import { FirebaseAdminModule } from '../../common/firebase/firebase-admin.module';
 
 @Module({
-  imports: [
-    UsersModule,
-    JwtModule.register({
-      secret: 'JWT_SECRET_KEY', // En producción, usar una variable de entorno
-      global: true,
-      signOptions: { expiresIn: '1h' },
-    }),
-  ],
+  imports: [UsersModule, FirebaseAdminModule],
   providers: [AuthService],
   controllers: [AuthController],
 })

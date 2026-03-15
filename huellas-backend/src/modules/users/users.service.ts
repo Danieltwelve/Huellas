@@ -1,5 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -10,36 +14,22 @@ import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create.users.dto';
 import { Role } from '../roles/roles.entity';
 import { AdminCreateUserDto } from './dto/admin.create.users.dto';
+import { Auth } from 'firebase-admin/auth';
+import { FIREBASE_AUTH } from '../../common/firebase/firebase-admin.constants';
 import { ConfigService } from '@nestjs/config';
-import { google } from 'googleapis';
 
-interface FirebaseErrorResponse {
-  error?: {
-    message?: string;
-  };
-}
-
-interface FirebaseSignUpResponse {
-  idToken?: string;
-}
-
-interface FirebaseProjectLookupResponse {
-  users?: Array<{
-    localId?: string;
-  }>;
+interface FirebaseAdminError {
+  code?: string;
 }
 
 @Injectable()
 export class UsersService {
-  private client = new google.auth.GoogleAuth({
-    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-  });
-
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
     @InjectRepository(Role)
     private readonly rolesRepository: Repository<Role>,
+    @Inject(FIREBASE_AUTH) private readonly firebaseAuth: Auth,
     private readonly configService: ConfigService,
   ) {}
 
@@ -77,14 +67,18 @@ export class UsersService {
     correo: string,
     contraseña: string,
   ): Promise<void> {
-    const webApiKey = this.configService.get<string>('FIREBASE_WEB_API_KEY');
+    const webApiKey =
+      this.configService.get<string>('FIREBASE_WEB_API_KEY') ||
+      process.env.FIREBASE_WEB_API_KEY;
 
     if (!webApiKey) {
       throw new InternalServerErrorException(
-        'FIREBASE_WEB_API_KEY no está configurada en el backend.',
+        'FIREBASE_WEB_API_KEY no está configurada.',
       );
     }
 
+    // 1. Crear usuario obteniendo el idToken (API REST Cliente)
+    // Ya no hay "try {" envolviendo esto
     const signUpResponse = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${webApiKey}`,
       {
@@ -98,23 +92,20 @@ export class UsersService {
       },
     );
 
-    const signUpPayload =
-      (await signUpResponse.json()) as FirebaseSignUpResponse &
-        FirebaseErrorResponse;
+    const signUpPayload = await signUpResponse.json();
 
     if (!signUpResponse.ok || !signUpPayload.idToken) {
-      const errorMessage = signUpPayload.error?.message;
-      if (errorMessage === 'EMAIL_EXISTS') {
+      if (signUpPayload.error?.message === 'EMAIL_EXISTS') {
         throw new BadRequestException(
           'El correo ya está registrado en Firebase.',
         );
       }
-
       throw new InternalServerErrorException(
         'No fue posible crear el usuario en Firebase.',
       );
     }
 
+    // 2. Enviar correo de verificación (API REST Cliente)
     const verificationResponse = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${webApiKey}`,
       {
@@ -129,7 +120,7 @@ export class UsersService {
 
     if (!verificationResponse.ok) {
       throw new InternalServerErrorException(
-        'No fue posible enviar el correo de verificación.',
+        'No fue posible enviar el correo de verificación de Firebase.',
       );
     }
   }
@@ -183,92 +174,31 @@ export class UsersService {
     return await this.userRepository.save(user);
   }
 
-  private getFirebaseProjectId(): string {
-    const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID');
-
-    if (!projectId) {
-      throw new InternalServerErrorException(
-        'FIREBASE_PROJECT_ID no está configurada en el backend.',
-      );
-    }
-
-    return projectId;
-  }
-
-  private async getGoogleAccessToken(): Promise<string> {
-    const token = await this.client.getAccessToken();
-
-    if (!token) {
-      throw new InternalServerErrorException(
-        'No fue posible obtener access token de Google.',
-      );
-    }
-
-    return token;
-  }
-
-  private async getFirebaseUidByEmail(correo: string): Promise<string> {
-    const projectId = this.getFirebaseProjectId();
-    const accessToken = await this.getGoogleAccessToken();
-
-    const lookupResponse = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:lookup`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          email: [correo],
-        }),
-      },
-    );
-
-    if (!lookupResponse.ok) {
-      throw new InternalServerErrorException(
-        'No fue posible buscar el usuario en Firebase.',
-      );
-    }
-
-    const lookupPayload =
-      (await lookupResponse.json()) as FirebaseProjectLookupResponse;
-    const firebaseUid = lookupPayload.users?.[0]?.localId;
-
-    if (!firebaseUid) {
-      throw new NotFoundException('Usuario no encontrado en Firebase.');
-    }
-
-    return firebaseUid;
-  }
-
   private async syncFirebaseAccountStatus(
     correo: string,
     estadoCuenta: boolean,
   ): Promise<void> {
-    const projectId = this.getFirebaseProjectId();
-    const accessToken = await this.getGoogleAccessToken();
-    const firebaseUid = await this.getFirebaseUidByEmail(correo);
+    try {
+      const firebaseUser = await this.firebaseAuth.getUserByEmail(correo);
+      await this.firebaseAuth.updateUser(firebaseUser.uid, {
+        disabled: !estadoCuenta,
+      });
+    } catch (error) {
+      if (this.isFirebaseAuthError(error, 'auth/user-not-found')) {
+        throw new NotFoundException('Usuario no encontrado en Firebase.');
+      }
 
-    const updateResponse = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:update`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          localId: firebaseUid,
-          disableUser: !estadoCuenta,
-        }),
-      },
-    );
-
-    if (!updateResponse.ok) {
       throw new InternalServerErrorException(
         'No fue posible actualizar el estado de la cuenta en Firebase.',
       );
     }
+  }
+
+  private isFirebaseAuthError(error: unknown, code: string): boolean {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+
+    return (error as FirebaseAdminError).code === code;
   }
 }

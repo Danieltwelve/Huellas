@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { AuthService, CustomClaims } from './auth.service';
+import { AuthService, AuthSyncResponse } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
@@ -12,10 +12,7 @@ export class AuthController {
       idToken: string;
       nombre?: string;
     },
-  ): Promise<{
-    accessToken: string;
-    customClaims: CustomClaims;
-  }> {
+  ): Promise<AuthSyncResponse> {
     return this.authService.loginWithSocialProvider(body.idToken, {
       nombre: body.nombre,
     });
@@ -25,7 +22,7 @@ export class AuthController {
   async syncEmailUser(
     @Body('idToken') idToken: string,
     @Body('nombre') nombre?: string,
-  ) {
+  ): Promise<AuthSyncResponse> {
     return this.authService.registerWithEmailAndPassword(idToken, { nombre });
   }
 }

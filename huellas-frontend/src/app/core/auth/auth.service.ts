@@ -36,6 +36,10 @@ export interface RegisterUserAttributes {
   correo: string;
 }
 
+interface BackendSyncResponse {
+  status: 'ok';
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -217,14 +221,15 @@ export class AuthService {
         throw new Error(`El backend rechazó la petición: ${response.status} - ${errorPayload}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as BackendSyncResponse;
       console.log('✅ Conexión con backend exitosa. Respuesta:', data);
 
-      if (data.accessToken) {
-        localStorage.setItem('nestjs_token', data.accessToken);
+      if (data.status !== 'ok') {
+        throw new Error('Respuesta inesperada del backend durante la sincronización');
       }
     } catch (error) {
       console.error('❌ Error de conexión con el backend:', error);
+      await this.rollbackIncompleteSession();
       throw error;
     }
   }
@@ -252,15 +257,31 @@ export class AuthService {
         throw new Error(`El backend rechazó la petición: ${response.status} - ${errorPayload}`);
       }
 
-      const data = await response.json();
-      if (data.accessToken) {
-        localStorage.setItem('nestjs_token', data.accessToken);
+      const data = (await response.json()) as BackendSyncResponse;
+
+      if (data.status !== 'ok') {
+        throw new Error('Respuesta inesperada del backend durante la sincronización');
       }
     } catch (error) {
       console.error('Error al sincronizar usuario de email:', error);
+      await this.rollbackIncompleteSession();
       throw error;
     }
   }
+
+  private async rollbackIncompleteSession(): Promise<void> {
+    try {
+      if (this.auth.currentUser) {
+        await signOut(this.auth);
+      }
+    } catch (rollbackError) {
+      console.error('No fue posible cerrar sesión durante el rollback:', rollbackError);
+    } finally {
+      this.claimsSubject.next({});
+      this.clearPendingMicrosoftLink();
+    }
+  }
+
   /**
    * Cierra la sesión actual
    */
@@ -303,7 +324,6 @@ export class AuthService {
 
     await signOut(this.auth);
     this.claimsSubject.next({});
-    localStorage.removeItem('nestjs_token');
   }
 
   async logInWithEmailAndPassword(credential: Credentials): Promise<UserCredential> {

@@ -1,26 +1,19 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { Auth, DecodedIdToken } from 'firebase-admin/auth';
+import { FIREBASE_AUTH } from '../firebase/firebase-admin.constants';
 import { UsersService } from '../../modules/users/users.service';
-
-interface FirebaseTokenLookupResponse {
-  users?: Array<{
-    localId: string;
-    email: string;
-  }>;
-}
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    @Inject(FIREBASE_AUTH) private readonly firebaseAuth: Auth,
     private readonly usersService: UsersService,
   ) {}
 
@@ -33,64 +26,43 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = this.jwtService.verify<Record<string, unknown>>(token);
-      request['user'] = payload;
-      return true;
-    } catch {
-      // Si falla, intentar como Firebase ID token
-    }
+      const decodedToken = await this.firebaseAuth.verifyIdToken(token, true);
 
-    // Validar como Firebase ID token
-    try {
-      const firebaseUser = await this.validateFirebaseToken(token);
-      const user = await this.usersService.findByEmail(firebaseUser.email);
+      if (!decodedToken.email) {
+        throw new UnauthorizedException('Token inválido o expirado');
+      }
+
+      const user = await this.usersService.findByEmail(decodedToken.email);
 
       if (!user) {
         throw new UnauthorizedException('Usuario no registrado en el sistema');
       }
 
+      const tokenRoles = this.extractRoles(decodedToken);
+
       request['user'] = {
         userId: user.id,
         email: user.correo,
-        roles: user.roles?.map((r) => r.rol) ?? [],
+        roles: tokenRoles.length > 0 ? tokenRoles : user.roles?.map((r) => r.rol) ?? [],
       };
       return true;
-    } catch (error) {
-      if (error instanceof UnauthorizedException) throw error;
+    } catch (error: unknown) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
       throw new UnauthorizedException('Token inválido o expirado');
     }
   }
 
-  private async validateFirebaseToken(
-    idToken: string,
-  ): Promise<{ uid: string; email: string }> {
-    const webApiKey = this.configService.get<string>('FIREBASE_WEB_API_KEY');
+  private extractRoles(decodedToken: DecodedIdToken): string[] {
+    const roles = decodedToken.roles;
 
-    if (!webApiKey) {
-      throw new UnauthorizedException('Firebase config missing');
+    if (!Array.isArray(roles)) {
+      return [];
     }
 
-    const response = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(webApiKey)}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-      },
-    );
-
-    if (!response.ok) {
-      throw new UnauthorizedException('Token de Firebase inválido');
-    }
-
-    const payload = (await response.json()) as FirebaseTokenLookupResponse;
-    const user = payload.users?.[0];
-
-    if (!user?.email || !user.localId) {
-      throw new UnauthorizedException('Token de Firebase inválido');
-    }
-
-    return { uid: user.localId, email: user.email };
+    return roles.filter((role): role is string => typeof role === 'string');
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {

@@ -62,6 +62,8 @@ export class LoginComponent {
       this.router.navigate(['/']);
     } catch (error) {
       alert('Hubo un problema al cerrar sesión.');
+      this.showWrongModal = true;
+      this.cdr.detectChanges();
     }
   }
 
@@ -70,7 +72,8 @@ export class LoginComponent {
       await this.authService.loginWithGoogle();
       this.router.navigate(['/']);
     } catch (error) {
-      alert('Hubo un problema al iniciar sesión.');
+      this.showWrongModal = true;
+      this.cdr.detectChanges();
     }
   }
 

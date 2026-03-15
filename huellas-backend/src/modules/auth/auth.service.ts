@@ -1,21 +1,17 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
+  Inject,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { Auth } from 'firebase-admin/auth';
+import { FIREBASE_AUTH } from '../../common/firebase/firebase-admin.constants';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/user.entity';
-import { google } from 'googleapis';
-
-interface FirebaseTokenLookupResponse {
-  users?: Array<{
-    localId: string;
-    email: string;
-    emailVerified: false;
-  }>;
-}
 
 export interface CustomClaims {
   roles: string[];
@@ -25,167 +21,83 @@ export interface CustomClaims {
   externalSystemUid: string;
 }
 
+export interface AuthSyncResponse {
+  status: 'ok';
+}
+
 @Injectable()
 export class AuthService {
-  private client = new google.auth.GoogleAuth({
-    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-  });
-
   constructor(
-    private readonly jwtService: JwtService,
+    @Inject(FIREBASE_AUTH) private readonly firebaseAuth: Auth,
     private readonly usersService: UsersService,
   ) {}
-
-  private getFirebaseConfig() {
-    const webApiKey = process.env.FIREBASE_WEB_API_KEY;
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-
-    if (!webApiKey || !projectId) {
-      throw new InternalServerErrorException(
-        'Firebase config missing. Define FIREBASE_WEB_API_KEY and FIREBASE_PROJECT_ID.',
-      );
-    }
-
-    return { webApiKey, projectId };
-  }
 
   async loginWithSocialProvider(
     idToken: string,
     registerData?: { nombre?: string },
-  ): Promise<{ accessToken: string; customClaims: CustomClaims }> {
-    try {
-      const firebaseUserData = await this.validateFirebaseToken(idToken);
-      let user = await this.usersService.findByEmail(firebaseUserData.email);
+  ): Promise<AuthSyncResponse> {
+    const firebaseUserData = await this.validateFirebaseToken(idToken);
+    let user = await this.usersService.findByEmail(firebaseUserData.email);
 
-      if (!user) {
-        user = await this.usersService.create({
-          nombre: registerData?.nombre || '',
-          correo: firebaseUserData.email,
-          correo_verificado: true,
-        });
-      } else if (!user.correo_verificado) {
-        user.correo_verificado = true;
-        await this.usersService.save(user);
-      }
-
-      const customClaims = this.buildCustomClaims(user);
-      await this.setFirebaseCustomClaims(
-        firebaseUserData.uid,
-        customClaims,
-        true,
-      );
-
-      const payload = {
-        userId: user.id,
-        email: user.correo,
-        roles: user.roles?.map((r) => r.rol) ?? [],
-      };
-
-      return {
-        accessToken: this.jwtService.sign(payload),
-        customClaims,
-      };
-    } catch (error) {
-      console.error('ERROR DETALLADO:', error);
-      throw error;
+    if (!user) {
+      user = await this.usersService.create({
+        nombre: registerData?.nombre || '',
+        correo: firebaseUserData.email,
+        correo_verificado: true,
+      });
+    } else if (!user.correo_verificado) {
+      user.correo_verificado = true;
+      await this.usersService.save(user);
     }
+
+    const customClaims = this.buildCustomClaims(user);
+    await this.setFirebaseCustomClaims(firebaseUserData.uid, customClaims, true);
+
+    return { status: 'ok' };
   }
 
   async registerWithEmailAndPassword(
     idToken: string,
     registerData?: { nombre?: string },
-  ): Promise<{ accessToken: string; customClaims: CustomClaims }> {
-    try {
-      const firebaseUserData = await this.validateFirebaseToken(idToken);
-      let user = await this.usersService.findByEmail(firebaseUserData.email);
+  ): Promise<AuthSyncResponse> {
+    const firebaseUserData = await this.validateFirebaseToken(idToken);
+    let user = await this.usersService.findByEmail(firebaseUserData.email);
 
-      if (!user) {
-        user = await this.usersService.create({
-          nombre: registerData?.nombre || '',
-          correo: firebaseUserData.email,
-          correo_verificado: firebaseUserData.emailVerified,
-        });
-      } else if (!user.correo_verificado && firebaseUserData.emailVerified) {
-        user.correo_verificado = true;
-        await this.usersService.save(user);
-      }
-
-      const customClaims = this.buildCustomClaims(user);
-
-      await this.setFirebaseCustomClaims(
-        firebaseUserData.uid,
-        customClaims,
-        false,
-      );
-
-      const payload = {
-        userId: user.id,
-        email: user.correo,
-        roles: user.roles?.map((r) => r.rol) ?? [],
-      };
-
-      return {
-        accessToken: this.jwtService.sign(payload),
-        customClaims,
-      };
-    } catch (error) {
-      console.error('Error en syncEmailUser:', error);
-      throw error;
+    if (!user) {
+      user = await this.usersService.create({
+        nombre: registerData?.nombre || '',
+        correo: firebaseUserData.email,
+        correo_verificado: firebaseUserData.emailVerified,
+      });
+    } else if (!user.correo_verificado && firebaseUserData.emailVerified) {
+      user.correo_verificado = true;
+      await this.usersService.save(user);
     }
-  }
 
-  async sendVerificationEmail(idToken: string): Promise<void> {
-    const { webApiKey } = this.getFirebaseConfig();
+    const customClaims = this.buildCustomClaims(user);
+    await this.setFirebaseCustomClaims(firebaseUserData.uid, customClaims);
 
-    const response = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${webApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requestType: 'VERIFY_EMAIL',
-          idToken,
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      throw new InternalServerErrorException(
-        'No fue posible enviar el correo de verificación desde el login',
-      );
-    }
+    return { status: 'ok' };
   }
 
   async validateFirebaseToken(
     idToken: string,
   ): Promise<{ uid: string; email: string; emailVerified: boolean }> {
-    const { webApiKey } = this.getFirebaseConfig();
+    try {
+      const decodedToken = await this.firebaseAuth.verifyIdToken(idToken, true);
 
-    const response = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${webApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-      },
-    );
+      if (!decodedToken.uid || !decodedToken.email) {
+        throw new BadRequestException('Invalid Firebase token payload');
+      }
 
-    if (!response.ok) {
+      return {
+        uid: decodedToken.uid,
+        email: decodedToken.email,
+        emailVerified: decodedToken.email_verified ?? false,
+      };
+    } catch {
       throw new BadRequestException('Unable to verify Firebase token');
     }
-
-    const payload = (await response.json()) as FirebaseTokenLookupResponse;
-    const user = payload.users?.[0];
-
-    if (!user?.email || !user.localId) {
-      throw new BadRequestException('Invalid Firebase token payload');
-    }
-
-    return {
-      uid: user.localId,
-      email: user.email,
-      emailVerified: user.emailVerified ?? false,
-    };
   }
 
   private buildCustomClaims(user: User): CustomClaims {
@@ -215,37 +127,15 @@ export class AuthService {
     customClaims: CustomClaims,
     markAsVerified: boolean = false,
   ): Promise<void> {
-    const { projectId } = this.getFirebaseConfig();
-    const accessToken = await this.client.getAccessToken();
+    try {
+      await this.firebaseAuth.setCustomUserClaims(firebaseUid, customClaims);
 
-    if (!accessToken) {
-      throw new InternalServerErrorException(
-        'Unable to get Google access token',
-      );
-    }
-
-    const requestBody: any = {
-      localId: firebaseUid,
-      customAttributes: JSON.stringify(customClaims),
-    };
-
-    if (markAsVerified) {
-      requestBody.emailVerified = true;
-    }
-
-    const response = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:update`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(requestBody),
-      },
-    );
-
-    if (!response.ok) {
+      if (markAsVerified) {
+        await this.firebaseAuth.updateUser(firebaseUid, {
+          emailVerified: true,
+        });
+      }
+    } catch {
       throw new InternalServerErrorException(
         'Unable to set Firebase custom claims',
       );
