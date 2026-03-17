@@ -1,14 +1,20 @@
+@if (showForm) {
 <div class="modal-backdrop" (click)="closeModal()"></div>
 <div class="modal" role="dialog" aria-modal="true" aria-label="Editar usuario">
   <button class="modal-close" type="button" (click)="closeModal()" aria-label="Cerrar">
-    X
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
   </button>
 
   <h3>Editar usuario</h3>
 
   <form class="modal-form" autocomplete="off">
     @if (errorMessage) {
-    <p class="request-error" style="grid-column: 1 / -1; color: #991b1b; background: #fee2e2; padding: 0.5rem; border-radius: 8px;">
+    <p class="request-error"
+      style="grid-column: 1 / -1; color: #991b1b; background: #fee2e2; padding: 0.5rem; border-radius: 8px;">
       {{ errorMessage }}
     </p>
     }
@@ -43,9 +49,43 @@
 
     <div class="actions">
       <button class="btn-save" type="button" (click)="onSave()" [disabled]="saving">
-        {{ saving ? 'Guardando...' : 'Guardar' }}
+        Siguiente
       </button>
       <button class="btn-cancel" type="button" (click)="closeModal()" [disabled]="saving">Cancelar</button>
     </div>
   </form>
 </div>
+}
+
+@if (showConfirmModal) {
+<div class="modal-backdrop" (click)="cancelConfirmation()"></div>
+<div class="modal" role="dialog" aria-modal="true" aria-label="Confirmar edición">
+  <button class="modal-close" type="button" (click)="cancelConfirmation()" aria-label="Cerrar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+
+  <h3>Confirmar edición</h3>
+  <br>
+  <p>¿Está seguro de que desea actualizar el usuario <strong>{{ user?.nombre }}</strong>?</p>
+  <p class="modal-description">
+    Nuevos datos:<br>
+    Nombre: {{ editForm.nombre }}<br>
+    Teléfono: {{ editForm.telefono || '-' }}<br>
+    Rol: {{ editForm.rol | titlecase }}<br>
+    Estado: {{ editForm.estado }}
+  </p>
+
+  <div class="actions">
+    <button class="btn-save" type="button" (click)="confirmUpdate()" [disabled]="saving">
+      {{ saving ? 'Confirmando...' : 'Confirmar' }}
+    </button>
+    <button class="btn-cancel" type="button" (click)="cancelConfirmation()" [disabled]="saving">
+      Regresar
+    </button>
+  </div>
+</div>
+}

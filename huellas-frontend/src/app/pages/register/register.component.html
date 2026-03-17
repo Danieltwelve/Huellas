@@ -44,19 +44,13 @@
       <div class="form-group">
         <label for="nombre">Nombre completo</label>
         <input id="nombre" type="text" placeholder="Nombre completo" formControlName="nombre"
-          [class.is-invalid]="registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched" />
-        @if (registerForm.get('nombre')?.touched && registerForm.get('nombre')?.hasError('required')) {
-        <small class="field-error">El nombre es obligatorio.</small>
-        }
+          [class.is-invalid]="registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched && !registerForm.get('nombre')?.hasError('required')" />
       </div>
 
       <div class="form-group">
         <label for="correo">Correo electrónico</label>
         <input id="correo" type="email" placeholder="ejemplo@correo.com" formControlName="correo"
-          [class.is-invalid]="registerForm.get('correo')?.invalid && registerForm.get('correo')?.touched" />
-        @if (registerForm.get('correo')?.touched && registerForm.get('correo')?.hasError('required')) {
-        <small class="field-error">El correo electrónico es obligatorio.</small>
-        }
+          [class.is-invalid]="registerForm.get('correo')?.invalid && registerForm.get('correo')?.touched && !registerForm.get('correo')?.hasError('required')" />
         @if (registerForm.get('correo')?.touched && registerForm.get('correo')?.hasError('email')) {
         <small class="field-error">Ingresa un correo electrónico válido.</small>
         }
@@ -65,10 +59,7 @@
       <div class="form-group">
         <label for="contraseña">Contraseña</label>
         <input id="contraseña" type="password" placeholder="Contraseña" formControlName="contraseña"
-          [class.is-invalid]="registerForm.get('contraseña')?.invalid && registerForm.get('contraseña')?.touched" />
-        @if (registerForm.get('contraseña')?.touched && registerForm.get('contraseña')?.hasError('required')) {
-        <small class="field-error">La contraseña es obligatoria.</small>
-        }
+          [class.is-invalid]="registerForm.get('contraseña')?.invalid && registerForm.get('contraseña')?.touched && !registerForm.get('contraseña')?.hasError('required')" />
         @if (registerForm.get('contraseña')?.touched && registerForm.get('contraseña')?.hasError('minlength')) {
         <small class="field-error">La contraseña debe tener al menos 6 caracteres.</small>
         }
@@ -82,10 +73,6 @@
             personales según la Política de Privacidad.
           </span>
         </label>
-        @if (registerForm.get('autorizacionDatos')?.touched &&
-        registerForm.get('autorizacionDatos')?.hasError('required')) {
-        <small class="field-error">Debes aceptar los términos y condiciones.</small>
-        }
       </div>
 
       <button class="register-btn" type="submit" [disabled]="registerForm.invalid">

@@ -1,7 +1,12 @@
+@if (showForm) {
 <div class="modal-backdrop" (click)="closeCreateModal()"></div>
 <div class="modal" role="dialog" aria-modal="true" aria-label="Crear usuario">
   <button class="modal-close" type="button" (click)="closeCreateModal()" aria-label="Cerrar">
-    x
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
   </button>
   <h3>Crear usuario</h3>
 
@@ -13,42 +18,47 @@
 
     <div class="field-group">
       <label for="nombre-completo">Nombre completo</label>
-      <input id="nombre-completo" type="text" placeholder="Nombre completo" [(ngModel)]="createForm.nombre" name="nombre" required #nombreField="ngModel" />
+      <input id="nombre-completo" type="text" placeholder="Nombre completo" [(ngModel)]="createForm.nombre"
+        name="nombre" required #nombreField="ngModel" />
       @if (nombreField.touched && !isValidName()) {
-        <span class="validation-error">El nombre no puede contener números.</span>
+      <span class="validation-error">El nombre no puede contener números.</span>
       }
     </div>
 
     <div class="field-group">
       <label for="correo-electronico">Correo electrónico</label>
-      <input id="correo-electronico" type="email" placeholder="example@gmail.com" [(ngModel)]="createForm.correo" name="correo" required #correoField="ngModel" />
+      <input id="correo-electronico" type="email" placeholder="example@gmail.com" [(ngModel)]="createForm.correo"
+        name="correo" required #correoField="ngModel" />
       @if (correoField.touched && !isValidEmail()) {
-        <span class="validation-error">Formato de correo no válido.</span>
+      <span class="validation-error">Formato de correo no válido.</span>
       }
     </div>
 
     <div class="field-group">
       <label for="contrasena">Contraseña</label>
-      <input id="contrasena" type="password" placeholder="Contraseña" [(ngModel)]="createForm.contrasena" name="contrasena" required #passField="ngModel" />
+      <input id="contrasena" type="password" placeholder="Contraseña" [(ngModel)]="createForm.contrasena"
+        name="contrasena" required #passField="ngModel" />
       @if (passField.touched && !isValidPassword()) {
-        <span class="validation-error">Mínimo 6 caracteres.</span>
+      <span class="validation-error">Mínimo 6 caracteres.</span>
       }
     </div>
 
     <div class="field-group">
       <label for="telefono">Teléfono</label>
       <div class="phone-row">
-        <select id="pais" class="phone-prefix" aria-label="Prefijo pais" [(ngModel)]="createForm.prefijoPais" name="prefijoPais">
+        <select id="pais" class="phone-prefix" aria-label="Prefijo pais" [(ngModel)]="createForm.prefijoPais"
+          name="prefijoPais">
           <option value="+57">+57</option>
           <option value="+54">+54</option>
           <option value="+52">+52</option>
           <option value="+34">+34</option>
           <option value="+1">+1</option>
         </select>
-        <input id="telefono" type="tel" placeholder="Numero" [(ngModel)]="createForm.telefono" name="telefono" required #telField="ngModel" />
+        <input id="telefono" type="tel" placeholder="Numero" [(ngModel)]="createForm.telefono" name="telefono" required
+          #telField="ngModel" />
       </div>
       @if (telField.touched && !isValidPhone()) {
-        <span class="validation-error">Solo se permiten números.</span>
+      <span class="validation-error">Solo se permiten números.</span>
       }
     </div>
 
@@ -63,21 +73,74 @@
     </div>
 
     <div class="actions">
-      <button class="btn-save" type="submit" [disabled]="creatingUser || !isFormValid()">
-        {{ creatingUser ? 'Guardando...' : 'Guardar' }}
+      <button class="btn-save" type="submit" [disabled]="!isFormValid()">
+        Siguiente
       </button>
-      <button class="btn-cancel" type="button" (click)="closeCreateModal()" [disabled]="creatingUser">
+      <button class="btn-cancel" type="button" (click)="closeCreateModal()">
         Cancelar
       </button>
     </div>
   </form>
 </div>
+}
+
+@if (showConfirmationModal) {
+<div class="modal-backdrop" (click)="cancelConfirmation()"></div>
+<div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmar-edicion-title">
+  <button class="modal-close" type="button" (click)="cancelConfirmation()" aria-label="Cerrar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+
+  <div class="confirm-content">
+    <div class="confirm-icon-wrapper">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="#44b2a9" class="bi bi-person-plus-fill"
+        viewBox="0 0 16 16">
+        <path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
+        <path fill-rule="evenodd"
+          d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5" />
+      </svg>
+    </div>
+
+    <h3 id="confirmar-edicion-title">Confirmar creación</h3>
+    <p>¿Estás seguro de que deseas crear al usuario <strong>{{ createForm.nombre }}</strong>?</p>
+
+    <div class="modal-details-card">
+      <div class="detail-item">
+        <span class="detail-label">Rol asignado:</span>
+        <span class="detail-value role-badge">{{ createForm.rol === 1 ? 'Admin' : createForm.rol === 2 ? 'Monitor' :
+          createForm.rol === 3 ? 'Revisor' : 'Autor' }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Correo:</span>
+        <span class="detail-value">{{ createForm.correo }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-cancel" type="button" (click)="cancelConfirmation()" [disabled]="creatingUser">
+      Regresar
+    </button>
+    <button class="btn-save" type="button" (click)="confirmCreation()" [disabled]="creatingUser">
+      {{ creatingUser ? 'Confirmando...' : 'Confirmar Registro' }}
+    </button>
+  </div>
+</div>
+}
 
 @if (showSuccessModal) {
 <div class="modal-backdrop" (click)="closeSuccessModal()"></div>
 <div class="modal success-modal" role="dialog" aria-modal="true" aria-label="Usuario creado">
   <button class="modal-close" type="button" (click)="closeSuccessModal()" aria-label="Cerrar">
-    x
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
   </button>
   <div class="success-content">
     <div class="success-icon">✓</div>

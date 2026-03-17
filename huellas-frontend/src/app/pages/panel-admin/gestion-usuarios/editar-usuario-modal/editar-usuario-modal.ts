@@ -1,4 +1,5 @@
 import {
+  ChangeDetectorRef,
   Component,
   EventEmitter,
   inject,
@@ -9,6 +10,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UsersService } from '../../../../core/users/users.service';
+import { TitleCasePipe } from '@angular/common'; // Importa TitleCasePipe
 import { Router } from '@angular/router';
 
 interface EditUserData {
@@ -30,18 +32,21 @@ interface EditUserForm {
 @Component({
   selector: 'app-editar-usuario-modal',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, TitleCasePipe],
   templateUrl: './editar-usuario-modal.html',
   styleUrl: './editar-usuario-modal.scss',
 })
 export class EditarUsuarioModal implements OnChanges {
   private usersService = inject(UsersService);
+  private cdr = inject(ChangeDetectorRef);
 
   @Input() user: EditUserData | null = null;
   @Output() closed = new EventEmitter<void>();
   @Output() updated = new EventEmitter<void>();
 
   saving = false;
+  showConfirmModal = false;
+  showForm = true;
   errorMessage = '';
 
   editForm: EditUserForm = {
@@ -55,6 +60,9 @@ export class EditarUsuarioModal implements OnChanges {
     if (!changes['user']) {
       return;
     }
+
+    this.showForm = true;
+    this.showConfirmModal = false;
 
     if (!this.user) {
       this.resetForm();
@@ -70,10 +78,27 @@ export class EditarUsuarioModal implements OnChanges {
   }
 
   closeModal(): void {
+    this.showForm = true;
+    this.showConfirmModal = false;
+
     this.closed.emit();
+    this.cdr.detectChanges();
   }
 
   onSave(): void {
+    this.showForm = false;
+    this.showConfirmModal = true;
+    this.cdr.detectChanges();
+  }
+
+  cancelConfirmation(): void {
+    this.showConfirmModal = false;
+
+    this.showForm = true;
+    this.cdr.detectChanges();
+  }
+
+  confirmUpdate(): void {
     if (!this.user || this.saving) return;
 
     this.saving = true;
@@ -98,7 +123,10 @@ export class EditarUsuarioModal implements OnChanges {
       },
       error: () => {
         this.saving = false;
+        this.showConfirmModal = false;
+        this.showForm = true;
         this.errorMessage = 'Error al actualizar el usuario.';
+        this.cdr.detectChanges();
       },
     });
   }

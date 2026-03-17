@@ -1,5 +1,5 @@
 :host {
-  --sidebar-width: 320px;
+  --sidebar-width: 260px;
 
   display: block;
   min-height: 100vh;
@@ -14,7 +14,7 @@
 }
 
 .app-layout.sidebar-collapsed {
-  --sidebar-width: 76px;
+  --sidebar-width: 80px;
 }
 
 app-side-bar {
@@ -26,7 +26,8 @@ app-side-bar {
   height: 100vh;
   align-self: flex-start;
   z-index: 120;
-  transition: width 0.25s ease, flex-basis 0.25s ease;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .content-layout {

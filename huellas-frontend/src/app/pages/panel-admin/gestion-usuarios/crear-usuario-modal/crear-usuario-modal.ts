@@ -25,6 +25,8 @@ export class CrearUsuarioModal {
   @Output() created = new EventEmitter<void>();
 
   showSuccessModal = false;
+  showConfirmationModal = false;
+  showForm = true;
   creatingUser = false;
   requestError = '';
 
@@ -40,12 +42,20 @@ export class CrearUsuarioModal {
   closeCreateModal(): void {
     this.resetForm();
     this.requestError = '';
+    this.showConfirmationModal = false;
+    this.showSuccessModal = false;
+    this.showForm = true;
     this.closed.emit();
   }
 
   closeSuccessModal(): void {
     this.showSuccessModal = false;
     this.closeCreateModal();
+  }
+
+  cancelConfirmation(): void {
+    this.showConfirmationModal = false;
+    this.showForm = true;
   }
 
   isValidName(): boolean {
@@ -78,9 +88,15 @@ export class CrearUsuarioModal {
   }
 
   onSubmit(): void {
-    if (!this.isFormValid() || this.creatingUser) {
+    if (!this.isFormValid()) {
       return;
     }
+    this.showForm = false;
+    this.showConfirmationModal = true;
+  }
+
+  confirmCreation(): void {
+    if (this.creatingUser) return;
 
     this.creatingUser = true;
     this.requestError = '';
@@ -98,11 +114,14 @@ export class CrearUsuarioModal {
       .subscribe({
         next: () => {
           this.creatingUser = false;
+          this.showConfirmationModal = false;
           this.showSuccessModal = true;
           this.created.emit();
         },
         error: (error) => {
           this.creatingUser = false;
+          this.showConfirmationModal = false;
+          this.showForm = true;
 
           const backendMessage = Array.isArray(error?.error?.message)
             ? error.error.message.join(', ')

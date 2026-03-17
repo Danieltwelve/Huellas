@@ -31,8 +31,12 @@ export class RegisterComponent {
     correo: new FormControl<string>('', {
       validators: [Validators.required, Validators.email],
       nonNullable: true,
+      updateOn: 'blur',
     }),
-    contraseña: new FormControl('', [Validators.required, Validators.minLength(6)]),
+    contraseña: new FormControl('', {
+      validators: [Validators.required, Validators.minLength(6)],
+      updateOn: 'blur',
+    }),
     autorizacionDatos: new FormControl<boolean>(false, {
       validators: [Validators.requiredTrue],
       nonNullable: true,

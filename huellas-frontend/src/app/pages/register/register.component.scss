@@ -1,452 +1,330 @@
 :host {
   display: block;
+  background-color: #f8fafc; /* Fondo coherente con el resto de la app */
 }
 
-/* Layout general: formulario izquierda + imagen derecha */
+/* Layout general */
 .register-layout {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(420px, 620px) 1fr;
-  gap: 3rem;
+  grid-template-columns: 1fr 1fr; /* Mitad y mitad para equilibrio visual */
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 3rem;
+  padding: 2rem;
   box-sizing: border-box;
 }
 
-/* Columna izquierda */
+/* Columna izquierda: Formulario */
 .register-left {
   width: 100%;
   display: flex;
   justify-content: center;
+  padding: 1rem;
 }
 
-/* Tarjeta/formulario */
 .register-card {
   width: 100%;
-  max-width: 520px;
+  max-width: 440px; /* Reducido para evitar que se vea muy estirado */
   display: flex;
   flex-direction: column;
 }
 
 .register-card h2 {
-  margin: 0 0 0.35rem;
-  font-size: 2.0rem;
-  line-height: 1.1;
+  margin: 0;
+  font-size: 1.8rem;
   font-weight: 700;
-  color: #101010;
+  color: #0f172a;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
-  margin: 0 0 2rem;
-  font-size: 1.0rem;
-  color: #3a3a3a;
+  margin: 0.25rem 0 1.5rem;
+  font-size: 0.95rem;
+  color: #64748b;
 }
 
-/* Botones sociales */
+/* Botones sociales: Más compactos y modernos */
 .social-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.2rem;
-  margin-bottom: 1.8rem;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .social-btn {
-  height: 4rem;
-  border: 1.8px solid #1a1a1a;
-  border-radius: 1.4rem;       // Bordes redondeados
-  background: #fff;
-  color: #333;
-  font-size: 1.05rem;
-  font-weight: 500;
+  height: 42px; /* Altura estándar de nuestra UI */
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-
-  // Mejoras para alinear icono y texto
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.8rem;
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
+  gap: 0.6rem;
 }
 
 .social-btn:hover {
-  background: #e7e7e7;
+  background: #f1f5f9;
+  border-color: #94a3b8;
   transform: translateY(-1px);
 }
 
-/* Divisor con O */
+/* Divisor */
 .divider {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.6rem;
+  margin-bottom: 1.5rem;
 }
 
 .divider span {
   flex: 1;
   height: 1px;
-  background: #9c9c9c;
+  background: #e2e8f0;
 }
 
 .divider p {
   margin: 0;
-  color: #5f5f5f;
-  font-weight: 600;
-  font-size: 1.05rem;
+  color: #94a3b8;
+  font-weight: 500;
+  font-size: 0.85rem;
 }
 
-/* Campos */
+/* Campos de entrada */
 .form-group {
-  margin-bottom: 1.4rem;
+  margin-bottom: 1.25rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.6rem;
-  font-size: 1rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
   font-weight: 500;
-  color: #222;
+  color: #1e293b;
 }
 
 .form-group input {
   width: 100%;
-  height: 3.6rem;
-  border: 1px solid #d1d1d1;
-  border-radius: 0.8rem;
-  background: #f8f8f8;
-  padding: 0 1rem;
-  font-size: 1rem;
-  color: #1b1b1b;
+  height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0 0.75rem;
+  font-size: 0.95rem;
+  color: #0f172a;
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .form-group input::placeholder {
-  color: #767676;
+  color: #94a3b8;
 }
 
 .form-group input:focus {
-  border-color: #8a8a8a;
-  background: #fff;
+  border-color: #44b2a9;
+  box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.12);
 }
 
 .form-group input.is-invalid {
-  border-color: #c1121f;
-  background: #fff6f6;
+  border-color: #ef4444;
+  background: #fef2f2;
 }
 
 .field-error {
   display: block;
-  margin-top: 0.45rem;
-  font-size: 0.85rem;
-  color: #c1121f;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: #ef4444;
 }
 
 /* Checkbox términos */
 .terms {
   display: flex;
-  align-items: start;
-  gap: 0.7rem;
-  margin: 0.3rem 0 1.8rem;
-  line-height: 1.35;
-  color: #1f1f1f;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  color: #475569;
+  cursor: pointer;
 }
 
 .terms span {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 .terms input[type='checkbox'] {
-  margin-top: 0.2rem;
-  width: 1.05rem;
-  height: 1.05rem;
-  accent-color: #1d1d1d;
+  margin-top: 0.15rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #44b2a9;
   cursor: pointer;
 }
 
 /* Botón principal */
 .register-btn {
   width: 100%;
-  height: 3.8rem;
+  height: 46px;
   border: none;
-  border-radius: 0.6rem;
-  background: #3A9C93;
-  color: #fff;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  border-radius: 8px;
+  background: #44b2a9;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.15s ease;
-  margin-bottom: 1.1rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 6px -1px rgba(68, 178, 169, 0.2);
+  margin-bottom: 1rem;
 }
 
 .register-btn:hover:not(:disabled) {
-  opacity: 0.92;
+  background: #359891;
   transform: translateY(-1px);
+  box-shadow: 0 6px 10px -1px rgba(68, 178, 169, 0.3);
 }
 
 .register-btn:disabled {
-  // opacity: 0.45;
+  background: #94a3b8;
+  opacity: 0.7;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* Footer */
 .register-footer {
-  margin: 0;
   text-align: center;
-  font-size: 1rem;
-  color: #1f1f1f;
+  font-size: 0.9rem;
+  color: #64748b;
 }
 
 .register-footer a {
-  color: #151515;
-  font-weight: 500;
+  color: #44b2a9;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.register-footer a:hover {
   text-decoration: underline;
 }
 
-/* Columna derecha (imagen) */
+/* Columna derecha: Imagen */
 .register-right {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 2rem;
 }
 
 .register-right img {
-  width: min(640px, 100%);
+  width: 100%;
+  max-width: 580px;
   height: auto;
-  display: block;
-  box-sizing: border-box;
+  border-radius: 20px;
+  /* Eliminado el borde grueso para una estética más limpia */
 }
 
-/* ===== Tu estilo existente de register ===== */
-/* (Deja aquí lo que ya tienes para .register-layout, .register-card, etc.) */
-
-
-/* ===== Modal verificación ===== */
+/* ===== MODALES (Coherentes con el diseño de Ediciones) ===== */
 .verification-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(15, 23, 42, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
   padding: 1rem;
+  backdrop-filter: blur(2px);
 }
 
 .verification-modal {
-  position: relative;
-  width: min(680px, 95vw);
+  width: min(480px, 90vw);
   background: #ffffff;
-  border-radius: 36px;
-  padding: 2.5rem 2rem 1.8rem;
+  border-radius: 12px;
+  padding: 2.5rem 2rem;
   text-align: center;
-  box-sizing: border-box;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
-}
-
-.close-btn {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  border: 5px solid #8f8f8f;
-  background: #f4f4f4;
-  color: #7a7a7a;
-  font-size: 2.2rem;
-  line-height: 1;
-  font-weight: 700;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  padding: 0;
-}
-
-.check-icon {
-  width: 126px;
-  height: 126px;
-  border: 12px solid #27ae60;
-  border-right-color: transparent;
-  border-radius: 50%;
-  margin: 0 auto 1.4rem;
-  display: grid;
-  place-items: center;
-  box-sizing: border-box;
-}
-
-.check-icon span {
-  color: #27ae60;
-  font-size: 4rem;
-  line-height: 1;
-  font-weight: 800;
-  transform: translateY(-2px);
-}
-
-.verification-modal h3 {
-  margin: 0 0 2rem;
-  color: #111;
-  font-size: clamp(1.4rem, 2.6vw, 2.9rem);
-  line-height: 1.2;
-  font-weight: 700;
-}
-
-.continue-btn {
-  width: min(300px, 80%);
-  height: 54px;
-  border: none;
-  border-radius: 8px;
-  background: #27ae60;
-  color: #fff;
-  font-size: 2rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: filter 0.2s ease, transform 0.15s ease;
-}
-
-.continue-btn:hover {
-  filter: brightness(0.95);
-  transform: translateY(-1px);
-}
-
-/* ===== Modal verificación ===== */
-.verification-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: 1rem;
-}
-
-.verification-modal {
-  position: relative;
-  width: min(500px, 75vw);
-  background: #ffffff;
-  border-radius: 36px;
-  padding: 2.5rem 2rem 1.8rem;
-  text-align: center;
-  box-sizing: border-box;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
+  gap: 1.25rem;
 }
 
 .verification-modal p {
-  margin: 0 0 2rem;
-  color: #111;
-  font-size: 1rem;
-  line-height: 1.2;
-  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+/* Botones de modal */
+.continue-btn, .wrong-btn {
+  min-width: 160px;
+  height: 42px;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .continue-btn {
-  width: min(200px, 80%);
-  height: 40px;
-  border: none;
-  border-radius: 8px;
-  background: #27ae60;
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: filter 0.2s ease, transform 0.15s ease;
+  background: #44b2a9;
 }
 
 .continue-btn:hover {
-  filter: brightness(0.95);
+  background: #359891;
   transform: translateY(-1px);
 }
 
 .wrong-btn {
-  width: min(200px, 80%);
-  height: 40px;
-  border: none;
-  border-radius: 8px;
-  background: #E74C3C;
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: filter 0.2s ease, transform 0.15s ease;
+  background: #ef4444;
 }
 
-.wrong-btn:hover{
-  filter: brightness(0.95);
+.wrong-btn:hover {
+  background: #dc2626;
   transform: translateY(-1px);
 }
 
-/* ===========================
-   Responsive
-=========================== */
-@media (max-width: 1200px) {
+/* Ajustes de iconos en modal */
+.bi-check2-circle {
+  fill: #44b2a9; /* Usando nuestro Teal */
+  margin-bottom: 0.5rem;
+}
+
+.bi-emoji-frown {
+  fill: #ef4444;
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
   .register-layout {
     grid-template-columns: 1fr;
-    gap: 2rem;
-    padding: 2rem 1.4rem;
-  }
-
-  .register-left {
-    order: 1;
+    padding: 1.5rem;
   }
 
   .register-right {
-    order: 2;
+    display: none; /* Ocultamos la imagen en tablets/móviles para priorizar el form */
   }
 
-  .register-right img {
-    width: min(560px, 100%);
+  .register-left {
+    padding: 2rem 0;
   }
 }
 
-@media (max-width: 700px) {
-  .register-card h2 {
-    font-size: 2rem;
-  }
-
-  .subtitle {
-    font-size: 1.2rem;
-    margin-bottom: 1.4rem;
-  }
-
+@media (max-width: 480px) {
   .social-row {
     grid-template-columns: 1fr;
   }
 
-  .register-btn {
+  .register-card h2 {
     font-size: 1.5rem;
   }
-
-  .register-footer {
-    font-size: 1.35rem;
-  }
-
-  .register-right img {
-    border-width: 10px;
-  }
-
-  .verification-modal {
-    border-radius: 20px;
-    padding: 2rem 1rem 1.4rem;
-  }
-
-  .close-btn {
-    width: 42px;
-    height: 42px;
-    border-width: 3px;
-    font-size: 1.8rem;
-  }
-
-  .continue-btn {
-    font-size: 1.4rem;
-    height: 48px;
-  }
 }
-

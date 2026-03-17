@@ -1,14 +1,8 @@
-.validation-error {
-  color: #ef4444;
-  font-size: 0.8rem;
-  margin-top: 0.2rem;
-  display: block;
-}
-
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px); /* Efecto de desenfoque moderno */
   z-index: 3000;
 }
 
@@ -17,149 +11,184 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(720px, 92vw);
-  background: #fff;
-  border-radius: 14px;
-  padding: 1.3rem 1.8rem 1.4rem;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  width: min(640px, 92vw);
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   z-index: 3100;
 }
 
+.modal p.modal-description {
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-top: -0.5rem;
+  margin-bottom: 1.5rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
 .modal h3 {
-  margin: 0 0 1.1rem;
+  margin: 0 0 1.5rem;
   font-size: 1.3rem;
   font-weight: 700;
+  color: #0f172a;
 }
 
 .modal-close {
   position: absolute;
-  top: 0.9rem;
-  right: 1rem;
+  top: 1.25rem;
+  right: 1.25rem;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  border: 1px solid #c9c9c9;
-  background: #fff;
+  border: none;
+  background: transparent;
+  color: #64748b;
   cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
-}
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
 
-.modal-close:hover {
-  background: #f0f0f0;
+  &:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+
+  svg { width: 20px; height: 20px; }
 }
 
 .modal-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem 1.4rem;
-}
-
-.request-error {
-  grid-column: 1 / -1;
-  margin: 0;
-  padding: 0.55rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #ef4444;
-  background: #fee2e2;
-  color: #991b1b;
-  font-size: 0.88rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
 }
 
 .field-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+
+  label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  input, select {
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    padding: 0 0.85rem;
+    font-size: 0.95rem;
+    color: #0f172a;
+    transition: all 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: #44b2a9;
+      box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.15);
+    }
+
+    &::placeholder { color: #94a3b8; }
+  }
 }
 
-.field-group label {
-  font-size: 0.92rem;
-  color: #2c2c2c;
-  font-weight: 600;
-}
-
-.field-group input,
-.field-group select {
-  box-sizing: border-box;
-  height: 38px;
-  border-radius: 10px;
-  border: 1px solid #d6d6d6;
-  padding: 0 0.85rem;
-  font-size: 0.95rem;
-  outline: none;
-}
-
-.field-group input::placeholder {
-  color: #9aa0a6;
-}
-
-.field-group.full-width {
-  grid-column: 1 / -1;
-}
-
+/* Fila de teléfono */
 .phone-row {
   display: grid;
-  grid-template-columns: 110px 1fr;
+  grid-template-columns: 85px 1fr;
   gap: 0.6rem;
-  align-items: center;
+
+  select {
+    background-color: #f8fafc;
+    cursor: pointer;
+  }
 }
 
-.phone-row input {
-  width: 100%;
-  min-width: 0;
-}
-
-.phone-prefix {
-  width: 100%;
-  height: 38px;
-  border-radius: 10px;
-  border: 1px solid #d6d6d6;
-  padding: 0 0.7rem;
-  font-size: 0.92rem;
-  color: #222;
-  background: #f8f9fa;
-  appearance: auto;
-}
-
+/* Área de botones */
 .actions {
   grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 0.4rem;
-}
-
-.btn-save,
-.btn-cancel {
-  min-width: 110px;
-  height: 40px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.95rem;
-  color: #fff;
+  margin-top: 1rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #f1f5f9; /* Línea divisoria sutil */
 }
 
 .btn-save {
-  background: #3aa58e;
-}
+  background: #44b2a9; /* Teal principal */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 6px -1px rgba(68, 178, 169, 0.2);
 
-.btn-save:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
+  &:hover:not(:disabled) {
+    background: #359891;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 10px -1px rgba(68, 178, 169, 0.3);
+  }
+
+  &:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
 }
 
 .btn-cancel {
-  background: #e7473c;
+  background: #fff;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+  }
 }
 
-.btn-cancel:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
+/* Estilos de error de validación */
+.validation-error {
+  color: #ef4444;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .modal { padding: 1.5rem; }
+  .modal-form { grid-template-columns: 1fr; }
+  .actions { flex-direction: column-reverse; }
+  .btn-save, .btn-cancel { width: 100%; }
+}
+
+/* --- ESTILOS DEL MODAL DE ÉXITO --- */
 
 .success-modal {
   text-align: center;
+  max-width: 500px; /* Un poco más compacto */
 }
 
 .success-content {
@@ -167,58 +196,187 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  padding: 1rem 0;
 }
 
 .success-icon {
-  width: 64px;
-  height: 64px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
-  background: #10b981;
-  color: white;
+  background: #ecfdf5; /* Verde muy claro */
+  color: #10b981; /* Verde esmeralda */
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: bold;
+  margin-bottom: 0.5rem;
+  border: 2px solid #a7f3d0;
 }
 
 .success-content h3 {
-  color: #047857;
+  color: #0f172a;
   margin: 0;
+  font-size: 1.4rem;
 }
 
 .success-content p {
-  color: #6b7280;
-  margin: 0.5rem 0;
-  line-height: 1.5;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.success-content strong {
+  color: #0f172a;
+  background: #f1f5f9;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
 }
 
 .btn-success {
-  background: #10b981;
+  background: #44b2a9; /* Teal de tu aplicación */
   color: white;
   border: none;
-  border-radius: 10px;
-  padding: 0.75rem 2rem;
-  font-size: 0.95rem;
+  border-radius: 8px;
+  padding: 0.75rem 2.5rem;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
+  transition: all 0.25s;
+  box-shadow: 0 4px 6px -1px rgba(68, 178, 169, 0.2);
+
+  &:hover {
+    background: #359891;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 10px -1px rgba(68, 178, 169, 0.3);
+  }
 }
 
-@media (max-width: 700px) {
-  .modal {
-    padding: 1.1rem 1.2rem 1.2rem;
-  }
+/* --- MENSAJES DE ERROR DEL SERVIDOR --- */
+.request-error {
+  grid-column: 1 / -1; /* Ocupa las dos columnas del grid */
+  background-color: #fef2f2; /* Rojo muy suave */
+  color: #dc2626; /* Rojo alerta */
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #fee2e2;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
 
-  .modal-form {
-    grid-template-columns: 1fr;
+  /* Icono opcional antes del texto */
+  &::before {
+    content: "!";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: #dc2626;
+    color: white;
+    border-radius: 50%;
+    margin-right: 10px;
+    font-size: 0.75rem;
   }
+}
 
-  .phone-row {
-    grid-template-columns: 1fr;
-  }
+/* --- MENSAJES DE ERROR DEL SERVIDOR --- */
+.request-error {
+  grid-column: 1 / -1; /* Ocupa las dos columnas del grid */
+  background-color: #fef2f2; /* Rojo muy suave */
+  color: #dc2626; /* Rojo alerta */
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #fee2e2;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
 
-  .actions {
-    flex-direction: column;
-    align-items: stretch;
+  /* Icono opcional antes del texto */
+  &::before {
+    content: "!";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: #dc2626;
+    color: white;
+    border-radius: 50%;
+    margin-right: 10px;
+    font-size: 0.75rem;
   }
+}
+
+/* --- ESTILOS MEJORADOS PARA CONFIRMACIÓN --- */
+
+.confirm-content {
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.confirm-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  background: rgba(68, 178, 169, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+}
+
+/* Tarjeta interna con los datos */
+.modal-details-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.detail-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 0.95rem;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* Badge pequeño para el rol */
+.role-badge {
+  background: #44b2a9;
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+/* Ajuste de botones en el footer de confirmación */
+.modal .actions {
+  justify-content: center; /* Centrados para confirmación se ve más balanceado */
+  gap: 1.5rem;
+  border-top: none; /* Quitamos la línea para que sea más fluido */
+  margin-top: 1.5rem;
 }

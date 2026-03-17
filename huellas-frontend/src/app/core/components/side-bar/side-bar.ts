@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { map } from 'rxjs/operators';
 import { AuthService } from '../../auth/auth.service';
-import { RouterLink } from "@angular/router";
+import { RouterLink, RouterLinkActive } from "@angular/router";
 
 interface MenuItem {
   label: string;
@@ -13,7 +13,7 @@ interface MenuItem {
 
 @Component({
   selector: 'app-side-bar',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './side-bar.html',
   styleUrl: './side-bar.scss',
 })

@@ -21,20 +21,22 @@ import { RecuperarContrasenaComponent } from './pages/login/recuperar-contraseñ
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
-  { path: 'recuperar-contrasena', component: RecuperarContrasenaComponent, canActivate: [redirectIfAuthenticatedGuard] },
-  { path: 'register', component: RegisterComponent },
-  { path: 'actual', component: ActualComponent },
+  {
+    path: 'recuperar-contrasena',
+    component: RecuperarContrasenaComponent,
+    canActivate: [redirectIfAuthenticatedGuard],
+  },
+  { path: 'register', component: RegisterComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'actual', component: ActualComponent, canActivate: [redirectIfAuthenticatedGuard] },
   {
     path: 'archivos',
     component: ArchivosComponent,
-    canActivate: [claimsGuard],
-    data: { requiredClaim: 'canViewArchivos', allowedRoles: ['admin', 'editor', 'reviewer'] },
+    canActivate: [redirectIfAuthenticatedGuard]
   },
   {
     path: 'envios',
     component: EnviosComponent,
-    canActivate: [claimsGuard],
-    data: { requiredClaim: 'canSubmitEnvios', allowedRoles: ['admin', 'author', 'teacher'] },
+    canActivate: [redirectIfAuthenticatedGuard]
   },
   {
     path: 'gestion-usuarios',
@@ -46,14 +48,30 @@ export const routes: Routes = [
     path: 'gestion-flujo-editorial',
     component: GestionFlujoEditorial,
     canActivate: [claimsGuard],
-    data: { requiredClaim: 'canManageFlujoEditorial', allowedRoles: ['admin'] },
+    data: { requiredClaim: 'canManageUsers', allowedRoles: ['admin'] },
   },
-  { path: 'avisos', component: AvisosComponent },
-  { path: 'equipo-editorial', component: EquipoEditorialComponent },
-  { path: 'equipo/:id', component: MiembroBiografia },
-  { path: 'desarrollado-por', component: DesarrolladoPorComponent },
-  { path: 'etica-publicacion', component: EticaPublicacionComponent },
-  { path: 'indexacion', component: IndexacionComponent },
-  { path: 'acerca-de', component: AcercaDeComponent },
+  { path: 'avisos', component: AvisosComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  {
+    path: 'equipo-editorial',
+    component: EquipoEditorialComponent,
+    canActivate: [redirectIfAuthenticatedGuard],
+  },
+  { path: 'equipo/:id', component: MiembroBiografia, canActivate: [redirectIfAuthenticatedGuard] },
+  {
+    path: 'desarrollado-por',
+    component: DesarrolladoPorComponent,
+    canActivate: [redirectIfAuthenticatedGuard],
+  },
+  {
+    path: 'etica-publicacion',
+    component: EticaPublicacionComponent,
+    canActivate: [redirectIfAuthenticatedGuard],
+  },
+  {
+    path: 'indexacion',
+    component: IndexacionComponent,
+    canActivate: [redirectIfAuthenticatedGuard],
+  },
+  { path: 'acerca-de', component: AcercaDeComponent, canActivate: [redirectIfAuthenticatedGuard] },
   { path: '**', redirectTo: '' },
 ];
