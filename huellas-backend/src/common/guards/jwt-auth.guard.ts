@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   CanActivate,
   ExecutionContext,
@@ -43,7 +44,10 @@ export class JwtAuthGuard implements CanActivate {
       request['user'] = {
         userId: user.id,
         email: user.correo,
-        roles: tokenRoles.length > 0 ? tokenRoles : user.roles?.map((r) => r.rol) ?? [],
+        roles:
+          tokenRoles.length > 0
+            ? tokenRoles
+            : (user.roles?.map((r) => r.rol) ?? []),
       };
       return true;
     } catch (error: unknown) {

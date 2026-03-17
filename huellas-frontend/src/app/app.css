@@ -1,55 +1,55 @@
 :host {
-	--sidebar-width: 320px;
+  --sidebar-width: 320px;
 
-	display: block;
-	min-height: 100vh;
-	background-color: #fff;
+  display: block;
+  min-height: 100vh;
+  background-color: #fff;
 }
 
 .app-layout {
-	display: flex;
-	min-height: 100vh;
-	width: 100%;
-	align-items: flex-start;
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  align-items: flex-start;
 }
 
 .app-layout.sidebar-collapsed {
-	--sidebar-width: 76px;
+  --sidebar-width: 76px;
 }
 
 app-side-bar {
-	display: block;
-	width: var(--sidebar-width);
-	flex: 0 0 var(--sidebar-width);
-	position: sticky;
-	top: 0;
-	height: 100vh;
-	align-self: flex-start;
-	z-index: 120;
-	transition: width 0.25s ease, flex-basis 0.25s ease;
+  display: block;
+  width: var(--sidebar-width);
+  flex: 0 0 var(--sidebar-width);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  align-self: flex-start;
+  z-index: 120;
+  transition: width 0.25s ease, flex-basis 0.25s ease;
 }
 
 .content-layout {
-	min-width: 0;
-	flex: 1;
-	display: flex;
-	flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 app-navbar {
-	display: block;
-	position: sticky;
-	top: 0;
-	z-index: 110;
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 110;
 }
 
 .page-content {
-	flex: 1;
-	min-width: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 @media (max-width: 960px) {
-	:host {
-		--sidebar-width: 76px;
-	}
+  :host {
+    --sidebar-width: 76px;
+  }
 }

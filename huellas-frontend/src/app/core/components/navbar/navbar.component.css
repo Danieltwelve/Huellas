@@ -1,12 +1,12 @@
 /* NAVBAR BASE */
 
 .navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
+  /* Usamos relative en lugar de fixed. Tu app.css ya lo hace 'sticky' */
+  position: relative;
   width: 100%;
   background: #ffffff;
-  z-index: 1000;
+  /* Debe ser menor al z-index: 120 de tu sidebar en app.css */
+  z-index: 100;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 

@@ -1,0 +1,19 @@
+<section class="gestion-flujo-editorial">
+  <header class="page-header">
+    <h1>Gestión del flujo editorial</h1>
+  </header>
+
+  <nav class="flujo-tabs" aria-label="Etapas del flujo editorial">
+    @for (tab of tabs; track tab.id) {
+    <button type="button" class="tab-button" [class.active]="activeTab === tab.id" (click)="selectTab(tab.id)">
+      {{ tab.label }}
+    </button>
+    }
+  </nav>
+
+  <hr class="divider" />
+
+  @if (activeTab === 'envio') {
+  <app-envios (guardar)="onGuardar()"></app-envios>
+  }
+</section>

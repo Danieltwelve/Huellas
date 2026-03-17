@@ -1,0 +1,89 @@
+<section class="content-ediciones" aria-label="Ediciones de la revista">
+	<header class="ediciones-header">
+		<h2>Ediciones de la revista</h2>
+		<button type="button" class="btn-crear-edicion" (click)="crearEdicionModal.openModal()">+ Crear edición</button>
+	</header>
+
+	@if (requestError) {
+	<p class="tabla-resumen">{{ requestError }}</p>
+	}
+
+	<div class="tabla-wrapper">
+		<table class="ediciones-tabla">
+			<thead>
+				<tr>
+					<th scope="col">Edición</th>
+					<th scope="col">Fecha de estado</th>
+					<th scope="col">Artículos</th>
+					<th scope="col">Estado</th>
+					<th scope="col">Acciones</th>
+				</tr>
+			</thead>
+			<tbody>
+				@for (edicion of ediciones; track edicion.id) {
+				<tr>
+					<td>{{ edicion.edicion }}</td>
+					<td>{{ edicion.fechaEstado }}</td>
+					<td>{{ edicion.articulos }}</td>
+					<td>
+						<span class="estado-chip" [class.abierta]="edicion.estado === 'ABIERTA'" [class.publicada]="edicion.estado === 'PUBLICADA'" [class.revision]="edicion.estado === 'EN REVISION'">
+							{{ edicion.estado }}
+						</span>
+					</td>
+					<td>
+						<div class="acciones-celda">
+							<button
+								type="button"
+								class="action-btn editar"
+								aria-label="Editar edicion"
+								(click)="modalEditarEdicion.openModal({
+									edicionId: edicion.id,
+									edicionTexto: edicion.edicion,
+									titulo: edicion.titulo,
+									volumen: edicion.volumen,
+									numero: edicion.numero,
+									anio: edicion.anio,
+									estadoId: edicion.estadoId
+								})"
+							>
+								<svg viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92-9.06 9.06zM20.71 7.04a1 1 0 0 0 0-1.42l-2.33-2.33a1 1 0 0 0-1.42 0l-1.82 1.82 3.75 3.75 1.82-1.82z" />
+								</svg>
+							</button>
+
+							@if (isEdicionAbierta(edicion.estado)) {
+							<button
+								type="button"
+								class="action-btn eliminar"
+								aria-label="Eliminar edicion"
+								(click)="modalEliminarEdicion.openModal(edicion.id, edicion.edicion)"
+							>
+								<svg viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M6 7h12v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm3-4h6l1 1h4v2H4V4h4l1-1zm1 6v10h2V9h-2zm4 0v10h2V9h-2z" />
+								</svg>
+							</button>
+							}
+						</div>
+					</td>
+				</tr>
+				}
+
+				@if (ediciones.length === 0) {
+				<tr>
+					<td colspan="5">No hay ediciones registradas.</td>
+				</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+
+	<p class="tabla-resumen">
+		{{ countByEstado('ABIERTA') }} Ediciones Abierta |
+		{{ countByEstado('EN REVISION') }} En Revisión |
+		{{ countByEstado('PUBLICADA') }} Publicada
+	</p>
+</section>
+
+<app-crear-edicion #crearEdicionModal (creada)="loadEdiciones()"></app-crear-edicion>
+<app-modal-eliminar-edicion #modalEliminarEdicion (eliminada)="loadEdiciones()"></app-modal-eliminar-edicion>
+<app-modal-editar-edicion #modalEditarEdicion (actualizada)="loadEdiciones()"></app-modal-editar-edicion>

@@ -1,0 +1,126 @@
+@if (isOpen) {
+<div class="modal-overlay" role="presentation">
+	<section class="crear-edicion-modal" role="dialog" aria-modal="true" aria-labelledby="crear-edicion-title">
+		<header class="modal-header">
+			<h3 id="crear-edicion-title">Crear Edición</h3>
+			<button
+				type="button"
+				class="modal-close-btn"
+				aria-label="Cerrar modal"
+				(click)="closeModal()"
+				[disabled]="creatingEdicion"
+			>
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7a1 1 0 1 0-1.4 1.4l4.9 4.9-4.9 4.9a1 1 0 0 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 0 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4z" />
+				</svg>
+			</button>
+		</header>
+
+		<div class="modal-body">
+			@if (requestError) {
+			<p class="request-error">{{ requestError }}</p>
+			}
+
+			<div class="estado-edicion-card">
+				<span class="estado-chip abierta">ABIERTA</span>
+				<div class="estado-edicion-info">
+					<strong>{{ currentDate | date:'dd - MM - yyyy' }}</strong>
+					<p>Edición ACTIVA (Borrador)</p>
+				</div>
+			</div>
+
+			<form class="crear-edicion-form" autocomplete="off" (ngSubmit)="onGuardarClick()">
+				<div class="form-group">
+					<label for="edicion-titulo">Titulo</label>
+					<input
+						id="edicion-titulo"
+						type="text"
+						placeholder="Introduce el titulo de la edicion (ej: Huellas Revista No.22)"
+						[(ngModel)]="createForm.titulo"
+						name="titulo"
+						required
+					/>
+				</div>
+
+				<fieldset class="detalle-fieldset">
+					<legend>Detalles de la Edición</legend>
+					<div class="detalle-grid">
+						<div class="form-group">
+							<label for="edicion-volumen">Volumen</label>
+							<input
+								id="edicion-volumen"
+								type="number"
+								min="1"
+								[(ngModel)]="createForm.volumen"
+								name="volumen"
+								required
+							/>
+						</div>
+						<div class="form-group">
+							<label for="edicion-numero">Número</label>
+							<input
+								id="edicion-numero"
+								type="number"
+								min="1"
+								[(ngModel)]="createForm.numero"
+								name="numero"
+								required
+							/>
+						</div>
+						<div class="form-group">
+							<label for="edicion-anio">Año</label>
+							<input
+								id="edicion-anio"
+								type="number"
+								min="1900"
+								max="2100"
+								[(ngModel)]="createForm.anio"
+								name="anio"
+								required
+							/>
+						</div>
+					</div>
+				</fieldset>
+			</form>
+		</div>
+
+		<footer class="modal-footer">
+			<button type="button" class="modal-btn-cancelar" (click)="closeModal()" [disabled]="creatingEdicion">
+				Cancelar
+			</button>
+			<button
+				type="button"
+				class="modal-btn-guardar"
+				(click)="onGuardarClick()"
+				[disabled]="creatingEdicion || !isFormValid()"
+			>
+				{{ creatingEdicion ? 'Guardando...' : 'Guardar' }}
+			</button>
+		</footer>
+	</section>
+</div>
+}
+
+@if (showSuccessModal) {
+<div class="modal-overlay" role="presentation">
+	<section class="crear-edicion-modal success-modal" role="dialog" aria-modal="true" aria-labelledby="edicion-exito-title">
+		<header class="modal-header">
+			<h3 id="edicion-exito-title">Edición creada</h3>
+			<button type="button" class="modal-close-btn" aria-label="Cerrar modal" (click)="closeSuccessModal()">
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7a1 1 0 1 0-1.4 1.4l4.9 4.9-4.9 4.9a1 1 0 0 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 0 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4z" />
+				</svg>
+			</button>
+		</header>
+
+		<div class="modal-body success-content">
+			<div class="success-icon">✓</div>
+			<p>La edición se ha creado exitosamente.</p>
+		</div>
+
+		<footer class="modal-footer success-footer">
+			<button type="button" class="modal-btn-guardar" (click)="closeSuccessModal()">Entendido</button>
+		</footer>
+	</section>
+</div>
+}

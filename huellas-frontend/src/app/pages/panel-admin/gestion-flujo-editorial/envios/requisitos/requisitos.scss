@@ -1,0 +1,38 @@
+/* CONTENIDO GENÉRICO (Requisitos, etc) */
+.content-block h2 {
+margin: 0 0 0.5rem 0;
+font-size: 1.2rem;
+color: #0f172a;
+font-weight: 700;
+}
+
+.content-block p {
+margin: 0;
+font-size: 0.9rem;
+color: #475569;
+line-height: 1.5;
+}
+
+.actions {
+display: flex;
+justify-content: flex-end;
+margin-top: auto;
+padding-top: 1.5rem;
+}
+
+.btn-guardar {
+border: none;
+border-radius: 6px;
+background: #44b2a9;
+color: #ffffff;
+min-width: 100px;
+padding: 0.5rem 1.2rem;
+font-size: 0.9rem;
+font-weight: 600;
+cursor: pointer;
+transition: background 0.2s ease;
+}
+
+.btn-guardar:hover {
+background: #359891;
+}

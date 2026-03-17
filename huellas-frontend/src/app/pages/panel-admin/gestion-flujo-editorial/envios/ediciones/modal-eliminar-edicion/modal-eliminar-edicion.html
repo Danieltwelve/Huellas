@@ -1,0 +1,66 @@
+@if (isOpen) {
+<div class="modal-overlay" role="presentation">
+	<section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="eliminar-edicion-title">
+		<header class="modal-header">
+			<h3 id="eliminar-edicion-title">Eliminar edición</h3>
+			<button
+				type="button"
+				class="modal-close-btn"
+				aria-label="Cerrar modal"
+				(click)="closeModal()"
+				[disabled]="deletingEdicion"
+			>
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7a1 1 0 1 0-1.4 1.4l4.9 4.9-4.9 4.9a1 1 0 0 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 0 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4z" />
+				</svg>
+			</button>
+		</header>
+
+		<div class="modal-body">
+			@if (requestError) {
+			<p class="request-error">{{ requestError }}</p>
+			}
+
+			<div class="warning-icon" aria-hidden="true">!</div>
+			<p class="warning-text">
+				Estas por eliminar la edición:
+				<strong>{{ selectedEdicionTitulo }}</strong>
+			</p>
+			<p class="warning-subtext">Esta acción no se puede deshacer. ¿Deseas continuar?</p>
+		</div>
+
+		<footer class="modal-footer">
+			<button type="button" class="modal-btn-cancelar" (click)="closeModal()" [disabled]="deletingEdicion">
+				Cancelar
+			</button>
+			<button type="button" class="modal-btn-eliminar" (click)="confirmDelete()" [disabled]="deletingEdicion">
+				{{ deletingEdicion ? 'Eliminando...' : 'Eliminar edición' }}
+			</button>
+		</footer>
+	</section>
+</div>
+}
+
+@if (showSuccessModal) {
+<div class="modal-overlay" role="presentation">
+	<section class="modal-card success-modal" role="dialog" aria-modal="true" aria-labelledby="eliminacion-exito-title">
+		<header class="modal-header">
+			<h3 id="eliminacion-exito-title">Edición eliminada</h3>
+			<button type="button" class="modal-close-btn" aria-label="Cerrar modal" (click)="closeSuccessModal()">
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7a1 1 0 1 0-1.4 1.4l4.9 4.9-4.9 4.9a1 1 0 0 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 0 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4z" />
+				</svg>
+			</button>
+		</header>
+
+		<div class="modal-body success-content">
+			<div class="success-icon" aria-hidden="true">✓</div>
+			<p>La operación se realizó exitosamente.</p>
+		</div>
+
+		<footer class="modal-footer success-footer">
+			<button type="button" class="modal-btn-confirmar" (click)="closeSuccessModal()">Entendido</button>
+		</footer>
+	</section>
+</div>
+}

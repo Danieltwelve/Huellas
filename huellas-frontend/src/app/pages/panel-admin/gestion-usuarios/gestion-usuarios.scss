@@ -1,6 +1,7 @@
 .users-page {
   padding: 1.32rem 1.5rem;
   min-height: calc(100vh - 42px);
+  background-color: #F8FAFC;
   color: #202124;
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -119,7 +120,7 @@ tbody tr:hover {
 
 /* Quitar bordes derechos que hacían la tabla ver pesada */
 thead th, tbody td {
-  border-right: none; 
+  border-right: none;
 }
 
 /* --- BADGES Y ESTADOS --- */

@@ -1,0 +1,24 @@
+<section class="envio-layout">
+  <aside class="envio-sidebar" aria-label="Opciones de envío">
+    @for (item of sidebarItems; track item.id) {
+    <button
+      type="button"
+      class="sidebar-button"
+      [class.active]="activeSidebarItem === item.id"
+      (click)="selectSidebarItem(item.id)"
+    >
+      {{ item.label }}
+    </button>
+    }
+  </aside>
+
+  <div class="envio-content">
+    @if (activeSidebarItem === 'requisitos-envio') {
+    <app-requisitos (guardar)="onGuardar()"></app-requisitos>
+    }
+
+    @if (activeSidebarItem === 'ediciones') {
+    <app-ediciones></app-ediciones>
+    }
+  </div>
+</section>

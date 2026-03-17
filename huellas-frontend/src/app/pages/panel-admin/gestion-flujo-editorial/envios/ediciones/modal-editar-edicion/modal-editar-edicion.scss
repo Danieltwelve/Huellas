@@ -1,0 +1,250 @@
+.modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(15, 23, 42, 0.4);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 1rem;
+	z-index: 330;
+	backdrop-filter: blur(2px); /* Efecto moderno de desenfoque */
+}
+
+.editar-modal,
+.confirm-modal,
+.result-modal {
+	width: min(100%, 520px);
+	background: #ffffff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+	overflow: hidden;
+}
+
+/* HEADER */
+.modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 1.25rem 1.5rem;
+	border-bottom: 1px solid #f1f5f9;
+	background: #ffffff;
+}
+
+.modal-header h3 {
+	margin: 0;
+	font-size: 1.25rem;
+	line-height: 1;
+	color: #0f172a;
+	font-weight: 700;
+}
+
+.modal-close-btn {
+	border: none;
+	background: transparent;
+	width: 32px;
+	height: 32px;
+	border-radius: 6px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+	background: #f1f5f9;
+}
+
+.modal-close-btn svg {
+	width: 20px;
+	height: 20px;
+	fill: #64748b;
+}
+
+/* BODY */
+.modal-body {
+	padding: 1.5rem;
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+}
+
+.form-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+}
+
+.form-group label {
+	font-size: 0.9rem;
+	font-weight: 500;
+	color: #1e293b;
+}
+
+.form-group input,
+.form-group select {
+	height: 40px;
+	border: 1px solid #cbd5e1;
+	border-radius: 6px;
+	background: #ffffff;
+	padding: 0.5rem 0.75rem;
+	font-size: 0.95rem;
+	color: #0f172a;
+	transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+	outline: none;
+	border-color: #44b2a9;
+	box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.15);
+}
+
+/* FIELDSET */
+.detalle-fieldset {
+	margin: 0;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 1.25rem 1rem;
+	background: #f8fafc; /* Fondo sutil para agrupar visualmente */
+}
+
+.detalle-fieldset legend {
+	padding: 0 0.5rem;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: #475569;
+}
+
+.detalle-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 1rem;
+}
+
+/* FOOTER */
+.modal-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+	padding: 1.25rem 1.5rem;
+	border-top: 1px solid #f1f5f9;
+	background: #f8fafc;
+}
+
+.modal-footer.centered {
+	justify-content: center;
+}
+
+.modal-btn-cancelar,
+.modal-btn-guardar {
+	border-radius: 6px;
+	min-width: 110px;
+	height: 38px;
+	font-size: 0.9rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.modal-btn-cancelar {
+	border: 1px solid #cbd5e1;
+	background: #ffffff;
+	color: #475569;
+}
+
+.modal-btn-cancelar:hover {
+	background: #f1f5f9;
+	color: #0f172a;
+	border-color: #94a3b8;
+}
+
+.modal-btn-guardar {
+	border: none;
+	background: #44b2a9;
+	color: #ffffff;
+	box-shadow: 0 4px 6px -1px rgba(68, 178, 169, 0.2);
+}
+
+.modal-btn-guardar:hover:not(:disabled) {
+	background: #359891;
+	transform: translateY(-1px);
+}
+
+.modal-btn-guardar:disabled {
+	background: #94a3b8;
+	opacity: 0.6;
+	cursor: not-allowed;
+	box-shadow: none;
+}
+
+/* CONFIRM & RESULT MODAL CONTENT */
+.confirm-content,
+.result-content {
+	text-align: center;
+  align-items: center;
+	padding: 1.5rem;
+}
+
+.confirm-content p,
+.result-content p {
+	margin: 0.5rem 0;
+	color: #475569;
+	font-size: 1rem;
+	line-height: 1.5;
+}
+
+.confirm-content strong {
+	color: #0f172a;
+}
+
+.warning-icon,
+.result-icon {
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 2rem;
+	margin-bottom: 1rem;
+}
+
+.warning-icon {
+	background: #fffbeb;
+	color: #d97706;
+	border: 2px solid #fef3c7;
+}
+
+.result-icon.success {
+	background: #f0fdf4;
+	color: #16a34a;
+	border: 2px solid #dcfce7;
+}
+
+.result-icon.error {
+	background: #fef2f2;
+	color: #dc2626;
+	border: 2px solid #fee2e2;
+}
+
+@media (max-width: 600px) {
+	.modal-header h3 {
+		font-size: 1.2rem;
+	}
+
+	.detalle-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.modal-footer {
+		flex-direction: column-reverse; /* Cancelar abajo en móvil */
+	}
+
+	.modal-btn-cancelar,
+	.modal-btn-guardar {
+		width: 100%;
+	}
+}

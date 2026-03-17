@@ -30,7 +30,7 @@ export class SideBar {
   }
 
   mainItems: MenuItem[] = [
-    { label: 'Gestión de Flujo Editorial', icon: 'list-check', adminOnly: true, route: '/gestion-usuarios' },
+    { label: 'Gestión de Flujo Editorial', icon: 'list-check', adminOnly: true, route: '/gestion-flujo-editorial' },
     { label: 'Gestión de Usuarios', icon: 'users', adminOnly: true, route: '/gestion-usuarios' },
     { label: 'Artículos', icon: 'file', adminOnly: true, route: '/articulos' },
     { label: 'Estadísticas', icon: 'chart', adminOnly: true, route: '/estadisticas' },

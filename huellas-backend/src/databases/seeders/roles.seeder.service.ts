@@ -1,7 +1,7 @@
 import { Injectable, OnApplicationBootstrap, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Role } from 'src/modules/roles/roles.entity';
 import { Repository } from 'typeorm';
-import { Role } from './roles.entity';
 
 @Injectable()
 export class RolesSeederService implements OnApplicationBootstrap {

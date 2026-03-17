@@ -1,3 +1,4 @@
+import { GestionFlujoEditorial } from './pages/panel-admin/gestion-flujo-editorial/gestion-flujo-editorial';
 import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
 import { LoginComponent } from './pages/login/login.component';
@@ -40,6 +41,12 @@ export const routes: Routes = [
     component: GestionUsuarios,
     canActivate: [claimsGuard],
     data: { requiredClaim: 'canManageUsers', allowedRoles: ['admin'] },
+  },
+  {
+    path: 'gestion-flujo-editorial',
+    component: GestionFlujoEditorial,
+    canActivate: [claimsGuard],
+    data: { requiredClaim: 'canManageFlujoEditorial', allowedRoles: ['admin'] },
   },
   { path: 'avisos', component: AvisosComponent },
   { path: 'equipo-editorial', component: EquipoEditorialComponent },

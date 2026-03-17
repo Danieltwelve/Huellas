@@ -18,6 +18,7 @@ export interface CustomClaims {
   canViewArchivos: boolean;
   canSubmitEnvios: boolean;
   canManageUsers: boolean;
+  canManageFlujoEditorial: boolean;
   externalSystemUid: string;
 }
 
@@ -112,12 +113,14 @@ export class AuthService {
     );
 
     const canManageUsers = roleNames.some((rol) => ['admin'].includes(rol));
+    const canManageFlujoEditorial = roleNames.some((rol) => ['admin'].includes(rol));
 
     return {
       roles: roleNames,
       canViewArchivos,
       canSubmitEnvios,
       canManageUsers,
+      canManageFlujoEditorial,
       externalSystemUid: `huellas-db-${user.id}`,
     };
   }

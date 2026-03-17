@@ -1,0 +1,82 @@
+:host {
+display: block;
+}
+
+.envio-layout {
+margin-top: 1.5rem; /* Reducido */
+display: grid;
+grid-template-columns: 200px 1fr; /* Sidebar ligeramente más estrecho */
+gap: 1.5rem; /* Reducido */
+background: #ffffff;
+border: 1px solid #e2e8f0;
+border-radius: 8px; /* Bordes más sutiles */
+padding: 1.5rem; /* Reducido */
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04); /* Sombra más suave */
+align-items: stretch;
+}
+
+/* SIDEBAR */
+.envio-sidebar {
+display: flex;
+flex-direction: column;
+gap: 0.25rem; /* Botones más juntos */
+border-right: 1px solid #f1f5f9;
+padding-right: 1rem;
+}
+
+.sidebar-button {
+width: 100%;
+text-align: left;
+border: none;
+border-radius: 6px;
+background: transparent;
+color: #64748b; /* Gris un poco más claro para inactivos */
+font-size: 0.9rem; /* Texto más pequeño */
+font-weight: 500;
+padding: 0.6rem 0.8rem; /* Padding más compacto */
+cursor: pointer;
+transition: all 0.2s ease;
+}
+
+.sidebar-button:hover {
+background: #f8fafc;
+color: #0f172a;
+}
+
+.sidebar-button.active {
+background: #44b2a9; /* Fondo sólido para el activo */
+color: #ffffff; /* Texto blanco */
+font-weight: 600;
+}
+
+/* ÁREA DE CONTENIDO */
+.envio-content {
+display: flex;
+flex-direction: column;
+min-height: 250px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+.envio-layout {
+grid-template-columns: 1fr;
+gap: 1rem;
+padding: 1.2rem;
+}
+
+.envio-sidebar {
+flex-direction: row;
+flex-wrap: wrap;
+border-right: none;
+border-bottom: 1px solid #f1f5f9;
+padding-right: 0;
+padding-bottom: 1rem;
+}
+
+.sidebar-button {
+width: auto;
+min-width: 120px;
+text-align: center;
+padding: 0.5rem;
+}
+}
