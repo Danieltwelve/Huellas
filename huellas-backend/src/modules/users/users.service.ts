@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
@@ -152,6 +151,17 @@ export class UsersService {
       where: { id },
       relations: ['roles'],
     });
+  }
+
+  async findAutores(): Promise<Partial<User>[]> {
+    return this.userRepository
+      .createQueryBuilder('usuario')
+      .innerJoin('usuario.roles', 'rol')
+      .where('rol.rol = :nombreRol', { nombreRol: 'autor' })
+      .andWhere('usuario.estado_cuenta = :activo', { activo: true })
+      .select(['usuario.id', 'usuario.nombre', 'usuario.correo'])
+      .orderBy('usuario.nombre', 'ASC')
+      .getMany();
   }
 
   async save(user: User): Promise<User> {

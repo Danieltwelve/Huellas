@@ -16,9 +16,9 @@ interface EdicionItem {
   volumen: number;
   numero: number;
   anio: number;
-  fechaEstado: string;
+  fecha_estado: string;
   articulos: string;
-  estado: EstadoEdicion | string;
+  estado_id: EstadoEdicion | string;
   estadoId: number;
 }
 
@@ -45,7 +45,7 @@ export class Ediciones implements OnInit {
 
   countByEstado(estado: string): number {
     const expected = estado.toUpperCase();
-    return this.ediciones.filter((edicion) => edicion.estado.toUpperCase() === expected).length;
+    return this.ediciones.filter((edicion) => edicion.estado_id.toUpperCase() === expected).length;
   }
 
   loadEdiciones(): void {
@@ -67,7 +67,7 @@ export class Ediciones implements OnInit {
   }
 
   private mapEdicionToTableItem(edicion: EdicionRevistaBackend): EdicionItem {
-    const estadoNombre = edicion.estado?.estado ?? 'SIN ESTADO';
+    const estadoNombre = edicion.estado_id?.estado ?? 'SIN ESTADO';
 
     return {
       id: edicion.id,
@@ -76,10 +76,10 @@ export class Ediciones implements OnInit {
       volumen: edicion.volumen,
       numero: edicion.numero,
       anio: edicion.anio,
-      fechaEstado: edicion.fechaEstado,
+      fecha_estado: edicion.fecha_estado,
       articulos: '--',
-      estado: estadoNombre,
-      estadoId: edicion.estado?.id ?? this.mapEstadoNombreToId(estadoNombre),
+      estado_id: estadoNombre,
+      estadoId: edicion.estado_id?.id ?? this.mapEstadoNombreToId(estadoNombre),
     };
   }
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../users/user.entity';
 

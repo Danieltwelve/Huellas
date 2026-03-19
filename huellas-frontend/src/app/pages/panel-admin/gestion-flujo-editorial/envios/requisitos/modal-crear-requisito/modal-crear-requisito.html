@@ -1,0 +1,55 @@
+<div class="modal-backdrop" *ngIf="isVisible">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3>Crear Nuevo Requisito</h3>
+      <button class="close-btn" (click)="closeModal()" [disabled]="isSaving">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Ingrese la descripción del nuevo requisito:</p>
+      <div class="form-group">
+        <textarea
+          [(ngModel)]="requisitoDescripcion"
+          placeholder="Escriba aquí el requisito..."
+          rows="4"
+          [disabled]="isSaving"
+        ></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" (click)="closeModal()" [disabled]="isSaving">Cancelar</button>
+      <button class="btn-guardar" (click)="guardar()" [disabled]="!requisitoDescripcion.trim() || isSaving">
+        {{ isSaving ? 'Guardando...' : 'Guardar' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="isResultVisible" (click)="closeResultModal()">
+  <div class="modal-container result-modal" [ngClass]="resultType" (click)="$event.stopPropagation()">
+    <div class="modal-header result-header">
+      <h3>{{ resultTitle }}</h3>
+      <button class="close-btn" (click)="closeResultModal()">&times;</button>
+    </div>
+
+    <div class="modal-body result-body">
+      <div class="result-icon">
+        <ng-container *ngIf="resultType === 'success'; else errorIcon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm-1.2 14.2-3.8-3.8 1.4-1.4 2.4 2.4 5-5 1.4 1.4Z" />
+          </svg>
+        </ng-container>
+        <ng-template #errorIcon>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm4.3 13.9-1.4 1.4L12 13.4l-2.9 2.9-1.4-1.4 2.9-2.9-2.9-2.9 1.4-1.4 2.9 2.9 2.9-2.9 1.4 1.4-2.9 2.9Z" />
+          </svg>
+        </ng-template>
+      </div>
+
+      <p>{{ resultMessage }}</p>
+    </div>
+
+    <div class="modal-footer result-footer">
+      <button class="btn-result" (click)="closeResultModal()">Aceptar</button>
+    </div>
+  </div>
+</div>

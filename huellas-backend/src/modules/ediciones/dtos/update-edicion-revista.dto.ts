@@ -31,5 +31,5 @@ export class UpdateEdicionRevistaDto {
   @IsInt()
   @IsPositive()
   @IsOptional()
-  estadoId?: number;
+  estado_id?: number;
 }

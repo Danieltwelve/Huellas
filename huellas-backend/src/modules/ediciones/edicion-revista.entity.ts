@@ -4,8 +4,10 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { EstadoEdicionRevista } from './estados/estado-edicion-revista.entity';
+import { Articulo } from '../articulos/entities/articulo.entity';
 
 @Entity('ediciones_revista')
 export class EdicionRevista {
@@ -25,12 +27,15 @@ export class EdicionRevista {
   anio?: number;
 
   @Column({ name: 'fecha_estado', type: 'date' })
-  fechaEstado?: Date;
+  fecha_estado?: Date;
+
+  @OneToMany(() => Articulo, (articulo) => articulo.edicion)
+  articulos!: Articulo[];
 
   // Relación M:1 - Muchas ediciones tienen un solo estado
   @ManyToOne(() => EstadoEdicionRevista, (estado) => estado.ediciones, {
     nullable: false,
   })
   @JoinColumn({ name: 'estado_id' })
-  estado?: EstadoEdicionRevista;
+  estado_id?: EstadoEdicionRevista;
 }

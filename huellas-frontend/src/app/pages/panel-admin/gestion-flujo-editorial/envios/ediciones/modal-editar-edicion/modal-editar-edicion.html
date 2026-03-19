@@ -58,7 +58,7 @@
 
 			<div class="form-group">
 				<label for="editar-estado">Estado</label>
-				<select id="editar-estado" [(ngModel)]="editForm.estadoId" name="estadoId" required>
+				<select id="editar-estado" [(ngModel)]="editForm.estado_id" name="estadoId" required>
 					@for (estado of estadoOptions; track estado.id) {
 					<option [ngValue]="estado.id">{{ estado.label }}</option>
 					}

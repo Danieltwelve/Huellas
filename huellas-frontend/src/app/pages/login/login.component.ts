@@ -43,7 +43,7 @@ export class LoginComponent {
       };
 
       await this.authService.logInWithEmailAndPassword(credentials);
-      await this.router.navigate(['/']);
+      this.router.navigate(['/']);
     } catch (error) {
       if (error instanceof Error && error.message === 'EMAIL_NOT_VERIFIED') {
         this.showVerificationModal = true;

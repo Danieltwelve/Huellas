@@ -25,9 +25,9 @@ export class EdicionesService {
 
   async findAll(): Promise<EdicionRevista[]> {
     return this.edicionRepository.find({
-      relations: ['estado'],
+      relations: ['estado_id'],
       order: {
-        fechaEstado: 'DESC',
+        fecha_estado: 'DESC',
         id: 'DESC',
       },
     });
@@ -36,7 +36,7 @@ export class EdicionesService {
   async create(createDto: CreateEdicionRevistaDto) {
     const nuevaEdicion = this.edicionRepository.create({
       ...createDto,
-      estado: { id: 1 },
+      estado_id: { id: 1 },
     });
     return this.edicionRepository.save(nuevaEdicion);
   }
@@ -47,7 +47,7 @@ export class EdicionesService {
   ): Promise<EdicionRevista> {
     const edicion = await this.edicionRepository.findOne({
       where: { id },
-      relations: ['estado'],
+      relations: ['estado_id'],
     });
 
     if (!edicion) {
@@ -67,16 +67,17 @@ export class EdicionesService {
       edicion.anio = updateDto.anio;
     }
 
-    if (updateDto.estadoId !== undefined) {
+    if (updateDto.estado_id !== undefined) {
       const estado = await this.estadoRepository.findOneBy({
-        id: updateDto.estadoId,
+        id: updateDto.estado_id,
       });
       if (!estado) {
         throw new NotFoundException(
-          `Estado con ID ${updateDto.estadoId} no encontrado`,
+          `Estado con ID ${updateDto.estado_id} no encontrado`,
         );
       }
-      edicion.estado = estado;
+      edicion.estado_id = estado;
+      edicion.fecha_estado = new Date();
     }
 
     return this.edicionRepository.save(edicion);

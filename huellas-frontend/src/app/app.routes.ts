@@ -17,6 +17,7 @@ import { claimsGuard } from './core/auth/claims.guard';
 import { redirectIfAuthenticatedGuard } from './core/auth/redirect-if-authenticated.guard';
 import { GestionUsuarios } from './pages/panel-admin/gestion-usuarios/gestion-usuarios';
 import { RecuperarContrasenaComponent } from './pages/login/recuperar-contraseña/recuperar-contrasena.component';
+import { Articulos } from './pages/panel-admin/articulos/articulos';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -43,6 +44,12 @@ export const routes: Routes = [
     component: GestionUsuarios,
     canActivate: [claimsGuard],
     data: { requiredClaim: 'canManageUsers', allowedRoles: ['admin'] },
+  },
+  {
+    path: 'articulos',
+    component: Articulos,
+    canActivate: [claimsGuard],
+    data: { requiredClaim: 'canManageArticulos', allowedRoles: ['admin'] },
   },
   {
     path: 'gestion-flujo-editorial',

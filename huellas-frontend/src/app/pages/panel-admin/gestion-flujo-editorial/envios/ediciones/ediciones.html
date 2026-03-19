@@ -23,11 +23,11 @@
 				@for (edicion of ediciones; track edicion.id) {
 				<tr>
 					<td>{{ edicion.edicion }}</td>
-					<td>{{ edicion.fechaEstado }}</td>
+					<td>{{ edicion.fecha_estado }}</td>
 					<td>{{ edicion.articulos }}</td>
 					<td>
-						<span class="estado-chip" [class.abierta]="edicion.estado === 'ABIERTA'" [class.publicada]="edicion.estado === 'PUBLICADA'" [class.revision]="edicion.estado === 'EN REVISION'">
-							{{ edicion.estado }}
+						<span class="estado-chip" [class.abierta]="edicion.estado_id === 'ABIERTA'" [class.publicada]="edicion.estado_id === 'PUBLICADA'" [class.revision]="edicion.estado_id === 'EN REVISION'">
+							{{ edicion.estado_id }}
 						</span>
 					</td>
 					<td>
@@ -43,7 +43,7 @@
 									volumen: edicion.volumen,
 									numero: edicion.numero,
 									anio: edicion.anio,
-									estadoId: edicion.estadoId
+									estado_id: edicion.estadoId
 								})"
 							>
 								<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -51,7 +51,7 @@
 								</svg>
 							</button>
 
-							@if (isEdicionAbierta(edicion.estado)) {
+							@if (isEdicionAbierta(edicion.estado_id)) {
 							<button
 								type="button"
 								class="action-btn eliminar"

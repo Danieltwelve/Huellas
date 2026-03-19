@@ -5,6 +5,11 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { EdicionesModule } from './modules/ediciones/ediciones.module';
+import { RequisitosRevistaModule } from './modules/requisitos-revista/requisitos-revista.module';
+import { ArticulosModule } from './modules/articulos/articulos.module';
+import { ArticulosHistorialEtapasModule } from './modules/articulos-historial-etapas/articulos-historial-etapas.module';
+import { ObservacionesModule } from './modules/observaciones/observaciones.module';
+import { ObservacionesArchivosModule } from './modules/observaciones-archivos/observaciones-archivos.module';
 
 @Module({
   imports: [
@@ -35,6 +40,11 @@ import { EdicionesModule } from './modules/ediciones/ediciones.module';
     AuthModule,
     RolesModule,
     EdicionesModule,
+    RequisitosRevistaModule,
+    ArticulosModule,
+    ArticulosHistorialEtapasModule,
+    ObservacionesModule,
+    ObservacionesArchivosModule,
   ],
 })
 export class AppModule {}

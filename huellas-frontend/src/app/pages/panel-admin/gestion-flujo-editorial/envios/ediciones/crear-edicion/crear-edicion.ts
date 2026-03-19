@@ -66,7 +66,7 @@ export class CrearEdicion {
       volumen: Number(this.createForm.volumen),
       numero: Number(this.createForm.numero),
       anio: Number(this.createForm.anio),
-      fechaEstado: this.formatDateForApi(this.currentDate),
+      fecha_estado: this.formatDateForApi(this.currentDate),
     };
 
     this.edicionesRevistaService.createEdicion(payload).subscribe({

@@ -1,0 +1,69 @@
+<section class="articles-page">
+  <header class="page-header">
+    <h1>Artículos</h1>
+  </header>
+
+  <section class="articles-panel">
+    <h2>Detalles del artículo</h2>
+
+    <div class="toolbar">
+      <label class="search-wrapper" for="article-search">
+        <input #searchInput id="article-search" type="text" [value]="searchTerm" (input)="onSearch(searchInput.value)"
+          placeholder="Buscar artículo" aria-label="Buscar articulo" />
+
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search"
+          viewBox="0 0 16 16">
+          <path
+            d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+        </svg>
+      </label>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Título</th>
+            <th>Etapa actual</th>
+            <th>Fecha de aceptación</th>
+            <th>Tiempo en proceso</th>
+            <th class="view-heading">Ver</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (articulo of filteredArticulos; track articulo.codigo + articulo.etapaActual) {
+          <tr>
+            <td class="code-cell">{{ articulo.codigo }}</td>
+
+            <td class="title-cell">
+              {{ articulo.titulo }}
+            </td>
+
+            <td>
+              <span class="stage-pill" [ngClass]="articulo.claseEtapa">{{ articulo.etapaActual }}</span>
+            </td>
+
+            <td class="date-cell">{{ articulo.fechaAceptacion }}</td>
+            <td class="time-cell">{{ articulo.tiempoProceso }}</td>
+
+            <td class="view-cell">
+              <button class="view-btn" type="button" aria-label="Ver articulo">
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="eye-icon">
+                  <path
+                    d="M12 5c5.1 0 9.2 3 10.9 6.8a.6.6 0 0 1 0 .4C21.2 16 17.1 19 12 19S2.8 16 1.1 12.2a.6.6 0 0 1 0-.4C2.8 8 6.9 5 12 5Zm0 2C8 7 4.7 9.2 3.2 12 4.7 14.8 8 17 12 17s7.3-2.2 8.8-5C19.3 9.2 16 7 12 7Zm0 2.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z" />
+                </svg>
+              </button>
+            </td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="6" class="empty-state">No hay artículos que coincidan con la búsqueda.</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>

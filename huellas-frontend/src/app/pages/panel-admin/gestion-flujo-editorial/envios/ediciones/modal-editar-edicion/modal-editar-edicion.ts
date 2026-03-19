@@ -12,7 +12,7 @@ interface OpenEditarEdicionData {
   volumen: number;
   numero: number;
   anio: number;
-  estadoId: number;
+  estado_id: number;
 }
 
 interface EditarEdicionForm {
@@ -20,7 +20,7 @@ interface EditarEdicionForm {
   volumen: number | null;
   numero: number | null;
   anio: number | null;
-  estadoId: number | null;
+  estado_id: number | null;
 }
 
 type ResultadoTipo = 'success' | 'error';
@@ -60,7 +60,7 @@ export class ModalEditarEdicion {
     volumen: null,
     numero: null,
     anio: null,
-    estadoId: 1,
+    estado_id: 1,
   };
 
   openModal(data: OpenEditarEdicionData): void {
@@ -72,7 +72,7 @@ export class ModalEditarEdicion {
       volumen: data.volumen,
       numero: data.numero,
       anio: data.anio,
-      estadoId: this.ensureEstadoId(data.estadoId),
+      estado_id: this.ensureEstadoId(data.estado_id),
     };
 
     this.isOpen = true;
@@ -127,7 +127,7 @@ export class ModalEditarEdicion {
       volumen: Number(this.editForm.volumen),
       numero: Number(this.editForm.numero),
       anio: Number(this.editForm.anio),
-      estadoId: Number(this.editForm.estadoId),
+      estado_id: Number(this.editForm.estado_id),
     };
 
     this.edicionesRevistaService.updateEdicion(this.selectedEdicionId, payload).subscribe({
@@ -172,7 +172,7 @@ export class ModalEditarEdicion {
       Number.isInteger(this.editForm.anio) &&
       this.editForm.anio >= 1900 &&
       this.editForm.anio <= 2100;
-    const estadoValido = this.editForm.estadoId !== null && [1, 2, 3].includes(this.editForm.estadoId);
+    const estadoValido = this.editForm.estado_id !== null && [1, 2, 3].includes(this.editForm.estado_id);
 
     return tituloValido && volumenValido && numeroValido && anioValido && estadoValido;
   }
@@ -181,8 +181,8 @@ export class ModalEditarEdicion {
     return value !== null && Number.isInteger(value) && value > 0;
   }
 
-  private ensureEstadoId(estadoId: number): number {
-    return [1, 2, 3].includes(estadoId) ? estadoId : 1;
+  private ensureEstadoId(estado_id: number): number {
+    return [1, 2, 3].includes(estado_id) ? estado_id : 1;
   }
 
   private resetResult(): void {
@@ -199,7 +199,7 @@ export class ModalEditarEdicion {
       volumen: null,
       numero: null,
       anio: null,
-      estadoId: 1,
+      estado_id: 1,
     };
   }
 

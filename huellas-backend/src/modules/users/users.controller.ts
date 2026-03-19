@@ -17,14 +17,17 @@ import { User } from './user.entity';
 import { AdminCreateUserDto } from './dto/admin.create.users.dto';
 
 @Controller('usuarios')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
   async findAll(): Promise<User[]> {
     return this.usersService.findAll();
+  }
+
+  @Get('autores')
+  async getAutores() {
+    return this.usersService.findAutores();
   }
 
   @Get(':id')
@@ -36,11 +39,15 @@ export class UsersController {
     return user;
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Post()
   async createAdmin(@Body() adminCreateDto: AdminCreateUserDto): Promise<User> {
     return this.usersService.createWithAdmin(adminCreateDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Put(':id')
   async updateUser(@Param('id') id: number, @Body() data: Partial<User>) {
     return this.usersService.update(id, data);

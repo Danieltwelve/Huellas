@@ -1,0 +1,164 @@
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+}
+
+.modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #1e293b;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #64748b;
+    
+    &:hover {
+      color: #0f172a;
+    }
+  }
+}
+
+.modal-body {
+  padding: 1.5rem;
+  
+  p {
+    margin-bottom: 0.5rem;
+    color: #475569;
+  }
+
+  .requisito-texto {
+    font-style: italic;
+    color: #1e293b;
+    background-color: #f1f5f9;
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-top: 1rem;
+    border-left: 3px solid #ef4444;
+  }
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  background-color: #f8fafc;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+
+  button {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .btn-cancelar {
+    background-color: white;
+    border-color: #cbd5e1;
+    color: #475569;
+
+    &:hover {
+      background-color: #f1f5f9;
+    }
+  }
+
+  .btn-confirmar {
+    background-color: #ef4444;
+    color: white;
+
+    &:hover {
+      background-color: #dc2626;
+    }
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.success-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 2rem !important;
+
+  .success-icon {
+    margin-bottom: 1.5rem;
+    
+    svg {
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+  }
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    color: #0f172a;
+    font-size: 1.5rem;
+  }
+
+  p {
+    margin-bottom: 1.5rem;
+    color: #64748b;
+  }
+
+  .btn-success {
+    background-color: #10b981;
+    color: white;
+    padding: 0.6rem 2rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 1rem;
+
+    &:hover {
+      background-color: #059669;
+    }
+  }
+}
+
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}

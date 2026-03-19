@@ -10,6 +10,6 @@ export class EstadoEdicionRevista {
   estado?: string;
 
   // Relación 1:M - Un estado puede estar en muchas ediciones
-  @OneToMany(() => EdicionRevista, (edicion) => edicion.estado)
+  @OneToMany(() => EdicionRevista, (edicion) => edicion.estado_id)
   ediciones?: EdicionRevista[];
 }

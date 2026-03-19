@@ -9,7 +9,7 @@ export interface CreateEdicionRevistaPayload {
 	volumen: number;
 	numero: number;
 	anio: number;
-	fechaEstado: string;
+	fecha_estado: string;
 }
 
 export interface EstadoEdicionBackend {
@@ -23,8 +23,8 @@ export interface EdicionRevistaBackend {
 	volumen: number;
 	numero: number;
 	anio: number;
-	fechaEstado: string;
-	estado: EstadoEdicionBackend;
+	fecha_estado: string;
+	estado_id: EstadoEdicionBackend;
 }
 
 export interface UpdateEdicionRevistaPayload {
@@ -32,7 +32,7 @@ export interface UpdateEdicionRevistaPayload {
 	volumen: number;
 	numero: number;
 	anio: number;
-	estadoId: number;
+	estado_id: number;
 }
 
 interface CreateEdicionRevistaResponse {
