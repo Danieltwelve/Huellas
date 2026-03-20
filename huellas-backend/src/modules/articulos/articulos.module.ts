@@ -11,6 +11,10 @@ import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/a
 import { Observacion } from '../observaciones/entities/observacione.entity';
 import { ObservacionArchivo } from '../observaciones-archivos/entities/observaciones-archivo.entity';
 import { TemaSeeder } from 'src/databases/seeders/tema.seeder';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { FirebaseAdminModule } from 'src/common/firebase/firebase-admin.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -23,8 +27,16 @@ import { TemaSeeder } from 'src/databases/seeders/tema.seeder';
       Observacion,
       ObservacionArchivo,
     ]),
+    FirebaseAdminModule,
+    UsersModule,
   ],
   controllers: [ArticulosController],
-  providers: [ArticulosService, EtapaArticuloSeeder, TemaSeeder],
+  providers: [
+    ArticulosService,
+    EtapaArticuloSeeder,
+    TemaSeeder,
+    JwtAuthGuard,
+    RolesGuard,
+  ],
 })
 export class ArticulosModule {}

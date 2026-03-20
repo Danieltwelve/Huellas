@@ -1,0 +1,436 @@
+:host {
+	display: block;
+	background-color: #f8fafc; /* Fondo general de la aplicación */
+}
+
+.flujo-trabajo {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 2rem;
+	min-height: calc(100vh - 80px);
+	color: #334155;
+	font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* === ENCABEZADO === */
+.encabezado-flujo {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 1.5rem;
+}
+
+.encabezado-flujo h1 {
+	margin: 0;
+	font-size: 1.6rem;
+	font-weight: 700;
+	color: #0f172a;
+	letter-spacing: -0.02em;
+}
+
+/* Badge de estado en la cabecera */
+.estado-etapa {
+	border: 1px solid #fde68a;
+	border-radius: 6px;
+	background: #fffbeb;
+	color: #b45309;
+	padding: 0.4rem 0.8rem;
+	font-size: 0.85rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+	cursor: default;
+}
+
+/* === BARRA DE NAVEGACIÓN DE ETAPAS === */
+.etapas-navbar {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	background: #ffffff;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	overflow: hidden;
+	margin-bottom: 2rem;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.etapa-boton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	border: none;
+	border-right: 1px solid #e2e8f0;
+	background: transparent;
+	color: #64748b;
+	font-size: 0.9rem;
+	font-weight: 600;
+	padding: 0.85rem 0.5rem;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.etapa-boton:last-child {
+	border-right: none;
+}
+
+.etapa-boton:hover:not(.etapa-boton--activa) {
+	background: #f8fafc;
+	color: #0f172a;
+}
+
+/* Etapa seleccionada */
+.etapa-boton--activa {
+	background: #44b2a9; /* Teal */
+	color: #ffffff;
+}
+
+.etapa-icono {
+	display: none; /* Ocultamos el cuadro vacío para un diseño más limpio */
+}
+
+/* === ESTRUCTURA PRINCIPAL === */
+.contenido-principal {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 340px; /* Columna principal fluida y sidebar fija */
+	gap: 1.5rem;
+	align-items: start;
+}
+
+/* === PANEL DE HISTORIAL === */
+.historial-panel {
+	background: #ffffff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	padding: 1.5rem;
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.historial-panel h2 {
+	margin: 0 0 1.5rem;
+	font-size: 1.25rem;
+	font-weight: 700;
+	color: #0f172a;
+}
+
+.historial-lista {
+	display: flex;
+	flex-direction: column;
+	gap: 0; /* Quitamos el gap para que la línea del historial conecte */
+}
+
+.historial-vacio {
+	min-height: 200px;
+	border: 2px dashed #e2e8f0;
+	border-radius: 8px;
+	background: #f8fafc;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Elemento de la línea de tiempo */
+.historial-item {
+	display: grid;
+	grid-template-columns: 140px minmax(0, 1fr);
+	gap: 1.5rem;
+	position: relative;
+}
+
+.historial-meta {
+	padding-right: 1rem;
+	padding-bottom: 2rem;
+	border-right: 2px solid #e2e8f0;
+	text-align: right;
+	position: relative;
+}
+
+/* Punto en la línea de tiempo */
+.historial-meta::after {
+	content: '';
+	position: absolute;
+	right: -6px; /* Centrado en el borde de 2px */
+	top: 0;
+	width: 10px;
+	height: 10px;
+	background: #cbd5e1;
+	border-radius: 50%;
+	border: 2px solid #ffffff;
+}
+
+.historial-fecha {
+	margin: 0 0 0.2rem 0;
+	font-size: 0.95rem;
+	font-weight: 600;
+	color: #0f172a;
+}
+
+.historial-autor {
+	margin: 0;
+	color: #64748b;
+	font-size: 0.85rem;
+}
+
+.historial-separador {
+	display: none; /* Ya no es necesario con la línea vertical continua */
+}
+
+/* Tarjeta de evento */
+.historial-card {
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	background: #ffffff;
+	padding: 1.25rem;
+	margin-bottom: 2rem; /* Espaciado entre tarjetas */
+	box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.historial-card h3 {
+	margin: 0 0 0.75rem;
+	font-size: 1rem;
+	font-weight: 600;
+	color: #0f172a;
+}
+
+/* Colores laterales según el tipo de evento */
+.historial-card--envio {
+	border-left: 4px solid #44b2a9; /* Teal */
+}
+
+.historial-card--observacion {
+	border-left: 4px solid #f59e0b; /* Ambar */
+	background: #fffdf5; /* Fondo muy suave */
+}
+
+.historial-card--inicio {
+	border-left: 4px solid #64748b; /* Gris */
+}
+
+/* Archivos adjuntos */
+.bloque-archivo {
+	margin-bottom: 0.75rem;
+}
+
+.archivo-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+	border: 1px solid #e2e8f0;
+	border-radius: 6px;
+	background: #f8fafc;
+	padding: 0.75rem 1rem;
+}
+
+.archivo-info p {
+	margin: 0 0 0.2rem 0;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: #0f172a;
+}
+
+.archivo-info a {
+	color: #44b2a9;
+	text-decoration: none;
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.archivo-info a:hover {
+	text-decoration: underline;
+}
+
+.archivo-descarga {
+	font-size: 1.2rem;
+	color: #64748b;
+	cursor: pointer;
+	transition: color 0.2s ease;
+}
+
+.archivo-descarga:hover {
+	color: #44b2a9;
+}
+
+.historial-comentario {
+	margin: 0;
+	font-size: 0.95rem;
+	color: #475569;
+	line-height: 1.5;
+}
+
+/* === BARRA LATERAL DE ACCIONES === */
+.acciones-laterales {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+.accion-card {
+	background: #ffffff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	padding: 1.25rem;
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.accion-card h3 {
+	margin: 0 0 1rem;
+	font-size: 1.1rem;
+	font-weight: 700;
+	color: #0f172a;
+}
+
+/* Controles de formulario */
+.accion-card textarea,
+.accion-card select {
+	width: 100%;
+	border: 1px solid #cbd5e1;
+	border-radius: 8px;
+	background: #ffffff;
+	color: #0f172a;
+	padding: 0.75rem;
+	font-size: 0.95rem;
+	font-family: inherit;
+	resize: vertical;
+	box-sizing: border-box;
+	margin-bottom: 1rem;
+	transition: all 0.2s ease;
+}
+
+.accion-card textarea:focus,
+.accion-card select:focus {
+	outline: none;
+	border-color: #44b2a9;
+	box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.15);
+}
+
+.accion-card textarea::placeholder {
+	color: #94a3b8;
+}
+
+/* Botón Secundario (Subir archivo) */
+.subir-archivo {
+	width: 100%;
+	border: 1px dashed #cbd5e1;
+	border-radius: 8px;
+	background: #f8fafc;
+	color: #64748b;
+	padding: 0.75rem;
+	font-size: 0.9rem;
+	font-weight: 500;
+	margin-bottom: 1rem;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.subir-archivo:hover {
+	background: #f1f5f9;
+	border-color: #94a3b8;
+	color: #0f172a;
+}
+
+/* Botones Principales (Teal) */
+.accion-principal {
+	width: 100%;
+	border: none;
+	border-radius: 8px;
+	background: #44b2a9;
+	color: #ffffff;
+	font-size: 0.95rem;
+	font-weight: 600;
+	padding: 0.75rem;
+	cursor: pointer;
+	transition: all 0.25s ease;
+	box-shadow: 0 4px 6px -1px rgba(68, 178, 169, 0.25);
+}
+
+.accion-principal:hover {
+	background: #359891;
+	transform: translateY(-1px);
+	box-shadow: 0 6px 10px -1px rgba(68, 178, 169, 0.35);
+}
+
+.accion-principal--movimiento::after {
+	display: none; /* Quitamos la flecha custom que se veía extraña */
+}
+
+.etapa-actual {
+	margin: 0 0 0.75rem;
+	font-size: 0.9rem;
+	color: #475569;
+}
+
+.etapa-actual strong {
+	color: #0f172a;
+	font-weight: 600;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 1100px) {
+	.contenido-principal {
+		grid-template-columns: 1fr; /* Sidebar de acciones pasa abajo */
+	}
+
+	.acciones-laterales {
+		flex-direction: row;
+	}
+
+	.accion-card {
+		flex: 1;
+	}
+}
+
+@media (max-width: 900px) {
+	.etapas-navbar {
+		grid-template-columns: repeat(5, minmax(140px, 1fr));
+		overflow-x: auto;
+		border-radius: 8px;
+	}
+}
+
+@media (max-width: 768px) {
+	.acciones-laterales {
+		flex-direction: column;
+	}
+
+	.historial-item {
+		grid-template-columns: 1fr; /* Fecha y contenido se apilan */
+		gap: 0.5rem;
+	}
+
+	.historial-meta {
+		text-align: left;
+		border-right: none;
+		border-left: 2px solid #e2e8f0;
+		padding-left: 1rem;
+		padding-right: 0;
+		padding-bottom: 0.5rem;
+		margin-left: 0.5rem;
+	}
+
+	.historial-meta::after {
+		left: -6px; /* El punto pasa a la izquierda */
+		right: auto;
+	}
+
+	.historial-card {
+		margin-left: 1.5rem;
+	}
+}
+
+@media (max-width: 600px) {
+	.flujo-trabajo {
+		padding: 1rem;
+	}
+
+	.encabezado-flujo {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.estado-etapa {
+		width: max-content;
+	}
+}

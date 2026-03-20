@@ -44,6 +44,7 @@ export class LoginComponent {
 
       await this.authService.logInWithEmailAndPassword(credentials);
       this.router.navigate(['/']);
+      window.location.reload();
     } catch (error) {
       if (error instanceof Error && error.message === 'EMAIL_NOT_VERIFIED') {
         this.showVerificationModal = true;
@@ -71,6 +72,7 @@ export class LoginComponent {
     try {
       await this.authService.loginWithGoogle();
       this.router.navigate(['/']);
+      window.location.reload();
     } catch (error) {
       this.showWrongModal = true;
       this.cdr.detectChanges();
@@ -81,6 +83,7 @@ export class LoginComponent {
     try {
       await this.authService.loginWithMicrosoft();
       this.router.navigate(['/']);
+      window.location.reload();
     } catch (error: any) {
       if (error instanceof Error && error.message === 'MICROSOFT_LINK_REQUIRED') {
         this.microsoftLinkEmail = this.authService.getPendingMicrosoftLinkEmail() ?? '';

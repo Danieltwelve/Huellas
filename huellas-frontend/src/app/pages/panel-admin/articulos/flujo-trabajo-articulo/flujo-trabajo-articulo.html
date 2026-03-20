@@ -1,0 +1,80 @@
+<section class="flujo-trabajo">
+	<header class="encabezado-flujo">
+		<h1>Flujo de Trabajo del Articulo: {{ tituloArticulo }}</h1>
+		<button class="estado-etapa" type="button">{{ etiquetaEtapaActual }}</button>
+	</header>
+
+	<nav class="etapas-navbar" aria-label="Etapas del articulo">
+		<button
+			*ngFor="let etapa of etapas; index as i"
+			class="etapa-boton"
+			type="button"
+			[class.etapa-boton--activa]="etapa.activa"
+			[attr.aria-pressed]="etapa.activa"
+			(click)="seleccionarEtapa(i)"
+		>
+			<span class="etapa-icono"></span>
+			<span>{{ i + 1 }}. {{ etapa.titulo }}</span>
+		</button>
+	</nav>
+
+	<div class="contenido-principal">
+		<section class="historial-panel">
+			<h2>Historial del Flujo de Trabajo</h2>
+
+			<ng-container *ngIf="historialVisible.length > 0; else historialVacio">
+				<div class="historial-lista">
+					<article *ngFor="let registro of historialVisible; let ultimo = last" class="historial-item">
+						<aside class="historial-meta">
+							<p class="historial-fecha">{{ registro.fecha }}</p>
+							<p class="historial-autor">{{ registro.autor }}</p>
+							<div class="historial-separador" [class.historial-separador--oculto]="ultimo"></div>
+						</aside>
+
+						<div class="historial-card" [ngClass]="'historial-card--' + registro.tipo">
+							<h3>{{ registro.asunto }}</h3>
+
+							<div *ngIf="registro.archivos?.length" class="bloque-archivo">
+								<div class="archivo-row" *ngFor="let archivo of registro.archivos">
+									<div class="archivo-info">
+										<p class="archivo-nombre">{{ archivo.nombre }}</p>
+										<a href="javascript:void(0)">{{ archivo.enlaceTexto }}</a>
+									</div>
+									<span class="archivo-descarga">&#8595;</span>
+								</div>
+							</div>
+
+							<p *ngIf="registro.comentario" class="historial-comentario">{{ registro.comentario }}</p>
+						</div>
+					</article>
+				</div>
+			</ng-container>
+
+			<ng-template #historialVacio>
+				<div class="historial-vacio" aria-label="Sin registros para esta etapa"></div>
+			</ng-template>
+		</section>
+
+		<aside class="acciones-laterales">
+			<section class="accion-card">
+				<h3>Anadir Nueva Observacion</h3>
+
+				<textarea rows="5" placeholder="Introduce tu observacion o feedback..."></textarea>
+
+				<button class="subir-archivo" type="button">Subir archivo (opcional)</button>
+				<button class="accion-principal" type="button">Anadir al Historial</button>
+			</section>
+
+			<section class="accion-card">
+				<h3>Mover Articulo a una Etapa Diferente</h3>
+				<p class="etapa-actual">Etapa Actual: <strong>{{ etapaActual }}</strong></p>
+
+				<select aria-label="Seleccionar etapa">
+					<option *ngFor="let etapa of etapas" [selected]="etapa.activa">{{ etapa.titulo }}</option>
+				</select>
+
+				<button class="accion-principal accion-principal--movimiento" type="button">Mover Articulo</button>
+			</section>
+		</aside>
+	</div>
+</section>

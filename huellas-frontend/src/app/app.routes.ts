@@ -18,9 +18,10 @@ import { redirectIfAuthenticatedGuard } from './core/auth/redirect-if-authentica
 import { GestionUsuarios } from './pages/panel-admin/gestion-usuarios/gestion-usuarios';
 import { RecuperarContrasenaComponent } from './pages/login/recuperar-contraseña/recuperar-contrasena.component';
 import { Articulos } from './pages/panel-admin/articulos/articulos';
+import { FlujoTrabajoArticulo } from './pages/panel-admin/articulos/flujo-trabajo-articulo/flujo-trabajo-articulo';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent },
+  { path: '', component: HomeComponent, canActivate: [redirectIfAuthenticatedGuard] },
   { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
   {
     path: 'recuperar-contrasena',
@@ -32,12 +33,12 @@ export const routes: Routes = [
   {
     path: 'archivos',
     component: ArchivosComponent,
-    canActivate: [redirectIfAuthenticatedGuard]
+    canActivate: [redirectIfAuthenticatedGuard],
   },
   {
     path: 'envios',
     component: EnviosComponent,
-    canActivate: [redirectIfAuthenticatedGuard]
+    canActivate: [redirectIfAuthenticatedGuard],
   },
   {
     path: 'gestion-usuarios',
@@ -51,6 +52,14 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: { requiredClaim: 'canManageArticulos', allowedRoles: ['admin'] },
   },
+
+  {
+    path: 'flujo-trabajo-articulo/:id',
+    component: FlujoTrabajoArticulo,
+    canActivate: [claimsGuard],
+    data: { requiredClaim: 'canManageArticulos', allowedRoles: ['admin'] },
+  },
+
   {
     path: 'gestion-flujo-editorial',
     component: GestionFlujoEditorial,

@@ -39,7 +39,7 @@
   </nav>
 
   <nav class="menu bottom">
-    <a class="menu-item" href="#" *ngFor="let item of bottomItems">
+    <a class="menu-item" *ngFor="let item of bottomItems" (click)="logout()">
       <span class="icon">
 
         <svg *ngIf="item.icon === 'logout'" xmlns="http://www.w3.org/2000/svg" width="18" height="18"

@@ -5,17 +5,22 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { promises as fs } from 'fs';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
 import { EdicionRevista } from '../ediciones/edicion-revista.entity';
 import { Articulo } from './entities/articulo.entity';
 import { Observacion } from '../observaciones/entities/observacione.entity';
 import { ObservacionArchivo } from '../observaciones-archivos/entities/observaciones-archivo.entity';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class ArticulosService {
-  constructor(private dataSource: DataSource) {}
+  constructor(
+    private dataSource: DataSource,
+    @InjectRepository(Articulo)
+    private readonly articuloRepository: Repository<Articulo>,
+  ) {}
   async crearEnvioArticulo(
     dto: CreateArticuloCompletoDto,
     archivoPath: string,
@@ -130,5 +135,31 @@ export class ArticulosService {
       // Liberar el runner
       await queryRunner.release();
     }
+  }
+
+  async getResumenArticulos() {
+    const articulos = await this.articuloRepository
+      .createQueryBuilder('articulo')
+      .select(['articulo.id', 'articulo.codigo', 'articulo.titulo'])
+      .innerJoin('articulo.etapaActual', 'etapa')
+      .addSelect(['etapa.nombre'])
+
+      .innerJoin(
+        'articulo.historialEtapas',
+        'historial',
+        'historial.etapaId = :etapaBuscada',
+        { etapaBuscada: 1 },
+      )
+      .addSelect(['historial.fechaInicio'])
+      .orderBy('historial.fechaInicio', 'DESC')
+      .getMany();
+
+    return articulos.map((articulo) => ({
+      id: articulo.id,
+      codigo: articulo.codigo,
+      titulo: articulo.titulo,
+      etapa_nombre: articulo.etapaActual?.nombre || 'Desconocida',
+      fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
+    }));
   }
 }

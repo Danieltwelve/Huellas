@@ -6,8 +6,10 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ArticulosService } from './articulos.service';
@@ -16,11 +18,23 @@ import { extname } from 'path';
 import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
 import { diskStorage } from 'multer';
 import { validateOrReject, ValidationError } from 'class-validator';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @Controller('articulos')
 export class ArticulosController {
   constructor(private readonly articulosService: ArticulosService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Get('resumen')
+  async getResumenArticulos() {
+    return await this.articulosService.getResumenArticulos();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Post('envio')
   @UseInterceptors(
     FileInterceptor('archivo', {
