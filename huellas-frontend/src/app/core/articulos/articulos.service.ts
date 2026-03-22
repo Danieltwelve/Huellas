@@ -35,4 +35,43 @@ export class ArticulosService {
 			),
 		);
 	}
+
+	getMisArticulos(): Observable<ArticuloResumenBackend[]> {
+		const currentUser = this.auth.currentUser;
+
+		if (!currentUser) {
+			return throwError(() => new Error('No hay sesion activa para consultar articulos.'));
+		}
+
+		return from(currentUser.getIdToken()).pipe(
+			switchMap((token) =>
+				this.http.get<ArticuloResumenBackend[]>(
+					`${environment.apiUrlBackend}/articulos/mis-articulos`,
+					{
+						headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+					},
+				),
+			),
+		);
+	}
+
+	crearArticulo(formData: FormData): Observable<any> {
+		const currentUser = this.auth.currentUser;
+
+		if (!currentUser) {
+			return throwError(() => new Error('No hay sesion activa para crear articulo.'));
+		}
+
+		return from(currentUser.getIdToken()).pipe(
+			switchMap((token) =>
+				this.http.post<any>(
+					`${environment.apiUrlBackend}/articulos/envio`,
+					formData,
+					{
+						headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+					},
+				),
+			),
+		);
+	}
 }

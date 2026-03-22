@@ -110,7 +110,7 @@ export class AuthService {
     );
 
     const canSubmitEnvios = roleNames.some((rol) =>
-      ['admin', 'author'].includes(rol),
+      ['admin', 'autor'].includes(rol),
     );
 
     const canManageUsers = roleNames.some((rol) => ['admin'].includes(rol));

@@ -162,4 +162,23 @@ export class ArticulosService {
       fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
     }));
   }
+
+  async getArticulosPorAutor(userId: number) {
+    const articulos = await this.articuloRepository
+      .createQueryBuilder('articulo')
+      .select(['articulo.id', 'articulo.codigo', 'articulo.titulo'])
+      .innerJoin('articulo.autores', 'autor', 'autor.id = :userId', { userId })
+      .leftJoinAndSelect('articulo.etapaActual', 'etapa')
+      .leftJoinAndSelect('articulo.historialEtapas', 'historial')
+      .orderBy('historial.fechaInicio', 'DESC')
+      .getMany();
+
+    return articulos.map((articulo) => ({
+      id: articulo.id,
+      codigo: articulo.codigo,
+      titulo: articulo.titulo,
+      etapa_nombre: articulo.etapaActual?.nombre || 'Desconocida',
+      fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
+    }));
+  }
 }

@@ -43,8 +43,7 @@ export class LoginComponent {
       };
 
       await this.authService.logInWithEmailAndPassword(credentials);
-      this.router.navigate(['/']);
-      window.location.reload();
+      this.router.navigate([this.authService.getPostLoginRoute()]);
     } catch (error) {
       if (error instanceof Error && error.message === 'EMAIL_NOT_VERIFIED') {
         this.showVerificationModal = true;
@@ -71,8 +70,7 @@ export class LoginComponent {
   async onGoogleLogin() {
     try {
       await this.authService.loginWithGoogle();
-      this.router.navigate(['/']);
-      window.location.reload();
+      this.router.navigate([this.authService.getPostLoginRoute()]);
     } catch (error) {
       this.showWrongModal = true;
       this.cdr.detectChanges();
@@ -82,8 +80,7 @@ export class LoginComponent {
   async onMicrosoftLogin() {
     try {
       await this.authService.loginWithMicrosoft();
-      this.router.navigate(['/']);
-      window.location.reload();
+      this.router.navigate([this.authService.getPostLoginRoute()]);
     } catch (error: any) {
       if (error instanceof Error && error.message === 'MICROSOFT_LINK_REQUIRED') {
         this.microsoftLinkEmail = this.authService.getPendingMicrosoftLinkEmail() ?? '';
@@ -142,7 +139,7 @@ export class LoginComponent {
     this.showMicrosoftLinkResultModal = false;
     this.cdr.detectChanges();
     if (this.microsoftLinkResultSuccess) {
-      await this.router.navigate(['/']);
+      await this.router.navigate([this.authService.getPostLoginRoute()]);
       return;
     }
 

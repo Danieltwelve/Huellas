@@ -21,7 +21,7 @@ import { Articulos } from './pages/panel-admin/articulos/articulos';
 import { FlujoTrabajoArticulo } from './pages/panel-admin/articulos/flujo-trabajo-articulo/flujo-trabajo-articulo';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: '', component: HomeComponent },
   { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
   {
     path: 'recuperar-contrasena',
@@ -65,6 +65,12 @@ export const routes: Routes = [
     component: GestionFlujoEditorial,
     canActivate: [claimsGuard],
     data: { requiredClaim: 'canManageUsers', allowedRoles: ['admin'] },
+  },
+  {
+    path: 'panel-autor',
+    loadChildren: () => import('./pages/panel-autor/panel-autor.routes').then(m => m.PANEL_AUTOR_ROUTES),
+    canActivate: [claimsGuard],
+    data: { requiredClaim: 'roles', allowedRoles: ['autor', 'admin'] },
   },
   { path: 'avisos', component: AvisosComponent, canActivate: [redirectIfAuthenticatedGuard] },
   {

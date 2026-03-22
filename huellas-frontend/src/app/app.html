@@ -1,5 +1,5 @@
 <div class="app-layout" [class.sidebar-collapsed]="sidebarCollapsed">
-  @if (user$ | async) {
+  @if (showGlobalSidebar$ | async) {
   <app-side-bar (collapsedChange)="onSidebarCollapsed($event)"></app-side-bar>
   }
 

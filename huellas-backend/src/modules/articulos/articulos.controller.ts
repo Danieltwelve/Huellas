@@ -11,6 +11,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Req,
 } from '@nestjs/common';
 import { ArticulosService } from './articulos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -34,7 +35,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'autor')
   @Post('envio')
   @UseInterceptors(
     FileInterceptor('archivo', {
@@ -102,5 +103,13 @@ export class ArticulosController {
       archivo.path,
       usuarioEmisorId,
     );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('autor', 'admin')
+  @Get('mis-articulos')
+  async getMisArticulos(@Req() req: any) {
+    const userId = req.user.userId;
+    return await this.articulosService.getArticulosPorAutor(userId);
   }
 }

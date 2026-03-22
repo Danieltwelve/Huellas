@@ -1,0 +1,248 @@
+.recursos-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-text h1 {
+  font-size: 26px;
+  margin: 0 0 5px 0;
+  color: #1a1a20;
+}
+
+.header-text p {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+}
+
+.section {
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-size: 18px;
+  color: #1a1a20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.section-title span {
+  color: #00b09b;
+  font-weight: 800;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.doc-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #eef2f5;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 12px;
+}
+
+.doc-icon {
+  font-size: 24px;
+}
+
+.doc-title-area h3 {
+  font-size: 15px;
+  margin: 0 0 5px 0;
+  color: #1a1a20;
+}
+
+.badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.badge-pdf {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.badge-docx {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.doc-card p {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  margin: 0 0 20px 0;
+  flex-grow: 1;
+}
+
+.btn-download {
+  background: #00b09b;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: opacity 0.2s;
+}
+
+.btn-download:hover {
+  opacity: 0.9;
+}
+
+.process-timeline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  border: 1px solid #eef2f5;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+}
+
+.step {
+  flex: 1;
+  text-align: center;
+  position: relative;
+  max-width: 150px;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  background: #00b09b;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin: 0 auto 15px auto;
+  font-size: 14px;
+}
+
+.step h4 {
+  font-size: 14px;
+  color: #1a1a20;
+  margin: 0 0 8px 0;
+}
+
+.step p {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.step-connector {
+  color: #ccc;
+  font-size: 20px;
+  margin-top: 5px;
+}
+
+.faq-link {
+  margin-top: 20px;
+}
+
+.faq-link a {
+  color: #1a1a20;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.faq-link a:hover {
+  text-decoration: underline;
+}
+
+/* FAQ Accordion */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.faq-item {
+  border: 1px solid #e8ecf0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.faq-question {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a20;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.faq-question:hover {
+  background: #f8f9fa;
+}
+
+.faq-icon {
+  font-size: 12px;
+  color: #00b09b;
+  margin-left: 15px;
+  flex-shrink: 0;
+}
+
+.faq-answer {
+  display: none;
+  padding: 0 20px 18px 20px;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+  border-top: 1px solid #f0f0f0;
+}
+
+.faq-item.open .faq-answer {
+  display: block;
+}
+
+.faq-item.open .faq-question {
+  background: #f8fdfc;
+  color: #00b09b;
+}

@@ -1,0 +1,193 @@
+<div class="recursos-container">
+  <div class="header">
+    <div class="header-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00b09b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <polyline points="10 9 9 9 8 9"></polyline>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>Recursos para Autores</h1>
+      <p>Todo lo que necesitas para preparar y enviar tu artículo a la Revista Huellas</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title"><span>|</span> Documentos y Plantillas</h2>
+    
+    <div class="cards-grid">
+      <!-- Card 1 -->
+      <div class="doc-card">
+        <div class="card-header">
+          <div class="doc-icon">📖</div>
+          <div class="doc-title-area">
+            <h3>Guía para Autores</h3>
+            <span class="badge badge-pdf">PDF</span>
+          </div>
+        </div>
+        <p>Instrucciones completas sobre el proceso de envío, revisión y publicación de artículos en la Revista Huellas.</p>
+        <button class="btn-download">↓ Descargar</button>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="doc-card">
+        <div class="card-header">
+          <div class="doc-icon">📝</div>
+          <div class="doc-title-area">
+            <h3>Plantilla de Artículo</h3>
+            <span class="badge badge-docx">DOCX</span>
+          </div>
+        </div>
+        <p>Plantilla oficial en formato Word con los estilos y estructura requeridos para enviar tu artículo.</p>
+        <button class="btn-download">↓ Descargar</button>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="doc-card">
+        <div class="card-header">
+          <div class="doc-icon">📋</div>
+          <div class="doc-title-area">
+            <h3>Normas de Publicación</h3>
+            <span class="badge badge-pdf">PDF</span>
+          </div>
+        </div>
+        <p>Lineamientos editoriales, normas de citación APA y políticas de derechos de autor de la revista.</p>
+        <button class="btn-download">↓ Descargar</button>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="doc-card">
+        <div class="card-header">
+          <div class="doc-icon">✍️</div>
+          <div class="doc-title-area">
+            <h3>Carta de Originalidad</h3>
+            <span class="badge badge-docx">DOCX</span>
+          </div>
+        </div>
+        <p>Formato de declaración de originalidad y cesión de derechos que debe acompañar todo envío.</p>
+        <button class="btn-download">↓ Descargar</button>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="doc-card">
+        <div class="card-header">
+          <div class="doc-icon">✅</div>
+          <div class="doc-title-area">
+            <h3>Checklist de Envío</h3>
+            <span class="badge badge-pdf">PDF</span>
+          </div>
+        </div>
+        <p>Lista de verificación para asegurarte de que tu artículo cumple todos los requisitos antes de enviarlo.</p>
+        <button class="btn-download">↓ Descargar</button>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="doc-card">
+        <div class="card-header">
+          <div class="doc-icon">🔍</div>
+          <div class="doc-title-area">
+            <h3>Ejemplo de Artículo Publicado</h3>
+            <span class="badge badge-pdf">PDF</span>
+          </div>
+        </div>
+        <p>Artículo de referencia con formato correcto para guiarte en la presentación de tu trabajo.</p>
+        <button class="btn-download">↓ Descargar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title"><span>|</span> Proceso Editorial</h2>
+    
+    <div class="process-timeline">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h4>Envío</h4>
+        <p>Sube tu artículo desde "Nuevo Artículo" con todos los documentos requeridos.</p>
+      </div>
+      <div class="step-connector">→</div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h4>Antiplagio</h4>
+        <p>El equipo editorial verifica la originalidad del trabajo con herramientas especializadas.</p>
+      </div>
+      <div class="step-connector">→</div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h4>Revisión por pares</h4>
+        <p>Dos revisores anónimos evalúan el artículo y emiten un concepto.</p>
+      </div>
+      <div class="step-connector">→</div>
+      <div class="step">
+        <div class="step-number">4</div>
+        <h4>Correcciones</h4>
+        <p>Si aplica, recibirás comentarios y deberás subir una versión corregida.</p>
+      </div>
+      <div class="step-connector">→</div>
+      <div class="step">
+        <div class="step-number">5</div>
+        <h4>Publicación</h4>
+        <p>El artículo aprobado es editado y publicado en la edición correspondiente.</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2 class="section-title"><span>|</span> Preguntas Frecuentes</h2>
+
+    <div class="faq-list">
+      <div class="faq-item" [class.open]="faqOpen === 0">
+        <button class="faq-question" (click)="toggleFaq(0)">
+          <span>¿Cuánto tiempo toma el proceso de revisión?</span>
+          <span class="faq-icon">{{ faqOpen === 0 ? '▲' : '▼' }}</span>
+        </button>
+        <div class="faq-answer">
+          El proceso de revisión por pares suele tardar entre 4 y 8 semanas desde el envío. Puedes hacer seguimiento en tiempo real desde la sección <strong>Timeline Editorial</strong>.
+        </div>
+      </div>
+
+      <div class="faq-item" [class.open]="faqOpen === 1">
+        <button class="faq-question" (click)="toggleFaq(1)">
+          <span>¿Qué formatos de archivo se aceptan?</span>
+          <span class="faq-icon">{{ faqOpen === 1 ? '▲' : '▼' }}</span>
+        </button>
+        <div class="faq-answer">
+          Solo se aceptan archivos en formato <strong>.pdf</strong> o <strong>.docx</strong>, con un tamaño máximo de <strong>10 MB</strong>. Asegúrate de usar la plantilla oficial.
+        </div>
+      </div>
+
+      <div class="faq-item" [class.open]="faqOpen === 2">
+        <button class="faq-question" (click)="toggleFaq(2)">
+          <span>¿Puedo enviar un artículo con co-autores?</span>
+          <span class="faq-icon">{{ faqOpen === 2 ? '▲' : '▼' }}</span>
+        </button>
+        <div class="faq-answer">
+          Sí. Al momento de enviar el artículo, puedes agregar co-autores indicando sus IDs de usuario registrados en la plataforma. Todos deben ser autores activos en el sistema.
+        </div>
+      </div>
+
+      <div class="faq-item" [class.open]="faqOpen === 3">
+        <button class="faq-question" (click)="toggleFaq(3)">
+          <span>¿Puedo modificar mi artículo después de enviarlo?</span>
+          <span class="faq-icon">{{ faqOpen === 3 ? '▲' : '▼' }}</span>
+        </button>
+        <div class="faq-answer">
+          Una vez enviado, el artículo no puede modificarse directamente. Si recibes solicitud de correcciones desde el editor, podrás subir una versión nueva desde la sección de tu panel.
+        </div>
+      </div>
+
+      <div class="faq-item" [class.open]="faqOpen === 4">
+        <button class="faq-question" (click)="toggleFaq(4)">
+          <span>¿Dónde obtengo mi certificado de publicación?</span>
+          <span class="faq-icon">{{ faqOpen === 4 ? '▲' : '▼' }}</span>
+        </button>
+        <div class="faq-answer">
+          Una vez publicado tu artículo, el certificado estará disponible automáticamente en la sección <strong>Certificados y Constancias</strong>. Puedes descargarlo en formato PDF en cualquier momento.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

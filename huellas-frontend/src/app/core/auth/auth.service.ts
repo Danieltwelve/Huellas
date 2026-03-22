@@ -356,4 +356,18 @@ export class AuthService {
     console.log('Inicio de sesión exitoso con email y contraseña:', userCredential.user);
     return userCredential;
   }
+
+  getPostLoginRoute(): string {
+    const claims = this.claimsSubject.value;
+    if (this.hasAnyRole(['admin']) || claims.canManageUsers) {
+      return '/gestion-usuarios';
+    }
+    if (this.hasAnyRole(['autor'])) {
+      return '/panel-autor';
+    }
+    if (this.hasAnyRole(['revisor'])) {
+      return '/envios'; 
+    }
+    return '/';
+  }
 }

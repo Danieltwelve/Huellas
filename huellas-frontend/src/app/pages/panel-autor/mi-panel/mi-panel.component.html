@@ -1,0 +1,85 @@
+<div class="panel-container">
+  <div class="header">
+    <div class="user-greeting">
+      <h1>Hola, <span>Autor Invitado</span></h1>
+      <p>Panel de autor — Revista Huellas</p>
+    </div>
+    <div class="user-actions">
+      <!-- user avatar and notification bell is in layout/navbar usually, but image shows it here. We will leave it since layout has it empty. -->
+    </div>
+  </div>
+
+  <div class="notice-bar">
+    <p>Modo demostración: los datos pueden ser de ejemplo.</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value black">{{ totalArticulos }}</div>
+      <div class="stat-label">Artículos totales</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value black">{{ enRevision }}</div>
+      <div class="stat-label">En revisión</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value orange">{{ correccionPendiente }}</div>
+      <div class="stat-label">Corrección pendiente</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value green">{{ publicados }}</div>
+      <div class="stat-label">Publicados</div>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <h2>Mis artículos</h2>
+      <a routerLink="/panel-autor/nuevo-articulo" class="btn-primary">+ Nuevo artículo</a>
+    </div>
+
+    <div class="table-wrapper">
+      <table *ngIf="!loading; else loadingState">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Etapa</th>
+            <th>Estado</th>
+            <th>Fecha envío</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let articulo of articulos">
+            <td>{{ articulo.codigo || 'S/N' }}</td>
+            <td class="titulo-cell">{{ articulo.titulo }}</td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge-yellow': articulo.etapa_nombre.includes('Evaluación') || articulo.etapa_nombre.includes('Revisión'),
+                'badge-orange': articulo.etapa_nombre.includes('Edición'),
+                'badge-green': articulo.etapa_nombre === 'Publicado'
+              }">{{ articulo.etapa_nombre | uppercase }}</span>
+            </td>
+            <td>{{ articulo.etapa_nombre === 'Publicado' ? 'Publicado' : 'Abierto' }}</td>
+            <td>{{ articulo.fecha_inicio | date:'dd/MM/yyyy' }}</td>
+            <td class="actions-cell">
+              <button class="btn-outline-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+                  <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                  <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                </svg> Ver
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="articulos.length === 0">
+            <td colspan="6" class="text-center empty-state">No tienes artículos registrados aún.</td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #loadingState>
+        <p class="text-center loading">Cargando tus artículos...</p>
+      </ng-template>
+    </div>
+  </div>
+</div>

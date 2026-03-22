@@ -28,7 +28,9 @@ export class RolesGuard implements CanActivate {
     const hasRole = requiredRoles.some((role) => user?.roles?.includes(role));
 
     if (!hasRole) {
-      throw new ForbiddenException('Acceso denegado: se requiere el rol admin');
+      throw new ForbiddenException(
+        `Acceso denegado: se requiere uno de los roles [${requiredRoles.join(', ')}]`,
+      );
     }
 
     return true;

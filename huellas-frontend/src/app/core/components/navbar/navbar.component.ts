@@ -1,6 +1,8 @@
-import { Component, inject, HostListener } from '@angular/core';
+import { Component, inject, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { combineLatest } from 'rxjs';
+import { filter, map, startWith } from 'rxjs/operators';
 import { AccessClaims, AuthService } from '../../auth/auth.service';
 
 @Component({
@@ -10,7 +12,7 @@ import { AccessClaims, AuthService } from '../../auth/auth.service';
   standalone: true,
   imports: [CommonModule, RouterModule],
 })
-export class NavbarComponent {
+export class NavbarComponent implements OnInit {
 
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -20,6 +22,47 @@ export class NavbarComponent {
 
   claims$ = this.authService.claims$;
   user$ = this.authService.user$;
+  canAccessPanel$ = combineLatest([this.user$, this.claims$]).pipe(
+    map(([user, claims]) => {
+      if (!user) return false;
+
+      return Boolean(
+        claims.canManageUsers ||
+          claims.canSubmitEnvios ||
+          claims.canViewArchivos ||
+          (claims.roles?.length ?? 0) > 0,
+      );
+    }),
+  );
+  isAuthorSection$ = this.router.events.pipe(
+    filter((event) => event instanceof NavigationEnd),
+    startWith(null),
+    map(() => this.router.url.startsWith('/panel-autor')),
+  );
+  isPrivateSection$ = this.router.events.pipe(
+    filter((event) => event instanceof NavigationEnd),
+    startWith(null),
+    map(() => {
+      const url = this.router.url;
+      return (
+        url.startsWith('/panel-autor') ||
+        url.startsWith('/panel-revisor') ||
+        url.startsWith('/gestion-usuarios') ||
+        url.startsWith('/estadisticas') ||
+        url.startsWith('/archivos') ||
+        url.startsWith('/envios')
+      );
+    }),
+  );
+
+  ngOnInit(): void {
+    // Cerrar menú cuando se navega
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+    ).subscribe(() => {
+      this.closeMenu();
+    });
+  }
 
   /* CONTROL SCROLL */
 
@@ -91,5 +134,10 @@ export class NavbarComponent {
     } catch (error) {
       console.error('No fue posible cerrar sesión desde el navbar.', error);
     }
+  }
+
+  goToPanel(): void {
+    this.closeMenu();
+    this.router.navigate([this.authService.getPostLoginRoute()]);
   }
 }
