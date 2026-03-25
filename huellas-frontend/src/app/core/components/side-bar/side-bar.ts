@@ -26,6 +26,12 @@ export class SideBar {
 
   @Output() collapsedChange = new EventEmitter<boolean>();
 
+  ngOnInit(): void {
+    setTimeout(() => {
+      this.collapsedChange.emit(this.collapsed);
+    });
+  }
+
   toggleSidebar(): void {
     this.collapsed = !this.collapsed;
     this.collapsedChange.emit(this.collapsed);

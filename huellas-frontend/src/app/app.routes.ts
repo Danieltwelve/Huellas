@@ -21,7 +21,7 @@ import { Articulos } from './pages/panel-admin/articulos/articulos';
 import { FlujoTrabajoArticulo } from './pages/panel-admin/articulos/flujo-trabajo-articulo/flujo-trabajo-articulo';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent },
+  { path: '', component: HomeComponent, canActivate: [redirectIfAuthenticatedGuard] },
   { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
   {
     path: 'recuperar-contrasena',

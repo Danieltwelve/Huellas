@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import { DataSource, Repository } from 'typeorm';
@@ -21,14 +23,17 @@ export class ArticulosService {
     @InjectRepository(Articulo)
     private readonly articuloRepository: Repository<Articulo>,
   ) {}
+
   async crearEnvioArticulo(
     dto: CreateArticuloCompletoDto,
     archivoPath: string,
+    archivoNombreOriginal: string,
     usuarioEmisorId: number,
   ) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+
     try {
       // --- PASO 1: Buscar edicion_id activa ---
       const edicionActiva = await queryRunner.manager.findOne(EdicionRevista, {
@@ -85,6 +90,7 @@ export class ArticulosService {
         {
           observacionesId: observacionGuardada.id,
           archivoPath: archivoPath,
+          archivoNombreOriginal,
         },
       );
       await queryRunner.manager.save(observacionArchivo);
@@ -137,6 +143,63 @@ export class ArticulosService {
     }
   }
 
+  async getArticuloFujo(articuloId: number) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: [
+        'autores',
+        'etapaActual',
+        'observaciones',
+        'observaciones.usuario',
+        'observaciones.usuario.roles',
+        'observaciones.archivos',
+      ],
+    });
+
+    if (!articulo) {
+      throw new BadRequestException('Artículo no encontrado');
+    }
+
+    return {
+      id: articulo.id,
+      codigo: articulo.codigo,
+      titulo: articulo.titulo,
+      etapaActual: articulo.etapaActual
+        ? {
+            id: articulo.etapaActual.id,
+            nombre: articulo.etapaActual.nombre,
+          }
+        : null,
+      autores: articulo.autores.map((autor) => ({
+        id: autor.id,
+        nombre: autor.nombre,
+        email: autor.correo,
+      })),
+      observaciones: articulo.observaciones.map((obs) => ({
+        id: obs.id,
+        asunto: obs.asunto,
+        comentarios: obs.comentarios,
+        fechaSubida: obs.fechaSubida,
+        usuario: obs.usuario
+          ? {
+              id: obs.usuario.id,
+              nombre: obs.usuario.nombre,
+              email: obs.usuario.correo,
+              roles: obs.usuario.roles.map((role) => ({
+                id: role.id,
+                nombre: role.rol,
+              })),
+            }
+          : null,
+        archivos: obs.archivos.map((arch) => ({
+          id: arch.id,
+          archivoPath: arch.archivoPath,
+          archivoNombreOriginal: arch.archivoNombreOriginal,
+        })),
+      })),
+    };
+  }
+
   async getResumenArticulos() {
     const articulos = await this.articuloRepository
       .createQueryBuilder('articulo')
@@ -180,5 +243,100 @@ export class ArticulosService {
       etapa_nombre: articulo.etapaActual?.nombre || 'Desconocida',
       fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
     }));
+  }
+
+  async eliminarArticulo(articuloId: number) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: [
+        'temas',
+        'autores',
+        'observaciones',
+        'observaciones.archivos',
+      ],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException(
+        `El artículo con ID ${articuloId} no existe.`,
+      );
+    }
+
+    const observacionesIds: number[] = [];
+    const archivosFisicos: string[] = [];
+
+    articulo.observaciones.forEach((obs) => {
+      observacionesIds.push(obs.id);
+      obs.archivos.forEach((archivo) => {
+        if (archivo.archivoPath) archivosFisicos.push(archivo.archivoPath);
+      });
+    });
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+
+    await queryRunner.startTransaction();
+
+    try {
+      if (observacionesIds.length > 0) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .delete()
+          .from(ObservacionArchivo)
+          .where('observacionesId IN (:...ids)', { ids: observacionesIds })
+          .execute();
+      }
+
+      await queryRunner.manager.delete(Observacion, {
+        articuloId: articulo.id,
+      });
+
+      await queryRunner.manager.delete(ArticuloHistorialEtapa, {
+        articuloId: articulo.id,
+      });
+
+      if (articulo.temas && articulo.temas.length > 0) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .relation(Articulo, 'temas')
+          .of(articulo.id)
+          .remove(articulo.temas.map((tema) => tema.id));
+      }
+
+      if (articulo.autores && articulo.autores.length > 0) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .relation(Articulo, 'autores')
+          .of(articulo.id)
+          .remove(articulo.autores.map((autor) => autor.id));
+      }
+
+      await queryRunner.manager.delete(Articulo, { id: articulo.id });
+
+      await queryRunner.commitTransaction();
+
+      for (const path of archivosFisicos) {
+        try {
+          await fs.unlink(path);
+        } catch (unlinkError) {
+          console.warn(
+            `Aviso: No se encontró el archivo físico para borrar: ${path}`,
+          );
+        }
+      }
+
+      return {
+        message: 'Artículo y todas sus dependencias eliminadas correctamente',
+        id_eliminado: articuloId,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new InternalServerErrorException(
+        'Error crítico al eliminar el artículo.',
+        error instanceof Error ? error.message : 'Error desconocido',
+      );
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

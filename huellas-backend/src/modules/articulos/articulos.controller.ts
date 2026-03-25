@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
@@ -12,6 +13,9 @@ import {
   UseGuards,
   UseInterceptors,
   Req,
+  Param,
+  ParseIntPipe,
+  Delete,
 } from '@nestjs/common';
 import { ArticulosService } from './articulos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -22,13 +26,21 @@ import { validateOrReject, ValidationError } from 'class-validator';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
+import { promises as fs } from 'fs';
 
 @Controller('articulos')
 export class ArticulosController {
   constructor(private readonly articulosService: ArticulosService) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'autor', 'director', 'monitor')
+  @Get('flujo/:id')
+  async getArticulosFlujo(@Param('id', ParseIntPipe) id: number) {
+    return await this.articulosService.getArticuloFujo(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'monitor', 'director')
   @Get('resumen')
   async getResumenArticulos() {
     return await this.articulosService.getResumenArticulos();
@@ -60,56 +72,76 @@ export class ArticulosController {
       );
     }
 
-    const dto = new CreateArticuloCompletoDto();
-    dto.titulo = body.titulo;
-    dto.resumen = body.resumen;
-    dto.asunto = body.asunto;
-    dto.comentarios = body.comentarios;
-
-    dto.tema_id = Number(body.tema_id);
-
-    dto.palabras_clave =
-      typeof body.palabras_clave === 'string'
-        ? body.palabras_clave.split(',').map((s) => s.trim())
-        : body.palabras_clave;
-
-    if (body.usuarios_ids !== undefined && body.usuarios_ids !== '') {
-      dto.usuarios_ids =
-        typeof body.usuarios_ids === 'string'
-          ? body.usuarios_ids.split(',').map((id) => Number(id.trim()))
-          : body.usuarios_ids;
-
-      if (dto.usuarios_ids.some((id) => isNaN(id))) {
-        throw new BadRequestException(
-          'Los usuarios_ids deben ser números válidos',
-        );
-      }
-    }
-
     try {
+      const dto = new CreateArticuloCompletoDto();
+      dto.titulo = body.titulo;
+      dto.resumen = body.resumen;
+      dto.asunto = body.asunto;
+      dto.comentarios = body.comentarios;
+
+      dto.tema_id = Number(body.tema_id);
+
+      dto.palabras_clave =
+        typeof body.palabras_clave === 'string'
+          ? body.palabras_clave.split(',').map((s) => s.trim())
+          : body.palabras_clave;
+
+      if (body.usuarios_ids !== undefined && body.usuarios_ids !== '') {
+        dto.usuarios_ids =
+          typeof body.usuarios_ids === 'string'
+            ? body.usuarios_ids.split(',').map((id) => Number(id.trim()))
+            : body.usuarios_ids;
+
+        if (dto.usuarios_ids.some((id) => isNaN(id))) {
+          throw new BadRequestException(
+            'Los usuarios_ids deben ser números válidos',
+          );
+        }
+      }
+
       await validateOrReject(dto);
-    } catch (errors) {
-      const validationErrors = errors as ValidationError[];
-      throw new BadRequestException({
-        message: 'Error en la validación de los datos',
-        errors: validationErrors.map((err) => err.constraints),
-      });
+
+      const usuarioEmisorId = dto.usuarios_ids[0];
+
+      return await this.articulosService.crearEnvioArticulo(
+        dto,
+        archivo.path,
+        archivo.originalname,
+        usuarioEmisorId,
+      );
+    } catch (error) {
+      if (archivo && archivo.path) {
+        await fs.unlink(archivo.path).catch(() => null);
+      }
+
+      if (
+        Array.isArray(error) &&
+        error.length > 0 &&
+        error[0] instanceof ValidationError
+      ) {
+        const validationErrors = error as ValidationError[];
+        throw new BadRequestException({
+          message: 'Error en la validación de los datos',
+          errors: validationErrors.map((err) => err.constraints),
+        });
+      }
+
+      throw error;
     }
-
-    const usuarioEmisorId = dto.usuarios_ids[0];
-
-    return await this.articulosService.crearEnvioArticulo(
-      dto,
-      archivo.path,
-      usuarioEmisorId,
-    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('autor', 'admin')
+  @Roles('autor')
   @Get('mis-articulos')
   async getMisArticulos(@Req() req: any) {
     const userId = req.user.userId;
     return await this.articulosService.getArticulosPorAutor(userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Delete(':id')
+  async eliminarArticulo(@Param('id', ParseIntPipe) id: number) {
+    return await this.articulosService.eliminarArticulo(id);
   }
 }

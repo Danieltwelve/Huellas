@@ -18,6 +18,9 @@ export class ObservacionArchivo {
   @Column({ name: 'archivo_path', length: 500 })
   archivoPath!: string;
 
+  @Column({ name: 'archivo_nombre_original', length: 255 })
+  archivoNombreOriginal!: string;
+
   @ManyToOne(() => Observacion, (observacion) => observacion.archivos)
   @JoinColumn({ name: 'observaciones_id' })
   observacion!: Observacion;

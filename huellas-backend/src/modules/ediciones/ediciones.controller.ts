@@ -32,7 +32,7 @@ export class EdicionesController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'director', 'monitor')
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createEdicionDto: CreateEdicionRevistaDto) {
@@ -46,7 +46,7 @@ export class EdicionesController {
 
   @Delete(':id/with-message')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'director', 'monitor')
   async removeWithMessage(@Param('id', ParseIntPipe) id: number) {
     await this.edicionService.remove(id);
     return {
@@ -56,7 +56,7 @@ export class EdicionesController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'director', 'monitor')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateEdicionRevistaDto,
@@ -65,6 +65,15 @@ export class EdicionesController {
     return {
       message: 'Edición actualizada exitosamente',
       data: edicionActualizada,
+    };
+  }
+
+  @Get(':id/conteo-articulos')
+  async getConteoArticulos(@Param('id', ParseIntPipe) id: number) {
+    const data = await this.edicionService.getConteoArticulos(id);
+    return {
+      message: 'Conteo de artículos calculado correctamente',
+      data,
     };
   }
 }

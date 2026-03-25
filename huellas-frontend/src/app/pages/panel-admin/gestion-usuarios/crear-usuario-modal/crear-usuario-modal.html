@@ -45,18 +45,8 @@
 
     <div class="field-group">
       <label for="telefono">Teléfono</label>
-      <div class="phone-row">
-        <select id="pais" class="phone-prefix" aria-label="Prefijo pais" [(ngModel)]="createForm.prefijoPais"
-          name="prefijoPais">
-          <option value="+57">+57</option>
-          <option value="+54">+54</option>
-          <option value="+52">+52</option>
-          <option value="+34">+34</option>
-          <option value="+1">+1</option>
-        </select>
-        <input id="telefono" type="tel" placeholder="Numero" [(ngModel)]="createForm.telefono" name="telefono" required
-          #telField="ngModel" />
-      </div>
+      <input id="telefono" type="tel" placeholder="Numero" [(ngModel)]="createForm.telefono" name="telefono" required
+        #telField="ngModel" />
       @if (telField.touched && !isValidPhone()) {
       <span class="validation-error">Solo se permiten números.</span>
       }

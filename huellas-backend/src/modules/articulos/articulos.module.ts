@@ -15,6 +15,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { FirebaseAdminModule } from 'src/common/firebase/firebase-admin.module';
 import { UsersModule } from '../users/users.module';
+import { Role } from '../roles/roles.entity';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { UsersModule } from '../users/users.module';
       ArticuloHistorialEtapa,
       Observacion,
       ObservacionArchivo,
+      Role,
     ]),
     FirebaseAdminModule,
     UsersModule,
