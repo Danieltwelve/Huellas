@@ -107,6 +107,23 @@ export class ArticulosService {
     );
   }
 
+  descargarArchivo(filename: string): Observable<Blob> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para descargar el archivo.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get(`${environment.apiUrlBackend}/articulos/descargar/${filename}`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          responseType: 'blob', // Importante para manejar el archivo binario
+        }),
+      ),
+    );
+  }
+
   crearArticulo(formData: FormData): Observable<any> {
     const currentUser = this.auth.currentUser;
 

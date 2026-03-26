@@ -20,23 +20,10 @@ export class Articulo {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({
-    name: 'codigo_numero',
-    type: 'int',
-    insert: false,
-    update: false,
-    nullable: true,
-  })
+  @Column({ name: 'codigo_numero', type: 'int' })
   codigoNumero!: number;
 
-  @Column({
-    name: 'codigo',
-    type: 'varchar',
-    unique: true,
-    insert: false,
-    update: false,
-    nullable: true,
-  })
+  @Column({ name: 'codigo', type: 'varchar' })
   codigo!: string;
 
   @Column({ type: 'varchar' })

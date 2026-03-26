@@ -6,7 +6,6 @@ import {
   ObservacionBackend,
 } from '../../../../core/articulos/articulos.service';
 import { ActivatedRoute } from '@angular/router';
-import { environment } from '../../../../../environments/environments';
 
 interface EtapaFlujo {
   id: string;
@@ -16,7 +15,7 @@ interface EtapaFlujo {
 
 interface ArchivoRegistro {
   nombre: string;
-  urlDescarga: string;
+  path: string;
 }
 
 interface RegistroFlujo {
@@ -123,7 +122,7 @@ export class FlujoTrabajoArticulo {
           expandido: false,
           archivos: obs.archivos.map((archivo) => ({
             nombre: archivo.archivoNombreOriginal,
-            urlDescarga: this.construirUrlArchivo(archivo.archivoPath),
+            path: archivo.archivoPath,
           })),
         };
       })
@@ -144,17 +143,23 @@ export class FlujoTrabajoArticulo {
     });
   }
 
-  private obtenerNombreArchivo(ruta: string): string {
-    const partes = ruta.split('/');
-    return partes[partes.length - 1] || 'documento';
-  }
-
-  private construirUrlArchivo(ruta: string): string {
-    return `${environment.apiUrlBackend}/${ruta}`;
-  }
-
-  descargarArchivo(url: string): void {
-    window.open(url, '_blank', 'noopener,noreferrer');
+  descargarArchivo(path: string, nombreOriginal: string): void {
+    let filename = path.split('/').pop() || '';
+    this.articulosService.descargarArchivo(filename).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nombreOriginal;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Error al descargar archivo:', err);
+      },
+    });
   }
 
   get etapaActual(): string {

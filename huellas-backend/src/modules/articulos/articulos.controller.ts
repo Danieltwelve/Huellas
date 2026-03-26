@@ -16,6 +16,10 @@ import {
   Param,
   ParseIntPipe,
   Delete,
+  Res,
+  InternalServerErrorException,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ArticulosService } from './articulos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -27,6 +31,8 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { promises as fs } from 'fs';
+import express from 'express';
+import * as mime from 'mime-types';
 
 @Controller('articulos')
 export class ArticulosController {
@@ -136,6 +142,51 @@ export class ArticulosController {
   async getMisArticulos(@Req() req: any) {
     const userId = req.user.userId;
     return await this.articulosService.getArticulosPorAutor(userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('autor', 'monitor', 'director', 'admin')
+  @Get('descargar/:filename')
+  async descargarArchivo(
+    @Param('filename') filename: string,
+    @Req() req: any,
+    @Res() res: express.Response,
+  ) {
+    try {
+      const userId = req.user.userId;
+      const userRoles = req.user.roles || [];
+
+      const fileStream = await this.articulosService.getArticuloFileStream(
+        filename,
+        userId,
+        userRoles,
+      );
+
+      const mimeType = mime.lookup(filename) || 'application/octet-stream';
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
+
+      fileStream.pipe(res);
+
+      fileStream.on('error', (err) => {
+        console.error('Error al leer el archivo:', err);
+        if (!res.headersSent) {
+          res.status(500).send('Error interno al servir el archivo');
+        }
+      });
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      console.error(error);
+      throw new InternalServerErrorException('Error al descargar el archivo');
+    }
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

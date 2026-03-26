@@ -7,11 +7,13 @@
   </header>
 
   <nav class="etapas-navbar" aria-label="Etapas del articulo">
-    <button *ngFor="let etapa of etapas; index as i" class="etapa-boton" type="button"
-      [class.etapa-boton--activa]="etapa.activa" (click)="seleccionarEtapa(i)">
-      <span class="etapa-numero">{{ i + 1 }}.</span>
+    @for (etapa of etapas; track $index) {
+    <button class="etapa-boton" type="button" [class.etapa-boton--activa]="etapa.activa"
+      (click)="seleccionarEtapa($index)">
+      <span class="etapa-numero">{{ $index + 1 }}.</span>
       <span class="etapa-texto">{{ etapa.titulo }}</span>
     </button>
+    }
   </nav>
 
   <div class="contenido-principal">
@@ -45,7 +47,7 @@
                         <div class="archivo-row" *ngFor="let archivo of registro.archivos">
 
                           <button type="button" class="archivo-descarga-btn"
-                            (click)="descargarArchivo(archivo.urlDescarga)" title="Descargar {{ archivo.nombre }}">
+                            (click)="descargarArchivo(archivo.path, archivo.nombre)" title="Descargar {{ archivo.nombre }}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                               class="icon-download">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -76,7 +78,6 @@
 
       <div class="accion-group">
         <span class="accion-label">Añadir observación</span>
-        <span class="tag-mandatory">Mandatorio</span>
         <button class="btn-outline-teal btn-anadir-observacion" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-plus">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>

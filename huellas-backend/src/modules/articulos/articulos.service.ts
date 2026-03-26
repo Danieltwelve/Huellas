@@ -2,11 +2,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { promises as fs } from 'fs';
+import { createReadStream, existsSync, promises as fs } from 'fs';
 import { DataSource, Repository } from 'typeorm';
 import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
 import { EdicionRevista } from '../ediciones/edicion-revista.entity';
@@ -15,6 +16,7 @@ import { Observacion } from '../observaciones/entities/observacione.entity';
 import { ObservacionArchivo } from '../observaciones-archivos/entities/observaciones-archivo.entity';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { FerchContador } from './entities/ferch-contador.entity';
 
 @Injectable()
 export class ArticulosService {
@@ -22,6 +24,8 @@ export class ArticulosService {
     private dataSource: DataSource,
     @InjectRepository(Articulo)
     private readonly articuloRepository: Repository<Articulo>,
+    @InjectRepository(FerchContador)
+    private readonly ferchContadorRepository: Repository<FerchContador>,
   ) {}
 
   async crearEnvioArticulo(
@@ -35,7 +39,29 @@ export class ArticulosService {
     await queryRunner.startTransaction();
 
     try {
-      // --- PASO 1: Buscar edicion_id activa ---
+      // --- PASO 1: Obtener FERCH - Buscar edicion_id activa ---
+
+      const contador = await queryRunner.manager
+        .createQueryBuilder(FerchContador, 'contador')
+        .setLock('pessimistic_write')
+        .where('id = 1')
+        .getOne();
+
+      if (!contador) {
+        throw new InternalServerErrorException(
+          'No se encontró el contador de artículos',
+        );
+      }
+
+      const siguienteNumero = contador.ultimoNumero + 1;
+      const siguienteCodigo = `FERCH - ${siguienteNumero}`;
+
+      await queryRunner.manager.update(
+        FerchContador,
+        { id: 1 },
+        { ultimoNumero: siguienteNumero },
+      );
+
       const edicionActiva = await queryRunner.manager.findOne(EdicionRevista, {
         where: { estado_id: { id: 1 } } as any,
         order: { fecha_estado: 'ASC' },
@@ -50,6 +76,8 @@ export class ArticulosService {
       const palabrasClaveString = dto.palabras_clave!.join(', ');
 
       const nuevoArticulo = queryRunner.manager.create(Articulo, {
+        codigoNumero: siguienteNumero,
+        codigo: siguienteCodigo,
         titulo: dto.titulo,
         resumen: dto.resumen,
         palabrasClave: palabrasClaveString,
@@ -243,6 +271,49 @@ export class ArticulosService {
       etapa_nombre: articulo.etapaActual?.nombre || 'Desconocida',
       fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
     }));
+  }
+
+  async getArticuloFileStream(
+    filename: string,
+    userId: number,
+    userRoles: string[],
+  ): Promise<NodeJS.ReadableStream> {
+    const archivo = await this.dataSource
+      .getRepository(ObservacionArchivo)
+      .createQueryBuilder('oa')
+      .innerJoinAndSelect('oa.observacion', 'obs')
+      .innerJoinAndSelect('obs.articulo', 'articulo')
+      .leftJoinAndSelect('articulo.autores', 'autor')
+      .where('oa.archivoPath LIKE :suffix', { suffix: `%${filename}` })
+      .getOne();
+
+    if (!archivo) {
+      throw new NotFoundException('Archivo no encontrado');
+    }
+
+    const articulo = archivo.observacion?.articulo;
+    if (!articulo) {
+      throw new NotFoundException('Artículo asociado no encontrado');
+    }
+
+    const esAdmin = userRoles.includes('admin');
+    const esDirector = userRoles.includes('director');
+    const esMonitor = userRoles.includes('monitor');
+    const esAutor =
+      articulo.autores?.some((autor) => autor.id === userId) ?? false;
+
+    if (!esAdmin && !esAutor && !esDirector && !esMonitor) {
+      throw new ForbiddenException(
+        'No tienes permiso para descargar este archivo',
+      );
+    }
+
+    const filePath = archivo.archivoPath;
+    if (!existsSync(filePath)) {
+      throw new NotFoundException('El archivo no existe en el servidor');
+    }
+
+    return createReadStream(filePath);
   }
 
   async eliminarArticulo(articuloId: number) {
