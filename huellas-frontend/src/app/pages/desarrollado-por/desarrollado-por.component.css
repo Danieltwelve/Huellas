@@ -1,87 +1,232 @@
-.container {
-  max-width: 1000px;
+.page-wrap {
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 40px 20px 70px;
+  color: #0f172a;
 }
 
-.header {
-  text-align: center;
-  margin-bottom: 50px;
+.hero,
+.team-section,
+.tech-section,
+.architecture-section,
+.relevant-section,
+.milestones-section,
+.actions {
+  margin-bottom: 34px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 30px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
 }
 
-.header h1 {
-  font-size: 36px;
-  color: #1a1a1a;
-  margin-bottom: 10px;
+.badge {
+  display: inline-flex;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0f766e;
+  background: rgba(0, 178, 169, 0.16);
+  margin-bottom: 14px;
 }
 
-.header p {
-  font-size: 16px;
-  color: #666;
-}
-
-.tech-section, .team-section {
-  margin-bottom: 50px;
+h1 {
+  margin: 0 0 8px;
+  font-size: 2.2rem;
 }
 
 h2 {
-  font-size: 28px;
-  color: #00b2a9;
-  margin-bottom: 30px;
-  border-bottom: 3px solid #00b2a9;
-  padding-bottom: 10px;
+  margin: 0 0 20px;
+  color: #0f172a;
+  font-size: 1.7rem;
+}
+
+.hero p,
+.architecture-section p {
+  color: #334155;
+  max-width: 780px;
+}
+
+.team-grid,
+.tech-grid,
+.relevant-grid,
+.milestones-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.team-grid {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  margin-bottom: 20px;
+}
+
+.team-card,
+.tech-card,
+.relevant-card,
+.milestone-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.team-card {
+  border-left: 4px solid #00b2a9;
+}
+
+h3 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.role {
+  margin: 0 0 10px;
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.detail,
+.tech-card p,
+.milestone-card p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.advisor-card {
+  border-radius: 14px;
+  padding: 22px;
+  border: 1px solid #f0dba5;
+  background: linear-gradient(135deg, #fff9ea 0%, #ffffff 100%);
+}
+
+.advisor-label {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 800;
+  color: #a16207;
 }
 
 .tech-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
-.tech-card {
-  background: linear-gradient(135deg, #00b2a9 0%, #008a82 100%);
-  color: #fff;
-  padding: 30px;
-  border-radius: 8px;
-  text-align: center;
+.relevant-grid {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
 }
 
-.tech-card h3 {
-  margin: 0 0 10px 0;
-  font-size: 20px;
+.relevant-card {
+  background: linear-gradient(145deg, #f5fdfb 0%, #ffffff 100%);
+  border-color: #cdebe6;
 }
 
-.tech-card p {
-  margin: 0;
-  font-size: 14px;
-  opacity: 0.9;
+.relevant-card h3 {
+  color: #0f766e;
 }
 
-.team-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+.layer {
+  margin: 0 0 6px;
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(14, 165, 233, 0.12);
+  color: #0c4a6e;
 }
 
-.team-item {
-  background: #f9f9f9;
-  border-left: 4px solid #00b2a9;
-  padding: 20px;
-  border-radius: 8px;
+.milestones-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.team-item h3 {
-  color: #1a1a1a;
-  margin: 0 0 8px 0;
+.step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 800;
+  background: #00b2a9;
 }
 
-.team-item p {
-  color: #666;
-  margin: 0;
+.actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary,
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 220px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: #00b2a9;
+  color: #ffffff;
+  border: 2px solid #00b2a9;
+}
+
+.btn-primary:hover {
+  background: #00938c;
+  border-color: #00938c;
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background: #ffffff;
+  color: #0f172a;
+  border: 2px solid #cbd5e1;
+}
+
+.btn-outline:hover {
+  border-color: #00b2a9;
+  color: #00b2a9;
+  transform: translateY(-2px);
 }
 
 @media (max-width: 768px) {
-  .tech-grid {
-    grid-template-columns: 1fr;
+  .page-wrap {
+    padding: 26px 14px 60px;
+  }
+
+  .hero,
+  .team-section,
+  .tech-section,
+  .architecture-section,
+  .relevant-section,
+  .milestones-section,
+  .actions {
+    padding: 22px;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+  }
+
+  .btn-primary,
+  .btn-outline {
+    width: 100%;
   }
 }

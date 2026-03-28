@@ -64,7 +64,8 @@ export class AppComponent {
       isAdminSection$,
     ]).pipe(
       map(([user, claims, isAdminSection]) => {
-        const isAdmin = (claims.roles ?? []).includes('admin');
+        const roles = Array.isArray(claims?.roles) ? claims.roles : [];
+        const isAdmin = roles.includes('admin');
         return Boolean(user) && isAdmin && isAdminSection;
       }),
     );

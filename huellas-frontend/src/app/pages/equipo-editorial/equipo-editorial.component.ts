@@ -10,42 +10,55 @@ import { RouterLink } from '@angular/router';
   imports: [CommonModule, RouterLink]
 })
 export class EquipoEditorialComponent {
-  equipo = [
+  coordinador = {
+    id: 1,
+    nombre: 'Dr. Omar Armando Villota Pantoja',
+    cargo: 'Editor Académico',
+    institucion: 'Universidad de Nariño',
+    facultad: 'Facultad de Educación',
+    imagen: '/equipo/Omar.png'
+  };
+
+  comiteEditorial = [
     {
-      id: 1,
-      nombre: 'Omar Armando Pantoja Villota',
-      cargo: 'Director editorial',
-      especialidad: 'Colombiano',
-      descripcion: 'Es Licenciado en Informática, magister y Doctor en Ciencias de la Educación.',
-      imagen: '/equipo/Omar.png',
-      email: 'omarvillota2@gmail.com'
+      nombre: 'Mg. Claudia Solarte',
+      institucion: 'Institución Universitaria CESMAG'
     },
     {
-      id: 2,
-      nombre: 'Juan Esteban Toro Valencia',
-      cargo: 'Miembro Patrimonial bajo legislación colombiana, miembro independiente bajo estándares Dow Jones',
-      especialidad: '',
-      descripcion: '',
-      imagen: '/equipo/Omar.png',
-      email: 'juan.toro@huellas-revista.com'
+      nombre: 'Mg. Mónica Vallejo Achicanoy',
+      institucion: 'Universidad de Nariño'
     },
     {
-      id: 3,
-      nombre: 'María Angelica Arbeláez Restrepo',
-      cargo: 'Miembro independiente',
-      especialidad: '',
-      descripcion: '',
-      imagen: '/equipo/Omar.png',
-      email: 'maria.arbelaez@huellas-revista.com'
-    },
-    {
-      id: 4,
-      nombre: 'Luis Fernando Restrepo Echavarría',
-      cargo: 'Presidente de Junta Directiva-Miembro no independiente bajo legislación colombiana, miembro independiente bajo estándares Dow Jones',
-      especialidad: '',
-      descripcion: '',
-      imagen: '/equipo/Omar.png',
-      email: 'luis.restrepo@huellas-revista.com'
+      nombre: 'Mg. Hernán Rivas Escobar',
+      institucion: 'Universidad de Nariño - CORPONARIÑO'
     }
   ];
+
+  comiteCientifico = [
+    {
+      nombre: 'Dr. Antonio Miñan Espigares',
+      institucion: 'Universidad de Granada'
+    },
+    {
+      nombre: 'Dr. Nelson Torres Vega',
+      institucion: 'Universidad de Nariño'
+    },
+    {
+      nombre: 'Dra. Raquel Fuentes Vela',
+      institucion: 'Universidad del Cauca'
+    },
+    {
+      nombre: 'Dra. Marina Vela Escandón',
+      institucion: 'Universidad de la Amazonia'
+    },
+    {
+      nombre: 'Dra. Amanda Juárez',
+      institucion: 'Benemerita Escuela Normal Superior de Maestros'
+    }
+  ];
+
+  monitor = {
+    nombre: 'Julieth Katherin Lorza Erazo',
+    cargo: 'Monitora Huellas Revista'
+  };
 }

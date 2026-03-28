@@ -1,0 +1,127 @@
+﻿.notify-page {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.notify-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.kicker {
+  margin: 0;
+  color: #00a39a;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+}
+
+.notify-header h1 {
+  margin: 0.25rem 0 0;
+  font-size: 1.55rem;
+}
+
+.ghost {
+  border: 1px solid #94a3b8;
+  background: #fff;
+  color: #1e293b;
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+}
+
+.notify-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.notify-filters button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notify-filters .active {
+  background: #00a39a;
+  border-color: #00a39a;
+  color: #fff;
+}
+
+.notify-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.notify-item {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  gap: 0.8rem;
+  align-items: center;
+  border: 1px solid #dbe5ef;
+  border-radius: 0.8rem;
+  background: #fff;
+  padding: 0.9rem;
+}
+
+.notify-item.unread {
+  box-shadow: 0 8px 18px rgba(20, 184, 166, 0.15);
+  border-color: #5eead4;
+}
+
+.type {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.type-action { background: #f59e0b; }
+.type-info { background: #0ea5e9; }
+.type-success { background: #22c55e; }
+
+.notify-item h3 {
+  margin: 0 0 0.2rem;
+  font-size: 0.96rem;
+}
+
+.notify-item p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.84rem;
+}
+
+.date {
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+.notify-empty {
+  border: 1px dashed #94a3b8;
+  border-radius: 0.8rem;
+  padding: 1.1rem;
+  text-align: center;
+  background: #fff;
+}
+
+@media (max-width: 760px) {
+  .notify-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .notify-item {
+    grid-template-columns: 12px 1fr;
+  }
+
+  .date {
+    grid-column: 2;
+  }
+}
+

@@ -1,68 +1,66 @@
-import { GestionFlujoEditorial } from './pages/panel-admin/gestion-flujo-editorial/gestion-flujo-editorial';
 import { Routes } from '@angular/router';
-import { HomeComponent } from './pages/home/home.component';
-import { LoginComponent } from './pages/login/login.component';
-import { RegisterComponent } from './pages/register/register.component';
-import { ActualComponent } from './pages/actual/actual.component';
-import { ArchivosComponent } from './pages/archivos/archivos.component';
-import { EnviosComponent } from './pages/envios/envios.component';
-import { AvisosComponent } from './pages/avisos/avisos.component';
-import { EquipoEditorialComponent } from './pages/equipo-editorial/equipo-editorial.component';
-import { DesarrolladoPorComponent } from './pages/desarrollado-por/desarrollado-por.component';
-import { EticaPublicacionComponent } from './pages/etica-publicacion/etica-publicacion.component';
-import { IndexacionComponent } from './pages/indexacion/indexacion.component';
-import { AcercaDeComponent } from './pages/acerca-de/acerca-de.component';
-import { MiembroBiografia } from './pages/miembro-biografia/miembro-biografia';
 import { claimsGuard } from './core/auth/claims.guard';
 import { redirectIfAuthenticatedGuard } from './core/auth/redirect-if-authenticated.guard';
-import { GestionUsuarios } from './pages/panel-admin/gestion-usuarios/gestion-usuarios';
-import { RecuperarContrasenaComponent } from './pages/login/recuperar-contraseña/recuperar-contrasena.component';
-import { Articulos } from './pages/panel-admin/articulos/articulos';
-import { FlujoTrabajoArticulo } from './pages/panel-admin/articulos/flujo-trabajo-articulo/flujo-trabajo-articulo';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent },
-  { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: '', loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent) },
   {
-    path: 'recuperar-contrasena',
-    component: RecuperarContrasenaComponent,
+    path: 'login',
+    loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent),
     canActivate: [redirectIfAuthenticatedGuard],
   },
-  { path: 'register', component: RegisterComponent, canActivate: [redirectIfAuthenticatedGuard] },
-  { path: 'actual', component: ActualComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  {
+    path: 'recuperar-contrasena',
+    loadComponent: () =>
+      import('./pages/login/recuperar-contraseña/recuperar-contrasena.component').then(
+        m => m.RecuperarContrasenaComponent,
+      ),
+    canActivate: [redirectIfAuthenticatedGuard],
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent),
+    canActivate: [redirectIfAuthenticatedGuard],
+  },
+  { path: 'actual', loadComponent: () => import('./pages/actual/actual.component').then(m => m.ActualComponent) },
   {
     path: 'archivos',
-    component: ArchivosComponent,
-    canActivate: [redirectIfAuthenticatedGuard],
+    loadComponent: () => import('./pages/archivos/archivos.component').then(m => m.ArchivosComponent),
   },
   {
     path: 'envios',
-    component: EnviosComponent,
-    canActivate: [redirectIfAuthenticatedGuard],
+    loadComponent: () => import('./pages/envios/envios.component').then(m => m.EnviosComponent),
   },
   {
     path: 'gestion-usuarios',
-    component: GestionUsuarios,
+    loadComponent: () =>
+      import('./pages/panel-admin/gestion-usuarios/gestion-usuarios').then(m => m.GestionUsuarios),
     canActivate: [claimsGuard],
     data: { requiredClaim: 'canManageUsers', allowedRoles: ['admin'] },
   },
   {
     path: 'articulos',
-    component: Articulos,
+    loadComponent: () => import('./pages/panel-admin/articulos/articulos').then(m => m.Articulos),
     canActivate: [claimsGuard],
     data: { requiredClaim: 'canManageArticulos', allowedRoles: ['admin'] },
   },
 
   {
     path: 'flujo-trabajo-articulo/:id',
-    component: FlujoTrabajoArticulo,
+    loadComponent: () =>
+      import('./pages/panel-admin/articulos/flujo-trabajo-articulo/flujo-trabajo-articulo').then(
+        m => m.FlujoTrabajoArticulo,
+      ),
     canActivate: [claimsGuard],
     data: { requiredClaim: 'canManageArticulos', allowedRoles: ['admin'] },
   },
 
   {
     path: 'gestion-flujo-editorial',
-    component: GestionFlujoEditorial,
+    loadComponent: () =>
+      import('./pages/panel-admin/gestion-flujo-editorial/gestion-flujo-editorial').then(
+        m => m.GestionFlujoEditorial,
+      ),
     canActivate: [claimsGuard],
     data: { requiredClaim: 'canManageUsers', allowedRoles: ['admin'] },
   },
@@ -72,28 +70,33 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: { requiredClaim: 'roles', allowedRoles: ['autor', 'admin'] },
   },
-  { path: 'avisos', component: AvisosComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'avisos', loadComponent: () => import('./pages/avisos/avisos.component').then(m => m.AvisosComponent) },
   {
     path: 'equipo-editorial',
-    component: EquipoEditorialComponent,
-    canActivate: [redirectIfAuthenticatedGuard],
+    loadComponent: () =>
+      import('./pages/equipo-editorial/equipo-editorial.component').then(m => m.EquipoEditorialComponent),
   },
-  { path: 'equipo/:id', component: MiembroBiografia, canActivate: [redirectIfAuthenticatedGuard] },
+  {
+    path: 'equipo/:id',
+    loadComponent: () => import('./pages/miembro-biografia/miembro-biografia').then(m => m.MiembroBiografia),
+  },
   {
     path: 'desarrollado-por',
-    component: DesarrolladoPorComponent,
-    canActivate: [redirectIfAuthenticatedGuard],
+    loadComponent: () =>
+      import('./pages/desarrollado-por/desarrollado-por.component').then(m => m.DesarrolladoPorComponent),
   },
   {
     path: 'etica-publicacion',
-    component: EticaPublicacionComponent,
-    canActivate: [redirectIfAuthenticatedGuard],
+    loadComponent: () =>
+      import('./pages/etica-publicacion/etica-publicacion.component').then(m => m.EticaPublicacionComponent),
   },
   {
     path: 'indexacion',
-    component: IndexacionComponent,
-    canActivate: [redirectIfAuthenticatedGuard],
+    loadComponent: () => import('./pages/indexacion/indexacion.component').then(m => m.IndexacionComponent),
   },
-  { path: 'acerca-de', component: AcercaDeComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  {
+    path: 'acerca-de',
+    loadComponent: () => import('./pages/acerca-de/acerca-de.component').then(m => m.AcercaDeComponent),
+  },
   { path: '**', redirectTo: '' },
 ];

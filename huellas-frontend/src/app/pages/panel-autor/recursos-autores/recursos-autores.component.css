@@ -1,241 +1,213 @@
-.recursos-container {
-  max-width: 1000px;
+﻿.recursos-container {
+  max-width: 1100px;
   margin: 0 auto;
 }
 
 .header {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 40px;
-}
-
-.header-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  gap: 0.9rem;
+  margin-bottom: 1.35rem;
+  padding: 1.1rem;
+  border: 1px solid #dbe5ef;
+  border-radius: 1rem;
+  background: linear-gradient(120deg, #ffffff, #f2fbf8);
 }
 
 .header-text h1 {
-  font-size: 26px;
-  margin: 0 0 5px 0;
-  color: #1a1a20;
+  font-size: 1.7rem;
+  margin: 0;
+  color: #0f172a;
 }
 
 .header-text p {
-  color: #666;
-  margin: 0;
-  font-size: 14px;
+  color: #475569;
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
 }
 
 .section {
-  margin-bottom: 40px;
+  margin-bottom: 1.3rem;
 }
 
 .section-title {
-  font-size: 18px;
-  color: #1a1a20;
+  font-size: 1rem;
+  color: #0f172a;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .section-title span {
-  color: #00b09b;
+  color: #00a39a;
   font-weight: 800;
 }
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 .doc-card {
   background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  border: 1px solid #eef2f5;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  border-radius: 0.85rem;
+  padding: 0.95rem;
+  border: 1px solid #dbe5ef;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
   display: flex;
   flex-direction: column;
+  transition: transform 0.2s ease;
+}
+
+.doc-card:hover {
+  transform: translateY(-2px);
 }
 
 .card-header {
   display: flex;
   align-items: flex-start;
-  gap: 15px;
-  margin-bottom: 12px;
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
 }
 
 .doc-icon {
-  font-size: 24px;
+  font-size: 1.2rem;
 }
 
 .doc-title-area h3 {
-  font-size: 15px;
-  margin: 0 0 5px 0;
-  color: #1a1a20;
+  font-size: 0.9rem;
+  margin: 0 0 0.25rem;
+  color: #0f172a;
 }
 
 .badge {
-  font-size: 10px;
+  font-size: 0.62rem;
   padding: 2px 6px;
   border-radius: 4px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-.badge-pdf {
-  background: #ffebee;
-  color: #c62828;
-}
-
-.badge-docx {
-  background: #e3f2fd;
-  color: #1565c0;
-}
+.badge-pdf { background: #fee2e2; color: #991b1b; }
+.badge-docx { background: #dbeafe; color: #1d4ed8; }
 
 .doc-card p {
-  font-size: 13px;
-  color: #666;
+  font-size: 0.8rem;
+  color: #475569;
   line-height: 1.5;
-  margin: 0 0 20px 0;
+  margin: 0 0 0.85rem;
   flex-grow: 1;
 }
 
 .btn-download {
-  background: #00b09b;
+  background: #00a39a;
   color: #fff;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 0.52rem 0.78rem;
+  border-radius: 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
   cursor: pointer;
   align-self: flex-start;
-  transition: opacity 0.2s;
-}
-
-.btn-download:hover {
-  opacity: 0.9;
 }
 
 .process-timeline {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
   background: #fff;
-  padding: 30px;
-  border-radius: 8px;
-  border: 1px solid #eef2f5;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  padding: 0.9rem;
+  border-radius: 0.85rem;
+  border: 1px solid #dbe5ef;
 }
 
 .step {
-  flex: 1;
-  text-align: center;
-  position: relative;
-  max-width: 150px;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.7rem;
+  padding: 0.7rem;
+  background: #f8fafc;
 }
 
 .step-number {
-  width: 32px;
-  height: 32px;
-  background: #00b09b;
+  width: 1.7rem;
+  height: 1.7rem;
+  background: #00a39a;
   color: #fff;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  margin: 0 auto 15px auto;
-  font-size: 14px;
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
 }
 
 .step h4 {
-  font-size: 14px;
-  color: #1a1a20;
-  margin: 0 0 8px 0;
+  font-size: 0.82rem;
+  color: #0f172a;
+  margin: 0 0 0.35rem;
 }
 
 .step p {
-  font-size: 12px;
-  color: #666;
-  line-height: 1.4;
+  font-size: 0.75rem;
+  color: #475569;
+  line-height: 1.45;
   margin: 0;
 }
 
 .step-connector {
-  color: #ccc;
-  font-size: 20px;
-  margin-top: 5px;
+  display: none;
 }
 
-.faq-link {
-  margin-top: 20px;
-}
-
-.faq-link a {
-  color: #1a1a20;
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.faq-link a:hover {
-  text-decoration: underline;
-}
-
-/* FAQ Accordion */
 .faq-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.45rem;
 }
 
 .faq-item {
-  border: 1px solid #e8ecf0;
-  border-radius: 8px;
+  border: 1px solid #dbe5ef;
+  border-radius: 0.7rem;
   overflow: hidden;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 }
 
 .faq-question {
   width: 100%;
   background: transparent;
   border: none;
-  padding: 18px 20px;
+  padding: 0.85rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  font-size: 15px;
-  font-weight: 500;
-  color: #1a1a20;
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: #0f172a;
   text-align: left;
-  transition: background 0.2s;
 }
 
 .faq-question:hover {
-  background: #f8f9fa;
+  background: #f8fafc;
 }
 
 .faq-icon {
-  font-size: 12px;
-  color: #00b09b;
-  margin-left: 15px;
-  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: #00a39a;
+  margin-left: 0.7rem;
 }
 
 .faq-answer {
   display: none;
-  padding: 0 20px 18px 20px;
-  font-size: 14px;
-  color: #555;
-  line-height: 1.6;
-  border-top: 1px solid #f0f0f0;
+  padding: 0 0.85rem 0.82rem;
+  font-size: 0.82rem;
+  color: #475569;
+  line-height: 1.55;
+  border-top: 1px solid #eef2f7;
 }
 
 .faq-item.open .faq-answer {
@@ -243,6 +215,28 @@
 }
 
 .faq-item.open .faq-question {
-  background: #f8fdfc;
-  color: #00b09b;
+  background: #f0fdfa;
+  color: #00a39a;
 }
+
+@media (max-width: 1024px) {
+  .cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .process-timeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .cards-grid,
+  .process-timeline {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    align-items: flex-start;
+  }
+}
+

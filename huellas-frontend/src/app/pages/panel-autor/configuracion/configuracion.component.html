@@ -1,0 +1,30 @@
+<section class="settings-page">
+  <header>
+    <p class="kicker">Preferencias</p>
+    <h1>Configuracion del panel</h1>
+    <p>Administra notificaciones y comportamiento visual de tu espacio de autor.</p>
+  </header>
+
+  <div class="settings-grid">
+    <article class="setting-card">
+      <h2>Comunicaciones</h2>
+      <label class="toggle-item">
+        <input type="checkbox" [checked]="resumenSemanal" (change)="onResumenSemanalChange($event)">
+        <span>Recibir resumen semanal de avances editoriales</span>
+      </label>
+      <label class="toggle-item">
+        <input type="checkbox" [checked]="alertasCorreo" (change)="onAlertasCorreoChange($event)">
+        <span>Recibir alertas por correo para cambios de etapa</span>
+      </label>
+    </article>
+
+    <article class="setting-card">
+      <h2>Visualizacion</h2>
+      <label class="toggle-item">
+        <input type="checkbox" [checked]="vistaCompacta" (change)="onVistaCompactaChange($event)">
+        <span>Usar vista compacta en tablas del panel</span>
+      </label>
+      <p class="note">Estos ajustes son demostrativos y pueden conectarse luego a preferencias persistentes.</p>
+    </article>
+  </div>
+</section>

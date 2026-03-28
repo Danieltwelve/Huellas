@@ -5,6 +5,8 @@ import { NuevoArticuloComponent } from './nuevo-articulo/nuevo-articulo.componen
 import { RecursosAutoresComponent } from './recursos-autores/recursos-autores.component';
 import { CertificadosComponent } from './certificados/certificados.component';
 import { TimelineEditorialComponent } from './timeline-editorial/timeline-editorial.component';
+import { NotificacionesComponent } from './notificaciones/notificaciones.component';
+import { ConfiguracionAutorComponent } from './configuracion/configuracion.component';
 
 export const PANEL_AUTOR_ROUTES: Routes = [
   {
@@ -17,7 +19,8 @@ export const PANEL_AUTOR_ROUTES: Routes = [
       { path: 'recursos', component: RecursosAutoresComponent },
       { path: 'certificados', component: CertificadosComponent },
       { path: 'timeline', component: TimelineEditorialComponent },
-      // placeholders for notificaciones, configuracion
+      { path: 'notificaciones', component: NotificacionesComponent },
+      { path: 'configuracion', component: ConfiguracionAutorComponent },
     ]
   }
 ];

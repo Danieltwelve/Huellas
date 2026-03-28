@@ -1,23 +1,50 @@
-/* You can add global styles to this file, and also import other style files */
+﻿/* You can add global styles to this file, and also import other style files */
 :root {
-  --primary: #00b2a9;
-  --dark: #1e1e1e;
-  --light: #ffffff;
-  --gray: #f5f5f5;
+  --color-primary: #00a39a;
+  --color-primary-soft: #14b8a6;
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-surface: #ffffff;
+  --color-border: #dbe5ef;
+  --color-bg: #ecf4f8;
+  --color-warn: #b45309;
+  --color-danger: #b91c1c;
+  --color-success: #166534;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Inter', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background-color: var(--light);
-  color: var(--dark);
+  font-family: 'Manrope', sans-serif;
+  background:
+    radial-gradient(circle at 6% 0%, rgba(20, 184, 166, 0.16), transparent 24%),
+    radial-gradient(circle at 90% 14%, rgba(15, 118, 110, 0.14), transparent 28%),
+    var(--color-bg);
+  color: var(--color-ink);
 }
 
-html{
-scroll-behavior:smooth;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Fraunces', serif;
+  letter-spacing: 0.01em;
 }
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+

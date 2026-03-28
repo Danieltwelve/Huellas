@@ -9,8 +9,8 @@
     <main class="page-content">
       <router-outlet></router-outlet>
     </main>
-    @if (!(user$ | async)) {
-    <app-footer *ngIf="showFooter"></app-footer>
+    @if (!(user$ | async) && showFooter) {
+      <app-footer></app-footer>
     }
 
   </div>

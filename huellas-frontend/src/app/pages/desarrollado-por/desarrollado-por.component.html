@@ -1,26 +1,55 @@
-<div class="container">
-  <div class="header">
-    <h1>Desarrollado por</h1>
-    <p>Conoce la tecnología detrás de HUELLAS</p>
-  </div>
+<div class="page-wrap">
+  
+  <section class="team-section">
+    <h2>Equipo de Desarrollo</h2>
+    <div class="team-grid">
+      <article class="team-card" *ngFor="let member of desarrolladores">
+        <h3>{{ member.nombre }}</h3>
+        <p class="role">{{ member.rol }}</p>
+      </article>
+    </div>
 
-  <div class="tech-section">
-    <h2>Tecnologías Utilizadas</h2>
+    <article class="advisor-card">
+      <p class="advisor-label">Asesoria Academica y de Proyecto</p>
+      <h3>{{ asesora.nombre }}</h3>
+      <p class="role">{{ asesora.rol }}</p>
+      <p class="detail">{{ asesora.aporte }}</p>
+    </article>
+  </section>
+
+  <section class="tech-section">
+    <h2>Tecnologias Utilizadas</h2>
     <div class="tech-grid">
-      <div class="tech-card" *ngFor="let tech of tecnologias">
+      <article class="tech-card" *ngFor="let tech of tecnologias">
+        <p class="layer">{{ tech.capa }}</p>
         <h3>{{ tech.nombre }}</h3>
         <p>{{ tech.descripcion }}</p>
-      </div>
+      </article>
     </div>
-  </div>
+  </section>
 
-  <div class="team-section">
-    <h2>Equipo de Desarrollo</h2>
-    <div class="team-list">
-      <div class="team-item" *ngFor="let member of equipo">
-        <h3>{{ member.nombre }}</h3>
-        <p>{{ member.rol }}</p>
-      </div>
+  
+
+  <section class="relevant-section">
+    <h2>Aspectos Relevantes del Sistema</h2>
+    <div class="relevant-grid">
+      <article class="relevant-card" *ngFor="let aspecto of aspectosClave">
+        <h3>{{ aspecto.titulo }}</h3>
+        <p>{{ aspecto.detalle }}</p>
+      </article>
     </div>
-  </div>
+  </section>
+
+  <section class="milestones-section">
+    <h2>Hitos del Proyecto</h2>
+    <div class="milestones-grid">
+      <article class="milestone-card" *ngFor="let hito of hitos; index as i">
+        <span class="step">0{{ i + 1 }}</span>
+        <h3>{{ hito.etapa }}</h3>
+        <p>{{ hito.descripcion }}</p>
+      </article>
+    </div>
+  </section>
+
+  
 </div>

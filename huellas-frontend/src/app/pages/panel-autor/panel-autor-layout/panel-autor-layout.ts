@@ -1,21 +1,27 @@
-import { Component, inject, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { AsyncPipe } from '@angular/common';
+import { Component, inject, HostListener, OnInit } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AccessClaims, AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-panel-autor-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, AsyncPipe],
   templateUrl: './panel-autor-layout.html',
   styleUrls: ['./panel-autor-layout.css']
 })
-export class PanelAutorLayoutComponent {
+export class PanelAutorLayoutComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
 
   collapsed = false;
   userMenuOpen = false;
+
+  ngOnInit(): void {
+    if (window.innerWidth < 960) {
+      this.collapsed = true;
+    }
+  }
 
   claims$ = this.authService.claims$;
   user$ = this.authService.user$;
@@ -39,6 +45,13 @@ export class PanelAutorLayoutComponent {
     const target = event.target as HTMLElement;
     if (!target.closest('.user-actions')) {
       this.userMenuOpen = false;
+    }
+  }
+
+  @HostListener('window:resize')
+  onResize() {
+    if (window.innerWidth < 960) {
+      this.collapsed = true;
     }
   }
 

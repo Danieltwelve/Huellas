@@ -26,11 +26,13 @@ export class NavbarComponent implements OnInit {
     map(([user, claims]) => {
       if (!user) return false;
 
+      const roles = Array.isArray(claims?.roles) ? claims.roles : [];
+
       return Boolean(
-        claims.canManageUsers ||
-          claims.canSubmitEnvios ||
-          claims.canViewArchivos ||
-          (claims.roles?.length ?? 0) > 0,
+        claims?.canManageUsers ||
+          claims?.canSubmitEnvios ||
+          claims?.canViewArchivos ||
+          roles.length > 0,
       );
     }),
   );

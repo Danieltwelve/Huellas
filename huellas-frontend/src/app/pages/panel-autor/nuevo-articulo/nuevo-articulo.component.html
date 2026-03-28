@@ -12,8 +12,17 @@
     </div>
   } @else {
     <div class="form-card">
-      <h1 class="form-title">Nuevo artículo</h1>
-      <p class="form-sub">Complete todos los campos requeridos. El archivo no debe superar 10 MB y debe ser .pdf o .docx.</p>
+      <div class="form-head">
+        <div>
+          <p class="form-kicker">Envio editorial</p>
+          <h1 class="form-title">Nuevo artículo</h1>
+          <p class="form-sub">Complete todos los campos requeridos. El archivo no debe superar 10 MB y debe ser .pdf o .docx.</p>
+        </div>
+        <aside class="form-callout" aria-label="Recomendaciones de envio">
+          <h2>Checklist rápido</h2>
+          <p>Ten listo el resumen, palabras clave y archivo principal antes de enviar.</p>
+        </aside>
+      </div>
 
       @if (errorEnvio) {
         <div class="alert-error">{{ errorEnvio }}</div>

@@ -1,26 +1,59 @@
-<div class="container">
-  <div class="header">
+<div class="page-wrap">
+  <section class="hero">
     <h1>Equipo Editorial</h1>
-    
-  </div>
+    <p>La estructura editorial de Revista Huellas está formada por coordinadores, comités especializados y personal de apoyo comprometidos con la excelencia académica.</p>
+  </section>
 
-  <div class="equipo-grid">
-    <div class="miembro-card" *ngFor="let miembro of equipo">
+  <section class="coordinator-section">
+    <h2>Coordinador - Editor Académico</h2>
+    <article class="coordinator-card-with-image">
       <div class="card-image">
-        <img [src]="miembro.imagen" [alt]="miembro.nombre" />
+        <img [src]="coordinador.imagen" [alt]="coordinador.nombre" />
       </div>
       <div class="card-content">
-        <h3 class="miembro-numero">{{ miembro.id }}. {{ miembro.nombre }}</h3>
-        <p class="cargo">{{ miembro.cargo }}</p>
-        <p class="especialidad" *ngIf="miembro.especialidad">{{ miembro.especialidad }}</p>
-        <p class="descripcion" *ngIf="miembro.descripcion">{{ miembro.descripcion }}</p>
-        <a class="conocelo-link" [routerLink]="['/equipo', miembro.id]">
+        <h3>{{ coordinador.nombre }}</h3>
+        <p class="position">{{ coordinador.cargo }}</p>
+        <p class="institution">{{ coordinador.institucion }}</p>
+        <p class="faculty">{{ coordinador.facultad }}</p>
+        <a class="conocelo-link" [routerLink]="['/equipo', coordinador.id]" *ngIf="coordinador.id">
           Conócelo
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
         </a>
       </div>
-    </div>
-  </div>
+    </article>
+  </section>
+
+  <section class="committees-section">
+    <article class="committee-block">
+      <h2>Comité Editorial</h2>
+      <p class="committee-description">Responsable de la revisión y selección de artículos, garantizando altos estándares académicos.</p>
+      <div class="committee-grid">
+        <div class="committee-member" *ngFor="let miembro of comiteEditorial">
+          <h4>{{ miembro.nombre }}</h4>
+          <p>{{ miembro.institucion }}</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="committee-block">
+      <h2>Comité Científico</h2>
+      <p class="committee-description">Expertos internacionales que validan la calidad y pertinencia de las investigaciones publicadas.</p>
+      <div class="committee-grid">
+        <div class="committee-member" *ngFor="let miembro of comiteCientifico">
+          <h4>{{ miembro.nombre }}</h4>
+          <p>{{ miembro.institucion }}</p>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="monitor-section">
+    <h2>Monitor Huellas Revista</h2>
+    <article class="monitor-card">
+      <h3>{{ monitor.nombre }}</h3>
+      <p class="position">{{ monitor.cargo }}</p>
+    </article>
+  </section>
 </div>
