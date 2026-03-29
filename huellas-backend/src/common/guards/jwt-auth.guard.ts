@@ -38,16 +38,12 @@ export class JwtAuthGuard implements CanActivate {
       if (!user) {
         throw new UnauthorizedException('Usuario no registrado en el sistema');
       }
-
       const tokenRoles = this.extractRoles(decodedToken);
 
       request['user'] = {
         userId: user.id,
         email: user.correo,
-        roles:
-          tokenRoles.length > 0
-            ? tokenRoles
-            : (user.roles?.map((r) => r.rol) ?? []),
+        roles: tokenRoles,
       };
       return true;
     } catch (error: unknown) {

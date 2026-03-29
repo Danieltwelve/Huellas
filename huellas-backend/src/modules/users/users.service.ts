@@ -46,10 +46,17 @@ export class UsersService {
       throw new NotFoundException('Rol no encontrado');
     }
 
-    await this.createFirebaseUserAndSendVerification(
-      adminCreateDto.correo,
-      adminCreateDto.contraseña,
-    );
+    try {
+      await this.createFirebaseUserAndSendVerification(
+        adminCreateDto.correo,
+        adminCreateDto.contraseña,
+      );
+    } catch (error) {
+      throw new BadRequestException(
+        'No se pudo crear la cuenta en Firebase',
+        error instanceof Error ? error.message : undefined,
+      );
+    }
 
     const newUser = this.userRepository.create({
       nombre: adminCreateDto.nombre,

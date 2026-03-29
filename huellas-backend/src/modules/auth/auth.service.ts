@@ -1,7 +1,3 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
   Inject,
@@ -12,6 +8,7 @@ import { Auth } from 'firebase-admin/auth';
 import { FIREBASE_AUTH } from '../../common/firebase/firebase-admin.constants';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/user.entity';
+import { EmailStatusResponseDto } from './dtos/email-status.dto';
 
 export interface CustomClaims {
   roles: string[];
@@ -53,7 +50,12 @@ export class AuthService {
     }
 
     const customClaims = this.buildCustomClaims(user);
-    await this.setFirebaseCustomClaims(firebaseUserData.uid, customClaims, true);
+    await this.setFirebaseCustomClaims(
+      firebaseUserData.uid,
+      customClaims,
+      // Sobrecarga de llamada para marcar el correo como verificado en Firebase si no lo estaba previamente
+      true,
+    );
 
     return { status: 'ok' };
   }
@@ -64,6 +66,8 @@ export class AuthService {
   ): Promise<AuthSyncResponse> {
     const firebaseUserData = await this.validateFirebaseToken(idToken);
     let user = await this.usersService.findByEmail(firebaseUserData.email);
+
+    // Desincronización posible: el usuario existe en firebase pero no en la base de datos local. En este caso, se crea el usuario local con el correo verificado (ya que viene de Firebase) y se asignan los claims correspondientes.
 
     if (!user) {
       user = await this.usersService.create({
@@ -108,14 +112,18 @@ export class AuthService {
     const canViewArchivos = roleNames.some((rol) =>
       ['admin', 'editor', 'reviewer'].includes(rol),
     );
-
     const canSubmitEnvios = roleNames.some((rol) =>
       ['admin', 'autor'].includes(rol),
     );
-
-    const canManageUsers = roleNames.some((rol) => ['admin'].includes(rol));
-    const canManageArticulos = roleNames.some((rol) => ['admin'].includes(rol));
-    const canManageFlujoEditorial = roleNames.some((rol) => ['admin'].includes(rol));
+    const canManageUsers = roleNames.some((rol) =>
+      ['admin', 'director'].includes(rol),
+    );
+    const canManageArticulos = roleNames.some((rol) =>
+      ['admin', 'director'].includes(rol),
+    );
+    const canManageFlujoEditorial = roleNames.some((rol) =>
+      ['admin', 'director'].includes(rol),
+    );
 
     return {
       roles: roleNames,
@@ -146,5 +154,18 @@ export class AuthService {
         'Unable to set Firebase custom claims',
       );
     }
+  }
+
+  async getEmailStatusByEmail(email: string): Promise<EmailStatusResponseDto> {
+    const user = await this.usersService.findByEmail(email);
+
+    if (!user) {
+      return { exists: false, emailVerified: false };
+    }
+
+    return {
+      exists: true,
+      emailVerified: Boolean(user.correo_verificado),
+    };
   }
 }

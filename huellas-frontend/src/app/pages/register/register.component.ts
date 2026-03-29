@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService, Credentials, RegisterUserAttributes } from '../../core/auth/auth.service';
@@ -20,8 +20,13 @@ interface RegisterFormModel {
 export class RegisterComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
+  isRegistering = false;
   showVerificationModal = false;
   showWrongModal = false;
+  wrongModalMessage = 'Hubo un problema al registrarse';
+  registerInlineErrorMessage = '';
+  showEmailNotVerifiedModal = false;
 
   registerForm = new FormGroup<RegisterFormModel>({
     nombre: new FormControl<string>('', {
@@ -44,38 +49,67 @@ export class RegisterComponent {
   });
 
   async signUp(): Promise<void> {
+    if (this.isRegistering) return;
+
+    this.isRegistering = true;
+    this.registerInlineErrorMessage = '';
+    this.showWrongModal = false;
+    this.wrongModalMessage = 'Hubo un problema al registrarse';
+    this.showVerificationModal = false;
+
     if (!this.registerForm.valid) {
       this.registerForm.markAllAsTouched();
+      this.isRegistering = false;
       return;
     }
 
-    const credentials: Credentials = {
-      correo: this.registerForm.value.correo!,
-      contraseña: this.registerForm.value.contraseña!,
-    };
+    const correo = (this.registerForm.value.correo ?? '').trim().toLowerCase();
+    const contraseña = this.registerForm.value.contraseña ?? '';
+
+    const credentials: Credentials = { correo, contraseña };
 
     const registerAttributes: RegisterUserAttributes = {
       nombre: this.registerForm.value.nombre!,
-      correo: this.registerForm.value.correo!,
+      correo,
     };
+
+    try {
+      const status = await this.authService.getEmailStatus(correo);
+
+      if (status.exists && status.emailVerified === true) {
+        this.registerInlineErrorMessage = 'Este correo ya se encuentra registrado.';
+        this.isRegistering = false;
+        this.cdr.detectChanges();
+        return;
+      }
+
+      if (status.exists && status.emailVerified === false) {
+        this.isRegistering = false;
+        this.showEmailNotVerifiedModal = true;
+        this.cdr.detectChanges();
+        return;
+      }
+    } catch {
+      this.wrongModalMessage = 'No se pudo validar el estado del correo. Intenta nuevamente.';
+      this.showWrongModal = true;
+      this.isRegistering = false;
+      return;
+    }
 
     try {
       await this.authService.signUpWithEmailAndPassword(credentials, registerAttributes);
       this.showVerificationModal = true;
-    } catch (error) {
+    } catch {
+      this.wrongModalMessage = 'Hubo un problema al registrarse';
       this.showWrongModal = true;
+    } finally {
+      this.isRegistering = false;
     }
-  }
-
-  continueAfterVerificationNotice(): void {
-    this.showVerificationModal = false;
-    this.router.navigate(['/login']);
   }
 
   async signUpWithMicrosoft() {
     try {
       await this.authService.loginWithMicrosoft();
-      this.router.navigate(['/']);
     } catch (error) {
       console.error('Error con Microsoft:', error);
     }
@@ -84,7 +118,6 @@ export class RegisterComponent {
   async signUpWithGoogle() {
     try {
       await this.authService.loginWithGoogle();
-      this.router.navigate(['/']);
     } catch (error) {
       console.error('Error during Google registration:', error);
     }
@@ -92,9 +125,23 @@ export class RegisterComponent {
 
   closeVerificationModal(): void {
     this.showVerificationModal = false;
+    this.cdr.detectChanges();
+  }
+
+  continueAfterVerificationNotice(): void {
+    this.showVerificationModal = false;
+    this.router.navigate(['/login']);
+    this.cdr.detectChanges();
   }
 
   closeWrongModal(): void {
     this.showWrongModal = false;
+    this.wrongModalMessage = 'Hubo un problema al registrarse';
+    this.cdr.detectChanges();
+  }
+
+  closeEmailNotVerifiedModal(): void {
+    this.showEmailNotVerifiedModal = false;
+    this.cdr.detectChanges();
   }
 }

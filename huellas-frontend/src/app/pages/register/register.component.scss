@@ -261,8 +261,16 @@
   font-weight: 600;
 }
 
+.verification-modal p span {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: #64748b;
+  font-weight: 400;
+}
+
 /* Botones de modal */
-.continue-btn, .wrong-btn {
+.continue-btn, .wrong-btn, .btn-correo-exists {
   min-width: 160px;
   height: 42px;
   border: none;
@@ -280,6 +288,16 @@
 
 .continue-btn:hover {
   background: #359891;
+  transform: translateY(-1px);
+}
+
+.btn-correo-exists {
+  background: #BA8E23;
+  color: white;
+}
+
+.btn-correo-exists:hover {
+  background: #9c6f1b;
   transform: translateY(-1px);
 }
 
@@ -301,6 +319,69 @@
 .bi-emoji-frown {
   fill: #ef4444;
   margin-bottom: 0.5rem;
+}
+
+.input-error {
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+
+  background: rgba(239, 68, 68, 0.12);
+  /* rojo con baja opacidad */
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 10px;
+
+  color: #b91c1c;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.link-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.continue-btn, .wrong-btn {
+  min-width: 140px;
+  height: 42px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.continue-btn {
+  background: #44b2a9;
+  color: white;
+}
+
+.continue-btn:hover:not(:disabled) {
+  background: #359891;
+  transform: translateY(-1px);
+}
+
+.continue-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.wrong-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.wrong-btn:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
 }
 
 /* Responsive */

@@ -15,8 +15,9 @@ export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
-
-  showVerificationModal = false;
+  loginErrorMessage = '';
+  loggingIn = false;
+  showVerificationRequiredModal = false;
   showWrongModal = false;
   wrongModalMessage = 'Hubo un problema al iniciar sesión con correo y contraseña.';
   showMicrosoftLinkModal = false;
@@ -27,6 +28,7 @@ export class LoginComponent {
   microsoftLinkPassword = '';
   microsoftLinkError = '';
   linkingMicrosoft = false;
+  resendingVerification = false;
 
   correo = '';
   contrasena = '';
@@ -36,6 +38,11 @@ export class LoginComponent {
   }
 
   async loginWithEmailAndPassword(): Promise<void> {
+    this.loginErrorMessage = '';
+
+    if (this.loggingIn) return;
+    this.loggingIn = true;
+
     try {
       const credentials: Credentials = {
         correo: this.correo.trim(),
@@ -46,13 +53,15 @@ export class LoginComponent {
       this.router.navigate([this.authService.getPostLoginRoute()]);
     } catch (error) {
       if (error instanceof Error && error.message === 'EMAIL_NOT_VERIFIED') {
-        this.showVerificationModal = true;
+        await this.authService.logout();
+        this.showVerificationRequiredModal = true;
         this.cdr.detectChanges();
-      } else {
-        this.wrongModalMessage = 'Hubo un problema al iniciar sesión con correo y contraseña.';
-        this.showWrongModal = true;
-        this.cdr.detectChanges();
+        return;
       }
+      this.loginErrorMessage = this.authService.getFriendlyLoginErrorMessage(error);
+      this.cdr.detectChanges();
+    } finally {
+      this.loggingIn = false;
     }
   }
 
@@ -69,8 +78,9 @@ export class LoginComponent {
 
   async onGoogleLogin() {
     try {
-      await this.authService.loginWithGoogle();
+      const user = await this.authService.loginWithGoogle();
       this.router.navigate([this.authService.getPostLoginRoute()]);
+      if (!user) return;
     } catch (error) {
       this.showWrongModal = true;
       this.cdr.detectChanges();
@@ -79,7 +89,8 @@ export class LoginComponent {
 
   async onMicrosoftLogin() {
     try {
-      await this.authService.loginWithMicrosoft();
+      const user = await this.authService.loginWithMicrosoft();
+      if (!user) return;
       this.router.navigate([this.authService.getPostLoginRoute()]);
     } catch (error: any) {
       if (error instanceof Error && error.message === 'MICROSOFT_LINK_REQUIRED') {
@@ -151,13 +162,13 @@ export class LoginComponent {
     }
   }
 
-  closeVerificationModal(): void {
-    this.showVerificationModal = false;
+  closeWrongModal(): void {
+    this.showWrongModal = false;
     this.cdr.detectChanges();
   }
 
-  closeWrongModal(): void {
-    this.showWrongModal = false;
+  closeVerificationRequiredModal(): void {
+    this.showVerificationRequiredModal = false;
     this.cdr.detectChanges();
   }
 }

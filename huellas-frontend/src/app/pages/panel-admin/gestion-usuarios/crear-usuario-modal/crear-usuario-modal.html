@@ -55,11 +55,11 @@
     <div class="field-group full-width">
       <label for="roles">Roles</label>
       <select id="roles" [(ngModel)]="createForm.rol" name="rol">
-        <option [value]="1">admin</option>
-        <option [value]="2">director</option>
-        <option [value]="3">monitor</option>
-        <option [value]="4">revisor</option>
-        <option [value]="5">autor</option>
+        <option [ngValue]="1">admin</option>
+        <option [ngValue]="5">director</option>
+        <option [ngValue]="2">monitor</option>
+        <option [ngValue]="3">revisor</option>
+        <option [ngValue]="4">autor</option>
       </select>
     </div>
 
@@ -103,7 +103,8 @@
       <div class="detail-item">
         <span class="detail-label">Rol asignado:</span>
         <span class="detail-value role-badge">{{ createForm.rol === 1 ? 'Admin' : createForm.rol === 2 ? 'Director' :
-          createForm.rol === 3 ? 'Monitor' : createForm.rol === 4 ? 'Revisor' : createForm.rol === 5 ? 'Autor' : '' }}</span>
+          createForm.rol === 3 ? 'Monitor' : createForm.rol === 4 ? 'Revisor' : createForm.rol === 5 ? 'Autor' : ''
+          }}</span>
       </div>
       <div class="detail-item">
         <span class="detail-label">Correo:</span>

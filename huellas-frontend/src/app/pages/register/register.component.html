@@ -75,8 +75,12 @@
         </label>
       </div>
 
-      <button class="register-btn" type="submit" [disabled]="registerForm.invalid">
-        Registrarse
+      @if (registerInlineErrorMessage) {
+      <p class="input-error" role="alert">{{ registerInlineErrorMessage }}</p>
+      }
+
+      <button class="register-btn" type="submit" [disabled]="registerForm.invalid || isRegistering">
+        {{ isRegistering ? 'Procesando…' : 'Registrarse' }}
       </button>
 
       <p class="register-footer">
@@ -91,29 +95,6 @@
     <img src="/equipo/portada.jpg" alt="Ilustración Huellas Revista" />
   </section>
 
-  <!-- MODAL VERIFICACIÓN CORREO -->
-  @if (showVerificationModal) {
-  <div class="verification-modal-backdrop">
-    <div class="verification-modal" role="dialog" aria-modal="true" aria-labelledby="verification-title">
-
-      <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="#27ae60" class="bi bi-check2-circle"
-        viewBox="0 0 16 16">
-        <path
-          d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0" />
-        <path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z" />
-      </svg>
-
-      <p id="verification-title">
-        Gracias por su solicitud. En breve<br />
-        recibirá una confirmación en su correo electrónico.
-      </p>
-
-      <button type="button" class="continue-btn" (click)="continueAfterVerificationNotice()">
-        Continuar
-      </button>
-    </div>
-  </div>
-  }
 
   @if (showWrongModal) {
   <div class="verification-modal-backdrop">
@@ -127,12 +108,53 @@
       </svg>
 
       <p id="verification-title">
-        Hubo un problema al registrarse
+        {{ wrongModalMessage }}
       </p>
 
       <button type="button" class="wrong-btn" (click)="closeWrongModal()">
         Cerrar
       </button>
+    </div>
+  </div>
+  }
+
+  @if (showVerificationModal) {
+  <div class="verification-modal-backdrop">
+    <div class="verification-modal" role="dialog" aria-modal="true" aria-labelledby="verification-title">
+
+      <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="#27ae60" class="bi bi-check2-circle"
+        viewBox="0 0 16 16">
+        <path
+          d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0" />
+        <path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z" />
+      </svg>
+
+      <p id="verification-title">
+        Gracias por su solicitud. <br> <span>
+          Te enviamos un correo de verificación. Revisa tu bandeja de entrada o spam para activar tu cuenta.</span>
+      </p>
+
+      <button type="button" class="continue-btn" (click)="continueAfterVerificationNotice()">
+        Continuar
+      </button>
+    </div>
+  </div>
+  }
+
+  @if(showEmailNotVerifiedModal) {
+  <div class="verification-modal-backdrop">
+    <div class="verification-modal" role="dialog" aria-modal="true" aria-labelledby="email-not-verified-title">
+      <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="#BA8E23" viewBox="0 0 16 16">
+        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+        <path
+          d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z" />
+      </svg>
+      <p id="email-not-verified-title">
+        Este correo ya está registrado pero no verificado.
+        <span>Revisa tu correo (y también la carpeta de spam) y sigue las instrucciones para completar tu registro.</span>
+        <span> Si no recibiste el correo, regístrate nuevamente.</span>
+      </p>
+      <button type="button" class="continue-btn" (click)="closeEmailNotVerifiedModal()">Entendido</button>
     </div>
   </div>
   }
