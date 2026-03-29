@@ -40,14 +40,14 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'director', 'monitor')
   @Post()
   async createAdmin(@Body() adminCreateDto: AdminCreateUserDto): Promise<User> {
     return this.usersService.createWithAdmin(adminCreateDto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'director', 'monitor')
   @Put(':id')
   async updateUser(@Param('id') id: number, @Body() data: Partial<User>) {
     return this.usersService.update(id, data);

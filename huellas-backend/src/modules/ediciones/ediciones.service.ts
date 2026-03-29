@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EdicionRevista } from './edicion-revista.entity';
@@ -81,5 +84,25 @@ export class EdicionesService {
     }
 
     return this.edicionRepository.save(edicion);
+  }
+
+  async getConteoArticulos(id: number) {
+    const edicion = await this.edicionRepository.findOneBy({ id });
+
+    if (!edicion) {
+      throw new NotFoundException(`La edición con ID ${id} no existe`);
+    }
+
+    const articulosCount = await this.edicionRepository
+      .createQueryBuilder('edicion')
+      .leftJoin('edicion.articulos', 'articulo')
+      .where('edicion.id = :id', { id })
+      .select('COUNT(articulo.id)', 'conteo')
+      .getRawOne();
+
+    return {
+      edicion_id: id,
+      numero_articulos: parseInt(articulosCount.conteo, 10) || 0,
+    };
   }
 }

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import {
   EdicionRevistaBackend,
   EdicionesRevistaService,
@@ -31,6 +31,7 @@ interface EdicionItem {
 })
 export class Ediciones implements OnInit {
   private readonly edicionesRevistaService = inject(EdicionesRevistaService);
+  private cdr = inject(ChangeDetectorRef);
 
   ediciones: EdicionItem[] = [];
   requestError = '';
@@ -53,7 +54,10 @@ export class Ediciones implements OnInit {
 
     this.edicionesRevistaService.getEdiciones().subscribe({
       next: ({ data }) => {
-        this.ediciones = data.map((edicion) => this.mapEdicionToTableItem(edicion));
+        this.ediciones = data.map((edicion) =>
+          this.mapEdicionToTableItem(edicion),
+        );
+        this.loadConteosArticulos();
       },
       error: (error) => {
         const backendMessage = Array.isArray(error?.error?.message)
@@ -63,6 +67,20 @@ export class Ediciones implements OnInit {
         this.requestError =
           backendMessage || 'No se pudo cargar el listado de ediciones.';
       },
+    });
+  }
+
+  loadConteosArticulos(): void {
+    this.ediciones.forEach((edicion) => {
+      this.edicionesRevistaService.getConteoArticulos(edicion.id).subscribe({
+        next: ({ data }) => {
+          edicion.articulos = data.numero_articulos.toString();
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          edicion.articulos = 'Error';
+        },
+      });
     });
   }
 

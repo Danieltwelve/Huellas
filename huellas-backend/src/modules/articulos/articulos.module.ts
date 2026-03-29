@@ -15,6 +15,9 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { FirebaseAdminModule } from 'src/common/firebase/firebase-admin.module';
 import { UsersModule } from '../users/users.module';
+import { Role } from '../roles/roles.entity';
+import { FerchContador } from './entities/ferch-contador.entity';
+import { FerchContadorSeeder } from 'src/databases/seeders/ferch-articulo.seeder';
 
 @Module({
   imports: [
@@ -26,6 +29,8 @@ import { UsersModule } from '../users/users.module';
       ArticuloHistorialEtapa,
       Observacion,
       ObservacionArchivo,
+      Role,
+      FerchContador,
     ]),
     FirebaseAdminModule,
     UsersModule,
@@ -37,6 +42,7 @@ import { UsersModule } from '../users/users.module';
     TemaSeeder,
     JwtAuthGuard,
     RolesGuard,
+    FerchContadorSeeder,
   ],
 })
 export class ArticulosModule {}

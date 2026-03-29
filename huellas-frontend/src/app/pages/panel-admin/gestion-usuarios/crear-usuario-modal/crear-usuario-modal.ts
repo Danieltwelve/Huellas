@@ -6,7 +6,6 @@ interface CreateUserForm {
   nombre: string;
   correo: string;
   contrasena: string;
-  prefijoPais: string;
   telefono: string;
   rol: number;
 }
@@ -34,7 +33,6 @@ export class CrearUsuarioModal {
     nombre: '',
     correo: '',
     contrasena: '',
-    prefijoPais: '+57',
     telefono: '',
     rol: 1,
   };
@@ -80,10 +78,7 @@ export class CrearUsuarioModal {
 
   isFormValid(): boolean {
     return (
-      this.isValidName() &&
-      this.isValidEmail() &&
-      this.isValidPhone() &&
-      this.isValidPassword()
+      this.isValidName() && this.isValidEmail() && this.isValidPhone() && this.isValidPassword()
     );
   }
 
@@ -101,14 +96,12 @@ export class CrearUsuarioModal {
     this.creatingUser = true;
     this.requestError = '';
 
-    const telefonoCompleto = `${this.createForm.prefijoPais} ${this.createForm.telefono.trim()}`;
-
     this.usersService
       .createAdmin({
         nombre: this.createForm.nombre.trim(),
         correo: this.createForm.correo.trim(),
         contraseña: this.createForm.contrasena,
-        telefono: telefonoCompleto,
+        telefono: this.createForm.telefono.trim(),
         rolId: this.createForm.rol,
       })
       .subscribe({
@@ -128,8 +121,7 @@ export class CrearUsuarioModal {
             : error?.error?.message;
 
           this.requestError =
-            backendMessage ||
-            'No se pudo crear el usuario. Verifica los datos e intenta de nuevo.';
+            backendMessage || 'No se pudo crear el usuario. Verifica los datos e intenta de nuevo.';
         },
       });
   }
@@ -139,7 +131,6 @@ export class CrearUsuarioModal {
       nombre: '',
       correo: '',
       contrasena: '',
-      prefijoPais: '+57',
       telefono: '',
       rol: 1,
     };

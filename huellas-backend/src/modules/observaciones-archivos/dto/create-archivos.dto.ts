@@ -16,4 +16,9 @@ export class CreateEnvioArchivosDto {
   @IsNotEmpty()
   @MaxLength(500)
   archivo_path?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  archivo_nombre_original?: string;
 }
