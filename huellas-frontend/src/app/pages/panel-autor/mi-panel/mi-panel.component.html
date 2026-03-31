@@ -21,6 +21,18 @@
     </p>
   </div>
 
+  @if (mensajeCorreccion) {
+    <div class="notice-bar">
+      <p>{{ mensajeCorreccion }}</p>
+    </div>
+  }
+
+  @if (errorCorreccion) {
+    <div class="notice-bar">
+      <p>{{ errorCorreccion }}</p>
+    </div>
+  }
+
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-value black">{{ totalArticulos }}</div>
@@ -83,25 +95,37 @@
                 <td>
                   <span
                     class="state-pill"
-                    [class.state-review]="getEstadoClass(articulo.etapa_nombre) === 'state-review'"
-                    [class.state-pending]="getEstadoClass(articulo.etapa_nombre) === 'state-pending'"
-                    [class.state-published]="getEstadoClass(articulo.etapa_nombre) === 'state-published'"
+                    [class.state-review]="getEstadoClass(articulo) === 'state-review'"
+                    [class.state-pending]="getEstadoClass(articulo) === 'state-pending'"
+                    [class.state-published]="getEstadoClass(articulo) === 'state-published'"
                   >
-                    {{ getEstadoLabel(articulo.etapa_nombre) }}
+                    {{ getEstadoLabel(articulo) }}
                   </span>
                 </td>
                 <td>{{ formatFecha(articulo.fecha_inicio) }}</td>
                 <td class="actions-cell">
-                  <button class="btn-outline-sm" type="button">
+                  <button class="btn-outline-sm" type="button" (click)="verSeguimientoArticulo(articulo.id)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
                       <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
                       <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
                     </svg>
                     Ver
                   </button>
-                  @if (getEstadoArticulo(articulo.etapa_nombre) === 'correccion') {
-                    <button class="btn-outline-sm" type="button">
-                      Subir correccion
+                  @if (articulo.correccion_pendiente) {
+                    <input
+                      type="file"
+                      accept=".pdf,.docx"
+                      [id]="'archivo-correccion-' + articulo.id"
+                      style="display: none"
+                      (change)="onArchivoCorreccionSeleccionado($event, articulo)"
+                    />
+                    <button
+                      class="btn-outline-sm"
+                      type="button"
+                      (click)="abrirSelectorCorreccion('archivo-correccion-' + articulo.id)"
+                      [disabled]="isSubiendoCorreccion(articulo.id)"
+                    >
+                      {{ isSubiendoCorreccion(articulo.id) ? 'Enviando...' : 'Subir correccion' }}
                     </button>
                   }
                 </td>
@@ -125,10 +149,10 @@
                 <span class="article-code">{{ articulo.codigo || 'S/N' }}</span>
                 <span
                   class="state-pill"
-                  [class.state-review]="getEstadoClass(articulo.etapa_nombre) === 'state-review'"
-                  [class.state-pending]="getEstadoClass(articulo.etapa_nombre) === 'state-pending'"
-                  [class.state-published]="getEstadoClass(articulo.etapa_nombre) === 'state-published'"
-                >{{ getEstadoLabel(articulo.etapa_nombre) }}</span>
+                  [class.state-review]="getEstadoClass(articulo) === 'state-review'"
+                  [class.state-pending]="getEstadoClass(articulo) === 'state-pending'"
+                  [class.state-published]="getEstadoClass(articulo) === 'state-published'"
+                >{{ getEstadoLabel(articulo) }}</span>
               </div>
               <h3>{{ articulo.titulo }}</h3>
               <p class="article-meta">{{ formatFecha(articulo.fecha_inicio) }}</p>
@@ -139,6 +163,28 @@
                 [class.badge-green]="getEtapaClass(articulo.etapa_nombre) === 'badge-green'"
                 [class.badge-blue]="getEtapaClass(articulo.etapa_nombre) === 'badge-blue'"
               >{{ articulo.etapa_nombre }}</span>
+              <div class="actions-cell">
+                <button class="btn-outline-sm" type="button" (click)="verSeguimientoArticulo(articulo.id)">
+                  Ver seguimiento
+                </button>
+                @if (articulo.correccion_pendiente) {
+                  <input
+                    type="file"
+                    accept=".pdf,.docx"
+                    [id]="'archivo-correccion-mobile-' + articulo.id"
+                    style="display: none"
+                    (change)="onArchivoCorreccionSeleccionado($event, articulo)"
+                  />
+                  <button
+                    class="btn-outline-sm"
+                    type="button"
+                    (click)="abrirSelectorCorreccion('archivo-correccion-mobile-' + articulo.id)"
+                    [disabled]="isSubiendoCorreccion(articulo.id)"
+                  >
+                    {{ isSubiendoCorreccion(articulo.id) ? 'Enviando...' : 'Subir correccion' }}
+                  </button>
+                }
+              </div>
             </article>
           }
         </div>

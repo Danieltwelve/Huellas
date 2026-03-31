@@ -16,6 +16,32 @@
     }
   </nav>
 
+  <section class="resumen-envio" *ngIf="articulo">
+    <h2>Información enviada por el autor</h2>
+    <div class="resumen-grid">
+      <article class="resumen-item">
+        <h3>Autores</h3>
+        <p>{{ autoresArticulo }}</p>
+      </article>
+      <article class="resumen-item">
+        <h3>Temas</h3>
+        <p>{{ temasArticulo }}</p>
+      </article>
+      <article class="resumen-item">
+        <h3>Palabras clave</h3>
+        <p>{{ palabrasClaveArticulo }}</p>
+      </article>
+      <article class="resumen-item">
+        <h3>Fecha de envío</h3>
+        <p>{{ fechaEnvioArticulo }}</p>
+      </article>
+    </div>
+    <article class="resumen-item resumen-item--full">
+      <h3>Resumen</h3>
+      <p>{{ resumenArticulo }}</p>
+    </article>
+  </section>
+
   <div class="contenido-principal">
     <section class="historial-panel">
       <h2>Historial del Flujo de Trabajo</h2>
@@ -42,27 +68,19 @@
               <div class="historial-card-body" *ngIf="registro.expandido">
                 <div *ngIf="registro.archivos?.length" class="bloque-archivo">
                   <div class="archivo-row" *ngFor="let archivo of registro.archivos">
-                    <div class="historial-card-body" *ngIf="registro.expandido">
-                      <div *ngIf="registro.archivos?.length" class="bloque-archivo">
-                        <div class="archivo-row" *ngFor="let archivo of registro.archivos">
-
-                          <button type="button" class="archivo-descarga-btn"
-                            (click)="descargarArchivo(archivo.path, archivo.nombre)" title="Descargar {{ archivo.nombre }}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                              class="icon-download">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                              <polyline points="7 10 12 15 17 10"></polyline>
-                              <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            <span class="archivo-nombre">{{ archivo.nombre }}</span>
-                          </button>
-
-                        </div>
-                      </div>
-                      <p *ngIf="registro.comentario" class="historial-comentario">{{ registro.comentario }}</p>
-                    </div>
+                    <button type="button" class="archivo-descarga-btn"
+                      (click)="descargarArchivo(archivo.path, archivo.nombre)" title="Descargar {{ archivo.nombre }}">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        class="icon-download">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      <span class="archivo-nombre">{{ archivo.nombre }}</span>
+                    </button>
                   </div>
                 </div>
+                <p *ngIf="registro.comentario" class="historial-comentario">{{ registro.comentario }}</p>
               </div>
             </div>
           </article>
@@ -78,13 +96,17 @@
 
       <div class="accion-group">
         <span class="accion-label">Añadir observación</span>
-        <button class="btn-outline-teal btn-anadir-observacion" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-plus">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            <line x1="12" y1="7" x2="12" y2="13"></line>
-            <line x1="9" y1="10" x2="15" y2="10"></line>
-          </svg>
-          Añadir observación
+        <input type="text" class="input-control" [(ngModel)]="asuntoObservacion" placeholder="Asunto"
+          aria-label="Asunto de observación" />
+        <textarea class="input-control" [(ngModel)]="comentarioObservacion" placeholder="Comentarios"
+          aria-label="Comentarios de observación" rows="4"></textarea>
+        <label class="file-label" for="archivoObservacion">Adjuntar archivo (opcional)</label>
+        <input id="archivoObservacion" type="file" (change)="onArchivoObservacionSeleccionado($event)"
+          class="file-input" />
+        <p class="file-name" *ngIf="nombreArchivoObservacion">{{ nombreArchivoObservacion }}</p>
+        <button class="btn-outline-teal btn-anadir-observacion" type="button" (click)="agregarObservacion()"
+          [disabled]="guardandoObservacion">
+          {{ guardandoObservacion ? 'Guardando...' : 'Añadir observación' }}
         </button>
       </div>
 
@@ -93,15 +115,18 @@
         <span class="tag-mandatory">Mandatorio</span>
 
         <div class="select-wrapper">
-          <select aria-label="Seleccionar etapa">
-            <option *ngFor="let etapa of etapas" [selected]="etapa.activa">{{ etapa.titulo }}</option>
+          <select aria-label="Seleccionar etapa" [(ngModel)]="etapaSeleccionadaId">
+            <option *ngFor="let etapa of etapas" [ngValue]="etapa.id">{{ etapa.titulo }}</option>
           </select>
         </div>
 
-        <button class="btn-outline-teal btn-full" type="button">
-          Mover Registro
+        <button class="btn-outline-teal btn-full" type="button" (click)="moverArticulo()" [disabled]="moviendoEtapa">
+          {{ moviendoEtapa ? 'Moviendo...' : 'Mover Registro' }}
         </button>
       </section>
+
+      <div class="mensaje-accion mensaje-accion--ok" *ngIf="accionExitosa">{{ accionExitosa }}</div>
+      <div class="mensaje-accion mensaje-accion--error" *ngIf="accionError">{{ accionError }}</div>
 
     </aside>
   </div>

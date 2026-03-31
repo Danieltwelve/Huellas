@@ -7,6 +7,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Patch,
   Get,
   Post,
   UploadedFile,
@@ -25,6 +26,9 @@ import { ArticulosService } from './articulos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
 import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
+import { AddObservacionDto } from './dto/add-observacion.dto';
+import { CambiarEtapaDto } from './dto/cambiar-etapa.dto';
+import { SubmitCorreccionDto } from './dto/submit-correccion.dto';
 import { diskStorage } from 'multer';
 import { validateOrReject, ValidationError } from 'class-validator';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -142,6 +146,120 @@ export class ArticulosController {
   async getMisArticulos(@Req() req: any) {
     const userId = req.user.userId;
     return await this.articulosService.getArticulosPorAutor(userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('autor')
+  @Get('mis-notificaciones')
+  async getMisNotificaciones(@Req() req: any) {
+    const userId = req.user.userId;
+    return await this.articulosService.getNotificacionesAutor(userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('autor')
+  @Post(':id/correccion')
+  @UseInterceptors(
+    FileInterceptor('archivo', {
+      storage: diskStorage({
+        destination: './uploads/articulos',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  async subirCorreccion(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+    @Body() body: SubmitCorreccionDto,
+    @UploadedFile() archivo?: Express.Multer.File,
+  ) {
+    if (!archivo) {
+      throw new BadRequestException(
+        'Debes adjuntar un archivo para enviar la corrección',
+      );
+    }
+
+    try {
+      return await this.articulosService.subirCorreccionAutor(
+        id,
+        req.user.userId,
+        archivo,
+        body.comentarios?.trim(),
+      );
+    } catch (error) {
+      if (archivo?.path) {
+        await fs.unlink(archivo.path).catch(() => null);
+      }
+      throw error;
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Post(':id/observaciones')
+  @UseInterceptors(
+    FileInterceptor('archivo', {
+      storage: diskStorage({
+        destination: './uploads/articulos',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  async agregarObservacion(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: AddObservacionDto,
+    @Req() req: any,
+    @UploadedFile() archivo?: Express.Multer.File,
+  ) {
+    if (!body.asunto || body.asunto.trim().length === 0) {
+      if (archivo?.path) {
+        await fs.unlink(archivo.path).catch(() => null);
+      }
+      throw new BadRequestException('El asunto de la observación es obligatorio');
+    }
+
+    try {
+      return await this.articulosService.agregarObservacion(
+        id,
+        {
+          asunto: body.asunto.trim(),
+          comentarios: body.comentarios?.trim(),
+          etapaId: body.etapaId ? Number(body.etapaId) : undefined,
+        },
+        req.user.userId,
+        archivo,
+      );
+    } catch (error) {
+      if (archivo?.path) {
+        await fs.unlink(archivo.path).catch(() => null);
+      }
+      throw error;
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Patch(':id/etapa')
+  async cambiarEtapa(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: CambiarEtapaDto,
+    @Req() req: any,
+  ) {
+    return await this.articulosService.cambiarEtapaArticulo(
+      id,
+      body.etapaId,
+      req.user.userId,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -8,10 +8,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createReadStream, existsSync, promises as fs } from 'fs';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
 import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
 import { EdicionRevista } from '../ediciones/edicion-revista.entity';
 import { Articulo } from './entities/articulo.entity';
+import { EtapaArticulo } from '../etapas-articulo/entities/etapa_articulo.entity';
 import { Observacion } from '../observaciones/entities/observacione.entity';
 import { ObservacionArchivo } from '../observaciones-archivos/entities/observaciones-archivo.entity';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
@@ -20,6 +21,9 @@ import { FerchContador } from './entities/ferch-contador.entity';
 
 @Injectable()
 export class ArticulosService {
+  private static readonly ASUNTO_CORRECCION_AUTOR =
+    'Correccion enviada por autor';
+
   constructor(
     private dataSource: DataSource,
     @InjectRepository(Articulo)
@@ -176,8 +180,12 @@ export class ArticulosService {
       where: { id: articuloId },
       relations: [
         'autores',
+        'temas',
         'etapaActual',
+        'historialEtapas',
+        'historialEtapas.etapa',
         'observaciones',
+        'observaciones.etapa',
         'observaciones.usuario',
         'observaciones.usuario.roles',
         'observaciones.archivos',
@@ -188,10 +196,22 @@ export class ArticulosService {
       throw new BadRequestException('Artículo no encontrado');
     }
 
+    const fechaEnvioInicial = articulo.historialEtapas
+      ?.filter((historial) => historial.etapaId === 1)
+      .sort((a, b) => a.fechaInicio.getTime() - b.fechaInicio.getTime())[0]
+      ?.fechaInicio;
+
     return {
       id: articulo.id,
       codigo: articulo.codigo,
       titulo: articulo.titulo,
+      resumen: articulo.resumen,
+      palabrasClave: articulo.palabrasClave
+        .split(',')
+        .map((palabra) => palabra.trim())
+        .filter((palabra) => palabra.length > 0),
+      temas: articulo.temas?.map((tema) => tema.nombre) ?? [],
+      fechaEnvio: fechaEnvioInicial ?? null,
       etapaActual: articulo.etapaActual
         ? {
             id: articulo.etapaActual.id,
@@ -203,11 +223,27 @@ export class ArticulosService {
         nombre: autor.nombre,
         email: autor.correo,
       })),
+      historialEtapas: (articulo.historialEtapas ?? [])
+        .sort((a, b) => a.fechaInicio.getTime() - b.fechaInicio.getTime())
+        .map((historial) => ({
+          id: historial.id,
+          etapaId: historial.etapaId,
+          etapaNombre: historial.etapa?.nombre ?? 'Sin etapa',
+          fechaInicio: historial.fechaInicio,
+          fechaFin: historial.fechaFin,
+          usuarioId: historial.usuarioId,
+        })),
       observaciones: articulo.observaciones.map((obs) => ({
         id: obs.id,
         asunto: obs.asunto,
         comentarios: obs.comentarios,
         fechaSubida: obs.fechaSubida,
+        etapa: obs.etapa
+          ? {
+              id: obs.etapa.id,
+              nombre: obs.etapa.nombre,
+            }
+          : null,
         usuario: obs.usuario
           ? {
               id: obs.usuario.id,
@@ -226,6 +262,141 @@ export class ArticulosService {
         })),
       })),
     };
+  }
+
+  async agregarObservacion(
+    articuloId: number,
+    payload: {
+      asunto: string;
+      comentarios?: string;
+      etapaId?: number;
+    },
+    usuarioId: number,
+    archivo?: Express.Multer.File,
+  ) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['etapaActual'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    const etapaId = payload.etapaId ?? articulo.etapaActualId;
+
+    const etapaExiste = await this.dataSource.getRepository(EtapaArticulo).findOne({
+      where: { id: etapaId },
+    });
+
+    if (!etapaExiste) {
+      throw new BadRequestException('La etapa indicada no existe');
+    }
+
+    const observacion = this.dataSource.getRepository(Observacion).create({
+      articuloId,
+      usuarioId,
+      etapaId,
+      asunto: payload.asunto,
+      comentarios: payload.comentarios || '',
+    });
+
+    const observacionGuardada = await this.dataSource
+      .getRepository(Observacion)
+      .save(observacion);
+
+    if (archivo) {
+      const registroArchivo = this.dataSource
+        .getRepository(ObservacionArchivo)
+        .create({
+          observacionesId: observacionGuardada.id,
+          archivoPath: archivo.path,
+          archivoNombreOriginal: archivo.originalname,
+        });
+
+      await this.dataSource.getRepository(ObservacionArchivo).save(registroArchivo);
+    }
+
+    return {
+      message: 'Observación registrada correctamente',
+      observacionId: observacionGuardada.id,
+    };
+  }
+
+  async cambiarEtapaArticulo(
+    articuloId: number,
+    nuevaEtapaId: number,
+    usuarioId: number,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const articulo = await queryRunner.manager.findOne(Articulo, {
+        where: { id: articuloId },
+      });
+
+      if (!articulo) {
+        throw new NotFoundException('Artículo no encontrado');
+      }
+
+      if (articulo.etapaActualId === nuevaEtapaId) {
+        throw new BadRequestException('El artículo ya se encuentra en esta etapa');
+      }
+
+      const etapaDestino = await queryRunner.manager.findOne(EtapaArticulo, {
+        where: { id: nuevaEtapaId },
+      });
+
+      if (!etapaDestino) {
+        throw new BadRequestException('La etapa de destino no existe');
+      }
+
+      const historialAbierto = await queryRunner.manager.findOne(
+        ArticuloHistorialEtapa,
+        {
+          where: {
+            articuloId,
+            fechaFin: IsNull(),
+          },
+          order: { fechaInicio: 'DESC' },
+        },
+      );
+
+      const ahora = new Date();
+
+      if (historialAbierto) {
+        historialAbierto.fechaFin = ahora;
+        await queryRunner.manager.save(historialAbierto);
+      }
+
+      articulo.etapaActualId = nuevaEtapaId;
+      await queryRunner.manager.save(articulo);
+
+      const nuevoHistorial = queryRunner.manager.create(ArticuloHistorialEtapa, {
+        articuloId,
+        etapaId: nuevaEtapaId,
+        usuarioId,
+        fechaInicio: ahora,
+      });
+
+      await queryRunner.manager.save(nuevoHistorial);
+      await queryRunner.commitTransaction();
+
+      return {
+        message: 'Etapa actualizada correctamente',
+        etapaActual: {
+          id: etapaDestino.id,
+          nombre: etapaDestino.nombre,
+        },
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async getResumenArticulos() {
@@ -257,10 +428,12 @@ export class ArticulosService {
   async getArticulosPorAutor(userId: number) {
     const articulos = await this.articuloRepository
       .createQueryBuilder('articulo')
-      .select(['articulo.id', 'articulo.codigo', 'articulo.titulo'])
       .innerJoin('articulo.autores', 'autor', 'autor.id = :userId', { userId })
       .leftJoinAndSelect('articulo.etapaActual', 'etapa')
       .leftJoinAndSelect('articulo.historialEtapas', 'historial')
+      .leftJoinAndSelect('articulo.observaciones', 'observacion')
+      .leftJoinAndSelect('observacion.usuario', 'usuarioObservacion')
+      .leftJoinAndSelect('articulo.autores', 'autoresArticulo')
       .orderBy('historial.fechaInicio', 'DESC')
       .getMany();
 
@@ -270,7 +443,213 @@ export class ArticulosService {
       titulo: articulo.titulo,
       etapa_nombre: articulo.etapaActual?.nombre || 'Desconocida',
       fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
+      correccion_pendiente: this.tieneCorreccionPendiente(articulo, userId),
     }));
+  }
+
+  async subirCorreccionAutor(
+    articuloId: number,
+    userId: number,
+    archivo: Express.Multer.File,
+    comentarios?: string,
+  ) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: [
+        'autores',
+        'observaciones',
+        'observaciones.usuario',
+        'observaciones.archivos',
+      ],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    const esAutorDelArticulo =
+      articulo.autores?.some((autor) => autor.id === userId) ?? false;
+
+    if (!esAutorDelArticulo) {
+      throw new ForbiddenException(
+        'No tienes permiso para cargar correcciones de este artículo',
+      );
+    }
+
+    if (!this.tieneCorreccionPendiente(articulo, userId)) {
+      throw new BadRequestException(
+        'Este artículo no tiene correcciones pendientes',
+      );
+    }
+
+    const observacion = this.dataSource.getRepository(Observacion).create({
+      articuloId,
+      usuarioId: userId,
+      etapaId: articulo.etapaActualId,
+      asunto: ArticulosService.ASUNTO_CORRECCION_AUTOR,
+      comentarios:
+        comentarios?.trim() ||
+        'Se carga una nueva versión con las correcciones solicitadas.',
+    });
+
+    const observacionGuardada = await this.dataSource
+      .getRepository(Observacion)
+      .save(observacion);
+
+    const observacionArchivo = this.dataSource
+      .getRepository(ObservacionArchivo)
+      .create({
+        observacionesId: observacionGuardada.id,
+        archivoPath: archivo.path,
+        archivoNombreOriginal: archivo.originalname,
+      });
+
+    await this.dataSource.getRepository(ObservacionArchivo).save(observacionArchivo);
+
+    return {
+      message: 'Corrección cargada correctamente',
+      observacionId: observacionGuardada.id,
+    };
+  }
+
+  private tieneCorreccionPendiente(articulo: Articulo, userId: number): boolean {
+    const autoresIds = new Set((articulo.autores ?? []).map((autor) => autor.id));
+    const observaciones = articulo.observaciones ?? [];
+
+    let ultimaSolicitudCorreccion: Date | null = null;
+    let ultimaRespuestaAutor: Date | null = null;
+
+    for (const observacion of observaciones) {
+      const fecha = new Date(observacion.fechaSubida);
+      if (isNaN(fecha.getTime())) {
+        continue;
+      }
+
+      const usuarioObservacionId = observacion.usuarioId ?? observacion.usuario?.id;
+      const esAutor =
+        (typeof usuarioObservacionId === 'number' && autoresIds.has(usuarioObservacionId)) ||
+        false;
+
+      const texto = `${observacion.asunto ?? ''} ${observacion.comentarios ?? ''}`.toLowerCase();
+
+      const esSolicitudCorreccion =
+        !esAutor && /(correccion|corrección|ajuste|subsan|pendiente)/.test(texto);
+
+      if (esSolicitudCorreccion) {
+        if (!ultimaSolicitudCorreccion || fecha > ultimaSolicitudCorreccion) {
+          ultimaSolicitudCorreccion = fecha;
+        }
+        continue;
+      }
+
+      const esRespuestaAutorCorreccion =
+        usuarioObservacionId === userId &&
+        (observacion.asunto ?? '').trim() === ArticulosService.ASUNTO_CORRECCION_AUTOR;
+
+      if (esRespuestaAutorCorreccion) {
+        if (!ultimaRespuestaAutor || fecha > ultimaRespuestaAutor) {
+          ultimaRespuestaAutor = fecha;
+        }
+      }
+    }
+
+    if (!ultimaSolicitudCorreccion) {
+      return false;
+    }
+
+    if (!ultimaRespuestaAutor) {
+      return true;
+    }
+
+    return ultimaSolicitudCorreccion > ultimaRespuestaAutor;
+  }
+
+  async getNotificacionesAutor(userId: number) {
+    const articulos = await this.articuloRepository.find({
+      relations: [
+        'autores',
+        'etapaActual',
+        'historialEtapas',
+        'historialEtapas.etapa',
+        'observaciones',
+        'observaciones.etapa',
+        'observaciones.usuario',
+      ],
+    });
+
+    const articulosDelAutor = articulos.filter((articulo) =>
+      articulo.autores?.some((autor) => autor.id === userId),
+    );
+
+    const notificaciones: Array<{
+      id: string;
+      articuloId: number;
+      codigoArticulo: string;
+      tituloArticulo: string;
+      titulo: string;
+      detalle: string;
+      tipo: 'accion' | 'informacion' | 'exito';
+      fecha: Date;
+      origen: 'etapa' | 'observacion';
+    }> = [];
+
+    for (const articulo of articulosDelAutor) {
+      const historial = [...(articulo.historialEtapas ?? [])].sort(
+        (a, b) => b.fechaInicio.getTime() - a.fechaInicio.getTime(),
+      );
+
+      for (const eventoEtapa of historial) {
+        const nombreEtapa = eventoEtapa.etapa?.nombre ?? 'Etapa editorial';
+        const tipo = nombreEtapa.includes('PUBLICACIÓN')
+          ? 'exito'
+          : 'informacion';
+
+        notificaciones.push({
+          id: `etapa-${articulo.id}-${eventoEtapa.id}`,
+          articuloId: articulo.id,
+          codigoArticulo: articulo.codigo,
+          tituloArticulo: articulo.titulo,
+          titulo: `Cambio de estado: ${nombreEtapa}`,
+          detalle: `Tu artículo ${articulo.codigo} fue movido a ${nombreEtapa.toLowerCase()}.`,
+          tipo,
+          fecha: eventoEtapa.fechaInicio,
+          origen: 'etapa',
+        });
+      }
+
+      for (const obs of articulo.observaciones ?? []) {
+        // Evita notificar al autor por observaciones creadas por si mismo.
+        if (obs.usuarioId && obs.usuarioId === userId) {
+          continue;
+        }
+
+        const texto = `${obs.asunto ?? ''} ${obs.comentarios ?? ''}`.toLowerCase();
+        const tipo = /(correccion|corrección|ajuste|subsan|pendiente)/.test(texto)
+          ? 'accion'
+          : 'informacion';
+
+        notificaciones.push({
+          id: `obs-${articulo.id}-${obs.id}`,
+          articuloId: articulo.id,
+          codigoArticulo: articulo.codigo,
+          tituloArticulo: articulo.titulo,
+          titulo: obs.asunto?.trim() || 'Nueva observación editorial',
+          detalle:
+            obs.comentarios?.trim() ||
+            `Se registró una observación sobre tu artículo ${articulo.codigo}.`,
+          tipo,
+          fecha: obs.fechaSubida,
+          origen: 'observacion',
+        });
+      }
+    }
+
+    return notificaciones
+      .sort((a, b) => b.fecha.getTime() - a.fecha.getTime())
+      .map((item) => ({
+        ...item,
+        fecha: item.fecha.toISOString(),
+      }));
   }
 
   async getArticuloFileStream(

@@ -16,6 +16,10 @@ export interface ArticuloFlujo {
   id: number;
   codigo: string;
   titulo: string;
+  resumen: string;
+  palabrasClave: string[];
+  temas: string[];
+  fechaEnvio: string | null;
   etapaActual: {
     id: number;
     nombre: string;
@@ -24,6 +28,14 @@ export interface ArticuloFlujo {
     id: number;
     nombre: string;
     email: string;
+  }>;
+  historialEtapas: Array<{
+    id: number;
+    etapaId: number;
+    etapaNombre: string;
+    fechaInicio: string;
+    fechaFin: string | null;
+    usuarioId: number | null;
   }>;
   observaciones: ObservacionBackend[];
 }
@@ -39,6 +51,10 @@ export interface ObservacionBackend {
   asunto: string;
   comentarios: string | null;
   fechaSubida: string;
+  etapa: {
+    id: number;
+    nombre: string;
+  } | null;
   usuario: {
     id: number;
     nombre: string;
@@ -68,6 +84,67 @@ export class ArticulosService {
         this.http.get<ArticuloFlujo>(`${environment.apiUrlBackend}/articulos/flujo/${id}`, {
           headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
         }),
+      ),
+    );
+  }
+
+  agregarObservacion(
+    articuloId: number,
+    payload: { asunto: string; comentarios?: string; etapaId?: number; archivo?: File | null },
+  ): Observable<{ message: string; observacionId: number }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para crear observaciones.'));
+    }
+
+    const formData = new FormData();
+    formData.append('asunto', payload.asunto);
+
+    if (payload.comentarios) {
+      formData.append('comentarios', payload.comentarios);
+    }
+
+    if (payload.etapaId) {
+      formData.append('etapaId', String(payload.etapaId));
+    }
+
+    if (payload.archivo) {
+      formData.append('archivo', payload.archivo, payload.archivo.name);
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<{ message: string; observacionId: number }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/observaciones`,
+          formData,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  moverEtapa(
+    articuloId: number,
+    etapaId: number,
+  ): Observable<{ message: string; etapaActual: { id: number; nombre: string } }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para mover el artículo.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.patch<{ message: string; etapaActual: { id: number; nombre: string } }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/etapa`,
+          { etapaId },
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
       ),
     );
   }

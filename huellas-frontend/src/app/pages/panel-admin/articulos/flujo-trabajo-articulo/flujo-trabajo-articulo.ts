@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import {
   ArticuloFlujo,
   ArticulosService,
@@ -8,7 +9,7 @@ import {
 import { ActivatedRoute } from '@angular/router';
 
 interface EtapaFlujo {
-  id: string;
+  id: number;
   titulo: string;
   activa: boolean;
 }
@@ -32,7 +33,7 @@ interface RegistroFlujo {
 
 @Component({
   selector: 'app-flujo-trabajo-articulo',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './flujo-trabajo-articulo.html',
   styleUrl: './flujo-trabajo-articulo.scss',
   standalone: true,
@@ -44,23 +45,26 @@ export class FlujoTrabajoArticulo {
   articulo: ArticuloFlujo | null = null;
   loading = true;
   error: string | null = null;
+  accionExitosa: string | null = null;
+  accionError: string | null = null;
+
+  guardandoObservacion = false;
+  moviendoEtapa = false;
+
+  asuntoObservacion = '';
+  comentarioObservacion = '';
+  archivoObservacion: File | null = null;
+  nombreArchivoObservacion = '';
+  etapaSeleccionadaId: number | null = null;
 
   tituloArticulo = 'Cargando...';
 
-  private readonly mapaEtapas: Record<string, string> = {
-    'REVISIÓN PRELIMINAR': 'revision-preliminar',
-    RECEPCIÓN: 'recepcion',
-    TURNITING: 'turniting',
-    'REVISIÓN POR PARES': 'revision-pares',
-    PUBLICACIÓN: 'publicacion',
-  };
-
   readonly etapasDisponibles: EtapaFlujo[] = [
-    { id: 'revision-preliminar', titulo: 'Revisión Preliminar', activa: false },
-    { id: 'recepcion', titulo: 'Recepción', activa: false },
-    { id: 'turniting', titulo: 'Turniting', activa: false },
-    { id: 'revision-pares', titulo: 'Revisión por pares', activa: false },
-    { id: 'publicacion', titulo: 'Publicación', activa: false },
+    { id: 1, titulo: 'Revisión Preliminar', activa: false },
+    { id: 2, titulo: 'Recepción', activa: false },
+    { id: 3, titulo: 'Turniting', activa: false },
+    { id: 4, titulo: 'Revisión por pares', activa: false },
+    { id: 5, titulo: 'Publicación', activa: false },
   ];
 
   etapas: EtapaFlujo[] = [...this.etapasDisponibles];
@@ -85,7 +89,8 @@ export class FlujoTrabajoArticulo {
       next: (data) => {
         this.articulo = data;
         this.tituloArticulo = `${data.codigo} - ${data.titulo}`;
-        this.actualizarEtapaActual(data.etapaActual.nombre);
+        this.actualizarEtapaActual(data.etapaActual.id);
+        this.etapaSeleccionadaId = data.etapaActual.id;
         this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
         this.loading = false;
       },
@@ -97,12 +102,10 @@ export class FlujoTrabajoArticulo {
     });
   }
 
-  private actualizarEtapaActual(nombreEtapa: string): void {
-    const etapaId = this.mapaEtapas[nombreEtapa];
-
+  private actualizarEtapaActual(etapaActualId: number): void {
     this.etapas = this.etapasDisponibles.map((etapa) => ({
       ...etapa,
-      activa: etapa.id === etapaId,
+      activa: etapa.id === etapaActualId,
     }));
   }
 
@@ -177,8 +180,120 @@ export class FlujoTrabajoArticulo {
   }
 
   seleccionarEtapa(indice: number): void {
-    this.etapas.forEach((etapa, posicion) => {
-      etapa.activa = posicion === indice;
+    this.etapaSeleccionadaId = this.etapas[indice]?.id ?? null;
+  }
+
+  onArchivoObservacionSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files.length > 0 ? input.files[0] : null;
+
+    this.archivoObservacion = file;
+    this.nombreArchivoObservacion = file?.name ?? '';
+  }
+
+  agregarObservacion(): void {
+    if (!this.articulo) {
+      return;
+    }
+
+    const asunto = this.asuntoObservacion.trim();
+    if (!asunto) {
+      this.accionError = 'El asunto de la observación es obligatorio.';
+      this.accionExitosa = null;
+      return;
+    }
+
+    this.guardandoObservacion = true;
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService
+      .agregarObservacion(this.articulo.id, {
+        asunto,
+        comentarios: this.comentarioObservacion.trim() || undefined,
+        etapaId: this.etapaSeleccionadaId ?? this.articulo.etapaActual.id,
+        archivo: this.archivoObservacion,
+      })
+      .subscribe({
+        next: () => {
+          this.guardandoObservacion = false;
+          this.asuntoObservacion = '';
+          this.comentarioObservacion = '';
+          this.archivoObservacion = null;
+          this.nombreArchivoObservacion = '';
+          this.accionExitosa = 'Observación añadida correctamente.';
+          this.cargarArticulo(this.articulo!.id);
+        },
+        error: (err) => {
+          console.error('Error al agregar observación:', err);
+          this.guardandoObservacion = false;
+          this.accionError = err?.error?.message ?? 'No se pudo guardar la observación.';
+        },
+      });
+  }
+
+  moverArticulo(): void {
+    if (!this.articulo || !this.etapaSeleccionadaId) {
+      return;
+    }
+
+    if (this.etapaSeleccionadaId === this.articulo.etapaActual.id) {
+      this.accionError = 'El artículo ya se encuentra en la etapa seleccionada.';
+      this.accionExitosa = null;
+      return;
+    }
+
+    this.moviendoEtapa = true;
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService.moverEtapa(this.articulo.id, this.etapaSeleccionadaId).subscribe({
+      next: () => {
+        this.moviendoEtapa = false;
+        this.accionExitosa = 'Etapa actualizada correctamente.';
+        this.cargarArticulo(this.articulo!.id);
+      },
+      error: (err) => {
+        console.error('Error al mover etapa:', err);
+        this.moviendoEtapa = false;
+        this.accionError = err?.error?.message ?? 'No se pudo mover el artículo de etapa.';
+      },
     });
+  }
+
+  get resumenArticulo(): string {
+    return this.articulo?.resumen ?? 'Sin resumen';
+  }
+
+  get temasArticulo(): string {
+    if (!this.articulo?.temas?.length) {
+      return 'Sin temas registrados';
+    }
+
+    return this.articulo.temas.join(', ');
+  }
+
+  get palabrasClaveArticulo(): string {
+    if (!this.articulo?.palabrasClave?.length) {
+      return 'Sin palabras clave';
+    }
+
+    return this.articulo.palabrasClave.join(', ');
+  }
+
+  get autoresArticulo(): string {
+    if (!this.articulo?.autores?.length) {
+      return 'Sin autores registrados';
+    }
+
+    return this.articulo.autores.map((autor) => autor.nombre).join(', ');
+  }
+
+  get fechaEnvioArticulo(): string {
+    if (!this.articulo?.fechaEnvio) {
+      return 'Sin fecha de envío';
+    }
+
+    return this.formatearFecha(new Date(this.articulo.fechaEnvio));
   }
 }

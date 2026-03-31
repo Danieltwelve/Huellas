@@ -13,6 +13,46 @@
   margin-bottom: 1rem;
 }
 
+.demo-banner--error {
+  background: #fef2f2;
+  color: #991b1b;
+  border-left-color: #ef4444;
+}
+
+.selector-card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 24px rgba(17, 37, 58, 0.06);
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.selector-card label {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  font-weight: 700;
+}
+
+.selector-card select {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.7rem;
+  padding: 0.58rem 0.72rem;
+  font-size: 0.92rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.selector-card select:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
 .header-card {
   background: #fff;
   border-radius: 1rem;
@@ -223,6 +263,28 @@
   margin: 0;
   font-size: 0.86rem;
   color: #475569;
+}
+
+.history-files {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.file-download-btn {
+  border: 1px solid #99f6e4;
+  background: #f0fdfa;
+  color: #0f766e;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.file-download-btn:hover {
+  border-color: #2dd4bf;
+  background: #ccfbf1;
 }
 
 @media (max-width: 1024px) {
