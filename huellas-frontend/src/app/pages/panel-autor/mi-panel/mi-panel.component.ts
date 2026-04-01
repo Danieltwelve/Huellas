@@ -1,11 +1,12 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { ArticulosAutorService, ArticuloAutor } from '../../../core/articulos/articulos-autor.service';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-mi-panel',
   standalone: true,
-  imports: [],
+  imports: [FormsModule],
   templateUrl: './mi-panel.component.html',
   styleUrls: ['./mi-panel.component.css']
 })
@@ -17,6 +18,12 @@ export class MiPanelComponent implements OnInit {
   loading = true;
   mensajeCorreccion: string | null = null;
   errorCorreccion: string | null = null;
+  articuloCorreccionActivo: ArticuloAutor | null = null;
+  archivoCorreccionActivo: File | null = null;
+  nombreArchivoCorreccionActivo = '';
+  comentariosCorreccionActivo = '';
+  errorModalCorreccion: string | null = null;
+  arrastrandoArchivoCorreccion = false;
   subiendoCorreccionIds = new Set<number>();
   estadoFiltro: 'todos' | 'revision' | 'correccion' | 'publicado' = 'todos';
   readonly hoy = new Date();
@@ -126,38 +133,118 @@ export class MiPanelComponent implements OnInit {
     });
   }
 
-  abrirSelectorCorreccion(inputId: string): void {
-    const input = document.getElementById(inputId) as HTMLInputElement | null;
+  abrirModalCorreccion(articulo: ArticuloAutor): void {
+    if (!articulo.correccion_pendiente || this.isSubiendoCorreccion(articulo.id)) {
+      return;
+    }
 
-    input?.click();
+    this.articuloCorreccionActivo = articulo;
+    this.archivoCorreccionActivo = null;
+    this.nombreArchivoCorreccionActivo = '';
+    this.comentariosCorreccionActivo = '';
+    this.errorModalCorreccion = null;
   }
 
-  onArchivoCorreccionSeleccionado(event: Event, articulo: ArticuloAutor): void {
+  cerrarModalCorreccion(): void {
+    this.articuloCorreccionActivo = null;
+    this.archivoCorreccionActivo = null;
+    this.nombreArchivoCorreccionActivo = '';
+    this.comentariosCorreccionActivo = '';
+    this.errorModalCorreccion = null;
+    this.arrastrandoArchivoCorreccion = false;
+  }
+
+  onDragOverCorreccion(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoCorreccion = true;
+  }
+
+  onDragLeaveCorreccion(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoCorreccion = false;
+  }
+
+  onDropArchivoCorreccion(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoCorreccion = false;
+
+    const file = event.dataTransfer?.files?.item(0) ?? null;
+    if (!file) {
+      return;
+    }
+
+    this.setArchivoCorreccion(file);
+  }
+
+  private setArchivoCorreccion(file: File): void {
+    const nombre = file.name.toLowerCase();
+    const extensionValida = /\.(pdf|doc|docx)$/.test(nombre);
+
+    if (!extensionValida) {
+      this.archivoCorreccionActivo = null;
+      this.nombreArchivoCorreccionActivo = '';
+      this.errorModalCorreccion = 'Formato no permitido. Usa PDF, DOC o DOCX.';
+      return;
+    }
+
+    this.archivoCorreccionActivo = file;
+    this.nombreArchivoCorreccionActivo = file.name;
+    this.errorModalCorreccion = null;
+  }
+
+  limpiarArchivoCorreccion(): void {
+    this.archivoCorreccionActivo = null;
+    this.nombreArchivoCorreccionActivo = '';
+    this.errorModalCorreccion = null;
+  }
+
+  onArchivoModalCorreccionSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files && input.files.length > 0 ? input.files[0] : null;
 
-    if (!file || !articulo.correccion_pendiente) {
+    if (!file) {
       return;
     }
+
+    this.setArchivoCorreccion(file);
+  }
+
+  enviarCorreccionModal(): void {
+    if (!this.articuloCorreccionActivo) {
+      return;
+    }
+
+    if (!this.archivoCorreccionActivo) {
+      this.errorModalCorreccion = 'Debes seleccionar un archivo para enviar la correccion.';
+      return;
+    }
+
+    const articulo = this.articuloCorreccionActivo;
+    const archivo = this.archivoCorreccionActivo;
+    const comentarios = this.comentariosCorreccionActivo.trim();
 
     this.subiendoCorreccionIds.add(articulo.id);
     this.mensajeCorreccion = null;
     this.errorCorreccion = null;
+    this.errorModalCorreccion = null;
 
-    this.articulosService.enviarCorreccion(articulo.id, file).subscribe({
+    this.articulosService
+      .enviarCorreccion(articulo.id, archivo, comentarios || undefined)
+      .subscribe({
       next: () => {
         this.subiendoCorreccionIds.delete(articulo.id);
         this.mensajeCorreccion = 'Correccion enviada correctamente.';
-        input.value = '';
+        this.cerrarModalCorreccion();
         this.cargarArticulos();
       },
       error: (err) => {
         console.error('Error enviando correccion:', err);
         this.subiendoCorreccionIds.delete(articulo.id);
-        this.errorCorreccion = err?.error?.message ?? 'No fue posible enviar la correccion.';
-        input.value = '';
+        const mensaje = err?.error?.message ?? 'No fue posible enviar la correccion.';
+        this.errorCorreccion = mensaje;
+        this.errorModalCorreccion = mensaje;
       },
-    });
+      });
   }
 
   isSubiendoCorreccion(articuloId: number): boolean {

@@ -58,7 +58,10 @@
 
             <div class="historial-card" [class.is-expanded]="registro.expandido">
               <header class="historial-card-header" (click)="toggleRegistro(registro)">
-                <h3>{{ registro.asunto }}</h3>
+                <div class="historial-title-wrap">
+                  <h3>{{ registro.asunto }}</h3>
+                  <span class="tag-correccion-autor" *ngIf="registro.esCorreccionAutor">Corrección del autor</span>
+                </div>
                 <svg class="chevron-icon" [class.rotated]="registro.expandido" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2">
                   <polyline points="6 9 12 15 18 9"></polyline>
@@ -81,6 +84,19 @@
                   </div>
                 </div>
                 <p *ngIf="registro.comentario" class="historial-comentario">{{ registro.comentario }}</p>
+
+                <div class="correccion-admin-actions" *ngIf="registro.esCorreccionAutor">
+                  <span class="tag-correccion-ok" *ngIf="registro.correccionAceptada">Corrección aceptada</span>
+                  <button
+                    type="button"
+                    class="btn-outline-teal"
+                    *ngIf="registro.puedeAceptarCorreccion"
+                    (click)="confirmarAceptacionCorreccion(registro)"
+                    [disabled]="isAceptandoCorreccion(registro.id)"
+                  >
+                    {{ isAceptandoCorreccion(registro.id) ? 'Aceptando...' : 'Aceptar corrección' }}
+                  </button>
+                </div>
               </div>
             </div>
           </article>
@@ -93,9 +109,25 @@
     </section>
 
     <aside class="acciones-laterales">
+      <section class="timeline-etapas-panel">
+        <h2>Cronograma de Etapas</h2>
+        @for (etapa of etapasTimeline; track etapa.id) {
+        <div
+          class="etapa-item"
+          [class.etapa-completada]="etapa.estado === 'completada'"
+          [class.etapa-activa]="etapa.estado === 'actual'"
+        >
+          <aside class="etapa-meta">
+            <div class="timeline-dot"></div>
+            <span class="etapa-estado">{{ etapa.titulo }}</span>
+          </aside>
+          <p class="etapa-fecha">{{ etapa.fecha }}</p>
+        </div>
+        }
+      </section>
 
       <div class="accion-group">
-        <span class="accion-label">Añadir observación</span>
+        <span class="accion-label">Añadir corrección u observación</span>
         <input type="text" class="input-control" [(ngModel)]="asuntoObservacion" placeholder="Asunto"
           aria-label="Asunto de observación" />
         <textarea class="input-control" [(ngModel)]="comentarioObservacion" placeholder="Comentarios"
@@ -131,3 +163,4 @@
     </aside>
   </div>
 </section>
+

@@ -9,6 +9,7 @@ import {
   ArticuloAutor,
   ArticulosAutorService,
 } from '../../../core/articulos/articulos-autor.service';
+import { normalizarNombreArchivo } from '../../../core/utils/filename.utils';
 
 interface EtapaEditorial {
   id: number;
@@ -204,7 +205,7 @@ export class TimelineEditorialComponent implements OnInit {
         titulo: obs.asunto || 'Observacion editorial',
         descripcion: obs.comentarios || 'Sin comentarios adicionales.',
         archivos: obs.archivos.map((archivo) => ({
-          nombre: archivo.archivoNombreOriginal,
+          nombre: normalizarNombreArchivo(archivo.archivoNombreOriginal),
           path: archivo.archivoPath,
         })),
       }));
@@ -231,7 +232,7 @@ export class TimelineEditorialComponent implements OnInit {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = nombreOriginal;
+        a.download = normalizarNombreArchivo(nombreOriginal);
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -257,17 +258,48 @@ export class TimelineEditorialComponent implements OnInit {
   }
 
   private formatearFechaLarga(fechaIso: string): string {
-    const fecha = new Date(fechaIso);
+    const valor = (fechaIso ?? '').trim();
+    if (!valor) {
+      return 'Sin fecha';
+    }
+
+    const sinZonaHoraria = !/(z|[+-]\d{2}:\d{2})$/i.test(valor);
+
+    if (sinZonaHoraria) {
+      const match = valor.match(
+        /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::\d{2}(?:\.\d{1,3})?)?$/,
+      );
+
+      if (match) {
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+        const hour24 = Number(match[4]);
+        const minute = Number(match[5]);
+        const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+        const periodo = hour24 >= 12 ? 'p. m.' : 'a. m.';
+        const dia = String(day).padStart(2, '0');
+        const hora = String(hour12).padStart(2, '0');
+        const minutos = String(minute).padStart(2, '0');
+        const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+        return `${dia} ${meses[Math.max(0, month - 1)]} ${year}, ${hora}:${minutos} ${periodo}`;
+      }
+    }
+
+    const fecha = new Date(valor);
     if (isNaN(fecha.getTime())) {
       return 'Sin fecha';
     }
 
-    return fecha.toLocaleString('es-CO', {
+    return new Intl.DateTimeFormat('es-CO', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    });
+      hour12: true,
+      timeZone: 'America/Bogota',
+    }).format(fecha);
   }
 }

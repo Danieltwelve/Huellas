@@ -23,6 +23,8 @@ import { FerchContador } from './entities/ferch-contador.entity';
 export class ArticulosService {
   private static readonly ASUNTO_CORRECCION_AUTOR =
     'Correccion enviada por autor';
+  private static readonly ASUNTO_CORRECCION_ACEPTADA =
+    'Correccion aceptada por equipo editorial';
 
   constructor(
     private dataSource: DataSource,
@@ -512,12 +514,114 @@ export class ArticulosService {
     };
   }
 
+  async aceptarCorreccionAutor(
+    articuloId: number,
+    observacionId: number,
+    usuarioAdminId: number,
+    comentarios?: string,
+  ) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['autores', 'observaciones', 'observaciones.usuario'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    const observacionCorreccion = (articulo.observaciones ?? []).find(
+      (obs) => obs.id === observacionId,
+    );
+
+    if (!observacionCorreccion) {
+      throw new NotFoundException('La corrección seleccionada no existe');
+    }
+
+    const autoresIds = new Set((articulo.autores ?? []).map((autor) => autor.id));
+    const usuarioObservacionId =
+      observacionCorreccion.usuarioId ?? observacionCorreccion.usuario?.id;
+
+    if (
+      typeof usuarioObservacionId !== 'number' ||
+      !autoresIds.has(usuarioObservacionId)
+    ) {
+      throw new BadRequestException(
+        'La observación indicada no corresponde a una corrección de autor',
+      );
+    }
+
+    const textoCorreccionAutor =
+      `${observacionCorreccion.asunto ?? ''} ${observacionCorreccion.comentarios ?? ''}`.toLowerCase();
+
+    if (!/correccion enviada por autor|corrección enviada por autor/.test(textoCorreccionAutor)) {
+      throw new BadRequestException(
+        'La observación indicada no corresponde a una corrección de autor',
+      );
+    }
+
+    const fechaCorreccionAutor = new Date(observacionCorreccion.fechaSubida);
+
+    const yaAceptada = (articulo.observaciones ?? []).some((obs) => {
+      if (obs.id === observacionCorreccion.id) {
+        return false;
+      }
+
+      const fechaObs = new Date(obs.fechaSubida);
+      if (isNaN(fechaObs.getTime()) || isNaN(fechaCorreccionAutor.getTime())) {
+        return false;
+      }
+
+      if (fechaObs < fechaCorreccionAutor) {
+        return false;
+      }
+
+      const usuarioIdObs = obs.usuarioId ?? obs.usuario?.id;
+      const esDeAutor =
+        typeof usuarioIdObs === 'number' && autoresIds.has(usuarioIdObs);
+
+      if (esDeAutor) {
+        return false;
+      }
+
+      const texto = `${obs.asunto ?? ''} ${obs.comentarios ?? ''}`.toLowerCase();
+      return /correccion aceptada|corrección aceptada|correccion aprobada|corrección aprobada/.test(
+        texto,
+      );
+    });
+
+    if (yaAceptada) {
+      return {
+        message: 'Esta corrección ya había sido aceptada previamente',
+      };
+    }
+
+    const observacionAceptacion = this.dataSource.getRepository(Observacion).create({
+      articuloId,
+      usuarioId: usuarioAdminId,
+      etapaId: articulo.etapaActualId,
+      asunto: ArticulosService.ASUNTO_CORRECCION_ACEPTADA,
+      comentarios:
+        comentarios?.trim() ||
+        'Se confirma que la corrección del autor fue revisada y aceptada.',
+    });
+
+    const registro = await this.dataSource
+      .getRepository(Observacion)
+      .save(observacionAceptacion);
+
+    return {
+      message: 'Corrección del autor aceptada correctamente',
+      observacionId: registro.id,
+    };
+  }
+
   private tieneCorreccionPendiente(articulo: Articulo, userId: number): boolean {
     const autoresIds = new Set((articulo.autores ?? []).map((autor) => autor.id));
     const observaciones = articulo.observaciones ?? [];
 
     let ultimaSolicitudCorreccion: Date | null = null;
     let ultimaRespuestaAutor: Date | null = null;
+    let ultimaAceptacionCorreccion: Date | null = null;
 
     for (const observacion of observaciones) {
       const fecha = new Date(observacion.fechaSubida);
@@ -531,6 +635,16 @@ export class ArticulosService {
         false;
 
       const texto = `${observacion.asunto ?? ''} ${observacion.comentarios ?? ''}`.toLowerCase();
+
+      const esAceptacionCorreccion =
+        !esAutor && /(correccion aceptada|corrección aceptada|correccion aprobada|corrección aprobada)/.test(texto);
+
+      if (esAceptacionCorreccion) {
+        if (!ultimaAceptacionCorreccion || fecha > ultimaAceptacionCorreccion) {
+          ultimaAceptacionCorreccion = fecha;
+        }
+        continue;
+      }
 
       const esSolicitudCorreccion =
         !esAutor && /(correccion|corrección|ajuste|subsan|pendiente)/.test(texto);
@@ -554,6 +668,14 @@ export class ArticulosService {
     }
 
     if (!ultimaSolicitudCorreccion) {
+      return false;
+    }
+
+    if (
+      ultimaAceptacionCorreccion &&
+      ultimaAceptacionCorreccion >= ultimaSolicitudCorreccion &&
+      (!ultimaRespuestaAutor || ultimaAceptacionCorreccion >= ultimaRespuestaAutor)
+    ) {
       return false;
     }
 

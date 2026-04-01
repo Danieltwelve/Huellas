@@ -193,10 +193,34 @@ export class ArticulosService {
 
     return from(currentUser.getIdToken()).pipe(
       switchMap((token) =>
-        this.http.get(`${environment.apiUrlBackend}/articulos/descargar/${filename}`, {
+        this.http.get(`${environment.apiUrlBackend}/articulos/descargar/${encodeURIComponent(filename)}`, {
           headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           responseType: 'blob', // Importante para manejar el archivo binario
         }),
+      ),
+    );
+  }
+
+  aceptarCorreccionAutor(
+    articuloId: number,
+    observacionId: number,
+    comentarios?: string,
+  ): Observable<{ message: string; observacionId?: number }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para aceptar correcciones.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<{ message: string; observacionId?: number }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/correcciones/${observacionId}/aceptar`,
+          { comentarios: comentarios?.trim() || undefined },
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
       ),
     );
   }

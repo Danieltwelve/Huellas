@@ -112,20 +112,13 @@
                     Ver
                   </button>
                   @if (articulo.correccion_pendiente) {
-                    <input
-                      type="file"
-                      accept=".pdf,.docx"
-                      [id]="'archivo-correccion-' + articulo.id"
-                      style="display: none"
-                      (change)="onArchivoCorreccionSeleccionado($event, articulo)"
-                    />
                     <button
-                      class="btn-outline-sm"
+                      class="btn-outline-sm btn-correction"
                       type="button"
-                      (click)="abrirSelectorCorreccion('archivo-correccion-' + articulo.id)"
+                      (click)="abrirModalCorreccion(articulo)"
                       [disabled]="isSubiendoCorreccion(articulo.id)"
                     >
-                      {{ isSubiendoCorreccion(articulo.id) ? 'Enviando...' : 'Subir correccion' }}
+                      {{ isSubiendoCorreccion(articulo.id) ? 'Enviando...' : 'Añadir correccion' }}
                     </button>
                   }
                 </td>
@@ -168,20 +161,13 @@
                   Ver seguimiento
                 </button>
                 @if (articulo.correccion_pendiente) {
-                  <input
-                    type="file"
-                    accept=".pdf,.docx"
-                    [id]="'archivo-correccion-mobile-' + articulo.id"
-                    style="display: none"
-                    (change)="onArchivoCorreccionSeleccionado($event, articulo)"
-                  />
                   <button
-                    class="btn-outline-sm"
+                    class="btn-outline-sm btn-correction"
                     type="button"
-                    (click)="abrirSelectorCorreccion('archivo-correccion-mobile-' + articulo.id)"
+                    (click)="abrirModalCorreccion(articulo)"
                     [disabled]="isSubiendoCorreccion(articulo.id)"
                   >
-                    {{ isSubiendoCorreccion(articulo.id) ? 'Enviando...' : 'Subir correccion' }}
+                    {{ isSubiendoCorreccion(articulo.id) ? 'Enviando...' : 'Añadir correccion' }}
                   </button>
                 }
               </div>
@@ -197,4 +183,74 @@
       }
     </div>
   </div>
+
+  @if (articuloCorreccionActivo) {
+    <div class="correccion-modal-backdrop" (click)="cerrarModalCorreccion()">
+      <section class="correccion-modal" (click)="$event.stopPropagation()" aria-label="Enviar correccion de articulo">
+        <header class="correccion-modal-header">
+          <h3>Enviar correccion del articulo</h3>
+          <button type="button" class="btn-close" (click)="cerrarModalCorreccion()" aria-label="Cerrar">×</button>
+        </header>
+
+        <div class="correccion-modal-body">
+          <p class="correccion-articulo-codigo">{{ articuloCorreccionActivo.codigo || 'S/N' }}</p>
+          <p class="correccion-articulo-titulo">{{ articuloCorreccionActivo.titulo }}</p>
+          <p class="correccion-ayuda">Adjunta la nueva version con los ajustes solicitados por el equipo editorial.</p>
+
+          <label class="file-label" for="archivoCorreccionModal">Añadir correccion</label>
+          <div
+            class="dropzone"
+            [class.is-dragging]="arrastrandoArchivoCorreccion"
+            (dragover)="onDragOverCorreccion($event)"
+            (dragleave)="onDragLeaveCorreccion($event)"
+            (drop)="onDropArchivoCorreccion($event)"
+          >
+            <p class="dropzone-title">Arrastra y suelta el archivo aqui</p>
+            <p class="dropzone-subtitle">o usa el selector manual</p>
+            <input
+              id="archivoCorreccionModal"
+              class="file-input"
+              type="file"
+              accept=".pdf,.doc,.docx"
+              (change)="onArchivoModalCorreccionSeleccionado($event)"
+            />
+          </div>
+          @if (nombreArchivoCorreccionActivo) {
+            <div class="file-chip">
+              <p class="file-name">{{ nombreArchivoCorreccionActivo }}</p>
+              <button type="button" class="btn-file-remove" (click)="limpiarArchivoCorreccion()">Quitar</button>
+            </div>
+          }
+
+          <label class="file-label" for="comentariosCorreccion">Comentarios para el editor (opcional)</label>
+          <textarea
+            id="comentariosCorreccion"
+            class="input-control"
+            rows="3"
+            maxlength="2000"
+            placeholder="Describe brevemente los cambios aplicados..."
+            [(ngModel)]="comentariosCorreccionActivo"
+          ></textarea>
+
+          <p class="correccion-help-detail">Formatos permitidos: PDF, DOC o DOCX.</p>
+
+          @if (errorModalCorreccion) {
+            <div class="mensaje-modal-error">{{ errorModalCorreccion }}</div>
+          }
+        </div>
+
+        <footer class="correccion-modal-footer">
+          <button type="button" class="btn-outline-sm" (click)="cerrarModalCorreccion()">Cancelar</button>
+          <button
+            type="button"
+            class="btn-primary-sm"
+            (click)="enviarCorreccionModal()"
+            [disabled]="isSubiendoCorreccion(articuloCorreccionActivo.id)"
+          >
+            {{ isSubiendoCorreccion(articuloCorreccionActivo.id) ? 'Enviando...' : 'Enviar correccion' }}
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
 </div>

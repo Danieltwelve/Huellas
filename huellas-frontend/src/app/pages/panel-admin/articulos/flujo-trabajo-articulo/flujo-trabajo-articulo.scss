@@ -154,6 +154,15 @@
     align-items: start;
 }
 
+/* === TIMELINE DE ETAPAS === */
+.timeline-etapas-panel{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.7rem;margin-bottom:1.2rem;}
+.timeline-etapas-panel h2{margin:0 0 .5rem;font-size:.88rem;color:#0f172a;font-weight:600;}
+.etapa-item{display:flex;gap:.3rem;margin-bottom:.4rem;opacity:.65;}
+.etapa-item.etapa-completada,.etapa-item.etapa-activa{opacity:1;}
+.etapa-meta{display:flex;align-items:center;gap:.3rem;}
+.etapa-estado{font-size:.78rem;font-weight:500;color:#0f172a;}
+.etapa-fecha{margin:0;font-size:.68rem;color:#94a3b8;}
+
 /* === PANEL DE HISTORIAL (TIMELINE) === */
 .historial-panel h2 {
     margin: 0;
@@ -249,6 +258,44 @@
     font-size: 1rem;
     font-weight: 600;
     color: #0f172a;
+}
+
+.historial-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.tag-correccion-autor {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #fcd34d;
+    background: #fffbeb;
+    color: #92400e;
+    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.correccion-admin-actions {
+    margin-top: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.tag-correccion-ok {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #86efac;
+    background: #f0fdf4;
+    color: #166534;
+    border-radius: 999px;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 700;
 }
 
 .chevron-icon {
@@ -502,6 +549,18 @@
     color: #065f46;
     background: #ecfdf5;
     border-color: #a7f3d0;
+    animation: popInOk 360ms ease-out;
+}
+
+@keyframes popInOk {
+    0% {
+        opacity: 0;
+        transform: translateY(-3px) scale(0.99);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .mensaje-accion--error {
@@ -530,6 +589,9 @@
     .resumen-grid {
         grid-template-columns: 1fr;
     }
+    .timeline-etapas-panel {
+        padding: 0.9rem;
+    }
 }
 
 @media (max-width: 640px) {
@@ -539,4 +601,8 @@
     .historial-meta { flex-direction: column; align-items: flex-start; gap: 0.2rem; margin-left: 2rem; }
     .timeline-dot { position: absolute; left: 11px; top: 5px; }
     .historial-fecha { margin-top: 0.5rem; }
+    .timeline-etapas-panel {
+        padding: 0.8rem;
+        margin-bottom: 1.2rem;
+    }
 }

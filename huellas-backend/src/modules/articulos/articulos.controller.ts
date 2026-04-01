@@ -29,6 +29,7 @@ import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
 import { AddObservacionDto } from './dto/add-observacion.dto';
 import { CambiarEtapaDto } from './dto/cambiar-etapa.dto';
 import { SubmitCorreccionDto } from './dto/submit-correccion.dto';
+import { AceptarCorreccionDto } from './dto/aceptar-correccion.dto';
 import { diskStorage } from 'multer';
 import { validateOrReject, ValidationError } from 'class-validator';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -197,6 +198,23 @@ export class ArticulosController {
       }
       throw error;
     }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Post(':id/correcciones/:observacionId/aceptar')
+  async aceptarCorreccionAutor(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('observacionId', ParseIntPipe) observacionId: number,
+    @Body() body: AceptarCorreccionDto,
+    @Req() req: any,
+  ) {
+    return await this.articulosService.aceptarCorreccionAutor(
+      id,
+      observacionId,
+      req.user.userId,
+      body.comentarios?.trim(),
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
