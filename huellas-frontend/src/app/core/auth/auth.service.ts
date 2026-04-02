@@ -23,6 +23,8 @@ export interface AccessClaims {
   canViewArchivos?: boolean;
   canSubmitEnvios?: boolean;
   canManageUsers?: boolean;
+  canManageArticulos?: boolean;
+  canManageFlujoEditorial?: boolean;
   externalSystemUid?: string;
   [key: string]: unknown;
 }
@@ -96,6 +98,7 @@ export class AuthService {
         correo: correo,
       });
 
+      // Actualizar el token para obtener los claims personalizados recién asignados en el backend
       await result.user.getIdToken(true);
       const refreshedTokenResult = await result.user.getIdTokenResult();
       this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
@@ -141,6 +144,7 @@ export class AuthService {
       if (this.isPopupCancelledByUser(error)) {
         return null;
       }
+      // Capturar error específico de cuenta existente para iniciar flujo de vinculación
       if (error.code === 'auth/account-exists-with-different-credential') {
         const pendingCredential = OAuthProvider.credentialFromError(error);
         const email = error.customData?.email;
@@ -246,6 +250,27 @@ export class AuthService {
     }
   }
 
+  private async rollbackIncompleteSession(): Promise<void> {
+    try {
+      if (this.auth.currentUser) {
+        await signOut(this.auth);
+      }
+    } catch (rollbackError) {
+      console.error('No fue posible cerrar sesión durante el rollback:', rollbackError);
+    } finally {
+      this.claimsSubject.next({});
+      this.clearPendingMicrosoftLink();
+    }
+  }
+
+  /**
+   * Envios de correo de verificación
+   */
+
+  async sendVerificationEmail(user: User): Promise<void> {
+    await sendEmailVerification(user);
+  }
+
   async sendEmailTokenToBackend(
     idToken: string,
     registerData?: RegisterUserAttributes,
@@ -281,40 +306,9 @@ export class AuthService {
     }
   }
 
-  private async rollbackIncompleteSession(): Promise<void> {
-    try {
-      if (this.auth.currentUser) {
-        await signOut(this.auth);
-      }
-    } catch (rollbackError) {
-      console.error('No fue posible cerrar sesión durante el rollback:', rollbackError);
-    } finally {
-      this.claimsSubject.next({});
-      this.clearPendingMicrosoftLink();
-    }
-  }
-
   /**
-   * Cierra la sesión actual
+   * Registrarse con email y contraseña
    */
-  async logout(): Promise<void> {
-    try {
-      await signOut(this.auth);
-      this.claimsSubject.next({});
-      console.log('Sesión cerrada');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      throw error;
-    }
-  }
-
-  async sendPasswordResetEmail(email: string): Promise<void> {
-    return sendPasswordResetEmail(this.auth, email);
-  }
-
-  async sendVerificationEmail(user: User): Promise<void> {
-    await sendEmailVerification(user);
-  }
 
   async signUpWithEmailAndPassword(
     credential: Credentials,
@@ -353,6 +347,10 @@ export class AuthService {
     }
   }
 
+  /**
+   * Iniciar sesión con email y contraseña
+   */
+
   async logInWithEmailAndPassword(credential: Credentials): Promise<UserCredential> {
     const userCredential = await signInWithEmailAndPassword(
       this.auth,
@@ -383,6 +381,28 @@ export class AuthService {
     return userCredential;
   }
 
+  /**
+   * Cierra la sesión actual
+   */
+  async logout(): Promise<void> {
+    try {
+      await signOut(this.auth);
+      this.claimsSubject.next({});
+      console.log('Sesión cerrada');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Recuperar contraseña
+   */
+
+  async sendPasswordResetEmail(email: string): Promise<void> {
+    return sendPasswordResetEmail(this.auth, email);
+  }
+
   async getEmailStatus(email: string): Promise<EmailStatusResponse> {
     const response = await fetch(`${environment.apiUrlBackend}/auth/email-status`, {
       method: 'POST',
@@ -402,6 +422,10 @@ export class AuthService {
 
     return (await response.json()) as EmailStatusResponse;
   }
+
+  /**
+   * Enviar a usuario logueado a la ruta correspondiente según sus claims/roles
+   */
 
   getPostLoginRoute(): string {
     const claims = this.claimsSubject.value;

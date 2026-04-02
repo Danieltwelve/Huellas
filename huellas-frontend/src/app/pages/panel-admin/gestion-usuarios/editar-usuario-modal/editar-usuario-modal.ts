@@ -11,7 +11,6 @@ import {
 import { FormsModule } from '@angular/forms';
 import { UsersService } from '../../../../core/users/users.service';
 import { TitleCasePipe } from '@angular/common'; // Importa TitleCasePipe
-import { Router } from '@angular/router';
 
 interface EditUserData {
   id: number;
@@ -26,7 +25,7 @@ interface EditUserForm {
   nombre: string;
   telefono: string;
   estado: 'Activa' | 'Inactiva';
-  rol: 'admin' | 'monitor' | 'autor' | 'revisor';
+  rol: 'admin' | 'monitor' | 'autor' | 'revisor' | 'director';
 }
 
 @Component({
@@ -151,16 +150,19 @@ export class EditarUsuarioModal implements OnChanges {
         return 3;
       case 'autor':
         return 4;
+      case 'director':
+        return 5;
       default:
         return 4;
     }
   }
 
-  private normalizeRole(role: string): 'admin' | 'monitor' | 'autor' | 'revisor' {
+  private normalizeRole(role: string): 'admin' | 'monitor' | 'director' | 'autor' | 'revisor' {
     const firstRole = role.split(',')[0]?.trim().toLowerCase();
 
     if (
       firstRole === 'admin' ||
+      firstRole === 'director' ||
       firstRole === 'monitor' ||
       firstRole === 'autor' ||
       firstRole === 'revisor'

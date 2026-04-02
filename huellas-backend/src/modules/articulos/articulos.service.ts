@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   BadRequestException,
@@ -7,7 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { createReadStream, existsSync, promises as fs } from 'fs';
+import { createReadStream, existsSync } from 'fs';
 import { DataSource, Repository } from 'typeorm';
 import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
 import { EdicionRevista } from '../ediciones/edicion-revista.entity';
@@ -17,6 +16,7 @@ import { ObservacionArchivo } from '../observaciones-archivos/entities/observaci
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FerchContador } from './entities/ferch-contador.entity';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class ArticulosService {
@@ -25,7 +25,7 @@ export class ArticulosService {
     @InjectRepository(Articulo)
     private readonly articuloRepository: Repository<Articulo>,
     @InjectRepository(FerchContador)
-    private readonly ferchContadorRepository: Repository<FerchContador>,
+    private readonly storageService: StorageService,
   ) {}
 
   async crearEnvioArticulo(
@@ -149,12 +149,9 @@ export class ArticulosService {
       // Borrar archivo huérfano
       if (archivoPath) {
         try {
-          await fs.unlink(archivoPath);
-        } catch (unlinkError) {
-          console.error(
-            `No se pudo borrar el archivo: ${archivoPath}`,
-            unlinkError,
-          );
+          await this.storageService.eliminarArchivo(archivoPath);
+        } catch (error) {
+          console.error(`No se pudo borrar el archivo: ${archivoPath}`, error);
         }
       }
 
@@ -387,13 +384,7 @@ export class ArticulosService {
       await queryRunner.commitTransaction();
 
       for (const path of archivosFisicos) {
-        try {
-          await fs.unlink(path);
-        } catch (unlinkError) {
-          console.warn(
-            `Aviso: No se encontró el archivo físico para borrar: ${path}`,
-          );
-        }
+        await this.storageService.eliminarArchivo(path);
       }
 
       return {

@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -30,13 +29,17 @@ import { validateOrReject, ValidationError } from 'class-validator';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { promises as fs } from 'fs';
 import express from 'express';
 import * as mime from 'mime-types';
+import { StorageService } from '../storage/storage.service';
+import { ParseArticuloDataPipe } from './pipes/parse-articulo-data.pipe';
 
 @Controller('articulos')
 export class ArticulosController {
-  constructor(private readonly articulosService: ArticulosService) {}
+  constructor(
+    private readonly articulosService: ArticulosService,
+    private readonly storageService: StorageService,
+  ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'autor', 'director', 'monitor')
@@ -69,7 +72,7 @@ export class ArticulosController {
     }),
   )
   async crearEnvio(
-    @Body() body: any,
+    @Body(ParseArticuloDataPipe) dto: CreateArticuloCompletoDto,
     @UploadedFile() archivo: Express.Multer.File,
   ) {
     if (!archivo) {
@@ -79,32 +82,6 @@ export class ArticulosController {
     }
 
     try {
-      const dto = new CreateArticuloCompletoDto();
-      dto.titulo = body.titulo;
-      dto.resumen = body.resumen;
-      dto.asunto = body.asunto;
-      dto.comentarios = body.comentarios;
-
-      dto.tema_id = Number(body.tema_id);
-
-      dto.palabras_clave =
-        typeof body.palabras_clave === 'string'
-          ? body.palabras_clave.split(',').map((s) => s.trim())
-          : body.palabras_clave;
-
-      if (body.usuarios_ids !== undefined && body.usuarios_ids !== '') {
-        dto.usuarios_ids =
-          typeof body.usuarios_ids === 'string'
-            ? body.usuarios_ids.split(',').map((id) => Number(id.trim()))
-            : body.usuarios_ids;
-
-        if (dto.usuarios_ids.some((id) => isNaN(id))) {
-          throw new BadRequestException(
-            'Los usuarios_ids deben ser números válidos',
-          );
-        }
-      }
-
       await validateOrReject(dto);
 
       const usuarioEmisorId = dto.usuarios_ids[0];
@@ -117,7 +94,7 @@ export class ArticulosController {
       );
     } catch (error) {
       if (archivo && archivo.path) {
-        await fs.unlink(archivo.path).catch(() => null);
+        await this.storageService.eliminarArchivo(archivo.path);
       }
 
       if (

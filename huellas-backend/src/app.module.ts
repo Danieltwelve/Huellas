@@ -10,6 +10,7 @@ import { ArticulosModule } from './modules/articulos/articulos.module';
 import { ArticulosHistorialEtapasModule } from './modules/articulos-historial-etapas/articulos-historial-etapas.module';
 import { ObservacionesModule } from './modules/observaciones/observaciones.module';
 import { ObservacionesArchivosModule } from './modules/observaciones-archivos/observaciones-archivos.module';
+import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ObservacionesArchivosModule } from './modules/observaciones-archivos/ob
     ArticulosHistorialEtapasModule,
     ObservacionesModule,
     ObservacionesArchivosModule,
+    StorageModule,
   ],
 })
 export class AppModule {}

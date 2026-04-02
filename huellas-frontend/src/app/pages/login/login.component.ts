@@ -65,17 +65,6 @@ export class LoginComponent {
     }
   }
 
-  async logout() {
-    try {
-      await this.authService.logout();
-      this.router.navigate(['/']);
-    } catch (error) {
-      alert('Hubo un problema al cerrar sesión.');
-      this.showWrongModal = true;
-      this.cdr.detectChanges();
-    }
-  }
-
   async onGoogleLogin() {
     try {
       const user = await this.authService.loginWithGoogle();
@@ -135,6 +124,17 @@ export class LoginComponent {
       this.showMicrosoftLinkResultModal = true;
     } finally {
       this.linkingMicrosoft = false;
+    }
+  }
+
+  async logout() {
+    try {
+      await this.authService.logout();
+      this.router.navigate(['/']);
+    } catch (error) {
+      alert('Hubo un problema al cerrar sesión.');
+      this.showWrongModal = true;
+      this.cdr.detectChanges();
     }
   }
 

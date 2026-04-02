@@ -47,7 +47,8 @@
                         <div class="archivo-row" *ngFor="let archivo of registro.archivos">
 
                           <button type="button" class="archivo-descarga-btn"
-                            (click)="descargarArchivo(archivo.path, archivo.nombre)" title="Descargar {{ archivo.nombre }}">
+                            (click)="descargarArchivo(archivo.path, archivo.nombre)"
+                            title="Descargar {{ archivo.nombre }}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                               class="icon-download">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -78,7 +79,7 @@
 
       <div class="accion-group">
         <span class="accion-label">Añadir observación</span>
-        <button class="btn-outline-teal btn-anadir-observacion" type="button">
+        <button class="btn-outline-teal btn-anadir-observacion" (click)="onCreateObservacion()" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-plus">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             <line x1="12" y1="7" x2="12" y2="13"></line>
@@ -105,4 +106,7 @@
 
     </aside>
   </div>
+  @if (showCreateModal) {
+  <app-crear-observacion (closed)="closeCreateModal()"></app-crear-observacion>
+  }
 </section>

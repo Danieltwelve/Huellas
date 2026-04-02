@@ -18,6 +18,7 @@ import { UsersModule } from '../users/users.module';
 import { Role } from '../roles/roles.entity';
 import { FerchContador } from './entities/ferch-contador.entity';
 import { FerchContadorSeeder } from 'src/databases/seeders/ferch-articulo.seeder';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { FerchContadorSeeder } from 'src/databases/seeders/ferch-articulo.seeder
     ]),
     FirebaseAdminModule,
     UsersModule,
+    StorageModule,
   ],
   controllers: [ArticulosController],
   providers: [

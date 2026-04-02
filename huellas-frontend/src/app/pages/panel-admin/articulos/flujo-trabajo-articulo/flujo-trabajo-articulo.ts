@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import {
   ArticuloFlujo,
   ArticulosService,
   ObservacionBackend,
 } from '../../../../core/articulos/articulos.service';
 import { ActivatedRoute } from '@angular/router';
+import { CrearObservacion } from './crear-observacion/crear-observacion';
 
 interface EtapaFlujo {
   id: string;
@@ -32,7 +33,7 @@ interface RegistroFlujo {
 
 @Component({
   selector: 'app-flujo-trabajo-articulo',
-  imports: [CommonModule],
+  imports: [CommonModule, CrearObservacion],
   templateUrl: './flujo-trabajo-articulo.html',
   styleUrl: './flujo-trabajo-articulo.scss',
   standalone: true,
@@ -40,6 +41,9 @@ interface RegistroFlujo {
 export class FlujoTrabajoArticulo {
   private readonly route = inject(ActivatedRoute);
   private readonly articulosService = inject(ArticulosService);
+
+  showCreateModal = false;
+  private cdr = inject(ChangeDetectorRef);
 
   articulo: ArticuloFlujo | null = null;
   loading = true;
@@ -180,5 +184,14 @@ export class FlujoTrabajoArticulo {
     this.etapas.forEach((etapa, posicion) => {
       etapa.activa = posicion === indice;
     });
+  }
+
+  onCreateObservacion(): void {
+    this.showCreateModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeCreateModal(): void {
+    this.showCreateModal = false;
   }
 }
