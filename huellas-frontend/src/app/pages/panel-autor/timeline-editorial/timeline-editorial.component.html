@@ -1,5 +1,31 @@
 <div class="timeline-container">
-  <div class="demo-banner">Vista demostrativa: estados editoriales de referencia para el autor.</div>
+  <div class="selector-card">
+    <label for="articuloSelector">Articulo a seguir</label>
+    <select
+      id="articuloSelector"
+      [value]="articuloSeleccionadoId ?? ''"
+      (change)="onSeleccionArticulo($event)"
+      [disabled]="cargandoLista || articulos.length === 0"
+    >
+      @for (articulo of articulos; track articulo.id) {
+        <option [value]="articulo.id">{{ articulo.codigo }} - {{ articulo.titulo }}</option>
+      }
+    </select>
+  </div>
+
+  @if (cargandoLista || cargandoFlujo) {
+    <div class="demo-banner">Cargando seguimiento del articulo...</div>
+  }
+
+  @if (error) {
+    <div class="demo-banner demo-banner--error">{{ error }}</div>
+  }
+
+  @if (!cargandoLista && articulos.length === 0) {
+    <div class="demo-banner">Aun no tienes articulos enviados para seguimiento.</div>
+  }
+
+  @if (flujo) {
 
   <div class="header-card">
     <div class="header-info">
@@ -59,15 +85,35 @@
   <div class="content-card">
     <h2 class="card-title">Historial detallado</h2>
     <div class="history-list">
+      @if (historial.length === 0) {
+        <article class="history-item">
+          <div class="history-date">Sin movimientos</div>
+          <div class="history-details">
+            <strong>No hay observaciones registradas</strong>
+            <p>Cuando el equipo editorial publique observaciones o cambios, apareceran aqui.</p>
+          </div>
+        </article>
+      }
+
       @for (evento of historial; track evento.fecha + evento.titulo) {
         <article class="history-item">
           <div class="history-date">{{ evento.fecha }}</div>
           <div class="history-details">
             <strong>{{ evento.titulo }}</strong>
             <p>{{ evento.descripcion }}</p>
+            @if (evento.archivos.length > 0) {
+              <div class="history-files">
+                @for (archivo of evento.archivos; track archivo.path) {
+                  <button type="button" class="file-download-btn" (click)="descargarArchivo(archivo.path, archivo.nombre)">
+                    Descargar {{ archivo.nombre }}
+                  </button>
+                }
+              </div>
+            }
           </div>
         </article>
       }
     </div>
   </div>
+  }
 </div>

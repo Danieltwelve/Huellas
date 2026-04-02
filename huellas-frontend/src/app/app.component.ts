@@ -19,4 +19,9 @@ export class AppComponent {
     const currentPath = this.router.url.split('?')[0];
     return !['/login', '/register'].includes(currentPath);
   }
+
+  get showNavbar(): boolean {
+    const currentPath = this.router.url.split('?')[0];
+    return !currentPath.startsWith('/panel-autor');
+  }
 }

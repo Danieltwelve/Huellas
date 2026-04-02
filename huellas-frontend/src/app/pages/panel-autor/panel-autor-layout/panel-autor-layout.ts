@@ -1,4 +1,3 @@
-import { AsyncPipe } from '@angular/common';
 import { Component, inject, HostListener, OnInit } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AccessClaims, AuthService } from '../../../core/auth/auth.service';
@@ -6,7 +5,7 @@ import { AccessClaims, AuthService } from '../../../core/auth/auth.service';
 @Component({
   selector: 'app-panel-autor-layout',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, AsyncPipe],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './panel-autor-layout.html',
   styleUrls: ['./panel-autor-layout.css']
 })
@@ -17,11 +16,7 @@ export class PanelAutorLayoutComponent implements OnInit {
   collapsed = false;
   userMenuOpen = false;
 
-  ngOnInit(): void {
-    if (window.innerWidth < 960) {
-      this.collapsed = true;
-    }
-  }
+  ngOnInit(): void {}
 
   claims$ = this.authService.claims$;
   user$ = this.authService.user$;
@@ -49,11 +44,7 @@ export class PanelAutorLayoutComponent implements OnInit {
   }
 
   @HostListener('window:resize')
-  onResize() {
-    if (window.innerWidth < 960) {
-      this.collapsed = true;
-    }
-  }
+  onResize() {}
 
   async logout() {
     try {
@@ -64,4 +55,5 @@ export class PanelAutorLayoutComponent implements OnInit {
       console.error(e);
     }
   }
+
 }

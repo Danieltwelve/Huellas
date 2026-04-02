@@ -120,6 +120,8 @@
 }
 
 .top-header {
+  position: relative;
+  z-index: 300;
   min-height: 66px;
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(8px);
@@ -153,6 +155,8 @@
 }
 
 .main-content {
+  position: relative;
+  z-index: 1;
   flex: 1;
   padding: 18px;
   overflow-y: auto;
@@ -197,7 +201,7 @@
   border-radius: 0.7rem;
   box-shadow: 0 16px 30px rgba(15, 23, 42, 0.2);
   padding: 0.45rem;
-  z-index: 250;
+  z-index: 500;
 }
 
 .role-title {
@@ -242,13 +246,7 @@
   }
 
   .layout-container.collapsed .sidebar {
-    width: 0;
-    border-right: none;
-    overflow: hidden;
-  }
-
-  .top-header {
-    padding-left: 12px;
+    width: 72px;
   }
 
   .main-content {
