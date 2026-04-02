@@ -39,8 +39,8 @@ export class SideBar {
 
   mainItems: MenuItem[] = [
     {
-      label: 'Gestión de Flujo Editorial',
-      icon: 'list-check',
+      label: 'Timeline Editorial',
+      icon: 'clock-history',
       adminOnly: true,
       route: '/gestion-flujo-editorial',
     },

@@ -4,7 +4,9 @@
   }
 
   <div class="content-layout">
+    @if (!(isPanelAutor$ | async)) {
     <app-navbar></app-navbar>
+    }
 
     <main class="page-content">
       <router-outlet></router-outlet>

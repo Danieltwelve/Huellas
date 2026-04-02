@@ -282,10 +282,224 @@ td {
   font-weight: 600;
 }
 
+.btn-correction {
+  border-color: #f2c792;
+  color: #9a3412;
+  background: #fff7ed;
+}
+
+.btn-correction:hover {
+  border-color: #fb923c;
+  background: #ffedd5;
+}
+
 .actions-cell {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
+}
+
+.file-label {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.dropzone {
+  border: 1px dashed #94a3b8;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  padding: 0.7rem;
+  transition: all 0.2s ease;
+}
+
+.dropzone.is-dragging {
+  border-color: #00a39a;
+  background: #ecfeff;
+  box-shadow: 0 0 0 3px rgba(0, 163, 154, 0.12);
+}
+
+.dropzone-title {
+  margin: 0 0 0.15rem;
+  color: #0f172a;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.dropzone-subtitle {
+  margin: 0 0 0.55rem;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.file-input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.6rem;
+  padding: 0.65rem;
+  font-size: 0.82rem;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.file-name {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0f766e;
+}
+
+.file-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  border: 1px solid #99f6e4;
+  border-radius: 0.65rem;
+  background: #ecfeff;
+  padding: 0.45rem 0.6rem;
+}
+
+.btn-file-remove {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+}
+
+.input-control {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  color: #0f172a;
+  font-size: 0.83rem;
+  resize: vertical;
+  min-height: 5.2rem;
+}
+
+.input-control:focus {
+  outline: none;
+  border-color: #00a39a;
+  box-shadow: 0 0 0 3px rgba(0, 163, 154, 0.14);
+}
+
+.correccion-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 1300;
+}
+
+.correccion-modal {
+  width: min(560px, 100%);
+  border-radius: 1rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.26);
+  overflow: hidden;
+}
+
+.correccion-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.correccion-modal-header h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.btn-close {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.correccion-modal-body {
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.correccion-articulo-codigo {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.correccion-articulo-titulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.correccion-ayuda {
+  margin: 0 0 0.3rem;
+  color: #475569;
+  font-size: 0.88rem;
+}
+
+.correccion-help-detail {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.mensaje-modal-error {
+  margin-top: 0.2rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.55rem;
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+  font-size: 0.8rem;
+}
+
+.correccion-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.95rem 1.1rem 1.1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-primary-sm {
+  border: 1px solid #00a39a;
+  background: #00a39a;
+  color: #ffffff;
+  padding: 0.43rem 0.85rem;
+  border-radius: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-primary-sm:disabled,
+.btn-outline-sm:disabled {
+  opacity: 0.68;
+  cursor: not-allowed;
 }
 
 .empty-state {
@@ -388,6 +602,10 @@ td {
 
   .status-filters {
     width: 100%;
+  }
+
+  .correccion-modal {
+    border-radius: 0.8rem;
   }
 }
 
