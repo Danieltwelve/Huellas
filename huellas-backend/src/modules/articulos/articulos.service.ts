@@ -264,69 +264,6 @@ export class ArticulosService {
     };
   }
 
-  async agregarObservacion(
-    articuloId: number,
-    payload: {
-      asunto: string;
-      comentarios?: string;
-      etapaId?: number;
-    },
-    usuarioId: number,
-    archivo?: Express.Multer.File,
-  ) {
-    const articulo = await this.articuloRepository.findOne({
-      where: { id: articuloId },
-      relations: ['etapaActual'],
-    });
-
-    if (!articulo) {
-      throw new NotFoundException('Artículo no encontrado');
-    }
-
-    const etapaId = payload.etapaId ?? articulo.etapaActualId;
-
-    const etapaExiste = await this.dataSource
-      .getRepository(EtapaArticulo)
-      .findOne({
-        where: { id: etapaId },
-      });
-
-    if (!etapaExiste) {
-      throw new BadRequestException('La etapa indicada no existe');
-    }
-
-    const observacion = this.dataSource.getRepository(Observacion).create({
-      articuloId,
-      usuarioId,
-      etapaId,
-      asunto: payload.asunto,
-      comentarios: payload.comentarios || '',
-    });
-
-    const observacionGuardada = await this.dataSource
-      .getRepository(Observacion)
-      .save(observacion);
-
-    if (archivo) {
-      const registroArchivo = this.dataSource
-        .getRepository(ObservacionArchivo)
-        .create({
-          observacionesId: observacionGuardada.id,
-          archivoPath: archivo.path,
-          archivoNombreOriginal: archivo.originalname,
-        });
-
-      await this.dataSource
-        .getRepository(ObservacionArchivo)
-        .save(registroArchivo);
-    }
-
-    return {
-      message: 'Observación registrada correctamente',
-      observacionId: observacionGuardada.id,
-    };
-  }
-
   async cambiarEtapaArticulo(
     articuloId: number,
     nuevaEtapaId: number,

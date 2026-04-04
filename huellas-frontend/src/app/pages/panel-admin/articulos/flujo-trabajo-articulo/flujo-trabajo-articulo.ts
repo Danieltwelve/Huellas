@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import {
   ArticuloFlujo,
   ArticulosService,
@@ -8,7 +7,6 @@ import {
 } from '../../../../core/articulos/articulos.service';
 import { ActivatedRoute } from '@angular/router';
 import { CrearObservacion } from './crear-observacion/crear-observacion';
-import { normalizarNombreArchivo } from '../../../../core/utils/filename.utils';
 
 interface EtapaFlujo {
   id: number;
@@ -23,6 +21,7 @@ interface ArchivoRegistro {
 
 interface RegistroFlujo {
   id: number;
+  etapaId: number | null;
   fechaOrden: number;
   fecha: string;
   autor: string;
@@ -30,23 +29,12 @@ interface RegistroFlujo {
   asunto: string;
   comentario?: string;
   archivos?: ArchivoRegistro[];
-  esCorreccionAutor?: boolean;
-  correccionAceptada?: boolean;
-  puedeAceptarCorreccion?: boolean;
   expandido?: boolean;
-}
-
-interface EtapaTimeline {
-  id: number;
-  titulo: string;
-  estado: 'completada' | 'actual' | 'pendiente';
-  fecha: string;
-  descripcion: string;
 }
 
 @Component({
   selector: 'app-flujo-trabajo-articulo',
-  imports: [CommonModule, CrearObservacion, FormsModule],
+  imports: [CommonModule, CrearObservacion],
   templateUrl: './flujo-trabajo-articulo.html',
   styleUrl: './flujo-trabajo-articulo.scss',
   standalone: true,
@@ -56,23 +44,16 @@ export class FlujoTrabajoArticulo {
   private readonly articulosService = inject(ArticulosService);
 
   showCreateModal = false;
+  showConfirmMoveModal = false;
+  resumenExpandido = false;
+  moviendoEtapa = false;
+  errorMoverEtapa: string | null = null;
   private cdr = inject(ChangeDetectorRef);
 
   articulo: ArticuloFlujo | null = null;
+  etapaActualId: number | null = null;
   loading = true;
   error: string | null = null;
-  accionExitosa: string | null = null;
-  accionError: string | null = null;
-  aceptandoCorreccionIds = new Set<number>();
-
-  guardandoObservacion = false;
-  moviendoEtapa = false;
-
-  asuntoObservacion = '';
-  comentarioObservacion = '';
-  archivoObservacion: File | null = null;
-  nombreArchivoObservacion = '';
-  etapaSeleccionadaId: number | null = null;
 
   tituloArticulo = 'Cargando...';
 
@@ -83,14 +64,6 @@ export class FlujoTrabajoArticulo {
     { id: 4, titulo: 'Revisión por pares', activa: false },
     { id: 5, titulo: 'Publicación', activa: false },
   ];
-
-  private readonly etapasDescripciones: Map<number, string> = new Map([
-    [1, 'Validación editorial inicial del envío'],
-    [2, 'Registro formal del artículo en la revista'],
-    [3, 'Validación de originalidad y similitud'],
-    [4, 'Evaluación por revisores académicos'],
-    [5, 'Preparación y salida en volumen activo'],
-  ]);
 
   etapas: EtapaFlujo[] = [...this.etapasDisponibles];
 
@@ -113,9 +86,9 @@ export class FlujoTrabajoArticulo {
     this.articulosService.getArticuloFlujo(id).subscribe({
       next: (data) => {
         this.articulo = data;
+        this.etapaActualId = data.etapaActual.id;
         this.tituloArticulo = `${data.codigo} - ${data.titulo}`;
         this.actualizarEtapaActual(data.etapaActual.id);
-        this.etapaSeleccionadaId = data.etapaActual.id;
         this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
         this.loading = false;
       },
@@ -135,139 +108,55 @@ export class FlujoTrabajoArticulo {
   }
 
   private mapearObservacionesAHistorial(observaciones: ObservacionBackend[] = []): RegistroFlujo[] {
-    const historial = observaciones
-      .map<RegistroFlujo>((obs) => {
+    return observaciones
+      .map((obs) => {
         const fecha = new Date(obs.fechaSubida);
-        const esCorreccionAutor = this.esAsuntoCorreccionAutor(obs.asunto ?? '');
 
         return {
           id: obs.id,
+          etapaId: obs.etapa?.id ?? null,
           fechaOrden: fecha.getTime(),
-          fecha: this.formatearFecha(obs.fechaSubida),
+          fecha: this.formatearFecha(fecha),
           autor: obs.usuario?.nombre ?? 'Usuario desconocido',
           rol: obs.usuario?.roles[0]?.nombre ?? 'Sin rol',
           asunto: obs.asunto,
           comentario: obs.comentarios ?? undefined,
-          esCorreccionAutor,
-          expandido: esCorreccionAutor,
+          expandido: false,
           archivos: obs.archivos.map((archivo) => ({
-            nombre: normalizarNombreArchivo(archivo.archivoNombreOriginal),
+            nombre: archivo.archivoNombreOriginal,
             path: archivo.archivoPath,
           })),
         };
       })
       .sort((a, b) => b.fechaOrden - a.fechaOrden);
-
-    historial.forEach((registro) => {
-      if (!registro.esCorreccionAutor) {
-        registro.correccionAceptada = false;
-        registro.puedeAceptarCorreccion = false;
-        return;
-      }
-
-      const correccionAceptada = historial.some((item) => {
-        if (item.id === registro.id) {
-          return false;
-        }
-
-        if (item.fechaOrden < registro.fechaOrden) {
-          return false;
-        }
-
-        return this.esAsuntoAceptacionCorreccion(item.asunto);
-      });
-
-      registro.correccionAceptada = correccionAceptada;
-      registro.puedeAceptarCorreccion = !correccionAceptada;
-    });
-
-    const primeraCorreccion = historial.find((item) => item.esCorreccionAutor);
-    if (primeraCorreccion) {
-      primeraCorreccion.expandido = true;
-    }
-
-    return historial;
   }
 
   toggleRegistro(registro: RegistroFlujo): void {
     registro.expandido = !registro.expandido;
   }
 
-  private formatearFecha(fechaValor: string | Date): string {
-    const valor = typeof fechaValor === 'string' ? fechaValor.trim() : fechaValor.toISOString();
+  toggleResumen(): void {
+    this.resumenExpandido = !this.resumenExpandido;
+  }
 
-    if (!valor) {
-      return 'Sin fecha';
-    }
-
-    const sinZonaHoraria = !/(z|[+-]\d{2}:\d{2})$/i.test(valor);
-
-    if (sinZonaHoraria) {
-      const match = valor.match(
-        /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::\d{2}(?:\.\d{1,3})?)?$/,
-      );
-
-      if (match) {
-        const year = Number(match[1]);
-        const month = Number(match[2]);
-        const day = Number(match[3]);
-        const hour24 = Number(match[4]);
-        const minute = Number(match[5]);
-        const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
-        const periodo = hour24 >= 12 ? 'p. m.' : 'a. m.';
-        const dia = String(day).padStart(2, '0');
-        const hora = String(hour12).padStart(2, '0');
-        const minutos = String(minute).padStart(2, '0');
-        const meses = [
-          'ene',
-          'feb',
-          'mar',
-          'abr',
-          'may',
-          'jun',
-          'jul',
-          'ago',
-          'sep',
-          'oct',
-          'nov',
-          'dic',
-        ];
-
-        return `${dia} ${meses[Math.max(0, month - 1)]} ${year}, ${hora}:${minutos} ${periodo}`;
-      }
-    }
-
-    const fecha = new Date(valor);
-    if (isNaN(fecha.getTime())) {
-      return 'Sin fecha';
-    }
-
-    return new Intl.DateTimeFormat('es-CO', {
+  private formatearFecha(fecha: Date): string {
+    return fecha.toLocaleString('es-CO', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true,
-      timeZone: 'America/Bogota',
-    }).format(fecha);
+    });
   }
 
   descargarArchivo(path: string, nombreOriginal: string): void {
-    const filename = path.split(/[\\/]/).pop() || '';
-
-    if (!filename) {
-      this.accionError = 'No se pudo resolver el archivo a descargar.';
-      this.accionExitosa = null;
-      return;
-    }
-
+    let filename = path.split('/').pop() || '';
     this.articulosService.descargarArchivo(filename).subscribe({
       next: (blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = normalizarNombreArchivo(nombreOriginal);
+        a.download = nombreOriginal;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -275,69 +164,8 @@ export class FlujoTrabajoArticulo {
       },
       error: (err) => {
         console.error('Error al descargar archivo:', err);
-        this.accionError = 'No fue posible descargar el archivo.';
-        this.accionExitosa = null;
       },
     });
-  }
-
-  confirmarAceptacionCorreccion(registro: RegistroFlujo): void {
-    if (!registro.esCorreccionAutor || !registro.puedeAceptarCorreccion) {
-      return;
-    }
-
-    const confirmado = window.confirm(
-      '¿Deseas marcar como aceptada la corrección enviada por el autor?',
-    );
-
-    if (!confirmado) {
-      return;
-    }
-
-    const comentarios =
-      window.prompt('Comentario opcional para el autor (puedes dejarlo vacío):') ?? undefined;
-
-    this.aceptarCorreccionAutor(registro, comentarios);
-  }
-
-  aceptarCorreccionAutor(registro: RegistroFlujo, comentarios?: string): void {
-    if (!this.articulo || !registro.esCorreccionAutor || !registro.puedeAceptarCorreccion) {
-      return;
-    }
-
-    this.aceptandoCorreccionIds.add(registro.id);
-    this.accionError = null;
-    this.accionExitosa = null;
-
-    this.articulosService
-      .aceptarCorreccionAutor(this.articulo.id, registro.id, comentarios)
-      .subscribe({
-        next: (respuesta) => {
-          this.aceptandoCorreccionIds.delete(registro.id);
-          this.accionExitosa = respuesta.message || 'Corrección aceptada correctamente.';
-          this.cargarArticulo(this.articulo!.id);
-        },
-        error: (err) => {
-          this.aceptandoCorreccionIds.delete(registro.id);
-          this.accionError = err?.error?.message ?? 'No se pudo aceptar la corrección.';
-        },
-      });
-  }
-
-  isAceptandoCorreccion(registroId: number): boolean {
-    return this.aceptandoCorreccionIds.has(registroId);
-  }
-
-  private esAsuntoCorreccionAutor(asunto: string): boolean {
-    return /correccion enviada por autor|corrección enviada por autor/.test(
-      (asunto ?? '').toLowerCase(),
-    );
-  }
-
-  private esAsuntoAceptacionCorreccion(asunto: string): boolean {
-    return /correccion aceptada|corrección aceptada|correccion aprobada|corrección aprobada/.test(
-      (asunto ?? '').toLowerCase(),
-    );
   }
 
   get etapaActual(): string {
@@ -351,107 +179,145 @@ export class FlujoTrabajoArticulo {
   }
 
   get historialVisible(): RegistroFlujo[] {
-    return this.historialObservaciones;
+    const etapaActiva = this.etapas.find((etapa) => etapa.activa);
+    const etapaFiltroId = etapaActiva?.id ?? this.etapaActualId;
+
+    if (!etapaFiltroId) {
+      return this.historialObservaciones;
+    }
+
+    return this.historialObservaciones.filter((registro) => registro.etapaId === etapaFiltroId);
   }
 
-  get etapasTimeline(): EtapaTimeline[] {
-    if (!this.articulo) {
-      return [];
+  obtenerClaseBolitaPorRol(rol: string): string {
+    const rolNormalizado = rol
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    switch (rolNormalizado) {
+      case 'admin':
+        return 'timeline-dot--rol-admin';
+      case 'monitor':
+        return 'timeline-dot--rol-monitor';
+      case 'revisor':
+        return 'timeline-dot--rol-revisor';
+      case 'director':
+        return 'timeline-dot--rol-director';
+      case 'autor':
+        return 'timeline-dot--rol-autor';
+      default:
+        return 'timeline-dot--rol-default';
     }
-
-    const etapaActualId = this.articulo.etapaActual.id;
-    const historialEtapas = this.articulo.historialEtapas ?? [];
-    const historialPorEtapa = new Map<number, string>();
-
-    for (const historial of historialEtapas) {
-      if (!historialPorEtapa.has(historial.etapaId)) {
-        historialPorEtapa.set(historial.etapaId, historial.fechaInicio);
-      }
-    }
-
-    return this.etapasDisponibles.map((etapa) => {
-      const estado: 'completada' | 'actual' | 'pendiente' =
-        etapa.id < etapaActualId
-          ? 'completada'
-          : etapa.id === etapaActualId
-            ? 'actual'
-            : 'pendiente';
-
-      const fechaRegistrada = historialPorEtapa.get(etapa.id);
-
-      return {
-        id: etapa.id,
-        titulo: etapa.titulo,
-        estado,
-        fecha: fechaRegistrada ? this.formatearFechaCorta(fechaRegistrada) : 'Por definir',
-        descripcion: this.etapasDescripciones.get(etapa.id) ?? '',
-      };
-    });
   }
 
-  private formatearFechaCorta(fechaIso: string): string {
-    const fecha = new Date(fechaIso);
-    if (isNaN(fecha.getTime())) {
-      return 'Por definir';
+  get fechaInicioEtapaVisible(): string | null {
+    const etapaActiva = this.etapas.find((etapa) => etapa.activa);
+    const etapaFiltroId = etapaActiva?.id ?? this.etapaActualId;
+
+    if (!this.articulo || !etapaFiltroId) {
+      return null;
     }
 
-    return fecha.toLocaleDateString('es-CO', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
+    const historialDeEtapa = this.articulo.historialEtapas
+      .filter((item) => item.etapaId === etapaFiltroId)
+      .sort((a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
+
+    const inicioEtapa = historialDeEtapa[0];
+    if (!inicioEtapa) {
+      return null;
+    }
+
+    return this.formatearFecha(new Date(inicioEtapa.fechaInicio));
+  }
+
+  get tieneContenidoHistorial(): boolean {
+    return Boolean(this.fechaInicioEtapaVisible) || this.historialVisible.length > 0;
+  }
+
+  get mostrarMoverArticulo(): boolean {
+    return this.siguienteEtapa !== null;
+  }
+
+  get esEtapaActualSeleccionada(): boolean {
+    if (!this.etapaActualId) {
+      return false;
+    }
+
+    const etapaActiva = this.etapas.find((etapa) => etapa.activa);
+    return etapaActiva?.id === this.etapaActualId;
+  }
+
+  get siguienteEtapa(): EtapaFlujo | null {
+    if (!this.etapaActualId) {
+      return null;
+    }
+
+    return this.etapasDisponibles.find((etapa) => etapa.id === this.etapaActualId! + 1) ?? null;
+  }
+
+  puedeAccederEtapa(etapaId: number): boolean {
+    if (!this.etapaActualId) {
+      return true;
+    }
+
+    return etapaId <= this.etapaActualId;
   }
 
   seleccionarEtapa(indice: number): void {
-    this.etapaSeleccionadaId = this.etapas[indice]?.id ?? null;
-  }
-
-  moverArticulo(): void {
-    if (!this.articulo || !this.etapaSeleccionadaId) {
+    const etapaSeleccionada = this.etapas[indice];
+    if (!etapaSeleccionada || !this.puedeAccederEtapa(etapaSeleccionada.id)) {
       return;
     }
 
-    if (this.etapaSeleccionadaId === this.articulo.etapaActual.id) {
-      this.accionError = 'El artículo ya se encuentra en la etapa seleccionada.';
-      this.accionExitosa = null;
+    this.etapas.forEach((etapa, posicion) => {
+      etapa.activa = posicion === indice;
+    });
+  }
+
+  onCreateObservacion(): void {
+    this.showCreateModal = true;
+    this.cdr.detectChanges();
+  }
+
+  abrirConfirmacionMover(): void {
+    if (!this.siguienteEtapa || !this.articulo) {
+      return;
+    }
+
+    this.errorMoverEtapa = null;
+    this.showConfirmMoveModal = true;
+  }
+
+  cancelarConfirmacionMover(): void {
+    if (this.moviendoEtapa) {
+      return;
+    }
+
+    this.showConfirmMoveModal = false;
+  }
+
+  confirmarMoverEtapa(): void {
+    if (!this.articulo || !this.siguienteEtapa || this.moviendoEtapa) {
       return;
     }
 
     this.moviendoEtapa = true;
-    this.accionError = null;
-    this.accionExitosa = null;
-    this.articulosService.moverEtapa(this.articulo.id, this.etapaSeleccionadaId).subscribe({
+    this.errorMoverEtapa = null;
+
+    this.articulosService.moverEtapa(this.articulo.id, this.siguienteEtapa.id).subscribe({
       next: () => {
+        this.showConfirmMoveModal = false;
         this.moviendoEtapa = false;
-        this.accionExitosa = 'Etapa actualizada correctamente.';
         this.cargarArticulo(this.articulo!.id);
+        window.location.reload();
       },
       error: (err) => {
-        console.error('Error al mover etapa:', err);
+        console.error('Error al mover de etapa:', err);
         this.moviendoEtapa = false;
-        this.accionError = err?.error?.message ?? 'No se pudo mover el artículo de etapa.';
+        this.errorMoverEtapa = 'No fue posible mover el artículo a la siguiente etapa.';
       },
     });
-  }
-
-  get resumenArticulo(): string {
-    return this.articulo?.resumen ?? 'Sin resumen';
-  }
-
-  get temasArticulo(): string {
-    if (!this.articulo?.temas?.length) {
-      return 'Sin temas registrados';
-    }
-
-    return this.articulo.temas.join(', ');
-  }
-
-  get palabrasClaveArticulo(): string {
-    if (!this.articulo?.palabrasClave?.length) {
-      return 'Sin palabras clave';
-    }
-
-    return this.articulo.palabrasClave.join(', ');
   }
 
   get autoresArticulo(): string {
@@ -470,12 +336,29 @@ export class FlujoTrabajoArticulo {
     return this.formatearFecha(new Date(this.articulo.fechaEnvio));
   }
 
-  onCreateObservacion(): void {
-    this.showCreateModal = true;
-    this.cdr.detectChanges();
+  get palabrasClaveArticulo(): string {
+    if (!this.articulo?.palabrasClave?.length) {
+      return 'Sin palabras clave';
+    }
+
+    return this.articulo.palabrasClave.join(', ');
+  }
+
+  get resumenArticulo(): string {
+    return this.articulo?.resumen ?? 'Sin resumen';
+  }
+
+  get temasArticulo(): string {
+    if (!this.articulo?.temas?.length) {
+      return 'Sin temas registrados';
+    }
+
+    return this.articulo.temas.join(', ');
   }
 
   closeCreateModal(): void {
     this.showCreateModal = false;
+    window.location.reload();
+    this.cdr.detectChanges();
   }
 }

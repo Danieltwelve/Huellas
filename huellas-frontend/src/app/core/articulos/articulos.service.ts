@@ -88,44 +88,6 @@ export class ArticulosService {
     );
   }
 
-  agregarObservacion(
-    articuloId: number,
-    payload: { asunto: string; comentarios?: string; etapaId?: number; archivo?: File | null },
-  ): Observable<{ message: string; observacionId: number }> {
-    const currentUser = this.auth.currentUser;
-
-    if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para crear observaciones.'));
-    }
-
-    const formData = new FormData();
-    formData.append('asunto', payload.asunto);
-
-    if (payload.comentarios) {
-      formData.append('comentarios', payload.comentarios);
-    }
-
-    if (payload.etapaId) {
-      formData.append('etapaId', String(payload.etapaId));
-    }
-
-    if (payload.archivo) {
-      formData.append('archivo', payload.archivo, payload.archivo.name);
-    }
-
-    return from(currentUser.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.post<{ message: string; observacionId: number }>(
-          `${environment.apiUrlBackend}/articulos/${articuloId}/observaciones`,
-          formData,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
-      ),
-    );
-  }
-
   moverEtapa(
     articuloId: number,
     etapaId: number,

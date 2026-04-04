@@ -6,9 +6,50 @@
     </div>
   </header>
 
+  @if (articulo) {
+  <section class="resumen-envio">
+    <button class="resumen-toggle" type="button" (click)="toggleResumen()" [attr.aria-expanded]="resumenExpandido"
+      aria-controls="resumen-autor-contenido">
+      <h2>Información enviada por el autor</h2>
+      <svg class="resumen-chevron" [class.rotated]="resumenExpandido" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>
+
+    @if (resumenExpandido) {
+    <div id="resumen-autor-contenido">
+      <div class="resumen-grid">
+        <article class="resumen-item">
+          <h3>Autores</h3>
+          <p>{{ autoresArticulo }}</p>
+        </article>
+        <article class="resumen-item">
+          <h3>Temas</h3>
+          <p>{{ temasArticulo }}</p>
+        </article>
+        <article class="resumen-item">
+          <h3>Palabras clave</h3>
+          <p>{{ palabrasClaveArticulo }}</p>
+        </article>
+        <article class="resumen-item">
+          <h3>Fecha de envío</h3>
+          <p>{{ fechaEnvioArticulo }}</p>
+        </article>
+      </div>
+      <article class="resumen-item resumen-item--full">
+        <h3>Resumen</h3>
+        <p>{{ resumenArticulo }}</p>
+      </article>
+    </div>
+    }
+  </section>
+  }
+
   <nav class="etapas-navbar" aria-label="Etapas del articulo">
     @for (etapa of etapas; track $index) {
     <button class="etapa-boton" type="button" [class.etapa-boton--activa]="etapa.activa"
+      [class.etapa-boton--deshabilitada]="!puedeAccederEtapa(etapa.id)" [disabled]="!puedeAccederEtapa(etapa.id)"
       (click)="seleccionarEtapa($index)">
       <span class="etapa-numero">{{ $index + 1 }}.</span>
       <span class="etapa-texto">{{ etapa.titulo }}</span>
@@ -16,52 +57,24 @@
     }
   </nav>
 
-  <section class="resumen-envio" *ngIf="articulo">
-    <h2>Información enviada por el autor</h2>
-    <div class="resumen-grid">
-      <article class="resumen-item">
-        <h3>Autores</h3>
-        <p>{{ autoresArticulo }}</p>
-      </article>
-      <article class="resumen-item">
-        <h3>Temas</h3>
-        <p>{{ temasArticulo }}</p>
-      </article>
-      <article class="resumen-item">
-        <h3>Palabras clave</h3>
-        <p>{{ palabrasClaveArticulo }}</p>
-      </article>
-      <article class="resumen-item">
-        <h3>Fecha de envío</h3>
-        <p>{{ fechaEnvioArticulo }}</p>
-      </article>
-    </div>
-    <article class="resumen-item resumen-item--full">
-      <h3>Resumen</h3>
-      <p>{{ resumenArticulo }}</p>
-    </article>
-  </section>
-
   <div class="contenido-principal">
     <section class="historial-panel">
       <h2>Historial del Flujo de Trabajo</h2>
 
-      <ng-container *ngIf="historialVisible.length > 0; else historialVacio">
+      <ng-container *ngIf="tieneContenidoHistorial; else historialVacio">
         <div class="historial-lista">
+
           <article *ngFor="let registro of historialVisible" class="historial-item">
 
             <aside class="historial-meta">
-              <div class="timeline-dot"></div>
+              <div class="timeline-dot" [ngClass]="obtenerClaseBolitaPorRol(registro.rol)"></div>
               <p class="historial-fecha">{{ registro.fecha }}</p>
               <p class="historial-autor">{{ registro.autor }} - {{ registro.rol }}</p>
             </aside>
 
             <div class="historial-card" [class.is-expanded]="registro.expandido">
               <header class="historial-card-header" (click)="toggleRegistro(registro)">
-                <div class="historial-title-wrap">
-                  <h3>{{ registro.asunto }}</h3>
-                  <span class="tag-correccion-autor" *ngIf="registro.esCorreccionAutor">Corrección del autor</span>
-                </div>
+                <h3>{{ registro.asunto }}</h3>
                 <svg class="chevron-icon" [class.rotated]="registro.expandido" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2">
                   <polyline points="6 9 12 15 18 9"></polyline>
@@ -71,26 +84,6 @@
               <div class="historial-card-body" *ngIf="registro.expandido">
                 <div *ngIf="registro.archivos?.length" class="bloque-archivo">
                   <div class="archivo-row" *ngFor="let archivo of registro.archivos">
-                    <div class="historial-card-body" *ngIf="registro.expandido">
-                      <div *ngIf="registro.archivos?.length" class="bloque-archivo">
-                        <div class="archivo-row" *ngFor="let archivo of registro.archivos">
-
-                          <button type="button" class="archivo-descarga-btn"
-                            (click)="descargarArchivo(archivo.path, archivo.nombre)"
-                            title="Descargar {{ archivo.nombre }}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                              class="icon-download">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                              <polyline points="7 10 12 15 17 10"></polyline>
-                              <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            <span class="archivo-nombre">{{ archivo.nombre }}</span>
-                          </button>
-
-                        </div>
-                      </div>
-                      <p *ngIf="registro.comentario" class="historial-comentario">{{ registro.comentario }}</p>
-                    </div>
                     <button type="button" class="archivo-descarga-btn"
                       (click)="descargarArchivo(archivo.path, archivo.nombre)" title="Descargar {{ archivo.nombre }}">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-download">
@@ -103,14 +96,19 @@
                   </div>
                 </div>
                 <p *ngIf="registro.comentario" class="historial-comentario">{{ registro.comentario }}</p>
+              </div>
+            </div>
+          </article>
 
-                <div class="correccion-admin-actions" *ngIf="registro.esCorreccionAutor">
-                  <span class="tag-correccion-ok" *ngIf="registro.correccionAceptada">Corrección aceptada</span>
-                  <button type="button" class="btn-outline-teal" *ngIf="registro.puedeAceptarCorreccion"
-                    (click)="confirmarAceptacionCorreccion(registro)" [disabled]="isAceptandoCorreccion(registro.id)">
-                    {{ isAceptandoCorreccion(registro.id) ? 'Aceptando...' : 'Aceptar corrección' }}
-                  </button>
-                </div>
+          <article class="historial-item historial-item--inicio" *ngIf="fechaInicioEtapaVisible as fechaInicio">
+            <aside class="historial-meta">
+              <div class="timeline-dot timeline-dot--inicio"></div>
+              <p class="historial-fecha">{{ fechaInicio }}</p>
+            </aside>
+
+            <div class="historial-card historial-card--inicio">
+              <div class="historial-card-body-inicio">
+                <p>Inicio de la etapa</p>
               </div>
             </div>
           </article>
@@ -123,51 +121,60 @@
     </section>
 
     <aside class="acciones-laterales">
-      <section class="timeline-etapas-panel">
-        <h2>Cronograma de Etapas</h2>
-        @for (etapa of etapasTimeline; track etapa.id) {
-        <div class="etapa-item" [class.etapa-completada]="etapa.estado === 'completada'"
-          [class.etapa-activa]="etapa.estado === 'actual'">
-          <aside class="etapa-meta">
-            <div class="timeline-dot"></div>
-            <span class="etapa-estado">{{ etapa.titulo }}</span>
-          </aside>
-          <p class="etapa-fecha">{{ etapa.fecha }}</p>
-        </div>
-        }
-      </section>
 
       <div class="accion-group">
         <span class="accion-label">Añadir observación</span>
-        <button class="btn-outline-teal btn-anadir-observacion" (click)="onCreateObservacion()" type="button">
+        <button class="btn-outline-teal btn-anadir-observacion" (click)="onCreateObservacion()" type="button"
+          [disabled]="!esEtapaActualSeleccionada">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-plus">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             <line x1="12" y1="7" x2="12" y2="13"></line>
             <line x1="9" y1="10" x2="15" y2="10"></line>
           </svg>
+          Añadir observación
         </button>
       </div>
+
+      @if (mostrarMoverArticulo) {
       <section class="accion-card">
         <span class="accion-label">Mover Articulo...</span>
         <span class="tag-mandatory">Mandatorio</span>
 
-        <div class="select-wrapper">
-          <select aria-label="Seleccionar etapa" [(ngModel)]="etapaSeleccionadaId">
-            <option *ngFor="let etapa of etapas" [ngValue]="etapa.id">{{ etapa.titulo }}</option>
-          </select>
-        </div>
-
-        <button class="btn-outline-teal btn-full" type="button" (click)="moverArticulo()" [disabled]="moviendoEtapa">
-          {{ moviendoEtapa ? 'Moviendo...' : 'Mover Registro' }}
+        <button class="btn-outline-teal btn-full" type="button" *ngIf="siguienteEtapa as etapaDestino"
+          (click)="abrirConfirmacionMover()" [disabled]="moviendoEtapa || !esEtapaActualSeleccionada">
+          Mover a {{ etapaDestino.titulo }}
         </button>
+
+        <p class="mensaje-mover-error" *ngIf="errorMoverEtapa">{{ errorMoverEtapa }}</p>
       </section>
-
-      <div class="mensaje-accion mensaje-accion--ok" *ngIf="accionExitosa">{{ accionExitosa }}</div>
-      <div class="mensaje-accion mensaje-accion--error" *ngIf="accionError">{{ accionError }}</div>
-
-      @if (showCreateModal) {
-      <app-crear-observacion (closed)="closeCreateModal()"></app-crear-observacion>
       }
+
     </aside>
   </div>
+  @if (showCreateModal) {
+  <app-crear-observacion [articuloId]="articulo?.id ?? null" [etapaActualId]="etapaActualId"
+    (closed)="closeCreateModal()"></app-crear-observacion>
+  }
+
+  @if (showConfirmMoveModal && siguienteEtapa; as etapaDestino) {
+  <div class="confirm-modal-backdrop" (click)="cancelarConfirmacionMover()">
+    <section class="confirm-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+      aria-labelledby="titulo-confirmar-movimiento">
+      <h3 id="titulo-confirmar-movimiento">Confirmar cambio de etapa</h3>
+      <p>
+        Se moverá el artículo a la etapa <strong>{{ etapaDestino.titulo }}</strong>. Esta acción impacta el flujo
+        editorial.
+      </p>
+      <div class="confirm-modal-actions">
+        <button class="btn-outline-teal" type="button" (click)="cancelarConfirmacionMover()" [disabled]="moviendoEtapa">
+          Cancelar
+        </button>
+        <button class="btn-outline-teal btn-confirm" type="button" (click)="confirmarMoverEtapa()"
+          [disabled]="moviendoEtapa">
+          {{ moviendoEtapa ? 'Moviendo...' : 'Confirmar movimiento' }}
+        </button>
+      </div>
+    </section>
+  </div>
+  }
 </section>

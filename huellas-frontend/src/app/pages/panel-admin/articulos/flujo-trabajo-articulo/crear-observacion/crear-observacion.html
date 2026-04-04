@@ -15,12 +15,12 @@
     <div class="modal-body">
       <div class="campo-formulario">
         <label for="asunto-input">Asunto</label>
-        <input id="asunto-input" type="text" placeholder="Introduce el asunto de la observación..." />
+        <input #asuntoInput id="asunto-input" type="text" placeholder="Introduce el asunto de la observación..." />
       </div>
 
       <div class="campo-formulario">
         <label for="comentarios-input">Comentarios</label>
-        <textarea id="comentarios-input" rows="4"
+        <textarea #comentariosInput id="comentarios-input" rows="4"
           placeholder="Escribe tus comentarios y observaciones aquí..."></textarea>
       </div>
 
@@ -71,7 +71,25 @@
 
     <footer class="modal-footer">
       <button class="btn-secundario" type="button" (click)="cerrarModal()">Cancelar</button>
-      <button class="btn-primario" type="button">Enviar</button>
+      <button class="btn-primario" type="button" (click)="solicitarConfirmacionEnvio()" [disabled]="enviando">
+        {{ enviando ? 'Enviando...' : 'Enviar' }}
+      </button>
     </footer>
   </section>
+
+  @if (mostrarModalConfirmacion) {
+  <section class="confirmacion-overlay" (click)="cancelarConfirmacionEnvio()">
+    <article class="confirmacion-card" (click)="$event.stopPropagation()">
+      <h3>Confirmar envío</h3>
+      <p>¿Seguro que deseas enviar esta observación?</p>
+      <div class="confirmacion-actions">
+        <button class="btn-secundario" type="button" (click)="cancelarConfirmacionEnvio()">Cancelar</button>
+        <button class="btn-primario" type="button" (click)="confirmarYEnviarObservacion()" [disabled]="enviando">
+          Confirmar envío
+        </button>
+      </div>
+    </article>
+  </section>
+  }
+
 </div>

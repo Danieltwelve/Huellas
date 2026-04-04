@@ -26,7 +26,6 @@ import { ArticulosService } from './articulos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
 import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
-import { AddObservacionDto } from './dto/add-observacion.dto';
 import { CambiarEtapaDto } from './dto/cambiar-etapa.dto';
 import { SubmitCorreccionDto } from './dto/submit-correccion.dto';
 import { AceptarCorreccionDto } from './dto/aceptar-correccion.dto';
@@ -193,56 +192,6 @@ export class ArticulosController {
       req.user.userId,
       body.comentarios?.trim(),
     );
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
-  @Post(':id/observaciones')
-  @UseInterceptors(
-    FileInterceptor('archivo', {
-      storage: diskStorage({
-        destination: './uploads/articulos',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          cb(null, `${uniqueSuffix}${ext}`);
-        },
-      }),
-    }),
-  )
-  async agregarObservacion(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: AddObservacionDto,
-    @Req() req: any,
-    @UploadedFile() archivo?: Express.Multer.File,
-  ) {
-    if (!body.asunto || body.asunto.trim().length === 0) {
-      if (archivo?.path) {
-        await fs.unlink(archivo.path).catch(() => null);
-      }
-      throw new BadRequestException(
-        'El asunto de la observación es obligatorio',
-      );
-    }
-
-    try {
-      return await this.articulosService.agregarObservacion(
-        id,
-        {
-          asunto: body.asunto.trim(),
-          comentarios: body.comentarios?.trim(),
-          etapaId: body.etapaId ? Number(body.etapaId) : undefined,
-        },
-        req.user.userId,
-        archivo,
-      );
-    } catch (error) {
-      if (archivo?.path) {
-        await fs.unlink(archivo.path).catch(() => null);
-      }
-      throw error;
-    }
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
