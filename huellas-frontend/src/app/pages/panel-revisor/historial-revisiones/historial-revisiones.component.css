@@ -1,0 +1,71 @@
+:host {
+  display: block;
+}
+
+.head h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.head p {
+  margin: 0.35rem 0 0;
+  color: #526981;
+}
+
+.timeline {
+  margin-top: 1rem;
+  border-left: 3px solid #cfe0ef;
+  padding-left: 0.9rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.event {
+  border: 1px solid #d8e2ee;
+  background: #fff;
+  border-radius: 12px;
+  padding: 0.85rem;
+  position: relative;
+}
+
+.event::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #0f766e;
+  position: absolute;
+  left: -1.3rem;
+  top: 1rem;
+}
+
+.event-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  color: #3a536a;
+}
+
+.decision {
+  background: #eef6ff;
+  color: #1f4f82;
+  border-radius: 999px;
+  padding: 0.17rem 0.55rem;
+  font-size: 0.78rem;
+}
+
+.event h2 {
+  margin: 0.4rem 0 0.3rem;
+  font-size: 1rem;
+}
+
+.event p {
+  margin: 0;
+  color: #526981;
+}
+
+.event small {
+  display: block;
+  margin-top: 0.5rem;
+  color: #6d8095;
+}

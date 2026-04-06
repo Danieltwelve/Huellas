@@ -1,0 +1,23 @@
+<section class="section-head">
+  <h1>Articulos asignados</h1>
+  <p>Lista de manuscritos asignados para evaluacion en esta ronda editorial.</p>
+</section>
+
+<div class="cards-grid">
+  @for (articulo of articulos; track articulo.id) {
+    <article class="paper-card">
+      <header>
+        <span class="code">{{ articulo.codigo }}</span>
+        <span class="badge" [class.high]="articulo.prioridad === 'alta'" [class.mid]="articulo.prioridad === 'media'">
+          Prioridad {{ articulo.prioridad }}
+        </span>
+      </header>
+      <h2>{{ articulo.titulo }}</h2>
+      <p>{{ articulo.resumen }}</p>
+      <footer>
+        <span>{{ getEtiquetaEstado(articulo.estado) }}</span>
+        <span>Ronda {{ articulo.ronda }}</span>
+      </footer>
+    </article>
+  }
+</div>

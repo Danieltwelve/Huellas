@@ -15,7 +15,7 @@ export const redirectIfAuthenticatedGuard: CanActivateFn = () => {
     take(1),
     map((user) => {
       if (user) {
-        return router.createUrlTree(['/']);
+        return router.createUrlTree([authService.getPostLoginRoute()]);
       }
 
       return true;

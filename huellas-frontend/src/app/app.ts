@@ -27,14 +27,16 @@ export class AppComponent {
   user$ = this.authService.user$;
   claims$ = this.authService.claims$;
   sidebarCollapsed = false;
-  isPanelAutor$!: import('rxjs').Observable<boolean>;
+  isPanelLayout$!: import('rxjs').Observable<boolean>;
   showGlobalSidebar$!: import('rxjs').Observable<boolean>;
 
   constructor(private readonly router: Router) {
-    this.isPanelAutor$ = this.router.events.pipe(
+    this.isPanelLayout$ = this.router.events.pipe(
       filter(e => e instanceof NavigationEnd),
-      map(() => this.router.url.startsWith('/panel-autor')),
-      startWith(window.location.pathname.startsWith('/panel-autor')),
+      map(() => this.router.url.startsWith('/panel-autor') || this.router.url.startsWith('/panel-revisor')),
+      startWith(
+        window.location.pathname.startsWith('/panel-autor') || window.location.pathname.startsWith('/panel-revisor'),
+      ),
     );
 
     const isAdminSection$ = this.router.events.pipe(

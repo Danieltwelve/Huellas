@@ -1,0 +1,63 @@
+:host {
+  display: block;
+}
+
+.head h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.head p {
+  margin: 0.35rem 0 0;
+  color: #556b82;
+}
+
+.message {
+  margin: 0.9rem 0;
+  background: #effbf8;
+  border: 1px solid #a0d9d1;
+  color: #0e5e57;
+  border-radius: 10px;
+  padding: 0.7rem;
+}
+
+.table-wrap {
+  margin-top: 1rem;
+  overflow-x: auto;
+  border: 1px solid #d7e1ec;
+  border-radius: 12px;
+  background: #fff;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.72rem;
+  border-bottom: 1px solid #ebf1f7;
+  vertical-align: top;
+}
+
+th {
+  background: #f8fbff;
+  color: #2f4861;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+}
+
+button[disabled] {
+  background: #9ea8b3;
+  cursor: not-allowed;
+}

@@ -1,0 +1,53 @@
+:host {
+  display: block;
+}
+
+.head h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.head p {
+  margin: 0.35rem 0 0;
+  color: #566c83;
+}
+
+.profile-form {
+  margin-top: 1rem;
+  border: 1px solid #d6e1ee;
+  border-radius: 14px;
+  background: #fff;
+  padding: 1rem;
+  display: grid;
+  gap: 0.45rem;
+  max-width: 680px;
+}
+
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+input {
+  border: 1px solid #cfdbe8;
+  border-radius: 10px;
+  padding: 0.58rem 0.68rem;
+  font: inherit;
+}
+
+button {
+  margin-top: 0.4rem;
+  width: fit-content;
+  border: 0;
+  border-radius: 10px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.6rem 0.95rem;
+  cursor: pointer;
+}
+
+.success-msg {
+  margin: 0.2rem 0 0;
+  color: #0d5d56;
+}

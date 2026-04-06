@@ -1,0 +1,80 @@
+:host {
+  display: block;
+}
+
+.review-head h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.review-head p {
+  margin: 0.35rem 0 0;
+  color: #526880;
+}
+
+.review-form {
+  margin-top: 1rem;
+  border: 1px solid #d7e1ec;
+  border-radius: 14px;
+  background: #fff;
+  padding: 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+select,
+textarea,
+input[type='range'] {
+  width: 100%;
+}
+
+select,
+textarea {
+  border: 1px solid #cfdbe8;
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.paper-context {
+  border: 1px dashed #9acbc5;
+  background: #f5fcfa;
+  border-radius: 12px;
+  padding: 0.8rem;
+}
+
+.paper-context h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.paper-context p {
+  margin: 0.35rem 0 0;
+  color: #4d6279;
+}
+
+button {
+  width: fit-content;
+  border: 0;
+  border-radius: 10px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.62rem 1rem;
+  cursor: pointer;
+}
+
+.success-msg {
+  margin: 0.3rem 0 0;
+  color: #0d5b54;
+  font-weight: 600;
+}

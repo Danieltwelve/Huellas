@@ -1,0 +1,56 @@
+<section class="hero">
+  <div>
+    <p class="kicker">Resumen del revisor</p>
+    <h1>Panel operativo de evaluacion editorial</h1>
+    <p>
+      Consulta el estado general de tus revisiones, prioriza articulos y revisa plazos activos en una sola vista.
+    </p>
+  </div>
+  <article class="deadline-card">
+    <span>Proximo vencimiento</span>
+    <strong>{{ proximoVencimiento }}</strong>
+    <small>Plazo base: 1 mes por articulo</small>
+  </article>
+</section>
+
+<section class="stats-grid">
+  <article class="stat-card">
+    <h3>{{ totalAsignados }}</h3>
+    <p>Articulos asignados</p>
+  </article>
+  <article class="stat-card">
+    <h3>{{ pendientes }}</h3>
+    <p>Pendientes</p>
+  </article>
+  <article class="stat-card">
+    <h3>{{ enProceso }}</h3>
+    <p>En revision</p>
+  </article>
+  <article class="stat-card">
+    <h3>{{ enviados }}</h3>
+    <p>Revisiones enviadas</p>
+  </article>
+</section>
+
+<section class="summary-block">
+  <h2>Resumen de articulos</h2>
+  <div class="summary-list">
+    @for (articulo of articulos; track articulo.id) {
+      <article>
+        <header>
+          <span>{{ articulo.codigo }}</span>
+          <strong>{{ formatFecha(articulo.fechaLimite) }}</strong>
+        </header>
+        <h3>{{ articulo.titulo }}</h3>
+        <p>{{ articulo.resumen }}</p>
+      </article>
+    }
+  </div>
+</section>
+
+<section class="policy-note">
+  <h3>Politica de plazo y prorroga</h3>
+  <p>
+    Cada revision tiene 1 mes de plazo. El sistema permite solicitar una unica prorroga de 15 dias por articulo.
+  </p>
+</section>

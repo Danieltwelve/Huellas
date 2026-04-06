@@ -70,6 +70,12 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: { requiredClaim: 'roles', allowedRoles: ['autor', 'admin'] },
   },
+  {
+    path: 'panel-revisor',
+    loadChildren: () => import('./pages/panel-revisor/panel-revisor.routes').then(m => m.PANEL_REVISOR_ROUTES),
+    canActivate: [claimsGuard],
+    data: { requiredClaim: 'roles', allowedRoles: ['revisor', 'admin'] },
+  },
   { path: 'avisos', loadComponent: () => import('./pages/avisos/avisos.component').then(m => m.AvisosComponent) },
   {
     path: 'equipo-editorial',

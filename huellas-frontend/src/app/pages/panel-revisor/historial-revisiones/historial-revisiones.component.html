@@ -1,0 +1,18 @@
+<section class="head">
+  <h1>Historial de revisiones</h1>
+  <p>Registro de evaluaciones enviadas por el revisor.</p>
+</section>
+
+<div class="timeline">
+  @for (item of historial; track item.id) {
+    <article class="event">
+      <div class="event-top">
+        <span>{{ item.codigoArticulo }}</span>
+        <span class="decision">{{ decisionLabel(item.decision) }}</span>
+      </div>
+      <h2>{{ item.tituloArticulo }}</h2>
+      <p>{{ item.observacion }}</p>
+      <small>Enviado el {{ item.fechaEnvio }}</small>
+    </article>
+  }
+</div>

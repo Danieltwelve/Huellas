@@ -1,0 +1,131 @@
+:host {
+  display: block;
+  color: #12263a;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.3fr 320px;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.kicker {
+  margin: 0;
+  color: #0f766e;
+  letter-spacing: 0.12em;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0.3rem 0 0.5rem;
+  font-size: 1.8rem;
+}
+
+.hero p {
+  margin: 0;
+  color: #41566d;
+}
+
+.deadline-card {
+  border: 1px solid #d6e1ee;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f1fbf9, #fef8ea);
+  padding: 1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.deadline-card strong {
+  font-size: 1.45rem;
+}
+
+.stats-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.stat-card {
+  border: 1px solid #d6e1ee;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.95rem;
+}
+
+.stat-card h3 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.stat-card p {
+  margin: 0.2rem 0 0;
+  color: #566b82;
+}
+
+.summary-block {
+  margin-top: 1rem;
+}
+
+.summary-block h2 {
+  margin: 0 0 0.65rem;
+  font-size: 1.2rem;
+}
+
+.summary-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.summary-list article {
+  border: 1px solid #d6e1ee;
+  border-radius: 13px;
+  background: #fff;
+  padding: 0.95rem;
+}
+
+.summary-list header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  color: #3f556b;
+  font-size: 0.85rem;
+}
+
+.summary-list h3 {
+  margin: 0.48rem 0 0.38rem;
+  font-size: 1.05rem;
+}
+
+.summary-list p {
+  margin: 0;
+  color: #54697f;
+}
+
+.policy-note {
+  margin-top: 1rem;
+  border: 1px dashed #8fb9b3;
+  border-radius: 12px;
+  padding: 0.9rem;
+  background: #f5fcfa;
+}
+
+.policy-note h3 {
+  margin: 0 0 0.3rem;
+}
+
+.policy-note p {
+  margin: 0;
+}
+
+@media (max-width: 960px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

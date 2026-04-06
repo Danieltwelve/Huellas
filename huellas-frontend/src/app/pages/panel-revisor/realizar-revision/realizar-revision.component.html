@@ -1,0 +1,40 @@
+<section class="review-head">
+  <h1>Realizar revision</h1>
+  <p>Selecciona un articulo asignado y registra tu concepto editorial.</p>
+</section>
+
+<div class="review-form">
+  <label for="articulo">Articulo a revisar</label>
+  <select id="articulo" [(ngModel)]="articuloSeleccionadoId" name="articulo">
+    @for (articulo of articulos; track articulo.id) {
+      <option [ngValue]="articulo.id">{{ articulo.codigo }} - {{ articulo.titulo }}</option>
+    }
+  </select>
+
+  @if (articuloSeleccionado) {
+    <article class="paper-context">
+      <h2>{{ articuloSeleccionado.titulo }}</h2>
+      <p>{{ articuloSeleccionado.resumen }}</p>
+    </article>
+  }
+
+  <label for="calificacion">Calificacion (1 a 5)</label>
+  <input id="calificacion" type="range" min="1" max="5" [(ngModel)]="calificacion" name="calificacion" />
+  <small>Valor seleccionado: {{ calificacion }}</small>
+
+  <label for="recomendacion">Recomendacion</label>
+  <select id="recomendacion" [(ngModel)]="recomendacion" name="recomendacion">
+    <option value="aceptar">Aceptar</option>
+    <option value="ajustes">Solicitar ajustes</option>
+    <option value="rechazar">Rechazar</option>
+  </select>
+
+  <label for="comentarios">Comentarios de revision</label>
+  <textarea id="comentarios" rows="6" [(ngModel)]="comentarios" name="comentarios" placeholder="Describe fortalezas, hallazgos y recomendaciones concretas."></textarea>
+
+  <button type="button" (click)="enviarRevision()">Enviar revision</button>
+
+  @if (mensaje) {
+    <p class="success-msg">{{ mensaje }}</p>
+  }
+</div>

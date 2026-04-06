@@ -1,0 +1,28 @@
+<section class="head">
+  <h1>Notificaciones</h1>
+  <p>Alertas de asignacion, plazos y mensajes editoriales.</p>
+</section>
+
+<div class="filters">
+  <button type="button" [class.active]="filtro === 'todas'" (click)="setFiltro('todas')">Todas</button>
+  <button type="button" [class.active]="filtro === 'no-leidas'" (click)="setFiltro('no-leidas')">No leidas</button>
+</div>
+
+<div class="notify-list">
+  @for (item of visibles; track item.id) {
+    <article class="notify-item" [class.unread]="!item.leida">
+      <div>
+        <h2>{{ item.titulo }}</h2>
+        <p>{{ item.detalle }}</p>
+        <small>{{ item.fecha }}</small>
+      </div>
+      <button type="button" (click)="marcarLeida(item.id)" [disabled]="item.leida">
+        {{ item.leida ? 'Leida' : 'Marcar leida' }}
+      </button>
+    </article>
+  }
+
+  @if (visibles.length === 0) {
+    <p class="empty">No hay notificaciones para este filtro.</p>
+  }
+</div>

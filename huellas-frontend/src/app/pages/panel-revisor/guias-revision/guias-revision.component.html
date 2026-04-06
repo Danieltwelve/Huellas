@@ -1,0 +1,15 @@
+<section class="head">
+  <h1>Guias de revision</h1>
+  <p>Recursos y criterios para mantener evaluaciones claras, justas y accionables.</p>
+</section>
+
+<div class="guides-grid">
+  @for (guia of guias; track guia.id) {
+    <article class="guide-card">
+      <span class="resource">{{ guia.recurso }}</span>
+      <h2>{{ guia.titulo }}</h2>
+      <p>{{ guia.descripcion }}</p>
+      <button type="button">Abrir guia</button>
+    </article>
+  }
+</div>

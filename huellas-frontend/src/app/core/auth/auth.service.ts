@@ -366,7 +366,7 @@ export class AuthService {
       return '/panel-autor';
     }
     if (this.hasAnyRole(['revisor'])) {
-      return '/envios'; 
+      return '/panel-revisor';
     }
     return '/';
   }

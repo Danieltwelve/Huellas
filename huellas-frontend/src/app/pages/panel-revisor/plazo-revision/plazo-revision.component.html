@@ -1,0 +1,41 @@
+<section class="head">
+  <h1>Plazo de revision</h1>
+  <p>
+    El plazo por articulo es de 1 mes. Puedes solicitar una sola prorroga de 15 dias por cada revision.
+  </p>
+</section>
+
+@if (mensaje) {
+  <p class="message">{{ mensaje }}</p>
+}
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Articulo</th>
+        <th>Fecha limite</th>
+        <th>Dias restantes</th>
+        <th>Prorroga</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (articulo of articulos; track articulo.id) {
+        <tr>
+          <td>{{ articulo.codigo }} - {{ articulo.titulo }}</td>
+          <td>{{ articulo.fechaLimite }}</td>
+          <td>{{ diasRestantes(articulo.fechaLimite) }}</td>
+          <td>
+            <button
+              type="button"
+              (click)="solicitarProrroga(articulo.id)"
+              [disabled]="tieneProrroga(articulo.id)"
+            >
+              {{ tieneProrroga(articulo.id) ? 'Prorroga usada' : 'Solicitar 15 dias' }}
+            </button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

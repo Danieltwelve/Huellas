@@ -1,0 +1,24 @@
+<section class="head">
+  <h1>Perfil del revisor</h1>
+  <p>Actualiza tus datos de contacto y especialidad para futuras asignaciones.</p>
+</section>
+
+<form class="profile-form" (ngSubmit)="guardarPerfil()">
+  <label for="nombre">Nombre</label>
+  <input id="nombre" name="nombre" [(ngModel)]="nombre" />
+
+  <label for="correo">Correo</label>
+  <input id="correo" name="correo" [(ngModel)]="correo" type="email" />
+
+  <label for="especialidad">Especialidad</label>
+  <input id="especialidad" name="especialidad" [(ngModel)]="especialidad" />
+
+  <label for="institucion">Institucion</label>
+  <input id="institucion" name="institucion" [(ngModel)]="institucion" />
+
+  <button type="submit">Guardar perfil</button>
+
+  @if (mensaje) {
+    <p class="success-msg">{{ mensaje }}</p>
+  }
+</form>
