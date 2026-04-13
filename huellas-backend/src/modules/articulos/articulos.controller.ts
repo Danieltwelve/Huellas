@@ -44,14 +44,14 @@ export class ArticulosController {
   constructor(private readonly articulosService: ArticulosService) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'autor', 'director', 'monitor')
+  @Roles('admin', 'autor', 'director', 'monitor', 'comite-editorial')
   @Get('flujo/:id')
   async getArticulosFlujo(@Param('id', ParseIntPipe) id: number) {
     return await this.articulosService.getArticuloFujo(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'monitor', 'director')
+  @Roles('admin', 'monitor', 'director', 'comite-editorial')
   @Get('resumen')
   async getResumenArticulos() {
     return await this.articulosService.getResumenArticulos();
@@ -201,7 +201,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin', 'director', 'monitor', 'comite-editorial')
   @Post(':id/correcciones/:observacionId/aceptar')
   async aceptarCorreccionAutor(
     @Param('id', ParseIntPipe) id: number,
@@ -218,7 +218,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin', 'director', 'monitor', 'comite-editorial')
   @Post(':id/observaciones')
   @UseInterceptors(
     FileInterceptor('archivo', {
@@ -266,7 +266,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin', 'director', 'monitor', 'comite-editorial')
   @Patch(':id/etapa')
   async cambiarEtapa(
     @Param('id', ParseIntPipe) id: number,
@@ -281,7 +281,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('autor', 'monitor', 'director', 'admin')
+  @Roles('autor', 'monitor', 'director', 'admin', 'comite-editorial')
   @Get('descargar/:filename')
   async descargarArchivo(
     @Param('filename') filename: string,

@@ -1,6 +1,6 @@
-import { Component, EventEmitter, inject, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, inject, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { UsersService } from '../../../../core/users/users.service';
+import { RolBackend, UsersService } from '../../../../core/users/users.service';
 
 interface CreateUserForm {
   nombre: string;
@@ -17,7 +17,7 @@ interface CreateUserForm {
   templateUrl: './crear-usuario-modal.html',
   styleUrl: './crear-usuario-modal.scss',
 })
-export class CrearUsuarioModal {
+export class CrearUsuarioModal implements OnInit {
   private usersService = inject(UsersService);
 
   @Output() closed = new EventEmitter<void>();
@@ -28,6 +28,7 @@ export class CrearUsuarioModal {
   showForm = true;
   creatingUser = false;
   requestError = '';
+  availableRoles: RolBackend[] = [];
 
   createForm: CreateUserForm = {
     nombre: '',
@@ -36,6 +37,10 @@ export class CrearUsuarioModal {
     telefono: '',
     rol: 1,
   };
+
+  ngOnInit(): void {
+    this.loadRoles();
+  }
 
   closeCreateModal(): void {
     this.resetForm();
@@ -78,8 +83,44 @@ export class CrearUsuarioModal {
 
   isFormValid(): boolean {
     return (
-      this.isValidName() && this.isValidEmail() && this.isValidPhone() && this.isValidPassword()
+      this.isValidName() &&
+      this.isValidEmail() &&
+      this.isValidPhone() &&
+      this.isValidPassword() &&
+      this.createForm.rol > 0
     );
+  }
+
+  getSelectedRoleName(): string {
+    const roleName = this.availableRoles.find((role) => role.id === this.createForm.rol)?.rol ?? '';
+    return this.getRoleLabel(roleName);
+  }
+
+  private loadRoles(): void {
+    this.usersService.getRoles().subscribe({
+      next: (roles) => {
+        this.availableRoles = roles;
+        if (roles.length > 0) {
+          const selectedExists = roles.some((role) => role.id === this.createForm.rol);
+          this.createForm.rol = selectedExists ? this.createForm.rol : roles[0].id;
+        }
+      },
+      error: () => {
+        this.requestError = 'No fue posible cargar los roles disponibles.';
+      },
+    });
+  }
+
+  private getRoleLabel(role: string): string {
+    if (role.trim().toLowerCase() === 'comite-editorial') {
+      return 'Comité editorial';
+    }
+
+    return role
+      .replace(/[_-]+/g, ' ')
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
   }
 
   onSubmit(): void {
@@ -132,7 +173,7 @@ export class CrearUsuarioModal {
       correo: '',
       contrasena: '',
       telefono: '',
-      rol: 1,
+      rol: this.availableRoles[0]?.id ?? 1,
     };
   }
 }

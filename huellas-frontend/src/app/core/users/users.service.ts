@@ -22,6 +22,11 @@ export interface AdminCreateUserPayload {
   rolId: number;
 }
 
+export interface RolBackend {
+  id: number;
+  rol: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class UsersService {
   private http = inject(HttpClient);
@@ -54,12 +59,53 @@ export class UsersService {
     );
   }
 
+  getRoles(): Observable<RolBackend[]> {
+    return from(this.auth.currentUser!.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<RolBackend[]>(
+          `${environment.apiUrlBackend}/usuarios/roles`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
   updateUser(id: number, payload: Partial<UsuarioBackend>): Observable<UsuarioBackend> {
     return from(this.auth.currentUser!.getIdToken()).pipe(
       switchMap((token) =>
         this.http.put<UsuarioBackend>(
           `${environment.apiUrlBackend}/usuarios/${id}`,
           payload,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  resendVerificationEmail(id: number): Observable<{ message: string }> {
+    return from(this.auth.currentUser!.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<{ message: string }>(
+          `${environment.apiUrlBackend}/usuarios/${id}/reenviar-verificacion`,
+          {},
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  restoreAccess(id: number): Observable<{ message: string }> {
+    return from(this.auth.currentUser!.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<{ message: string }>(
+          `${environment.apiUrlBackend}/usuarios/${id}/restablecer-acceso`,
+          {},
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           },

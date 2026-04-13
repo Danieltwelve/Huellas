@@ -60,7 +60,7 @@ export class GestionUsuarios implements OnInit {
           telefono: u.telefono || '',
           correoVerificado: u.correo_verificado ? 'Verificado' : 'Pendiente',
           estado: u.estado_cuenta ? 'Activa' : 'Inactiva',
-          rol: u.roles?.map((r) => r.rol).join(', ') ?? 'Sin rol',
+          rol: u.roles?.map((r) => this.getRoleLabel(r.rol)).join(', ') ?? 'Sin rol',
         }));
         this.filteredUsers = [...this.users];
         this.loading = false;
@@ -122,5 +122,17 @@ export class GestionUsuarios implements OnInit {
 
   onUserCreated(): void {
     this.loadUsers();
+  }
+
+  private getRoleLabel(role: string): string {
+    if (role.trim().toLowerCase() === 'comite-editorial') {
+      return 'Comité editorial';
+    }
+
+    return role
+      .replace(/[_-]+/g, ' ')
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
   }
 }

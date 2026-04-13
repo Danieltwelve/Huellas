@@ -2,6 +2,7 @@ import {
   ChangeDetectorRef,
   Component,
   EventEmitter,
+  OnInit,
   inject,
   Input,
   OnChanges,
@@ -9,9 +10,7 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { UsersService } from '../../../../core/users/users.service';
-import { TitleCasePipe } from '@angular/common'; // Importa TitleCasePipe
-import { Router } from '@angular/router';
+import { RolBackend, UsersService } from '../../../../core/users/users.service';
 
 interface EditUserData {
   id: number;
@@ -24,19 +23,20 @@ interface EditUserData {
 
 interface EditUserForm {
   nombre: string;
+  correo: string;
   telefono: string;
   estado: 'Activa' | 'Inactiva';
-  rol: 'admin' | 'monitor' | 'autor' | 'revisor';
+  rol: string;
 }
 
 @Component({
   selector: 'app-editar-usuario-modal',
   standalone: true,
-  imports: [FormsModule, TitleCasePipe],
+  imports: [FormsModule],
   templateUrl: './editar-usuario-modal.html',
-  styleUrl: './editar-usuario-modal.scss',
+  styleUrl: './editar-usuario-modal.css',
 })
-export class EditarUsuarioModal implements OnChanges {
+export class EditarUsuarioModal implements OnInit, OnChanges {
   private usersService = inject(UsersService);
   private cdr = inject(ChangeDetectorRef);
 
@@ -48,13 +48,22 @@ export class EditarUsuarioModal implements OnChanges {
   showConfirmModal = false;
   showForm = true;
   errorMessage = '';
+  verificationMessage = '';
+  resendingVerification = false;
+  restoringAccess = false;
+  availableRoles: RolBackend[] = [];
 
   editForm: EditUserForm = {
     nombre: '',
+    correo: '',
     telefono: '',
     estado: 'Activa',
     rol: 'autor',
   };
+
+  ngOnInit(): void {
+    this.loadRoles();
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['user']) {
@@ -71,6 +80,7 @@ export class EditarUsuarioModal implements OnChanges {
 
     this.editForm = {
       nombre: this.user.nombre,
+      correo: this.user.correo,
       telefono: this.user.telefono,
       estado: this.user.estado === 'Inactiva' ? 'Inactiva' : 'Activa',
       rol: this.normalizeRole(this.user.rol),
@@ -80,6 +90,7 @@ export class EditarUsuarioModal implements OnChanges {
   closeModal(): void {
     this.showForm = true;
     this.showConfirmModal = false;
+    this.verificationMessage = '';
 
     this.closed.emit();
     this.cdr.detectChanges();
@@ -98,21 +109,90 @@ export class EditarUsuarioModal implements OnChanges {
     this.cdr.detectChanges();
   }
 
+  resendVerificationEmail(): void {
+    if (!this.user || this.resendingVerification) {
+      return;
+    }
+
+    this.resendingVerification = true;
+    this.verificationMessage = '';
+
+    this.usersService.resendVerificationEmail(this.user.id).subscribe({
+      next: () => {
+        this.resendingVerification = false;
+        this.verificationMessage = 'Se reenvió el correo de verificación correctamente.';
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.resendingVerification = false;
+        const backendMessage = Array.isArray(error?.error?.message)
+          ? error.error.message.join(', ')
+          : error?.error?.message;
+
+        this.verificationMessage = backendMessage || 'No se pudo reenviar el correo de verificación.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  restoreAccess(): void {
+    if (!this.user || this.restoringAccess) {
+      return;
+    }
+
+    this.restoringAccess = true;
+    this.verificationMessage = '';
+
+    this.usersService.restoreAccess(this.user.id).subscribe({
+      next: () => {
+        this.restoringAccess = false;
+        this.verificationMessage =
+          'Acceso restablecido. Se envió un correo para definir nueva contraseña.';
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.restoringAccess = false;
+        const backendMessage = Array.isArray(error?.error?.message)
+          ? error.error.message.join(', ')
+          : error?.error?.message;
+
+        this.verificationMessage =
+          backendMessage || 'No se pudo restablecer el acceso del usuario.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   confirmUpdate(): void {
     if (!this.user || this.saving) return;
 
+    const selectedRole = this.availableRoles.find((role) => role.rol === this.editForm.rol);
+
+    if (!selectedRole) {
+      this.errorMessage = 'Selecciona un rol válido.';
+      return;
+    }
+
     this.saving = true;
     this.errorMessage = '';
+    const correoNormalizado = this.editForm.correo.trim().toLowerCase();
 
-    const roleId = this.getRoleId(this.editForm.rol);
+    if (!this.isValidEmail(correoNormalizado)) {
+      this.saving = false;
+      this.showConfirmModal = false;
+      this.showForm = true;
+      this.errorMessage = 'Ingresa un correo válido.';
+      return;
+    }
+
     const estadoCuenta = this.editForm.estado === 'Activa';
 
     const payload = {
       nombre: this.editForm.nombre,
-      correo: this.user.correo,
+      correo: correoNormalizado,
       telefono: this.editForm.telefono,
       estado_cuenta: estadoCuenta,
-      roles: [{ id: roleId, rol: this.editForm.rol }],
+      roles: [{ id: selectedRole.id, rol: selectedRole.rol }],
     };
 
     this.usersService.updateUser(this.user.id, payload).subscribe({
@@ -121,11 +201,15 @@ export class EditarUsuarioModal implements OnChanges {
         this.updated.emit();
         this.closeModal();
       },
-      error: () => {
+      error: (error) => {
         this.saving = false;
         this.showConfirmModal = false;
         this.showForm = true;
-        this.errorMessage = 'Error al actualizar el usuario.';
+        const backendMessage = Array.isArray(error?.error?.message)
+          ? error.error.message.join(', ')
+          : error?.error?.message;
+
+        this.errorMessage = backendMessage || 'Error al actualizar el usuario.';
         this.cdr.detectChanges();
       },
     });
@@ -134,6 +218,7 @@ export class EditarUsuarioModal implements OnChanges {
   private resetForm(): void {
     this.editForm = {
       nombre: '',
+      correo: '',
       telefono: '',
       estado: 'Activa',
       rol: 'autor',
@@ -141,33 +226,49 @@ export class EditarUsuarioModal implements OnChanges {
     this.errorMessage = '';
   }
 
-  private getRoleId(rolName: string): number {
-    switch (rolName) {
-      case 'admin':
-        return 1;
-      case 'monitor':
-        return 2;
-      case 'revisor':
-        return 3;
-      case 'autor':
-        return 4;
-      default:
-        return 4;
-    }
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
-  private normalizeRole(role: string): 'admin' | 'monitor' | 'autor' | 'revisor' {
+  getRoleLabel(role: string): string {
+    if (role.trim().toLowerCase() === 'comite-editorial') {
+      return 'Comité editorial';
+    }
+
+    return role
+      .replace(/[_-]+/g, ' ')
+      .trim()
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  private normalizeRole(role: string): string {
     const firstRole = role.split(',')[0]?.trim().toLowerCase();
 
-    if (
-      firstRole === 'admin' ||
-      firstRole === 'monitor' ||
-      firstRole === 'autor' ||
-      firstRole === 'revisor'
-    ) {
+    if (this.availableRoles.some((availableRole) => availableRole.rol === firstRole)) {
       return firstRole;
     }
 
-    return 'autor';
+    return this.availableRoles[0]?.rol ?? 'autor';
+  }
+
+  private loadRoles(): void {
+    this.usersService.getRoles().subscribe({
+      next: (roles) => {
+        this.availableRoles = roles;
+
+        if (this.user) {
+          this.editForm.rol = this.normalizeRole(this.user.rol);
+        } else if (!roles.some((role) => role.rol === this.editForm.rol)) {
+          this.editForm.rol = roles[0]?.rol ?? 'autor';
+        }
+
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.errorMessage = 'No fue posible cargar los roles disponibles.';
+        this.cdr.detectChanges();
+      },
+    });
   }
 }

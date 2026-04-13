@@ -23,6 +23,8 @@ export interface AccessClaims {
   canViewArchivos?: boolean;
   canSubmitEnvios?: boolean;
   canManageUsers?: boolean;
+  canManageArticulos?: boolean;
+  canManageFlujoEditorial?: boolean;
   externalSystemUid?: string;
   [key: string]: unknown;
 }
@@ -359,8 +361,14 @@ export class AuthService {
 
   getPostLoginRoute(): string {
     const claims = this.claimsSubject.value;
-    if (this.hasAnyRole(['admin']) || claims.canManageUsers) {
+    if (
+      this.hasAnyRole(['admin', 'director', 'monitor']) ||
+      claims.canManageUsers
+    ) {
       return '/gestion-usuarios';
+    }
+    if (this.hasAnyRole(['comite-editorial']) || claims.canManageArticulos) {
+      return '/articulos';
     }
     if (this.hasAnyRole(['autor'])) {
       return '/panel-autor';

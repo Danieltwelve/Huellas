@@ -800,10 +800,11 @@ export class ArticulosService {
     const esAdmin = userRoles.includes('admin');
     const esDirector = userRoles.includes('director');
     const esMonitor = userRoles.includes('monitor');
+    const esComiteEditorial = userRoles.includes('comite-editorial');
     const esAutor =
       articulo.autores?.some((autor) => autor.id === userId) ?? false;
 
-    if (!esAdmin && !esAutor && !esDirector && !esMonitor) {
+    if (!esAdmin && !esAutor && !esDirector && !esMonitor && !esComiteEditorial) {
       throw new ForbiddenException(
         'No tienes permiso para descargar este archivo',
       );

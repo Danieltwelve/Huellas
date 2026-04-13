@@ -11,7 +11,9 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(520px, 92vw); // Ligeramente más pequeño para edición
+  width: min(520px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
   background: #fff;
   border-radius: 12px;
   padding: 1.5rem 2rem;
@@ -51,18 +53,21 @@
   align-items: center;
   justify-content: center;
   border-radius: 6px;
+}
 
-  &:hover {
-    background: #f1f5f9;
-    color: #0f172a;
-  }
+.modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
 
-  svg { width: 20px; height: 20px; }
+.modal-close svg {
+  width: 20px;
+  height: 20px;
 }
 
 .modal-form {
   display: flex;
-  flex-direction: column; // En edición suele verse mejor una columna
+  flex-direction: column;
   gap: 1.25rem;
 }
 
@@ -70,26 +75,56 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+}
 
-  label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #1e293b;
-  }
+.field-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+}
 
-  input, select {
-    height: 40px;
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
-    padding: 0 0.85rem;
-    font-size: 0.95rem;
+.field-group input,
+.field-group select {
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  padding: 0 0.85rem;
+  font-size: 0.95rem;
+}
 
-    &:focus {
-      outline: none;
-      border-color: #44b2a9;
-      box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.15);
-    }
-  }
+.field-group input:focus,
+.field-group select:focus {
+  outline: none;
+  border-color: #44b2a9;
+  box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.15);
+}
+
+.resend-verification-btn {
+  margin-top: 0.55rem;
+  align-self: flex-start;
+  border: 1px solid #a8e0db;
+  background: #e8f8f7;
+  color: #1f766f;
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.resend-verification-btn:hover:not(:disabled) {
+  background: #d8f1ef;
+}
+
+.resend-verification-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.verification-message {
+  margin: 0.35rem 0 0;
+  color: #0f766e;
+  font-size: 0.85rem;
 }
 
 .actions {
@@ -109,10 +144,10 @@
   padding: 0.6rem 1.5rem;
   font-weight: 600;
   cursor: pointer;
+}
 
-  &:hover:not(:disabled) {
-    background: #359891;
-  }
+.btn-save:hover:not(:disabled) {
+  background: #359891;
 }
 
 .btn-cancel {
@@ -123,8 +158,8 @@
   padding: 0.6rem 1.5rem;
   font-weight: 600;
   cursor: pointer;
+}
 
-  &:hover {
-    background: #f8fafc;
-  }
+.btn-cancel:hover {
+  background: #f8fafc;
 }

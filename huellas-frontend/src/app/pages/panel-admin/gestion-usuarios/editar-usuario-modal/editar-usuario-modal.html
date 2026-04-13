@@ -25,6 +25,22 @@
     </div>
 
     <div class="field-group">
+      <label for="editar-correo">Correo electrónico</label>
+      <input id="editar-correo" type="email" name="correo" [(ngModel)]="editForm.correo" />
+      <button class="resend-verification-btn" type="button" (click)="resendVerificationEmail()"
+        [disabled]="resendingVerification || restoringAccess">
+        {{ resendingVerification ? 'Reenviando...' : 'Reenviar correo de verificación' }}
+      </button>
+      <button class="resend-verification-btn" type="button" (click)="restoreAccess()"
+        [disabled]="resendingVerification || restoringAccess">
+        {{ restoringAccess ? 'Restableciendo...' : 'Restablecer acceso' }}
+      </button>
+      @if (verificationMessage) {
+      <p class="verification-message">{{ verificationMessage }}</p>
+      }
+    </div>
+
+    <div class="field-group">
       <label for="editar-telefono">Teléfono</label>
       <input id="editar-telefono" type="tel" name="telefono" [(ngModel)]="editForm.telefono" />
     </div>
@@ -40,11 +56,9 @@
     <div class="field-group">
       <label for="editar-rol">Rol</label>
       <select id="editar-rol" name="rol" [(ngModel)]="editForm.rol">
-        <option value="admin">admin</option>
-        <option value="director">director</option>
-        <option value="monitor">monitor</option>
-        <option value="autor">autor</option>
-        <option value="revisor">revisor</option>
+        @for (role of availableRoles; track role.id) {
+        <option [value]="role.rol">{{ getRoleLabel(role.rol) }}</option>
+        }
       </select>
     </div>
 
@@ -75,8 +89,9 @@
   <p class="modal-description">
     Nuevos datos:<br>
     Nombre: {{ editForm.nombre }}<br>
+    Correo: {{ editForm.correo }}<br>
     Teléfono: {{ editForm.telefono || '-' }}<br>
-    Rol: {{ editForm.rol | titlecase }}<br>
+    Rol: {{ getRoleLabel(editForm.rol) }}<br>
     Estado: {{ editForm.estado }}
   </p>
 

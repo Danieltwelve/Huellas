@@ -21,6 +21,7 @@ export class RolesSeederService implements OnApplicationBootstrap {
       'admin',
       'director',
       'monitor',
+      'comite-editorial',
       'revisor',
       'autor',
     ];

@@ -10,6 +10,7 @@ import { ArticulosModule } from './modules/articulos/articulos.module';
 import { ArticulosHistorialEtapasModule } from './modules/articulos-historial-etapas/articulos-historial-etapas.module';
 import { ObservacionesModule } from './modules/observaciones/observaciones.module';
 import { ObservacionesArchivosModule } from './modules/observaciones-archivos/observaciones-archivos.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ObservacionesArchivosModule } from './modules/observaciones-archivos/ob
       isGlobal: true,
       envFilePath: ['.env'],
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

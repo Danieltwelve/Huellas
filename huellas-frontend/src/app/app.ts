@@ -67,8 +67,11 @@ export class AppComponent {
     ]).pipe(
       map(([user, claims, isAdminSection]) => {
         const roles = Array.isArray(claims?.roles) ? claims.roles : [];
-        const isAdmin = roles.includes('admin');
-        return Boolean(user) && isAdmin && isAdminSection;
+        const canAccessEditorialPanel =
+          roles.some((role) => ['admin', 'director', 'monitor', 'comite-editorial'].includes(role)) ||
+          Boolean(claims?.canManageUsers || claims?.canManageArticulos || claims?.canManageFlujoEditorial);
+
+        return Boolean(user) && canAccessEditorialPanel && isAdminSection;
       }),
     );
   }

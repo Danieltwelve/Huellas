@@ -105,17 +105,20 @@ export class AuthService {
   private buildCustomClaims(user: User): CustomClaims {
     const roleNames: string[] = user.roles?.map((r) => r.rol) ?? [];
 
+    const editorialManagers = ['admin', 'director', 'monitor', 'comite-editorial'];
+    const userManagers = ['admin', 'director', 'monitor'];
+
     const canViewArchivos = roleNames.some((rol) =>
-      ['admin', 'editor', 'reviewer'].includes(rol),
+      [...editorialManagers, 'revisor'].includes(rol),
     );
 
     const canSubmitEnvios = roleNames.some((rol) =>
       ['admin', 'autor'].includes(rol),
     );
 
-    const canManageUsers = roleNames.some((rol) => ['admin'].includes(rol));
-    const canManageArticulos = roleNames.some((rol) => ['admin'].includes(rol));
-    const canManageFlujoEditorial = roleNames.some((rol) => ['admin'].includes(rol));
+    const canManageUsers = roleNames.some((rol) => userManagers.includes(rol));
+    const canManageArticulos = roleNames.some((rol) => editorialManagers.includes(rol));
+    const canManageFlujoEditorial = roleNames.some((rol) => editorialManagers.includes(rol));
 
     return {
       roles: roleNames,

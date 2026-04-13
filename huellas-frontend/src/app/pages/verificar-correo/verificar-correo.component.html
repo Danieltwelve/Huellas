@@ -1,0 +1,12 @@
+<section class="verify-page">
+  <article class="verify-card">
+    <h1>Verificación de correo</h1>
+
+    @if (loading) {
+      <p class="status">Verificando tu correo...</p>
+    } @else {
+      <p class="status" [class.success]="success" [class.error]="!success">{{ message }}</p>
+      <a class="btn" routerLink="/login">Ir a iniciar sesión</a>
+    }
+  </article>
+</section>

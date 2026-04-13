@@ -15,6 +15,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UsersService } from './users.service';
 import { User } from './user.entity';
 import { AdminCreateUserDto } from './dto/admin.create.users.dto';
+import { Role } from '../roles/roles.entity';
 
 @Controller('usuarios')
 export class UsersController {
@@ -28,6 +29,13 @@ export class UsersController {
   @Get('autores')
   async getAutores() {
     return this.usersService.findAutores();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Get('roles')
+  async findAvailableRoles(): Promise<Role[]> {
+    return this.usersService.findAvailableRoles();
   }
 
   @Get(':id')
@@ -51,5 +59,21 @@ export class UsersController {
   @Put(':id')
   async updateUser(@Param('id') id: number, @Body() data: Partial<User>) {
     return this.usersService.update(id, data);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Post(':id/reenviar-verificacion')
+  async resendVerificationEmail(@Param('id', ParseIntPipe) id: number) {
+    await this.usersService.resendVerificationEmail(id);
+    return { message: 'Correo de verificación reenviado exitosamente.' };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Post(':id/restablecer-acceso')
+  async restoreAccess(@Param('id', ParseIntPipe) id: number) {
+    await this.usersService.restoreFirebaseAccess(id);
+    return { message: 'Acceso restablecido y correo de recuperación enviado.' };
   }
 }

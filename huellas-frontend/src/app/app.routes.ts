@@ -22,6 +22,13 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent),
     canActivate: [redirectIfAuthenticatedGuard],
   },
+  {
+    path: 'verificar-correo',
+    loadComponent: () =>
+      import('./pages/verificar-correo/verificar-correo.component').then(
+        m => m.VerificarCorreoComponent,
+      ),
+  },
   { path: 'actual', loadComponent: () => import('./pages/actual/actual.component').then(m => m.ActualComponent) },
   {
     path: 'archivos',
@@ -36,13 +43,19 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/panel-admin/gestion-usuarios/gestion-usuarios').then(m => m.GestionUsuarios),
     canActivate: [claimsGuard],
-    data: { requiredClaim: 'canManageUsers', allowedRoles: ['admin'] },
+    data: {
+      requiredClaim: 'canManageUsers',
+      allowedRoles: ['admin', 'director', 'monitor'],
+    },
   },
   {
     path: 'articulos',
     loadComponent: () => import('./pages/panel-admin/articulos/articulos').then(m => m.Articulos),
     canActivate: [claimsGuard],
-    data: { requiredClaim: 'canManageArticulos', allowedRoles: ['admin'] },
+    data: {
+      requiredClaim: 'canManageArticulos',
+      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+    },
   },
 
   {
@@ -52,7 +65,10 @@ export const routes: Routes = [
         m => m.FlujoTrabajoArticulo,
       ),
     canActivate: [claimsGuard],
-    data: { requiredClaim: 'canManageArticulos', allowedRoles: ['admin'] },
+    data: {
+      requiredClaim: 'canManageArticulos',
+      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+    },
   },
 
   {
@@ -62,7 +78,10 @@ export const routes: Routes = [
         m => m.GestionFlujoEditorial,
       ),
     canActivate: [claimsGuard],
-    data: { requiredClaim: 'canManageUsers', allowedRoles: ['admin'] },
+    data: {
+      requiredClaim: 'canManageFlujoEditorial',
+      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+    },
   },
   {
     path: 'panel-autor',

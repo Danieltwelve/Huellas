@@ -7,7 +7,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 interface MenuItem {
   label: string;
   icon: string;
-  adminOnly?: boolean;
+  allowedRoles?: string[];
   route?: string;
 }
 
@@ -41,18 +41,39 @@ export class SideBar {
     {
       label: 'Timeline Editorial',
       icon: 'clock-history',
-      adminOnly: true,
+      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
       route: '/gestion-flujo-editorial',
     },
-    { label: 'Gestión de Usuarios', icon: 'users', adminOnly: true, route: '/gestion-usuarios' },
-    { label: 'Artículos', icon: 'file', adminOnly: true, route: '/articulos' },
-    { label: 'Estadísticas', icon: 'chart', adminOnly: true, route: '/estadisticas' },
+    {
+      label: 'Gestión de Usuarios',
+      icon: 'users',
+      allowedRoles: ['admin', 'director', 'monitor'],
+      route: '/gestion-usuarios',
+    },
+    {
+      label: 'Artículos',
+      icon: 'file',
+      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      route: '/articulos',
+    },
+    {
+      label: 'Estadísticas',
+      icon: 'chart',
+      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      route: '/estadisticas',
+    },
   ];
 
   visibleMainItems$ = this.authService.claims$.pipe(
     map((claims) => {
-      const isAdmin = (claims.roles ?? []).includes('admin');
-      return this.mainItems.filter((item) => !item.adminOnly || isAdmin);
+      const roles = claims.roles ?? [];
+      return this.mainItems.filter((item) => {
+        if (!item.allowedRoles || item.allowedRoles.length === 0) {
+          return true;
+        }
+
+        return roles.some((role) => item.allowedRoles?.includes(role));
+      });
     }),
   );
 

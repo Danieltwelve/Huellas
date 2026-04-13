@@ -32,7 +32,7 @@ export class EdicionesController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin', 'director', 'monitor', 'comite-editorial')
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createEdicionDto: CreateEdicionRevistaDto) {
@@ -46,7 +46,7 @@ export class EdicionesController {
 
   @Delete(':id/with-message')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin', 'director', 'monitor', 'comite-editorial')
   async removeWithMessage(@Param('id', ParseIntPipe) id: number) {
     await this.edicionService.remove(id);
     return {
@@ -56,7 +56,7 @@ export class EdicionesController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin', 'director', 'monitor', 'comite-editorial')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateEdicionRevistaDto,

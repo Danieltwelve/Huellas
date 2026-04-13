@@ -1,0 +1,50 @@
+.verify-page {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+}
+
+.verify-card {
+  width: 100%;
+  max-width: 560px;
+  background: #ffffff;
+  border: 1px solid #d8e2dc;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  padding: 2rem;
+}
+
+h1 {
+  margin: 0 0 1rem;
+  color: #1f2937;
+  font-size: 1.5rem;
+}
+
+.status {
+  margin: 0 0 1.25rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.status.success {
+  color: #166534;
+}
+
+.status.error {
+  color: #991b1b;
+}
+
+.btn {
+  display: inline-block;
+  background: #44b2a9;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 0.7rem 1.1rem;
+  font-weight: 600;
+}
+
+.btn:hover {
+  filter: brightness(0.95);
+}
