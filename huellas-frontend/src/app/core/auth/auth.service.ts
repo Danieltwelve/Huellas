@@ -368,7 +368,9 @@ export class AuthService {
       return '/gestion-usuarios';
     }
     if (this.hasAnyRole(['comite-editorial']) || claims.canManageArticulos) {
-      return '/articulos';
+      return this.hasAnyRole(['comite-editorial'])
+        ? '/panel-comite-editorial/articulos'
+        : '/articulos';
     }
     if (this.hasAnyRole(['autor'])) {
       return '/panel-autor';

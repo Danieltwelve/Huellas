@@ -142,6 +142,100 @@
         </button>
       </div>
 
+      <section class="accion-group" *ngIf="esComiteEditorial">
+        <span class="accion-label">Rúbrica de evaluación</span>
+        <ul class="rubrica-lista">
+          <li *ngFor="let item of rubricaItems">{{ item }}</li>
+        </ul>
+
+        <p class="rubrica-subtitle">Documentos para revisión</p>
+        <div class="bloque-archivo" *ngIf="documentosRubrica.length; else sinDocumentosRubrica">
+          <div class="archivo-row" *ngFor="let archivo of documentosRubrica">
+            <button
+              type="button"
+              class="archivo-descarga-btn"
+              (click)="descargarArchivo(archivo.path, archivo.nombre)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-download">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span class="archivo-nombre">{{ archivo.nombre }}</span>
+            </button>
+          </div>
+        </div>
+
+        <ng-template #sinDocumentosRubrica>
+          <p class="file-name">No hay documentos asociados a este artículo.</p>
+        </ng-template>
+      </section>
+
+      <section class="accion-card" *ngIf="esComiteEditorial">
+        <span class="accion-label">Evaluar artículo (Comité Editorial)</span>
+        <span class="tag-mandatory" *ngIf="estaEnEtapaComite">En etapa de comité</span>
+
+        <div class="select-wrapper">
+          <select aria-label="Decisión comité" [(ngModel)]="decisionComite" [disabled]="!estaEnEtapaComite">
+            <option value="aceptar">Aceptar artículo</option>
+            <option value="rechazar">Rechazar artículo</option>
+          </select>
+        </div>
+
+        <textarea
+          class="input-control"
+          [(ngModel)]="observacionComite"
+          rows="4"
+          placeholder="Observación de la evaluación"
+          [disabled]="!estaEnEtapaComite"
+        ></textarea>
+
+        <label class="file-label" for="archivoComite">Adjuntar rúbrica o soporte (opcional)</label>
+        <input
+          id="archivoComite"
+          type="file"
+          (change)="onArchivoComiteSeleccionado($event)"
+          class="file-input"
+          [disabled]="!estaEnEtapaComite"
+        />
+        <p class="file-name" *ngIf="nombreArchivoComite">{{ nombreArchivoComite }}</p>
+
+        <button
+          class="btn-outline-teal btn-full"
+          type="button"
+          (click)="evaluarArticuloComite()"
+          [disabled]="evaluandoComite || !estaEnEtapaComite"
+        >
+          {{ evaluandoComite ? 'Enviando evaluación...' : 'Enviar evaluación' }}
+        </button>
+      </section>
+
+      <section class="accion-card" *ngIf="puedeAsignarComite">
+        <span class="accion-label">Asignar miembro del Comité Editorial</span>
+        <span class="tag-mandatory" *ngIf="articulo?.comiteEditorial">Asignado</span>
+
+        <div class="select-wrapper">
+          <select aria-label="Seleccionar miembro del comité" [(ngModel)]="committeeMemberSeleccionadoId">
+            <option *ngFor="let member of committeeMembers" [ngValue]="member.id">
+              {{ member.nombre }} - {{ member.correo }}
+            </option>
+          </select>
+        </div>
+
+        <p class="file-name" *ngIf="articulo?.comiteEditorial">
+          Asignado a: {{ articulo?.comiteEditorial?.nombre }}
+        </p>
+
+        <button
+          class="btn-outline-teal btn-full"
+          type="button"
+          (click)="asignarComiteEditorial()"
+          [disabled]="asignandoComite || !committeeMemberSeleccionadoId"
+        >
+          {{ asignandoComite ? 'Asignando...' : 'Asignar al comité' }}
+        </button>
+      </section>
+
       <section class="accion-card">
         <span class="accion-label">Mover Articulo...</span>
         <span class="tag-mandatory">Mandatorio</span>

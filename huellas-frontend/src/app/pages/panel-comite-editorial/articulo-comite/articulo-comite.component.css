@@ -1,0 +1,244 @@
+.comite-detalle {
+  display: grid;
+  gap: 1rem;
+}
+
+.cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cabecera.sticky {
+  position: sticky;
+  top: -0.25rem;
+  z-index: 12;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(6px);
+  border: 1px solid #d9e4ee;
+}
+
+.cabecera h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.1vw, 2rem);
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+.subtitulo {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+}
+
+.panel {
+  background:
+    radial-gradient(700px 90px at 10% -35%, #defcf5 0%, transparent 45%),
+    #ffffff;
+  border: 1px solid #d9e4ee;
+  border-radius: 14px;
+  padding: 1.1rem;
+  box-shadow: 0 18px 34px -30px rgba(15, 23, 42, 0.55);
+}
+
+.panel h2 {
+  margin: 0 0 0.8rem;
+  font-size: 1.08rem;
+  color: #0f172a;
+}
+
+.section-toggle {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  cursor: pointer;
+}
+
+.section-toggle span {
+  color: #0f766e;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.8rem;
+}
+
+.doc-card {
+  border: 1px solid #c9d7e2;
+  border-radius: 12px;
+  padding: 0.9rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
+}
+
+.doc-card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.doc-card p {
+  margin: 0 0 0.8rem;
+  color: #334155;
+  font-size: 0.92rem;
+}
+
+.doc-list {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.doc-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fbfdff;
+}
+
+.campo {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #c9d7e2;
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 0;
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.12);
+}
+
+.btn-primario,
+.btn-secundario,
+.btn-link {
+  border: 1px solid #0f766e;
+  color: #0f766e;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 0.5rem 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-primario:hover,
+.btn-secundario:hover,
+.btn-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -16px rgba(15, 118, 110, 0.65);
+}
+
+.btn-primario {
+  background: linear-gradient(180deg, #0f766e 0%, #0d9488 100%);
+  color: #ffffff;
+}
+
+.mensaje {
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.mensaje.ok {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.mensaje.error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.sticky-action {
+  position: sticky;
+  bottom: 0.35rem;
+  z-index: 14;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid #d9e4ee;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 20px 34px -28px rgba(15, 23, 42, 0.6);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+
+.modal-box {
+  width: min(460px, calc(100vw - 2rem));
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #d9e4ee;
+  padding: 1rem;
+  box-shadow: 0 30px 46px -34px rgba(15, 23, 42, 0.9);
+}
+
+.modal-box h3 {
+  margin: 0 0 0.5rem;
+  color: #0f172a;
+}
+
+.modal-box p {
+  margin: 0;
+  color: #475569;
+}
+
+.modal-actions {
+  margin-top: 0.95rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+@media (max-width: 700px) {
+  .cabecera {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sticky-action {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

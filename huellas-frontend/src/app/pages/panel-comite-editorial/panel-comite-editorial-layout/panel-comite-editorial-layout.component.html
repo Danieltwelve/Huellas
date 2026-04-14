@@ -1,0 +1,60 @@
+<div class="layout-container" [class.collapsed]="collapsed">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <button class="menu-toggle" (click)="toggleSidebar()" title="Minimizar menú">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
+        </svg>
+      </button>
+      @if (!collapsed) {
+        <span class="sidebar-brand">Revista Huellas</span>
+      }
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/panel-comite-editorial/articulos" routerLinkActive="active" class="nav-item" title="Artículos asignados">
+        <span class="nav-label">Artículos asignados</span>
+        @if (!collapsed) {
+          <span class="nav-badge">{{ totalAsignados }}</span>
+        }
+      </a>
+      <a
+        routerLink="/panel-comite-editorial/articulos"
+        [queryParams]="{ estado: 'pendiente' }"
+        class="nav-item"
+        title="Pendientes"
+      >
+        <span class="nav-label">Pendientes</span>
+        @if (!collapsed) {
+          <span class="nav-badge">{{ totalPendientes }}</span>
+        }
+      </a>
+      <a
+        routerLink="/panel-comite-editorial/articulos"
+        [queryParams]="{ estado: 'evaluado-aceptado' }"
+        class="nav-item"
+        title="Evaluados"
+      >
+        <span class="nav-label">Evaluados</span>
+        @if (!collapsed) {
+          <span class="nav-badge">{{ totalEvaluados }}</span>
+        }
+      </a>
+      <a routerLink="/panel-comite-editorial/rubricas" routerLinkActive="active" class="nav-item" title="Rúbricas">
+        <span class="nav-label">Rúbrica</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="nav-item logout-btn" (click)="logout()" title="Cerrar sesión">
+        <span class="nav-label">Cerrar sesión</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-wrapper">
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

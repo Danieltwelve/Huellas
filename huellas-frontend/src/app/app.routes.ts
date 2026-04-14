@@ -49,12 +49,24 @@ export const routes: Routes = [
     },
   },
   {
+    path: 'panel-comite-editorial',
+    loadChildren: () =>
+      import('./pages/panel-comite-editorial/panel-comite-editorial.routes').then(
+        m => m.PANEL_COMITE_EDITORIAL_ROUTES,
+      ),
+    canActivate: [claimsGuard],
+    data: {
+      requiredClaim: 'canManageArticulos',
+      allowedRoles: ['comite-editorial'],
+    },
+  },
+  {
     path: 'articulos',
     loadComponent: () => import('./pages/panel-admin/articulos/articulos').then(m => m.Articulos),
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageArticulos',
-      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      allowedRoles: ['admin', 'director', 'monitor'],
     },
   },
 
@@ -67,7 +79,7 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageArticulos',
-      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      allowedRoles: ['admin', 'director', 'monitor'],
     },
   },
 

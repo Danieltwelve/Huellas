@@ -16,6 +16,7 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { FirebaseAdminModule } from 'src/common/firebase/firebase-admin.module';
 import { UsersModule } from '../users/users.module';
 import { Role } from '../roles/roles.entity';
+import { User } from '../users/user.entity';
 import { FerchContador } from './entities/ferch-contador.entity';
 import { FerchContadorSeeder } from 'src/databases/seeders/ferch-articulo.seeder';
 
@@ -30,6 +31,7 @@ import { FerchContadorSeeder } from 'src/databases/seeders/ferch-articulo.seeder
       Observacion,
       ObservacionArchivo,
       Role,
+      User,
       FerchContador,
     ]),
     FirebaseAdminModule,

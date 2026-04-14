@@ -5,6 +5,10 @@ import {
   ArticulosService,
 } from '../../../core/articulos/articulos.service';
 import { Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
+
+type EstadoEvaluacionComite = 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado';
+type EstadoFiltroComite = 'todos' | EstadoEvaluacionComite;
 
 interface ArticuloListado {
   id: number;
@@ -14,6 +18,9 @@ interface ArticuloListado {
   fechaAceptacion: string;
   tiempoProceso: string;
   claseEtapa: string;
+  estadoEvaluacion: EstadoEvaluacionComite;
+  estadoEtiqueta: string;
+  estadoClase: string;
 }
 
 @Component({
@@ -21,26 +28,59 @@ interface ArticuloListado {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './articulos.html',
-  styleUrl: './articulos.scss',
+  styleUrl: './articulos.css',
 })
 export class Articulos implements OnInit {
   private articulosService = inject(ArticulosService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   searchTerm = '';
+  committeeView = false;
+  loading = true;
+  pageTitle = 'Artículos';
+  filtroEstadoComite: EstadoFiltroComite = 'todos';
 
   articulos: ArticuloListado[] = [];
   filteredArticulos: ArticuloListado[] = [];
 
   ngOnInit(): void {
-    this.articulosService.getResumenArticulos().subscribe({
+    this.committeeView = this.route.snapshot.data['committeeView'] === true;
+
+    this.route.queryParamMap.subscribe((params) => {
+      const estadoQuery = params.get('estado') as EstadoFiltroComite | null;
+
+      if (
+        estadoQuery &&
+        ['todos', 'pendiente', 'evaluado-aceptado', 'evaluado-rechazado'].includes(estadoQuery)
+      ) {
+        this.filtroEstadoComite = estadoQuery;
+      } else {
+        this.filtroEstadoComite = 'todos';
+      }
+
+      this.applySearch();
+    });
+
+    this.pageTitle = this.committeeView
+      ? 'Panel Comité Editorial'
+      : 'Artículos';
+
+    const source$ = this.committeeView
+      ? this.articulosService.getArticulosComiteAsignados()
+      : this.articulosService.getResumenArticulos();
+
+    source$.subscribe({
       next: (response) => {
-        this.articulos = response.map((articulo) => this.mapArticulo(articulo));
+        this.articulos = response
+          .map((articulo) => this.mapArticulo(articulo));
+        this.loading = false;
         this.applySearch();
       },
       error: (error) => {
         this.articulos = [];
         this.filteredArticulos = [];
+        this.loading = false;
         console.error('Error al cargar el resumen de articulos:', error);
       },
     });
@@ -54,16 +94,23 @@ export class Articulos implements OnInit {
   private applySearch(): void {
     const normalizedTerm = this.searchTerm.trim().toLowerCase();
 
+    let base = [...this.articulos];
+
+    if (this.committeeView && this.filtroEstadoComite !== 'todos') {
+      base = base.filter((articulo) => articulo.estadoEvaluacion === this.filtroEstadoComite);
+    }
+
     if (!normalizedTerm) {
-      this.filteredArticulos = [...this.articulos];
+      this.filteredArticulos = base;
       return;
     }
 
-    this.filteredArticulos = this.articulos.filter((articulo) => {
+    this.filteredArticulos = base.filter((articulo) => {
       const searchableText = [
         articulo.codigo,
         articulo.titulo,
         articulo.etapaActual,
+        articulo.estadoEtiqueta,
         articulo.fechaAceptacion,
         articulo.tiempoProceso,
       ]
@@ -77,6 +124,7 @@ export class Articulos implements OnInit {
   private mapArticulo(articulo: ArticuloResumenBackend): ArticuloListado {
     const etapaActual = articulo.etapa_nombre?.trim() || 'Desconocida';
     const fecha = this.parseFecha(articulo.fecha_inicio);
+    const estadoComite = this.mapEstadoComite(articulo.estado_evaluacion);
 
     return {
       id: articulo.id,
@@ -86,7 +134,57 @@ export class Articulos implements OnInit {
       fechaAceptacion: this.formatFecha(fecha),
       tiempoProceso: this.calcularTiempoProceso(fecha),
       claseEtapa: this.getClaseEtapa(etapaActual),
+      estadoEvaluacion: estadoComite,
+      estadoEtiqueta: this.getEstadoEtiqueta(estadoComite),
+      estadoClase: this.getEstadoClase(estadoComite),
     };
+  }
+
+  setFiltroEstadoComite(filtro: EstadoFiltroComite): void {
+    if (!this.committeeView || this.filtroEstadoComite === filtro) {
+      return;
+    }
+
+    this.filtroEstadoComite = filtro;
+    this.applySearch();
+  }
+
+  private mapEstadoComite(
+    estado?: 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado',
+  ): EstadoEvaluacionComite {
+    if (estado === 'evaluado-aceptado') {
+      return 'evaluado-aceptado';
+    }
+
+    if (estado === 'evaluado-rechazado') {
+      return 'evaluado-rechazado';
+    }
+
+    return 'pendiente';
+  }
+
+  private getEstadoEtiqueta(estado: EstadoEvaluacionComite): string {
+    if (estado === 'evaluado-aceptado') {
+      return 'Evaluado - Aceptado';
+    }
+
+    if (estado === 'evaluado-rechazado') {
+      return 'Evaluado - Rechazado';
+    }
+
+    return 'Pendiente';
+  }
+
+  private getEstadoClase(estado: EstadoEvaluacionComite): string {
+    if (estado === 'evaluado-aceptado') {
+      return 'status--aceptado';
+    }
+
+    if (estado === 'evaluado-rechazado') {
+      return 'status--rechazado';
+    }
+
+    return 'status--pendiente';
   }
 
   private parseFecha(fechaIso: string | null): Date | null {
@@ -121,17 +219,10 @@ export class Articulos implements OnInit {
   }
 
   private getClaseEtapa(etapa: string): string {
-    const etapaNormalizada = etapa
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
+    const etapaNormalizada = this.normalizarTexto(etapa);
 
     if (etapaNormalizada.includes('revision preliminar')) {
       return 'stage--revision-preliminar';
-    }
-
-    if (etapaNormalizada.includes('recepcion')) {
-      return 'stage--recepcion';
     }
 
     if (etapaNormalizada.includes('turniting') || etapaNormalizada.includes('turnitin')) {
@@ -142,6 +233,10 @@ export class Articulos implements OnInit {
       return 'stage--revision-pares';
     }
 
+    if (etapaNormalizada.includes('comite editorial')) {
+      return 'stage--comite-editorial';
+    }
+
     if (etapaNormalizada.includes('publicacion')) {
       return 'stage--publicacion';
     }
@@ -149,7 +244,31 @@ export class Articulos implements OnInit {
     return '';
   }
 
+  private normalizarTexto(texto: string): string {
+    return texto
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
+
+  get totalPendientes(): number {
+    return this.articulos.filter((articulo) => articulo.estadoEvaluacion === 'pendiente').length;
+  }
+
+  get totalAceptados(): number {
+    return this.articulos.filter((articulo) => articulo.estadoEvaluacion === 'evaluado-aceptado').length;
+  }
+
+  get totalRechazados(): number {
+    return this.articulos.filter((articulo) => articulo.estadoEvaluacion === 'evaluado-rechazado').length;
+  }
+
   verArticulo(id: number): void {
+    if (this.committeeView) {
+      this.router.navigate(['/panel-comite-editorial/articulos', id]);
+      return;
+    }
+
     this.router.navigate(['/flujo-trabajo-articulo', id]);
   }
 }

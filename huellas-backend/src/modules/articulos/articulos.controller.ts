@@ -30,6 +30,7 @@ import { AddObservacionDto } from './dto/add-observacion.dto';
 import { CambiarEtapaDto } from './dto/cambiar-etapa.dto';
 import { SubmitCorreccionDto } from './dto/submit-correccion.dto';
 import { AceptarCorreccionDto } from './dto/aceptar-correccion.dto';
+import { EvaluarComiteDto } from './dto/evaluar-comite.dto';
 import { diskStorage } from 'multer';
 import { validateOrReject, ValidationError } from 'class-validator';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -55,6 +56,15 @@ export class ArticulosController {
   @Get('resumen')
   async getResumenArticulos() {
     return await this.articulosService.getResumenArticulos();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('comite-editorial')
+  @Get('comite/asignados')
+  async getAsignadosComite(@Req() req: any) {
+    return await this.articulosService.getArticulosAsignadosComite(
+      req.user.userId,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -243,7 +253,9 @@ export class ArticulosController {
       if (archivo?.path) {
         await fs.unlink(archivo.path).catch(() => null);
       }
-      throw new BadRequestException('El asunto de la observación es obligatorio');
+      throw new BadRequestException(
+        'El asunto de la observación es obligatorio',
+      );
     }
 
     try {
@@ -278,6 +290,72 @@ export class ArticulosController {
       body.etapaId,
       req.user.userId,
     );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Post(':id/asignar-comite')
+  async asignarComiteEditorial(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { comiteEditorialId: number },
+  ) {
+    if (!body.comiteEditorialId) {
+      throw new BadRequestException('Debes seleccionar un miembro del comité.');
+    }
+
+    return await this.articulosService.asignarComiteEditorial(
+      id,
+      body.comiteEditorialId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('comite-editorial')
+  @Post(':id/comite/evaluacion')
+  @UseInterceptors(
+    FileInterceptor('archivo', {
+      storage: diskStorage({
+        destination: './uploads/articulos',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  async evaluarPorComite(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: EvaluarComiteDto,
+    @Req() req: any,
+    @UploadedFile() archivo?: Express.Multer.File,
+  ) {
+    if (body.decision === 'rechazar' && !body.observacion?.trim()) {
+      if (archivo?.path) {
+        await fs.unlink(archivo.path).catch(() => null);
+      }
+
+      throw new BadRequestException(
+        'Debes agregar una observación cuando rechazas un artículo.',
+      );
+    }
+
+    try {
+      return await this.articulosService.evaluarArticuloComite(
+        id,
+        req.user.userId,
+        body.decision,
+        body.observacion?.trim(),
+        archivo,
+      );
+    } catch (error) {
+      if (archivo?.path) {
+        await fs.unlink(archivo.path).catch(() => null);
+      }
+
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

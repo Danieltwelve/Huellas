@@ -1,0 +1,115 @@
+<section class="comite-detalle" *ngIf="!loading; else estadoCarga">
+  <header class="cabecera sticky">
+    <div>
+      <h1>Evaluación de Artículo</h1>
+      <p class="subtitulo" *ngIf="articulo">{{ articulo.codigo }} - {{ articulo.titulo }}</p>
+    </div>
+    <button type="button" class="btn-secundario" (click)="volverListado()">Volver al listado</button>
+  </header>
+
+  <p class="mensaje error" *ngIf="error">{{ error }}</p>
+  <p class="mensaje ok" *ngIf="mensajeOk">{{ mensajeOk }}</p>
+  <p class="mensaje error" *ngIf="mensajeError">{{ mensajeError }}</p>
+
+  <ng-container *ngIf="articulo">
+    <section class="panel">
+      <button class="section-toggle" type="button" (click)="toggleSeccion('info')">
+        <h2>Información del artículo</h2>
+        <span>{{ seccionesAbiertas.info ? 'Ocultar' : 'Mostrar' }}</span>
+      </button>
+      <div *ngIf="seccionesAbiertas.info">
+        <p><strong>Autores:</strong> {{ autoresTexto }}</p>
+        <p><strong>Temas:</strong> {{ temasTexto }}</p>
+        <p><strong>Palabras clave:</strong> {{ palabrasClaveTexto }}</p>
+        <p><strong>Resumen:</strong> {{ articulo.resumen || 'Sin resumen' }}</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <button class="section-toggle" type="button" (click)="toggleSeccion('rubricas')">
+        <h2>Rúbricas de evaluación (PDF/Word)</h2>
+        <span>{{ seccionesAbiertas.rubricas ? 'Ocultar' : 'Mostrar' }}</span>
+      </button>
+      <div class="doc-grid" *ngIf="seccionesAbiertas.rubricas">
+        <article class="doc-card" *ngFor="let doc of documentosRubrica">
+          <h3>{{ doc.titulo }}</h3>
+          <p>{{ doc.descripcion }}</p>
+          <a class="btn-link" [href]="doc.archivo" target="_blank" rel="noopener" download>Descargar</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <button class="section-toggle" type="button" (click)="toggleSeccion('documentos')">
+        <h2>Documentos del artículo para revisión</h2>
+        <span>{{ seccionesAbiertas.documentos ? 'Ocultar' : 'Mostrar' }}</span>
+      </button>
+      <div *ngIf="seccionesAbiertas.documentos">
+        <ul class="doc-list" *ngIf="documentosArticulo.length; else sinDocumentos">
+          <li *ngFor="let archivo of documentosArticulo">
+            <span>{{ archivo.nombre }}</span>
+            <button type="button" class="btn-link" (click)="descargarDocumentoArticulo(archivo.path, archivo.nombre)">
+              Descargar
+            </button>
+          </li>
+        </ul>
+        <ng-template #sinDocumentos>
+          <p class="subtitulo">No hay archivos PDF/Word cargados para este artículo.</p>
+        </ng-template>
+      </div>
+    </section>
+
+    <section class="panel">
+      <button class="section-toggle" type="button" (click)="toggleSeccion('decision')">
+        <h2>Emitir evaluación del comité</h2>
+        <span>{{ seccionesAbiertas.decision ? 'Ocultar' : 'Mostrar' }}</span>
+      </button>
+
+      <div *ngIf="seccionesAbiertas.decision">
+        <label class="campo">
+          Decisión
+          <select [(ngModel)]="decision">
+            <option value="aceptar">Aceptar artículo</option>
+            <option value="rechazar">Rechazar artículo</option>
+          </select>
+        </label>
+
+        <label class="campo">
+          Observación
+          <textarea [(ngModel)]="observacion" rows="4" placeholder="Comentario de evaluación"></textarea>
+        </label>
+
+        <label class="campo">
+          Adjuntar soporte (opcional)
+          <input type="file" (change)="onArchivoComiteSeleccionado($event)" />
+        </label>
+
+        <p class="subtitulo" *ngIf="nombreArchivoComite">Archivo seleccionado: {{ nombreArchivoComite }}</p>
+      </div>
+    </section>
+
+    <section class="sticky-action" *ngIf="seccionesAbiertas.decision">
+      <p class="subtitulo">{{ decision === 'rechazar' ? 'Al rechazar, el artículo se descartará definitivamente.' : 'La aprobación enviará el artículo a la siguiente etapa.' }}</p>
+      <button type="button" class="btn-primario" (click)="evaluarArticulo()" [disabled]="guardandoEvaluacion">
+        {{ guardandoEvaluacion ? 'Guardando evaluación...' : 'Emitir decisión' }}
+      </button>
+    </section>
+  </ng-container>
+
+  <div class="modal-overlay" *ngIf="modalConfirmarDescarte">
+    <div class="modal-box" role="dialog" aria-modal="true">
+      <h3>Confirmar descarte del artículo</h3>
+      <p>Esta acción moverá el artículo a estado DESCARTADO y no podrá continuar en el flujo editorial.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secundario" (click)="cancelarDescarte()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="confirmarDescarte()">Sí, descartar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<ng-template #estadoCarga>
+  <section class="comite-detalle">
+    <p class="subtitulo">Cargando información del artículo...</p>
+  </section>
+</ng-template>

@@ -8,6 +8,8 @@ import {
 } from '../../../../core/articulos/articulos.service';
 import { ActivatedRoute } from '@angular/router';
 import { normalizarNombreArchivo } from '../../../../core/utils/filename.utils';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { UsersService, UsuarioBackend } from '../../../../core/users/users.service';
 
 interface EtapaFlujo {
   id: number;
@@ -53,6 +55,8 @@ interface EtapaTimeline {
 export class FlujoTrabajoArticulo {
   private readonly route = inject(ActivatedRoute);
   private readonly articulosService = inject(ArticulosService);
+  private readonly authService = inject(AuthService);
+  private readonly usersService = inject(UsersService);
 
   articulo: ArticuloFlujo | null = null;
   loading = true;
@@ -63,6 +67,14 @@ export class FlujoTrabajoArticulo {
 
   guardandoObservacion = false;
   moviendoEtapa = false;
+  evaluandoComite = false;
+  decisionComite: 'aceptar' | 'rechazar' = 'aceptar';
+  observacionComite = '';
+  archivoComite: File | null = null;
+  nombreArchivoComite = '';
+  committeeMembers: UsuarioBackend[] = [];
+  committeeMemberSeleccionadoId: number | null = null;
+  asignandoComite = false;
 
   asuntoObservacion = '';
   comentarioObservacion = '';
@@ -74,7 +86,7 @@ export class FlujoTrabajoArticulo {
 
   readonly etapasDisponibles: EtapaFlujo[] = [
     { id: 1, titulo: 'Revisión Preliminar', activa: false },
-    { id: 2, titulo: 'Recepción', activa: false },
+    { id: 6, titulo: 'Comité Editorial', activa: false },
     { id: 3, titulo: 'Turniting', activa: false },
     { id: 4, titulo: 'Revisión por pares', activa: false },
     { id: 5, titulo: 'Publicación', activa: false },
@@ -82,7 +94,7 @@ export class FlujoTrabajoArticulo {
 
   private readonly etapasDescripciones: Map<number, string> = new Map([
     [1, 'Validación editorial inicial del envío'],
-    [2, 'Registro formal del artículo en la revista'],
+    [6, 'Revisión del artículo por un miembro del Comité Editorial'],
     [3, 'Validación de originalidad y similitud'],
     [4, 'Evaluación por revisores académicos'],
     [5, 'Preparación y salida en volumen activo'],
@@ -91,6 +103,14 @@ export class FlujoTrabajoArticulo {
   etapas: EtapaFlujo[] = [...this.etapasDisponibles];
 
   historialObservaciones: RegistroFlujo[] = [];
+
+  readonly rubricaItems: string[] = [
+    'Originalidad y aporte científico',
+    'Coherencia metodológica',
+    'Rigor en resultados y discusión',
+    'Cumplimiento de normas editoriales',
+    'Pertinencia temática para la revista',
+  ];
 
   ngOnInit(): void {
     this.route.params.subscribe((params) => {
@@ -102,6 +122,27 @@ export class FlujoTrabajoArticulo {
         this.loading = false;
       }
     });
+
+    this.loadCommitteeMembers();
+  }
+
+  private loadCommitteeMembers(): void {
+    if (!this.authService.hasAnyRole(['admin', 'director', 'monitor'])) {
+      return;
+    }
+
+    this.usersService.getAll().subscribe({
+      next: (users) => {
+        this.committeeMembers = users.filter((user) =>
+          user.roles?.some((role) => role.rol === 'comite-editorial'),
+        );
+        this.committeeMemberSeleccionadoId =
+          this.articulo?.comiteEditorial?.id ?? this.committeeMembers[0]?.id ?? null;
+      },
+      error: () => {
+        this.committeeMembers = [];
+      },
+    });
   }
 
   cargarArticulo(id: number): void {
@@ -112,6 +153,7 @@ export class FlujoTrabajoArticulo {
         this.tituloArticulo = `${data.codigo} - ${data.titulo}`;
         this.actualizarEtapaActual(data.etapaActual.id);
         this.etapaSeleccionadaId = data.etapaActual.id;
+        this.committeeMemberSeleccionadoId = data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
         this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
         this.loading = false;
       },
@@ -399,6 +441,78 @@ export class FlujoTrabajoArticulo {
     this.nombreArchivoObservacion = file?.name ?? '';
   }
 
+  onArchivoComiteSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files.length > 0 ? input.files[0] : null;
+
+    this.archivoComite = file;
+    this.nombreArchivoComite = file?.name ?? '';
+  }
+
+  asignarComiteEditorial(): void {
+    if (!this.articulo || !this.committeeMemberSeleccionadoId || this.asignandoComite) {
+      return;
+    }
+
+    this.asignandoComite = true;
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService
+      .asignarComiteEditorial(this.articulo.id, this.committeeMemberSeleccionadoId)
+      .subscribe({
+        next: (respuesta) => {
+          this.asignandoComite = false;
+          this.accionExitosa = respuesta.message;
+          this.cargarArticulo(this.articulo!.id);
+        },
+        error: (err) => {
+          this.asignandoComite = false;
+          this.accionError = err?.error?.message ?? 'No se pudo asignar el artículo al comité.';
+        },
+      });
+  }
+
+  evaluarArticuloComite(): void {
+    if (!this.articulo || !this.esComiteEditorial || this.evaluandoComite) {
+      return;
+    }
+
+    if (this.decisionComite === 'rechazar' && !this.observacionComite.trim()) {
+      this.accionError =
+        'Debes escribir una observación cuando rechazas un artículo.';
+      this.accionExitosa = null;
+      return;
+    }
+
+    this.evaluandoComite = true;
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService
+      .evaluarComite(this.articulo.id, {
+        decision: this.decisionComite,
+        observacion: this.observacionComite.trim() || undefined,
+        archivo: this.archivoComite,
+      })
+      .subscribe({
+        next: (respuesta) => {
+          this.evaluandoComite = false;
+          this.observacionComite = '';
+          this.archivoComite = null;
+          this.nombreArchivoComite = '';
+          this.accionExitosa =
+            respuesta.message || 'Evaluación de comité editorial registrada.';
+          this.cargarArticulo(this.articulo!.id);
+        },
+        error: (err) => {
+          this.evaluandoComite = false;
+          this.accionError =
+            err?.error?.message ?? 'No se pudo registrar la evaluación del comité.';
+        },
+      });
+  }
+
   agregarObservacion(): void {
     if (!this.articulo) {
       return;
@@ -503,5 +617,36 @@ export class FlujoTrabajoArticulo {
     }
 
     return this.formatearFecha(new Date(this.articulo.fechaEnvio));
+  }
+
+  get esComiteEditorial(): boolean {
+    return this.authService.hasAnyRole(['comite-editorial']);
+  }
+
+  get estaEnEtapaComite(): boolean {
+    return this.articulo?.etapaActual?.id === 6;
+  }
+
+  get documentosRubrica(): ArchivoRegistro[] {
+    const documentos = this.historialVisible.flatMap((registro) =>
+      registro.archivos?.map((archivo) => ({
+        nombre: archivo.nombre,
+        path: archivo.path,
+      })) ?? [],
+    );
+
+    const vistos = new Set<string>();
+    return documentos.filter((doc) => {
+      if (vistos.has(doc.path)) {
+        return false;
+      }
+
+      vistos.add(doc.path);
+      return true;
+    });
+  }
+
+  get puedeAsignarComite(): boolean {
+    return this.authService.hasAnyRole(['admin', 'director', 'monitor']);
   }
 }

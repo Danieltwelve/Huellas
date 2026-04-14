@@ -51,9 +51,15 @@ export class SideBar {
       route: '/gestion-usuarios',
     },
     {
+      label: 'Panel Comité Editorial',
+      icon: 'list-check',
+      allowedRoles: ['comite-editorial'],
+      route: '/panel-comite-editorial',
+    },
+    {
       label: 'Artículos',
       icon: 'file',
-      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      allowedRoles: ['admin', 'director', 'monitor'],
       route: '/articulos',
     },
     {

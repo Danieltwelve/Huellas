@@ -18,21 +18,41 @@ import { ObservacionArchivo } from '../observaciones-archivos/entities/observaci
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FerchContador } from './entities/ferch-contador.entity';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class ArticulosService {
+  private static readonly ETAPA_REVISION_PRELIMINAR = 1;
+  private static readonly ETAPA_TURNITING = 3;
+  private static readonly ETAPA_COMITE_EDITORIAL = 6;
+  private static readonly ETAPA_DESCARTADO = 7;
+  private static readonly MAX_ARTICULOS_ASIGNADOS_COMITE = 4;
   private static readonly ASUNTO_CORRECCION_AUTOR =
     'Correccion enviada por autor';
   private static readonly ASUNTO_CORRECCION_ACEPTADA =
     'Correccion aceptada por equipo editorial';
+  private static readonly ASUNTO_EVALUACION_COMITE_APROBADO =
+    'Evaluacion de comite editorial: ACEPTADO';
+  private static readonly ASUNTO_EVALUACION_COMITE_RECHAZADO =
+    'Evaluacion de comite editorial: RECHAZADO';
 
   constructor(
     private dataSource: DataSource,
     @InjectRepository(Articulo)
     private readonly articuloRepository: Repository<Articulo>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     @InjectRepository(FerchContador)
     private readonly ferchContadorRepository: Repository<FerchContador>,
   ) {}
+
+  private ensureArticuloNoDescartado(articulo: Articulo): void {
+    if (articulo.etapaActualId === ArticulosService.ETAPA_DESCARTADO) {
+      throw new BadRequestException(
+        'Este artículo fue descartado y no puede continuar en el proceso editorial.',
+      );
+    }
+  }
 
   async crearEnvioArticulo(
     dto: CreateArticuloCompletoDto,
@@ -87,7 +107,7 @@ export class ArticulosService {
         titulo: dto.titulo,
         resumen: dto.resumen,
         palabrasClave: palabrasClaveString,
-        etapaActualId: 1,
+        etapaActualId: ArticulosService.ETAPA_COMITE_EDITORIAL,
         edicionId: edicionActiva.id,
       });
       const articuloGuardado = await queryRunner.manager.save(nuevoArticulo);
@@ -111,7 +131,7 @@ export class ArticulosService {
       const nuevaObservacion = queryRunner.manager.create(Observacion, {
         articulo: { id: articuloGuardado.id },
         usuario: { id: usuarioEmisorId },
-        etapa: { id: 1 },
+        etapa: { id: ArticulosService.ETAPA_REVISION_PRELIMINAR },
         asunto: dto.asunto,
         comentarios: dto.comentarios,
       });
@@ -130,16 +150,30 @@ export class ArticulosService {
       await queryRunner.manager.save(observacionArchivo);
 
       // --- PASO 7: Historial de Etapas ---
-      const historialEtapa = queryRunner.manager.create(
+      const ahora = new Date();
+
+      const historialEtapaRevision = queryRunner.manager.create(
         ArticuloHistorialEtapa,
         {
           articuloId: articuloGuardado.id,
-          etapaId: 1,
-          fechaInicio: new Date(),
+          etapaId: ArticulosService.ETAPA_REVISION_PRELIMINAR,
+          fechaInicio: ahora,
+          fechaFin: ahora,
           usuarioId: usuarioEmisorId,
         },
       );
-      await queryRunner.manager.save(historialEtapa);
+      await queryRunner.manager.save(historialEtapaRevision);
+
+      const historialEtapaComite = queryRunner.manager.create(
+        ArticuloHistorialEtapa,
+        {
+          articuloId: articuloGuardado.id,
+          etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
+          fechaInicio: ahora,
+          usuarioId: usuarioEmisorId,
+        },
+      );
+      await queryRunner.manager.save(historialEtapaComite);
 
       // FINALIZACIÓN: Confirmar transacción
       await queryRunner.commitTransaction();
@@ -184,6 +218,7 @@ export class ArticulosService {
         'autores',
         'temas',
         'etapaActual',
+        'comiteEditorial',
         'historialEtapas',
         'historialEtapas.etapa',
         'observaciones',
@@ -225,6 +260,13 @@ export class ArticulosService {
         nombre: autor.nombre,
         email: autor.correo,
       })),
+      comiteEditorial: articulo.comiteEditorial
+        ? {
+            id: articulo.comiteEditorial.id,
+            nombre: articulo.comiteEditorial.nombre,
+            email: articulo.comiteEditorial.correo,
+          }
+        : null,
       historialEtapas: (articulo.historialEtapas ?? [])
         .sort((a, b) => a.fechaInicio.getTime() - b.fechaInicio.getTime())
         .map((historial) => ({
@@ -285,6 +327,8 @@ export class ArticulosService {
       throw new NotFoundException('Artículo no encontrado');
     }
 
+    this.ensureArticuloNoDescartado(articulo);
+
     const etapaId = payload.etapaId ?? articulo.etapaActualId;
 
     const etapaExiste = await this.dataSource.getRepository(EtapaArticulo).findOne({
@@ -343,6 +387,8 @@ export class ArticulosService {
         throw new NotFoundException('Artículo no encontrado');
       }
 
+      this.ensureArticuloNoDescartado(articulo);
+
       if (articulo.etapaActualId === nuevaEtapaId) {
         throw new BadRequestException('El artículo ya se encuentra en esta etapa');
       }
@@ -399,6 +445,259 @@ export class ArticulosService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async evaluarArticuloComite(
+    articuloId: number,
+    usuarioComiteId: number,
+    decision: 'aceptar' | 'rechazar',
+    observacion?: string,
+    archivo?: Express.Multer.File,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const articulo = await queryRunner.manager.findOne(Articulo, {
+        where: { id: articuloId },
+      });
+
+      if (!articulo) {
+        throw new NotFoundException('Artículo no encontrado');
+      }
+
+      this.ensureArticuloNoDescartado(articulo);
+
+      if (articulo.comiteEditorialId && articulo.comiteEditorialId !== usuarioComiteId) {
+        throw new ForbiddenException(
+          'Este artículo está asignado a otro miembro del Comité Editorial.',
+        );
+      }
+
+      if (!articulo.comiteEditorialId) {
+        throw new BadRequestException(
+          'Este artículo aún no tiene un miembro del Comité Editorial asignado.',
+        );
+      }
+
+      if (articulo.etapaActualId !== ArticulosService.ETAPA_COMITE_EDITORIAL) {
+        throw new BadRequestException(
+          'El artículo no está en la etapa de Comité Editorial.',
+        );
+      }
+
+      const etapaDestinoId =
+        decision === 'aceptar'
+          ? ArticulosService.ETAPA_TURNITING
+          : ArticulosService.ETAPA_DESCARTADO;
+
+      const asuntoEvaluacion =
+        decision === 'aceptar'
+          ? ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO
+          : ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO;
+
+      const observacionEvaluacion = queryRunner.manager.create(Observacion, {
+        articuloId,
+        usuarioId: usuarioComiteId,
+        etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
+        asunto: asuntoEvaluacion,
+        comentarios:
+          observacion?.trim() ||
+          (decision === 'aceptar'
+            ? 'El comité editorial aprueba el artículo para continuar el flujo.'
+            : 'El comité editorial rechaza el artículo y lo retorna al equipo editorial.'),
+      });
+
+      const observacionGuardada = await queryRunner.manager.save(
+        observacionEvaluacion,
+      );
+
+      if (archivo) {
+        const registroArchivo = queryRunner.manager.create(ObservacionArchivo, {
+          observacionesId: observacionGuardada.id,
+          archivoPath: archivo.path,
+          archivoNombreOriginal: archivo.originalname,
+        });
+
+        await queryRunner.manager.save(registroArchivo);
+      }
+
+      const historialAbierto = await queryRunner.manager.findOne(
+        ArticuloHistorialEtapa,
+        {
+          where: {
+            articuloId,
+            fechaFin: IsNull(),
+          },
+          order: { fechaInicio: 'DESC' },
+        },
+      );
+
+      const ahora = new Date();
+
+      if (historialAbierto) {
+        historialAbierto.fechaFin = ahora;
+        await queryRunner.manager.save(historialAbierto);
+      }
+
+      articulo.etapaActualId = etapaDestinoId;
+      articulo.comiteEditorialId = null;
+      await queryRunner.manager.save(articulo);
+
+      const nuevoHistorial = queryRunner.manager.create(ArticuloHistorialEtapa, {
+        articuloId,
+        etapaId: etapaDestinoId,
+        usuarioId: usuarioComiteId,
+        fechaInicio: ahora,
+      });
+
+      await queryRunner.manager.save(nuevoHistorial);
+      await queryRunner.commitTransaction();
+
+      return {
+        message:
+          decision === 'aceptar'
+            ? 'Artículo evaluado y enviado a la siguiente fase editorial.'
+            : 'Artículo rechazado y descartado del proceso editorial.',
+        etapaActual: {
+          id: etapaDestinoId,
+          nombre:
+            etapaDestinoId === ArticulosService.ETAPA_TURNITING
+              ? 'TURNITING'
+              : 'DESCARTADO',
+        },
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async asignarComiteEditorial(articuloId: number, comiteEditorialId: number) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['comiteEditorial'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    this.ensureArticuloNoDescartado(articulo);
+
+    if (articulo.etapaActualId !== ArticulosService.ETAPA_COMITE_EDITORIAL) {
+      throw new BadRequestException(
+        'Solo puedes asignar miembro del comité cuando el artículo está en etapa Comité Editorial.',
+      );
+    }
+
+    const comiteMember = await this.userRepository.findOne({
+      where: { id: comiteEditorialId },
+      relations: ['roles'],
+    });
+
+    if (!comiteMember) {
+      throw new NotFoundException('Miembro del comité no encontrado');
+    }
+
+    const esComiteEditorial = comiteMember.roles?.some(
+      (role) => role.rol === 'comite-editorial',
+    );
+
+    if (!esComiteEditorial) {
+      throw new BadRequestException(
+        'El usuario seleccionado no pertenece al Comité Editorial.',
+      );
+    }
+
+    const articulosAsignados = await this.articuloRepository.count({
+      where: {
+        comiteEditorialId,
+        etapaActualId: ArticulosService.ETAPA_COMITE_EDITORIAL,
+      } as any,
+    });
+
+    const esMismoAsignado = articulo.comiteEditorialId === comiteEditorialId;
+
+    if (
+      !esMismoAsignado &&
+      articulosAsignados >= ArticulosService.MAX_ARTICULOS_ASIGNADOS_COMITE
+    ) {
+      throw new BadRequestException(
+        'Este miembro del Comité Editorial ya tiene el máximo de 4 artículos asignados.',
+      );
+    }
+
+    articulo.comiteEditorialId = comiteEditorialId;
+    articulo.comiteEditorial = comiteMember;
+    await this.articuloRepository.save(articulo);
+
+    return {
+      message: 'Artículo asignado al miembro del Comité Editorial.',
+      comiteEditorial: {
+        id: comiteMember.id,
+        nombre: comiteMember.nombre,
+        correo: comiteMember.correo,
+      },
+    };
+  }
+
+  async getArticulosAsignadosComite(usuarioId: number) {
+    const articulos = await this.articuloRepository.find({
+      relations: ['etapaActual', 'historialEtapas', 'observaciones'],
+      order: { id: 'DESC' },
+    });
+
+    return articulos
+      .map((articulo) => {
+        const evaluacionesComite = (articulo.observaciones ?? [])
+          .filter((obs) => obs.usuarioId === usuarioId)
+          .filter((obs) =>
+            [
+              ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
+              ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
+            ].includes(obs.asunto),
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.fechaSubida).getTime() -
+              new Date(a.fechaSubida).getTime(),
+          );
+
+        const evaluacionReciente = evaluacionesComite[0];
+        const pendiente =
+          articulo.comiteEditorialId === usuarioId &&
+          articulo.etapaActualId === ArticulosService.ETAPA_COMITE_EDITORIAL;
+
+        let estadoEvaluacion: 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado' =
+          'pendiente';
+
+        if (evaluacionReciente?.asunto === ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO) {
+          estadoEvaluacion = 'evaluado-aceptado';
+        }
+
+        if (evaluacionReciente?.asunto === ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO) {
+          estadoEvaluacion = 'evaluado-rechazado';
+        }
+
+        if (!pendiente && !evaluacionReciente) {
+          return null;
+        }
+
+        return {
+          id: articulo.id,
+          codigo: articulo.codigo,
+          titulo: articulo.titulo,
+          etapa_nombre: articulo.etapaActual?.nombre ?? 'Sin etapa',
+          fecha_inicio:
+            articulo.historialEtapas?.[0]?.fechaInicio?.toISOString() ?? null,
+          estado_evaluacion: pendiente ? 'pendiente' : estadoEvaluacion,
+        };
+      })
+      .filter((item) => item !== null);
   }
 
   async getResumenArticulos() {
@@ -469,6 +768,8 @@ export class ArticulosService {
       throw new NotFoundException('Artículo no encontrado');
     }
 
+    this.ensureArticuloNoDescartado(articulo);
+
     const esAutorDelArticulo =
       articulo.autores?.some((autor) => autor.id === userId) ?? false;
 
@@ -528,6 +829,8 @@ export class ArticulosService {
     if (!articulo) {
       throw new NotFoundException('Artículo no encontrado');
     }
+
+    this.ensureArticuloNoDescartado(articulo);
 
     const observacionCorreccion = (articulo.observaciones ?? []).find(
       (obs) => obs.id === observacionId,

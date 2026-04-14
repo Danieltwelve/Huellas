@@ -33,9 +33,15 @@ export class AppComponent {
   constructor(private readonly router: Router) {
     this.isPanelLayout$ = this.router.events.pipe(
       filter(e => e instanceof NavigationEnd),
-      map(() => this.router.url.startsWith('/panel-autor') || this.router.url.startsWith('/panel-revisor')),
+      map(() =>
+        this.router.url.startsWith('/panel-autor') ||
+        this.router.url.startsWith('/panel-revisor') ||
+        this.router.url.startsWith('/panel-comite-editorial'),
+      ),
       startWith(
-        window.location.pathname.startsWith('/panel-autor') || window.location.pathname.startsWith('/panel-revisor'),
+        window.location.pathname.startsWith('/panel-autor') ||
+          window.location.pathname.startsWith('/panel-revisor') ||
+          window.location.pathname.startsWith('/panel-comite-editorial'),
       ),
     );
 

@@ -7,6 +7,7 @@ import {
   ArrayNotEmpty,
   IsArray,
   ArrayMaxSize,
+  Min,
 } from 'class-validator';
 
 export class CreateArticuloCompletoDto {
@@ -49,4 +50,9 @@ export class CreateArticuloCompletoDto {
   @IsString()
   @IsOptional()
   comentarios?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  comite_editorial_id?: number;
 }

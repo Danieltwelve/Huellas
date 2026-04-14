@@ -1,0 +1,26 @@
+<section class="rubricas-page">
+  <header>
+    <h1>Rúbricas de evaluación</h1>
+    <p>Documentos en formato PDF y Word para el proceso del Comité Editorial.</p>
+  </header>
+
+  <div class="filters">
+    <button type="button" [class.active]="filtroActual === 'todas'" (click)="setFiltro('todas')">Todas</button>
+    <button type="button" [class.active]="filtroActual === 'metodologia'" (click)="setFiltro('metodologia')">Metodología</button>
+    <button type="button" [class.active]="filtroActual === 'redaccion'" (click)="setFiltro('redaccion')">Redacción</button>
+    <button type="button" [class.active]="filtroActual === 'pertinencia'" (click)="setFiltro('pertinencia')">Pertinencia</button>
+    <button type="button" [class.active]="filtroActual === 'etica'" (click)="setFiltro('etica')">Ética</button>
+  </div>
+
+  <div class="cards">
+    <article class="card" *ngFor="let doc of documentosFiltrados">
+      <span class="tag">{{ doc.formato }}</span>
+      <h2>{{ doc.titulo }}</h2>
+      <p class="meta">
+        <strong>{{ getEtiquetaTipo(doc.tipo) }}</strong> • {{ doc.version }} • {{ doc.fechaActualizacion }}
+      </p>
+      <p>{{ doc.descripcion }}</p>
+      <a [href]="doc.archivo" target="_blank" rel="noopener" download>Descargar</a>
+    </article>
+  </div>
+</section>

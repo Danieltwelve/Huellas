@@ -47,6 +47,9 @@ export class Articulo {
   @Column({ name: 'edicion_id' })
   edicionId!: number;
 
+  @Column({ name: 'comite_editorial_id', nullable: true })
+  comiteEditorialId!: number | null;
+
   // Relaciones
   @ManyToOne(() => EtapaArticulo, (etapa) => etapa.articulos)
   @JoinColumn({ name: 'etapa_actual_id' })
@@ -83,6 +86,10 @@ export class Articulo {
     },
   })
   autores!: User[];
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'comite_editorial_id' })
+  comiteEditorial!: User | null;
 
   @OneToMany(() => ArticuloHistorialEtapa, (historial) => historial.articulo)
   historialEtapas!: ArticuloHistorialEtapa[];

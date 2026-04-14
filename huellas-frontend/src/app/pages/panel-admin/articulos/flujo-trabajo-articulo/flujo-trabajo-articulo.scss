@@ -389,6 +389,22 @@
     line-height: 1.5;
 }
 
+.rubrica-lista {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: #334155;
+    font-size: 0.9rem;
+    display: grid;
+    gap: 0.25rem;
+}
+
+.rubrica-subtitle {
+    margin: 0.4rem 0 0;
+    font-size: 0.82rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
 /* === BARRA LATERAL DE ACCIONES === */
 .acciones-laterales {
     display: flex;

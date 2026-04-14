@@ -372,6 +372,14 @@ export class UsersService {
     return this.rolesRepository.find({ order: { id: 'ASC' } });
   }
 
+  async findCommitteeMembers(): Promise<User[]> {
+    const users = await this.userRepository.find({ relations: ['roles'] });
+
+    return users.filter((user) =>
+      user.roles?.some((role) => role.rol === 'comite-editorial'),
+    );
+  }
+
   async findAutores(): Promise<Partial<User>[]> {
     return this.userRepository
       .createQueryBuilder('usuario')

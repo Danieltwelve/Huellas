@@ -10,6 +10,7 @@ export interface ArticuloResumenBackend {
   titulo: string;
   etapa_nombre: string;
   fecha_inicio: string | null;
+  estado_evaluacion?: 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado';
 }
 
 export interface ArticuloFlujo {
@@ -29,6 +30,11 @@ export interface ArticuloFlujo {
     nombre: string;
     email: string;
   }>;
+  comiteEditorial: {
+    id: number;
+    nombre: string;
+    email: string;
+  } | null;
   historialEtapas: Array<{
     id: number;
     etapaId: number;
@@ -165,6 +171,25 @@ export class ArticulosService {
     );
   }
 
+  getArticulosComiteAsignados(): Observable<ArticuloResumenBackend[]> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesion activa para consultar articulos asignados.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<ArticuloResumenBackend[]>(
+          `${environment.apiUrlBackend}/articulos/comite/asignados`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
   getMisArticulos(): Observable<ArticuloResumenBackend[]> {
     const currentUser = this.auth.currentUser;
 
@@ -217,6 +242,67 @@ export class ArticulosService {
         this.http.post<{ message: string; observacionId?: number }>(
           `${environment.apiUrlBackend}/articulos/${articuloId}/correcciones/${observacionId}/aceptar`,
           { comentarios: comentarios?.trim() || undefined },
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  evaluarComite(
+    articuloId: number,
+    payload: {
+      decision: 'aceptar' | 'rechazar';
+      observacion?: string;
+      archivo?: File | null;
+    },
+  ): Observable<{ message: string; etapaActual: { id: number; nombre: string } }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para evaluar el artículo.'));
+    }
+
+    const formData = new FormData();
+    formData.append('decision', payload.decision);
+
+    if (payload.observacion) {
+      formData.append('observacion', payload.observacion);
+    }
+
+    if (payload.archivo) {
+      formData.append('archivo', payload.archivo, payload.archivo.name);
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<{ message: string; etapaActual: { id: number; nombre: string } }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/comite/evaluacion`,
+          formData,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  asignarComiteEditorial(
+    articuloId: number,
+    comiteEditorialId: number,
+  ): Observable<{ message: string; comiteEditorial: { id: number; nombre: string; correo: string } }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para asignar comité editorial.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<{ message: string; comiteEditorial: { id: number; nombre: string; correo: string } }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/asignar-comite`,
+          { comiteEditorialId },
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           },

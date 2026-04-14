@@ -41,6 +41,17 @@ export class EtapaArticuloSeeder implements OnModuleInit {
         descripcion:
           'El artículo ha sido aceptado y se encuentra en fase de Publicación.',
       },
+      {
+        id: 6,
+        nombre: 'COMITÉ EDITORIAL',
+        descripcion:
+          'El comité editorial evalúa el artículo mediante rúbrica y emite aceptación o rechazo.',
+      },
+      {
+        id: 7,
+        nombre: 'DESCARTADO',
+        descripcion: 'Artículo rechazado de forma definitiva en el flujo editorial',
+      },
     ];
 
     for (const etapaData of etapasIniciales) {

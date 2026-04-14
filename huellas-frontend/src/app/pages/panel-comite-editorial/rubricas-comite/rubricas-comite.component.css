@@ -1,0 +1,100 @@
+.rubricas-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.rubricas-page h1 {
+  margin: 0;
+  font-size: clamp(1.45rem, 2.2vw, 2rem);
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+.rubricas-page p {
+  margin: 0.4rem 0 0;
+  color: #64748b;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filters button {
+  border: 1px solid #c9d7e2;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filters button:hover,
+.filters button.active {
+  background: #e8fffb;
+  border-color: #2dd4bf;
+  color: #0f766e;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.card {
+  background:
+    radial-gradient(850px 100px at 5% -20%, #ddfcf6 0%, transparent 46%),
+    linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid #d9e4ee;
+  border-radius: 14px;
+  padding: 1.05rem;
+  box-shadow: 0 18px 32px -30px rgba(15, 23, 42, 0.55);
+}
+
+.card h2 {
+  margin: 0.35rem 0 0.45rem;
+  font-size: 1rem;
+}
+
+.card p {
+  margin: 0 0 0.8rem;
+  color: #334155;
+}
+
+.card .meta {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: #e6fffb;
+  color: #0f766e;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.card a {
+  display: inline-block;
+  text-decoration: none;
+  border: 1px solid #0f766e;
+  color: #0f766e;
+  padding: 0.48rem 0.85rem;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.card a:hover {
+  transform: translateY(-1px);
+  background: #f0fdfa;
+  box-shadow: 0 12px 24px -20px rgba(15, 118, 110, 0.6);
+}
