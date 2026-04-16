@@ -49,7 +49,7 @@ interface EtapaTimeline {
   selector: 'app-flujo-trabajo-articulo',
   imports: [CommonModule, FormsModule],
   templateUrl: './flujo-trabajo-articulo.html',
-  styleUrl: './flujo-trabajo-articulo.scss',
+  styleUrl: './flujo-trabajo-articulo.css',
   standalone: true,
 })
 export class FlujoTrabajoArticulo {
@@ -67,6 +67,11 @@ export class FlujoTrabajoArticulo {
 
   guardandoObservacion = false;
   moviendoEtapa = false;
+  evaluandoTurniting = false;
+  porcentajeTurniting: number | null = null;
+  observacionTurniting = '';
+  archivoTurniting: File | null = null;
+  nombreArchivoTurniting = '';
   evaluandoComite = false;
   decisionComite: 'aceptar' | 'rechazar' = 'aceptar';
   observacionComite = '';
@@ -95,7 +100,7 @@ export class FlujoTrabajoArticulo {
   private readonly etapasDescripciones: Map<number, string> = new Map([
     [1, 'Validación editorial inicial del envío'],
     [6, 'Revisión del artículo por un miembro del Comité Editorial'],
-    [3, 'Validación de originalidad y similitud'],
+    [3, 'Validación de originalidad y similitud (65% o menos)'],
     [4, 'Evaluación por revisores académicos'],
     [5, 'Preparación y salida en volumen activo'],
   ]);
@@ -131,11 +136,9 @@ export class FlujoTrabajoArticulo {
       return;
     }
 
-    this.usersService.getAll().subscribe({
+    this.usersService.getCommitteeMembers().subscribe({
       next: (users) => {
-        this.committeeMembers = users.filter((user) =>
-          user.roles?.some((role) => role.rol === 'comite-editorial'),
-        );
+        this.committeeMembers = users.filter((user) => user.estado_cuenta === true);
         this.committeeMemberSeleccionadoId =
           this.articulo?.comiteEditorial?.id ?? this.committeeMembers[0]?.id ?? null;
       },
@@ -449,6 +452,14 @@ export class FlujoTrabajoArticulo {
     this.nombreArchivoComite = file?.name ?? '';
   }
 
+  onArchivoTurnitingSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files.length > 0 ? input.files[0] : null;
+
+    this.archivoTurniting = file;
+    this.nombreArchivoTurniting = file?.name ?? '';
+  }
+
   asignarComiteEditorial(): void {
     if (!this.articulo || !this.committeeMemberSeleccionadoId || this.asignandoComite) {
       return;
@@ -648,5 +659,83 @@ export class FlujoTrabajoArticulo {
 
   get puedeAsignarComite(): boolean {
     return this.authService.hasAnyRole(['admin', 'director', 'monitor']);
+  }
+
+  get puedeMostrarObservacion(): boolean {
+    const etapaActualId = this.articulo?.etapaActual?.id;
+    return etapaActualId === 1 || etapaActualId === 6;
+  }
+
+  get puedeMostrarTurniting(): boolean {
+    return this.articulo?.etapaActual?.id === 3 && this.authService.hasAnyRole(['admin', 'director', 'monitor']);
+  }
+
+  get puedeMostrarAsignacionComite(): boolean {
+    return this.puedeAsignarComite && this.articulo?.etapaActual?.id === 6;
+  }
+
+  get miembroComiteSeleccionado(): UsuarioBackend | null {
+    if (!this.committeeMemberSeleccionadoId) {
+      return null;
+    }
+
+    return (
+      this.committeeMembers.find((member) => member.id === this.committeeMemberSeleccionadoId) ??
+      null
+    );
+  }
+
+  get botonAsignacionLabel(): string {
+    if (!this.articulo?.comiteEditorial) {
+      return 'Asignar al comité';
+    }
+
+    return this.articulo.comiteEditorial.id === this.committeeMemberSeleccionadoId
+      ? 'Actualizar asignación'
+      : 'Reasignar al comité';
+  }
+
+  registrarEvaluacionTurniting(): void {
+    if (!this.articulo || !this.puedeMostrarTurniting || this.evaluandoTurniting) {
+      return;
+    }
+
+    if (this.porcentajeTurniting === null || this.porcentajeTurniting === undefined) {
+      this.accionError = 'Debes indicar el porcentaje de Turniting.';
+      this.accionExitosa = null;
+      return;
+    }
+
+    if (this.porcentajeTurniting < 0 || this.porcentajeTurniting > 100) {
+      this.accionError = 'El porcentaje debe estar entre 0 y 100.';
+      this.accionExitosa = null;
+      return;
+    }
+
+    this.evaluandoTurniting = true;
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService
+      .evaluarTurniting(this.articulo.id, {
+        porcentaje: this.porcentajeTurniting,
+        observacion: this.observacionTurniting.trim() || undefined,
+        archivo: this.archivoTurniting,
+      })
+      .subscribe({
+        next: (respuesta) => {
+          this.evaluandoTurniting = false;
+          this.porcentajeTurniting = null;
+          this.observacionTurniting = '';
+          this.archivoTurniting = null;
+          this.nombreArchivoTurniting = '';
+          this.accionExitosa = respuesta.message;
+          this.cargarArticulo(this.articulo!.id);
+        },
+        error: (err) => {
+          this.evaluandoTurniting = false;
+          this.accionError = err?.error?.message ?? 'No se pudo registrar la evaluación de Turniting.';
+        },
+      });
   }
 }

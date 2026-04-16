@@ -31,6 +31,7 @@ import { CambiarEtapaDto } from './dto/cambiar-etapa.dto';
 import { SubmitCorreccionDto } from './dto/submit-correccion.dto';
 import { AceptarCorreccionDto } from './dto/aceptar-correccion.dto';
 import { EvaluarComiteDto } from './dto/evaluar-comite.dto';
+import { EvaluarTurnitingDto } from './dto/evaluar-turniting.dto';
 import { diskStorage } from 'multer';
 import { validateOrReject, ValidationError } from 'class-validator';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -290,6 +291,57 @@ export class ArticulosController {
       body.etapaId,
       req.user.userId,
     );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Post(':id/turniting/evaluacion')
+  @UseInterceptors(
+    FileInterceptor('archivo', {
+      storage: diskStorage({
+        destination: './uploads/articulos',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  async evaluarTurniting(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: EvaluarTurnitingDto,
+    @Req() req: any,
+    @UploadedFile() archivo?: Express.Multer.File,
+  ) {
+    const porcentaje = Number(body.porcentaje);
+
+    if (!Number.isFinite(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+      if (archivo?.path) {
+        await fs.unlink(archivo.path).catch(() => null);
+      }
+
+      throw new BadRequestException(
+        'El porcentaje de Turniting debe estar entre 0 y 100.',
+      );
+    }
+
+    try {
+      return await this.articulosService.evaluarArticuloTurniting(
+        id,
+        req.user.userId,
+        porcentaje,
+        body.observacion?.trim(),
+        archivo,
+      );
+    } catch (error) {
+      if (archivo?.path) {
+        await fs.unlink(archivo.path).catch(() => null);
+      }
+
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

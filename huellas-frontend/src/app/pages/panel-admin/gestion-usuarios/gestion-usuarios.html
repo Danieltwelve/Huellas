@@ -1,12 +1,41 @@
 <section class="users-page">
   <header class="page-header">
-    <h1>Gestión de usuarios</h1>
-    <p>Gestiona los usuarios del sistema y controla sus permisos de acceso</p>
+    <div>
+      <h1>Gestión de usuarios</h1>
+      <p>Administra cuentas, roles y estado de acceso.</p>
+    </div>
   </header>
 
-  <br><br>
+  <section class="summary-grid" aria-label="Resumen de usuarios">
+    <article class="summary-card">
+      <span class="summary-label">Total</span>
+      <strong>{{ totalUsers }}</strong>
+      <p>Usuarios cargados en el panel</p>
+    </article>  
+    <article class="summary-card">
+      <span class="summary-label">Activos</span>
+      <strong>{{ activeUsers }}</strong>
+      <p>Cuentas con acceso habilitado</p>
+    </article>
+    <article class="summary-card">
+      <span class="summary-label">Pendientes</span>
+      <strong>{{ pendingUsers }}</strong>
+      <p>Correos aún sin verificar</p>
+    </article>
+    <article class="summary-card">
+      <span class="summary-label">Roles clave</span>
+      <strong>{{ roleUsersCount }}</strong>
+      <p>Usuarios con rol editorial o de administración</p>
+    </article>
+  </section>
+
   <section class="users-panel">
-    <h2>Usuarios actuales</h2>
+    <div class="panel-heading">
+      <div>
+        <h2>Usuarios actuales</h2>
+        <p>Filtra y gestiona cada usuario desde una tarjeta compacta.</p>
+      </div>
+    </div>
 
     <div class="toolbar">
       <div class="search-wrapper">
@@ -20,69 +49,77 @@
       </button>
     </div>
 
-    <div class="table-wrapper">
-      @if (loading) {
-      <p class="loading-state">Cargando usuarios...</p>
-      } @else if (errorMessage) {
-      <p class="error-state">{{ errorMessage }}</p>
-      } @else {
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Correo electrónico</th>
-            <th>Teléfono</th>
-            <th>Estado del correo</th>
-            <th>Estado de la cuenta</th>
-            <th>Rol</th>
-            <th class="text-center">Editar</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (user of filteredUsers; track user.correo) {
-          <tr>
-            <td>{{ user.nombre }}</td>
-            <td>{{ user.correo }}</td>
-            <td>
-              @if (user.telefono !== '') {
-              {{ user.telefono }}
-              } @else {
-              <span class="empty-field">-</span>
-              }
-            </td>
-            <td>
-              <span class="badge"
-                [ngClass]="user.correoVerificado === 'Verificado' ? 'badge-success' : 'badge-warning'">
-                {{ user.correoVerificado }}
-              </span>
-            </td>
-            <td>
-              <span class="badge" [ngClass]="user.estado === 'Activa' ? 'badge-success' : 'badge-warning'">
-                {{ user.estado }}
-              </span>
-            </td>
-            <td class="role-cell">{{ user.rol }}</td>
-            <td class="edit-cell">
-              <button type="button" class="edit-btn" (click)="onEditUser(user)" aria-label="Editar usuario">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#44B2A9"
-                  class="bi bi-pencil-square" viewBox="0 0 16 16">
-                  <path
-                    d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
-                  <path fill-rule="evenodd"
-                    d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
-                </svg>
-              </button>
-            </td>
-          </tr>
-          } @empty {
-          <tr>
-            <td colspan="7" class="empty-state">No hay usuarios que coincidan con la búsqueda.</td>
-          </tr>
-          }
-        </tbody>
-      </table>
+    @if (loading) {
+    <p class="loading-state">Cargando usuarios...</p>
+    } @else if (errorMessage) {
+    <p class="error-state">{{ errorMessage }}</p>
+    } @else {
+    <div class="users-grid">
+      @for (user of filteredUsers; track user.id) {
+      <article class="user-card" [ngClass]="['user-card--' + user.estadoClass, 'user-card--role-' + user.rolClass]">
+        <div class="user-card-top">
+          <div class="user-avatar" aria-hidden="true">
+            {{ user.nombre.charAt(0) }}
+          </div>
+          <div class="user-main-info">
+            <h3>{{ user.nombre }}</h3>
+            <p>{{ user.correo }}</p>
+          </div>
+          <div class="action-buttons">
+            <button type="button" class="edit-btn" (click)="onEditUser(user)" aria-label="Editar usuario">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#44B2A9"
+                class="bi bi-pencil-square" viewBox="0 0 16 16">
+                <path
+                  d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                <path fill-rule="evenodd"
+                  d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
+              </svg>
+            </button>
+
+            <button type="button" class="delete-btn" (click)="onDeleteUser(user)"
+              [disabled]="deletingUserId === user.id" aria-label="Eliminar usuario">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                viewBox="0 0 16 16">
+                <path
+                  d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
+                <path
+                  d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1 0-2H4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1h1.5a1 1 0 0 1 1 1M5.118 4 5 4.059V13a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4.059L10.882 4zM6.5 1a.5.5 0 0 0-.5.5V2h4v-.5a.5.5 0 0 0-.5-.5z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="user-card-body">
+          <div class="info-pill">
+            <span class="info-label">Teléfono</span>
+            <span class="info-value">{{ user.telefono || 'Sin teléfono' }}</span>
+          </div>
+          <div class="info-pill">
+            <span class="info-label">Estado del correo</span>
+            <span class="badge" [ngClass]="user.correoVerificado === 'Verificado' ? 'badge-success' : 'badge-warning'">
+              {{ user.correoVerificado }}
+            </span>
+          </div>
+          <div class="info-pill">
+            <span class="info-label">Estado de la cuenta</span>
+            <span class="badge" [ngClass]="user.estado === 'Activa' ? 'badge-success' : 'badge-warning'">
+              {{ user.estado }}
+            </span>
+          </div>
+          <div class="info-pill">
+            <span class="info-label">Rol</span>
+            <span class="role-chip" [ngClass]="'role-chip--' + user.rolClass">{{ user.rol }}</span>
+          </div>
+        </div>
+      </article>
+      } @empty {
+      <div class="empty-card">
+        <h3>No hay usuarios para mostrar</h3>
+        <p>No encontramos usuarios que coincidan con la búsqueda actual.</p>
+      </div>
       }
     </div>
+    }
   </section>
 
   @if (showCreateModal) {
@@ -93,5 +130,35 @@
   @if (showEditModal) {
   <app-editar-usuario-modal [user]="selectedUserToEdit" (closed)="closeEditModal()" (updated)="onUserEdited()">
   </app-editar-usuario-modal>
+  }
+
+  @if (showDeleteConfirmModal && selectedUserToDelete) {
+  <div class="delete-modal-backdrop" (click)="cancelDeleteUser()"></div>
+  <div class="delete-modal" role="dialog" aria-modal="true" aria-label="Confirmar eliminación de usuario">
+    <button class="delete-modal-close" type="button" (click)="cancelDeleteUser()" aria-label="Cerrar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <h3>Eliminar usuario</h3>
+    <p>
+      Vas a eliminar a <strong>{{ selectedUserToDelete.nombre }}</strong>.
+    </p>
+    <p class="delete-modal-description">
+      Esta acción no se puede deshacer.
+    </p>
+
+    <div class="delete-modal-actions">
+      <button class="btn-cancel-delete" type="button" (click)="cancelDeleteUser()" [disabled]="deletingUserId !== null">
+        Cancelar
+      </button>
+      <button class="btn-confirm-delete" type="button" (click)="confirmDeleteUser()" [disabled]="deletingUserId !== null">
+        {{ deletingUserId !== null ? 'Eliminando...' : 'Eliminar usuario' }}
+      </button>
+    </div>
+  </div>
   }
 </section>

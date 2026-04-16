@@ -45,6 +45,19 @@ export class UsersService {
     );
   }
 
+  getCommitteeMembers(): Observable<UsuarioBackend[]> {
+    return from(this.auth.currentUser!.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<UsuarioBackend[]>(
+          `${environment.apiUrlBackend}/usuarios/comite-editorial`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
   createAdmin(payload: AdminCreateUserPayload): Observable<UsuarioBackend> {
     return from(this.auth.currentUser!.getIdToken()).pipe(
       switchMap((token) =>
@@ -106,6 +119,19 @@ export class UsersService {
         this.http.post<{ message: string }>(
           `${environment.apiUrlBackend}/usuarios/${id}/restablecer-acceso`,
           {},
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  deleteUser(id: number): Observable<{ message: string }> {
+    return from(this.auth.currentUser!.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.delete<{ message: string }>(
+          `${environment.apiUrlBackend}/usuarios/${id}`,
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           },

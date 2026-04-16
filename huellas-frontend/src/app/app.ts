@@ -36,12 +36,14 @@ export class AppComponent {
       map(() =>
         this.router.url.startsWith('/panel-autor') ||
         this.router.url.startsWith('/panel-revisor') ||
-        this.router.url.startsWith('/panel-comite-editorial'),
+        this.router.url.startsWith('/panel-comite-editorial') ||
+        this.router.url.startsWith('/flujo-trabajo-articulo'),
       ),
       startWith(
         window.location.pathname.startsWith('/panel-autor') ||
           window.location.pathname.startsWith('/panel-revisor') ||
-          window.location.pathname.startsWith('/panel-comite-editorial'),
+          window.location.pathname.startsWith('/panel-comite-editorial') ||
+          window.location.pathname.startsWith('/flujo-trabajo-articulo'),
       ),
     );
 

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
   Inject,
@@ -18,6 +16,9 @@ import { Auth } from 'firebase-admin/auth';
 import { FIREBASE_AUTH } from '../../common/firebase/firebase-admin.constants';
 import { ConfigService } from '@nestjs/config';
 import nodemailer from 'nodemailer';
+import { Articulo } from '../articulos/entities/articulo.entity';
+import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
+import { Observacion } from '../observaciones/entities/observacione.entity';
 
 interface FirebaseAdminError {
   code?: string;
@@ -144,7 +145,9 @@ export class UsersService {
     const isVerified = existsInFirebase ? emailVerified : false;
 
     if (isVerified) {
-      throw new BadRequestException('El correo del usuario ya está verificado.');
+      throw new BadRequestException(
+        'El correo del usuario ya está verificado.',
+      );
     }
 
     await this.sendVerificationEmail(user.correo, true);
@@ -157,7 +160,8 @@ export class UsersService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    const { existsInFirebase } = await this.syncVerificationStatusFromFirebase(user);
+    const { existsInFirebase } =
+      await this.syncVerificationStatusFromFirebase(user);
 
     if (!existsInFirebase) {
       await this.createFirebaseUserForRecovery(user.correo, user.estado_cuenta);
@@ -171,10 +175,61 @@ export class UsersService {
     await this.sendPasswordResetEmail(user.correo, true);
   }
 
-  private async sendVerificationEmail(correo: string, strictSmtp: boolean): Promise<void> {
-    const verificationLink = await this.firebaseAuth.generateEmailVerificationLink(
-      correo,
-    );
+  async deleteUser(id: number): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    await this.deleteFirebaseUserByEmail(user.correo);
+
+    await this.userRepository.manager.transaction(async (manager) => {
+      await manager
+        .createQueryBuilder()
+        .delete()
+        .from('articulo_autores')
+        .where('usuario_id = :id', { id })
+        .execute();
+
+      await manager
+        .createQueryBuilder()
+        .delete()
+        .from('rol_usuarios')
+        .where('usuario_id = :id', { id })
+        .execute();
+
+      await manager
+        .createQueryBuilder()
+        .update(Observacion)
+        .set({ usuarioId: () => 'NULL' })
+        .where('usuario_id = :id', { id })
+        .execute();
+
+      await manager
+        .createQueryBuilder()
+        .update(ArticuloHistorialEtapa)
+        .set({ usuarioId: () => 'NULL' })
+        .where('usuario_id = :id', { id })
+        .execute();
+
+      await manager
+        .createQueryBuilder()
+        .update(Articulo)
+        .set({ comiteEditorialId: () => 'NULL' })
+        .where('comite_editorial_id = :id', { id })
+        .execute();
+
+      await manager.getRepository(User).delete(id);
+    });
+  }
+
+  private async sendVerificationEmail(
+    correo: string,
+    strictSmtp: boolean,
+  ): Promise<void> {
+    const verificationLink =
+      await this.firebaseAuth.generateEmailVerificationLink(correo);
 
     const sentBySmtp = await this.sendVerificationEmailBySmtp(
       correo,
@@ -192,9 +247,15 @@ export class UsersService {
     }
   }
 
-  private async sendPasswordResetEmail(correo: string, strictSmtp: boolean): Promise<void> {
+  private async sendPasswordResetEmail(
+    correo: string,
+    strictSmtp: boolean,
+  ): Promise<void> {
     const resetLink = await this.firebaseAuth.generatePasswordResetLink(correo);
-    const sentBySmtp = await this.sendPasswordResetEmailBySmtp(correo, resetLink);
+    const sentBySmtp = await this.sendPasswordResetEmailBySmtp(
+      correo,
+      resetLink,
+    );
 
     if (sentBySmtp) {
       return;
@@ -375,8 +436,10 @@ export class UsersService {
   async findCommitteeMembers(): Promise<User[]> {
     const users = await this.userRepository.find({ relations: ['roles'] });
 
-    return users.filter((user) =>
-      user.roles?.some((role) => role.rol === 'comite-editorial'),
+    return users.filter(
+      (user) =>
+        user.estado_cuenta === true &&
+        user.roles?.some((role) => role.rol === 'comite-editorial'),
     );
   }
 
@@ -412,7 +475,8 @@ export class UsersService {
       correoCambiado || typeof data.estado_cuenta === 'boolean';
 
     if (requiresFirebaseSync) {
-      const { existsInFirebase } = await this.syncVerificationStatusFromFirebase(user);
+      const { existsInFirebase } =
+        await this.syncVerificationStatusFromFirebase(user);
 
       if (!existsInFirebase) {
         throw new BadRequestException(
@@ -434,16 +498,7 @@ export class UsersService {
         throw new BadRequestException('El nuevo correo ya está registrado.');
       }
 
-      const estadoCuentaDestino =
-        typeof data.estado_cuenta === 'boolean'
-          ? data.estado_cuenta
-          : user.estado_cuenta;
-
-      await this.syncFirebaseUserEmail(
-        correoActual,
-        correoNuevo,
-        estadoCuentaDestino,
-      );
+      await this.syncFirebaseUserEmail(correoActual, correoNuevo);
 
       data.correo = correoNuevo;
       data.correo_verificado = false;
@@ -487,7 +542,6 @@ export class UsersService {
   private async syncFirebaseUserEmail(
     correoActual: string,
     correoNuevo: string,
-    estadoCuenta: boolean,
   ): Promise<void> {
     try {
       const firebaseUser = await this.firebaseAuth.getUserByEmail(correoActual);
@@ -562,6 +616,28 @@ export class UsersService {
       await this.firebaseAuth.deleteUser(firebaseUid);
     } catch {
       // No interrumpir el flujo principal por un error de compensacion.
+    }
+  }
+
+  private async deleteFirebaseUserByEmail(correo: string): Promise<void> {
+    try {
+      const firebaseUser = await this.firebaseAuth.getUserByEmail(correo);
+      await this.firebaseAuth.deleteUser(firebaseUser.uid);
+    } catch (error) {
+      if (this.isFirebaseAuthError(error, 'auth/user-not-found')) {
+        return;
+      }
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'No fue posible eliminar el usuario en Firebase.',
+      );
     }
   }
 

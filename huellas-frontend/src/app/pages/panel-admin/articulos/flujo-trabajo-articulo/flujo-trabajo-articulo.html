@@ -1,7 +1,11 @@
 <section class="flujo-trabajo">
   <header class="encabezado-flujo">
     <div class="header-main">
-      <h1>Flujo de Trabajo del Artículo: {{ tituloArticulo }}</h1>
+      <div class="header-copy">
+        <span class="eyebrow">Panel editorial</span>
+        <h1>Flujo de Trabajo del Artículo</h1>
+        <p *ngIf="articulo" class="header-subtitle">{{ tituloArticulo }}</p>
+      </div>
       <button class="estado-etapa" type="button">{{ etiquetaEtapaActual }}</button>
     </div>
   </header>
@@ -17,7 +21,12 @@
   </nav>
 
   <section class="resumen-envio" *ngIf="articulo">
-    <h2>Información enviada por el autor</h2>
+    <div class="section-head">
+      <div>
+        <span class="section-kicker">Contexto editorial</span>
+        <h2>Información enviada por el autor</h2>
+      </div>
+    </div>
     <div class="resumen-grid">
       <article class="resumen-item">
         <h3>Autores</h3>
@@ -44,7 +53,12 @@
 
   <div class="contenido-principal">
     <section class="historial-panel">
-      <h2>Historial del Flujo de Trabajo</h2>
+      <div class="section-head section-head--historial">
+        <div>
+          <span class="section-kicker">Seguimiento</span>
+          <h2>Historial del Flujo de Trabajo</h2>
+        </div>
+      </div>
 
       <ng-container *ngIf="historialVisible.length > 0; else historialVacio">
         <div class="historial-lista">
@@ -110,7 +124,12 @@
 
     <aside class="acciones-laterales">
       <section class="timeline-etapas-panel">
-        <h2>Cronograma de Etapas</h2>
+        <div class="section-head section-head--compact">
+          <div>
+            <span class="section-kicker">Ruta editorial</span>
+            <h2>Cronograma de Etapas</h2>
+          </div>
+        </div>
         @for (etapa of etapasTimeline; track etapa.id) {
         <div
           class="etapa-item"
@@ -126,7 +145,7 @@
         }
       </section>
 
-      <div class="accion-group">
+      <div class="accion-group" *ngIf="puedeMostrarObservacion">
         <span class="accion-label">Añadir corrección u observación</span>
         <input type="text" class="input-control" [(ngModel)]="asuntoObservacion" placeholder="Asunto"
           aria-label="Asunto de observación" />
@@ -141,6 +160,50 @@
           {{ guardandoObservacion ? 'Guardando...' : 'Añadir observación' }}
         </button>
       </div>
+
+      <section class="accion-card card-turniting" *ngIf="puedeMostrarTurniting">
+        <span class="accion-label">Evaluación Turniting</span>
+        <p class="asignacion-helper">Si la similitud es 65% o más, el artículo queda descartado. Si es menor, el autor podrá hacer una sola corrección.</p>
+
+        <div class="select-wrapper select-wrapper--compact">
+          <input
+            type="number"
+            class="input-control"
+            [(ngModel)]="porcentajeTurniting"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="Porcentaje de similitud"
+            aria-label="Porcentaje de similitud Turniting"
+          />
+        </div>
+
+        <textarea
+          class="input-control"
+          [(ngModel)]="observacionTurniting"
+          rows="4"
+          placeholder="Observación opcional sobre la evaluación"
+          aria-label="Observación Turniting"
+        ></textarea>
+
+        <label class="file-label" for="archivoTurniting">Adjuntar soporte de Turniting (opcional)</label>
+        <input
+          id="archivoTurniting"
+          type="file"
+          class="file-input"
+          (change)="onArchivoTurnitingSeleccionado($event)"
+        />
+        <p class="file-name" *ngIf="nombreArchivoTurniting">{{ nombreArchivoTurniting }}</p>
+
+        <button
+          class="btn-outline-teal btn-full"
+          type="button"
+          (click)="registrarEvaluacionTurniting()"
+          [disabled]="evaluandoTurniting"
+        >
+          {{ evaluandoTurniting ? 'Registrando...' : 'Registrar evaluación Turniting' }}
+        </button>
+      </section>
 
       <section class="accion-group" *ngIf="esComiteEditorial">
         <span class="accion-label">Rúbrica de evaluación</span>
@@ -171,7 +234,7 @@
         </ng-template>
       </section>
 
-      <section class="accion-card" *ngIf="esComiteEditorial">
+      <section class="accion-card card-evaluacion" *ngIf="esComiteEditorial">
         <span class="accion-label">Evaluar artículo (Comité Editorial)</span>
         <span class="tag-mandatory" *ngIf="estaEnEtapaComite">En etapa de comité</span>
 
@@ -210,21 +273,31 @@
         </button>
       </section>
 
-      <section class="accion-card" *ngIf="puedeAsignarComite">
+      <section class="accion-card card-asignacion" *ngIf="puedeMostrarAsignacionComite">
         <span class="accion-label">Asignar miembro del Comité Editorial</span>
-        <span class="tag-mandatory" *ngIf="articulo?.comiteEditorial">Asignado</span>
+        <p class="asignacion-helper">Selecciona el integrante responsable de evaluar este artículo.</p>
+
+        <div class="asignacion-meta" *ngIf="articulo?.comiteEditorial as asignadoActual">
+          <span class="tag-mandatory">Asignado actualmente</span>
+          <p>
+            {{ asignadoActual.nombre }}
+            <span>{{ asignadoActual.email }}</span>
+          </p>
+        </div>
 
         <div class="select-wrapper">
           <select aria-label="Seleccionar miembro del comité" [(ngModel)]="committeeMemberSeleccionadoId">
             <option *ngFor="let member of committeeMembers" [ngValue]="member.id">
-              {{ member.nombre }} - {{ member.correo }}
+              {{ member.nombre }}
             </option>
           </select>
         </div>
 
-        <p class="file-name" *ngIf="articulo?.comiteEditorial">
-          Asignado a: {{ articulo?.comiteEditorial?.nombre }}
+        <p class="file-name" *ngIf="miembroComiteSeleccionado as seleccionado">
+          Correo del miembro seleccionado: {{ seleccionado.correo }}
         </p>
+
+        <p class="asignacion-note">Regla activa: máximo 4 artículos por miembro del comité.</p>
 
         <button
           class="btn-outline-teal btn-full"
@@ -232,12 +305,12 @@
           (click)="asignarComiteEditorial()"
           [disabled]="asignandoComite || !committeeMemberSeleccionadoId"
         >
-          {{ asignandoComite ? 'Asignando...' : 'Asignar al comité' }}
+          {{ asignandoComite ? 'Guardando asignación...' : botonAsignacionLabel }}
         </button>
       </section>
 
-      <section class="accion-card">
-        <span class="accion-label">Mover Articulo...</span>
+      <section class="accion-card card-mover">
+        <span class="accion-label">Mover artículo</span>
         <span class="tag-mandatory">Mandatorio</span>
 
         <div class="select-wrapper">

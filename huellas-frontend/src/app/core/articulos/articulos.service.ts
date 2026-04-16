@@ -155,6 +155,52 @@ export class ArticulosService {
     );
   }
 
+  evaluarTurniting(
+    articuloId: number,
+    payload: {
+      porcentaje: number;
+      observacion?: string;
+      archivo?: File | null;
+    },
+  ): Observable<{
+    message: string;
+    evaluacion: { porcentaje: number; resultado: 'descartado' | 'correccion-requerida'; observacionId: number };
+    etapaActual: { id: number; nombre: string };
+  }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para evaluar Turniting.'));
+    }
+
+    const formData = new FormData();
+    formData.append('porcentaje', String(payload.porcentaje));
+
+    if (payload.observacion) {
+      formData.append('observacion', payload.observacion);
+    }
+
+    if (payload.archivo) {
+      formData.append('archivo', payload.archivo, payload.archivo.name);
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<{
+          message: string;
+          evaluacion: { porcentaje: number; resultado: 'descartado' | 'correccion-requerida'; observacionId: number };
+          etapaActual: { id: number; nombre: string };
+        }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/turniting/evaluacion`,
+          formData,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
   getResumenArticulos(): Observable<ArticuloResumenBackend[]> {
     const currentUser = this.auth.currentUser;
 

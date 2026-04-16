@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -82,5 +83,13 @@ export class UsersController {
   async restoreAccess(@Param('id', ParseIntPipe) id: number) {
     await this.usersService.restoreFirebaseAccess(id);
     return { message: 'Acceso restablecido y correo de recuperación enviado.' };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Delete(':id')
+  async deleteUser(@Param('id', ParseIntPipe) id: number) {
+    await this.usersService.deleteUser(id);
+    return { message: 'Usuario eliminado exitosamente.' };
   }
 }

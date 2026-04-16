@@ -31,6 +31,10 @@ export class ArticulosService {
     'Correccion enviada por autor';
   private static readonly ASUNTO_CORRECCION_ACEPTADA =
     'Correccion aceptada por equipo editorial';
+  private static readonly ASUNTO_EVALUACION_TURNITING_CORRECCION =
+    'Evaluacion de Turniting: REQUIERE CORRECCION';
+  private static readonly ASUNTO_EVALUACION_TURNITING_DESCARTADO =
+    'Evaluacion de Turniting: DESCARTADO';
   private static readonly ASUNTO_EVALUACION_COMITE_APROBADO =
     'Evaluacion de comite editorial: ACEPTADO';
   private static readonly ASUNTO_EVALUACION_COMITE_RECHAZADO =
@@ -447,6 +451,129 @@ export class ArticulosService {
     }
   }
 
+  async evaluarArticuloTurniting(
+    articuloId: number,
+    usuarioId: number,
+    porcentaje: number,
+    observacion?: string,
+    archivo?: Express.Multer.File,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const articulo = await queryRunner.manager.findOne(Articulo, {
+        where: { id: articuloId },
+      });
+
+      if (!articulo) {
+        throw new NotFoundException('Artículo no encontrado');
+      }
+
+      this.ensureArticuloNoDescartado(articulo);
+
+      if (articulo.etapaActualId !== ArticulosService.ETAPA_TURNITING) {
+        throw new BadRequestException(
+          'El artículo no está en la etapa de Turniting.',
+        );
+      }
+
+      const evaluacionDescarta = porcentaje >= 65;
+      const asuntoEvaluacion = evaluacionDescarta
+        ? ArticulosService.ASUNTO_EVALUACION_TURNITING_DESCARTADO
+        : ArticulosService.ASUNTO_EVALUACION_TURNITING_CORRECCION;
+
+      const comentarioBase = evaluacionDescarta
+        ? `Evaluación de Turniting: ${porcentaje}% de similitud. El artículo supera el umbral permitido y queda descartado.`
+        : `Evaluación de Turniting: ${porcentaje}% de similitud. El artículo puede continuar con una única corrección del autor.`;
+
+      const observacionTurniting = queryRunner.manager.create(Observacion, {
+        articuloId,
+        usuarioId,
+        etapaId: ArticulosService.ETAPA_TURNITING,
+        asunto: asuntoEvaluacion,
+        comentarios: observacion?.trim() || comentarioBase,
+      });
+
+      const observacionGuardada = await queryRunner.manager.save(
+        observacionTurniting,
+      );
+
+      if (archivo) {
+        const registroArchivo = queryRunner.manager.create(ObservacionArchivo, {
+          observacionesId: observacionGuardada.id,
+          archivoPath: archivo.path,
+          archivoNombreOriginal: archivo.originalname,
+        });
+
+        await queryRunner.manager.save(registroArchivo);
+      }
+
+      articulo.comiteEditorialId = null;
+      await queryRunner.manager.save(articulo);
+
+      if (evaluacionDescarta) {
+        const historialAbierto = await queryRunner.manager.findOne(
+          ArticuloHistorialEtapa,
+          {
+            where: {
+              articuloId,
+              fechaFin: IsNull(),
+            },
+            order: { fechaInicio: 'DESC' },
+          },
+        );
+
+        const ahora = new Date();
+
+        if (historialAbierto) {
+          historialAbierto.fechaFin = ahora;
+          await queryRunner.manager.save(historialAbierto);
+        }
+
+        articulo.etapaActualId = ArticulosService.ETAPA_DESCARTADO;
+        await queryRunner.manager.save(articulo);
+
+        const historialDescartado = queryRunner.manager.create(
+          ArticuloHistorialEtapa,
+          {
+            articuloId,
+            etapaId: ArticulosService.ETAPA_DESCARTADO,
+            usuarioId,
+            fechaInicio: ahora,
+          },
+        );
+
+        await queryRunner.manager.save(historialDescartado);
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        message: evaluacionDescarta
+          ? 'Artículo descartado por resultado de Turniting.'
+          : 'Turniting aprobado. Se notificó al autor para una única corrección.',
+        evaluacion: {
+          porcentaje,
+          resultado: evaluacionDescarta ? 'descartado' : 'correccion-requerida',
+          observacionId: observacionGuardada.id,
+        },
+        etapaActual: {
+          id: evaluacionDescarta
+            ? ArticulosService.ETAPA_DESCARTADO
+            : ArticulosService.ETAPA_TURNITING,
+          nombre: evaluacionDescarta ? 'DESCARTADO' : 'TURNITING',
+        },
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async evaluarArticuloComite(
     articuloId: number,
     usuarioComiteId: number,
@@ -601,6 +728,12 @@ export class ArticulosService {
 
     if (!comiteMember) {
       throw new NotFoundException('Miembro del comité no encontrado');
+    }
+
+    if (!comiteMember.estado_cuenta) {
+      throw new BadRequestException(
+        'No puedes asignar un miembro del Comité Editorial con cuenta inactiva.',
+      );
     }
 
     const esComiteEditorial = comiteMember.roles?.some(

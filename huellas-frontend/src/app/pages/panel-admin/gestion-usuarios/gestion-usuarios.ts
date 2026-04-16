@@ -14,6 +14,8 @@ interface Usuario {
   correoVerificado: string;
   estado: string;
   rol: string;
+  estadoClass: string;
+  rolClass: string;
 }
 
 @Component({
@@ -21,7 +23,7 @@ interface Usuario {
   standalone: true,
   imports: [CommonModule, FormsModule, CrearUsuarioModal, EditarUsuarioModal],
   templateUrl: './gestion-usuarios.html',
-  styleUrl: './gestion-usuarios.scss',
+  styleUrl: './gestion-usuarios.css',
 })
 export class GestionUsuarios implements OnInit {
   private usersService = inject(UsersService);
@@ -33,10 +35,13 @@ export class GestionUsuarios implements OnInit {
   errorMessage = '';
   showCreateModal = false;
   showEditModal = false;
+  showDeleteConfirmModal = false;
+  deletingUserId: number | null = null;
 
   users: Usuario[] = [];
   filteredUsers: Usuario[] = [];
   selectedUserToEdit: Usuario | null = null;
+  selectedUserToDelete: Usuario | null = null;
 
   ngOnInit(): void {
     this.loadUsers();
@@ -61,6 +66,8 @@ export class GestionUsuarios implements OnInit {
           correoVerificado: u.correo_verificado ? 'Verificado' : 'Pendiente',
           estado: u.estado_cuenta ? 'Activa' : 'Inactiva',
           rol: u.roles?.map((r) => this.getRoleLabel(r.rol)).join(', ') ?? 'Sin rol',
+          estadoClass: u.estado_cuenta ? 'active' : 'inactive',
+          rolClass: this.getRoleClass(u.roles?.[0]?.rol ?? ''),
         }));
         this.filteredUsers = [...this.users];
         this.loading = false;
@@ -124,6 +131,74 @@ export class GestionUsuarios implements OnInit {
     this.loadUsers();
   }
 
+  get totalUsers(): number {
+    return this.users.length;
+  }
+
+  get activeUsers(): number {
+    return this.users.filter((user) => user.estado === 'Activa').length;
+  }
+
+  get pendingUsers(): number {
+    return this.users.filter((user) => user.correoVerificado === 'Pendiente').length;
+  }
+
+  get roleUsersCount(): number {
+    return this.users.filter(
+      (user) =>
+        user.rol.toLowerCase().includes('comité editorial') ||
+        user.rol.toLowerCase().includes('admin') ||
+        user.rol.toLowerCase().includes('director') ||
+        user.rol.toLowerCase().includes('monitor'),
+    ).length;
+  }
+
+  onDeleteUser(user: Usuario): void {
+    if (this.deletingUserId !== null) {
+      return;
+    }
+
+    this.selectedUserToDelete = user;
+    this.showDeleteConfirmModal = true;
+    this.errorMessage = '';
+    this.cdr.detectChanges();
+  }
+
+  cancelDeleteUser(): void {
+    if (this.deletingUserId !== null) {
+      return;
+    }
+
+    this.selectedUserToDelete = null;
+    this.showDeleteConfirmModal = false;
+    this.cdr.detectChanges();
+  }
+
+  confirmDeleteUser(): void {
+    if (!this.selectedUserToDelete || this.deletingUserId !== null) {
+      return;
+    }
+
+    this.deletingUserId = this.selectedUserToDelete.id;
+    this.errorMessage = '';
+
+    this.usersService.deleteUser(this.selectedUserToDelete.id).subscribe({
+      next: () => {
+        this.selectedUserToDelete = null;
+        this.showDeleteConfirmModal = false;
+        this.deletingUserId = null;
+        this.loadUsers();
+      },
+      error: () => {
+        this.selectedUserToDelete = null;
+        this.showDeleteConfirmModal = false;
+        this.deletingUserId = null;
+        this.errorMessage = 'No se pudo eliminar el usuario. Intenta de nuevo.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   private getRoleLabel(role: string): string {
     if (role.trim().toLowerCase() === 'comite-editorial') {
       return 'Comité editorial';
@@ -134,5 +209,15 @@ export class GestionUsuarios implements OnInit {
       .trim()
       .toLowerCase()
       .replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  private getRoleClass(role: string): string {
+    const normalizedRole = role.trim().toLowerCase();
+
+    if (normalizedRole === 'comite-editorial') {
+      return 'comite-editorial';
+    }
+
+    return normalizedRole.replace(/[_-]+/g, '-');
   }
 }
