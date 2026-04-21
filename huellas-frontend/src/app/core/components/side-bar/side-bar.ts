@@ -9,13 +9,14 @@ interface MenuItem {
   icon: string;
   allowedRoles?: string[];
   route?: string;
+  action?: 'logout';
 }
 
 @Component({
   selector: 'app-side-bar',
   imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './side-bar.html',
-  styleUrl: './side-bar.scss',
+  styleUrl: './side-bar.css',
 })
 export class SideBar {
   private readonly authService = inject(AuthService);
@@ -84,8 +85,8 @@ export class SideBar {
   );
 
   bottomItems: MenuItem[] = [
-    { label: 'Cerrar sesión', icon: 'logout' },
-    { label: 'Configuración', icon: 'settings' },
+    { label: 'Configuración', icon: 'settings', route: '/configuracion' },
+    { label: 'Cerrar sesión', icon: 'logout', action: 'logout' },
   ];
 
   async logout() {

@@ -1,0 +1,65 @@
+<section class="notificaciones-page">
+  <header class="notificaciones-header">
+    <h1>Centro de Notificaciones</h1>
+    <p>Alertas de nuevos artículos y recordatorios de revisión.</p>
+  </header>
+
+  @if (loading) {
+    <div class="estado-carga">Cargando notificaciones...</div>
+  }
+
+  @if (!loading) {
+    <div class="resumen-cards">
+      <article class="resumen-card" [class.highlight]="resumen.totalVencidos > 0">
+        <strong class="resumen-label">Vencidos</strong>
+        <span class="resumen-valor">{{ resumen.totalVencidos }}</span>
+      </article>
+      <article class="resumen-card" [class.highlight]="resumen.totalProximoVencer > 0">
+        <strong class="resumen-label">Por vencer (≤5d)</strong>
+        <span class="resumen-valor">{{ resumen.totalProximoVencer }}</span>
+      </article>
+      <article class="resumen-card">
+        <strong class="resumen-label">Pendientes de revisar</strong>
+        <span class="resumen-valor">{{ resumen.totalPendientes }}</span>
+      </article>
+      <article class="resumen-card">
+        <strong class="resumen-label">Nuevos (últimos 3d)</strong>
+        <span class="resumen-valor">{{ resumen.totalNuevosUltimos3Dias }}</span>
+      </article>
+    </div>
+  }
+
+  @if (!loading && !notificaciones.length) {
+    <div class="estado-vacio">
+      <h2>Sin notificaciones pendientes</h2>
+      <p>Cuando se te asigne un artículo o esté por vencer una revisión, aparecerá aquí.</p>
+    </div>
+  }
+
+  @if (!loading && notificaciones.length) {
+    <div class="notificaciones-lista">
+      <h2>Notificaciones activas</h2>
+      @for (n of notificaciones; track n.id) {
+      <article class="notificacion-item" [ngClass]="getTipoClase(n.tipo)">
+        <div class="notificacion-top">
+          <strong>{{ n.titulo }}</strong>
+          <span class="chip" [ngClass]="getTipoClase(n.tipo)">
+            @switch (n.tipo) {
+              @case ('nuevo-articulo') { Nuevo }
+              @case ('vencido') { Vencido }
+              @case ('proximo-vencer') { Recordatorio }
+              @case ('sin-revisar') { Pendiente }
+            }
+          </span>
+        </div>
+
+        <p>{{ n.mensaje }}</p>
+
+        <a class="ver-articulo" [routerLink]="['/panel-comite-editorial/articulos', n.articuloId]">
+          Ver artículo
+        </a>
+      </article>
+      }
+    </div>
+  }
+</section>

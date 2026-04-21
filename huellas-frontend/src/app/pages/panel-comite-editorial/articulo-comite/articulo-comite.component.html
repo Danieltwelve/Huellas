@@ -7,6 +7,16 @@
     <button type="button" class="btn-secundario" (click)="volverListado()">Volver al listado</button>
   </header>
 
+  <!-- Banner de vencimiento -->
+  <div class="banner-vencimiento" *ngIf="diasRestantes !== null && puedeEvaluarComite" [class.vencido]="estaVencido" [class.critico]="!estaVencido && diasRestantes <= 3">
+    <span class="icon">⏰</span>
+    <div class="content">
+      <strong *ngIf="estaVencido">Plazo VENCIDO</strong>
+      <strong *ngIf="!estaVencido">{{ diasRestantes }} días para evaluar</strong>
+      <span *ngIf="fechaVencimiento"> - Vence el {{ fechaVencimiento | date: 'short' }}</span>
+    </div>
+  </div>
+
   <p class="mensaje error" *ngIf="error">{{ error }}</p>
   <p class="mensaje ok" *ngIf="mensajeOk">{{ mensajeOk }}</p>
   <p class="mensaje error" *ngIf="mensajeError">{{ mensajeError }}</p>
@@ -22,6 +32,22 @@
         <p><strong>Temas:</strong> {{ temasTexto }}</p>
         <p><strong>Palabras clave:</strong> {{ palabrasClaveTexto }}</p>
         <p><strong>Resumen:</strong> {{ articulo.resumen || 'Sin resumen' }}</p>
+      </div>
+    </section>
+
+    <!-- Rúbrica Interactiva Digital -->
+    <section class="panel" *ngIf="puedeEvaluarComite">
+      <button class="section-toggle" type="button" (click)="toggleSeccion('rubrica-digital')">
+        <h2>Rúbrica de Evaluación Digital (Interactiva)</h2>
+        <span class="badge-new">NUEVO</span>
+        <span>{{ seccionesAbiertas['rubrica-digital'] ? 'Ocultar' : 'Mostrar' }}</span>
+      </button>
+      <div *ngIf="seccionesAbiertas['rubrica-digital']">
+        <p class="info-text">Usa esta herramienta interactiva para evaluar el artículo. Los resultados te ayudarán a tomar una decisión informada.</p>
+        <app-rubrica-interactiva
+          [articuloTitulo]="articulo.titulo"
+          (rubricaCompleta)="alRubricaCompleta($event)"
+        ></app-rubrica-interactiva>
       </div>
     </section>
 
@@ -65,7 +91,9 @@
         <span>{{ seccionesAbiertas.decision ? 'Ocultar' : 'Mostrar' }}</span>
       </button>
 
-      <div *ngIf="seccionesAbiertas.decision">
+      <p class="subtitulo" *ngIf="!puedeEvaluarComite">{{ mensajeEstadoEvaluacion }}</p>
+
+      <div *ngIf="seccionesAbiertas.decision && puedeEvaluarComite">
         <label class="campo">
           Decisión
           <select [(ngModel)]="decision">
@@ -88,8 +116,8 @@
       </div>
     </section>
 
-    <section class="sticky-action" *ngIf="seccionesAbiertas.decision">
-      <p class="subtitulo">{{ decision === 'rechazar' ? 'Al rechazar, el artículo se descartará definitivamente.' : 'La aprobación enviará el artículo a la siguiente etapa.' }}</p>
+    <section class="sticky-action" *ngIf="seccionesAbiertas.decision && puedeEvaluarComite">
+      <p class="subtitulo">{{ decision === 'rechazar' ? 'El rechazo quedará registrado para revisión del equipo editorial.' : 'La aprobación quedará registrada para que el equipo editorial avance el flujo.' }}</p>
       <button type="button" class="btn-primario" (click)="evaluarArticulo()" [disabled]="guardandoEvaluacion">
         {{ guardandoEvaluacion ? 'Guardando evaluación...' : 'Emitir decisión' }}
       </button>
@@ -98,11 +126,11 @@
 
   <div class="modal-overlay" *ngIf="modalConfirmarDescarte">
     <div class="modal-box" role="dialog" aria-modal="true">
-      <h3>Confirmar descarte del artículo</h3>
-      <p>Esta acción moverá el artículo a estado DESCARTADO y no podrá continuar en el flujo editorial.</p>
+      <h3>Confirmar rechazo del artículo</h3>
+      <p>Esta acción registrará el rechazo del comité para que el equipo editorial tome la decisión de etapa.</p>
       <div class="modal-actions">
         <button type="button" class="btn-secundario" (click)="cancelarDescarte()">Cancelar</button>
-        <button type="button" class="btn-primario" (click)="confirmarDescarte()">Sí, descartar</button>
+        <button type="button" class="btn-primario" (click)="confirmarDescarte()">Sí, registrar rechazo</button>
       </div>
     </div>
   </div>

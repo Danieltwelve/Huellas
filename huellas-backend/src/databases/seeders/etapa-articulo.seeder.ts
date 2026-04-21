@@ -36,6 +36,18 @@ export class EtapaArticuloSeeder implements OnModuleInit {
           'El artículo está siendo evaluado por expertos en la materia (revisión ciega).',
       },
       {
+        id: 8,
+        nombre: 'CERTIFICACIÓN',
+        descripcion:
+          'Se valida el cumplimiento documental, de formato y de lineamientos editoriales antes del cierre.',
+      },
+      {
+        id: 9,
+        nombre: 'REVISIÓN FINAL',
+        descripcion:
+          'Última revisión integral del artículo antes de su publicación oficial.',
+      },
+      {
         id: 5,
         nombre: 'PUBLICACIÓN',
         descripcion:

@@ -22,9 +22,71 @@
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.75rem;
   margin-top: 0.85rem;
+}
+
+.alertas-vencimiento {
+  margin-top: 0.9rem;
+  background: #fff;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.alertas-vencimiento h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.alerta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.9rem;
+}
+
+.alerta-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.alerta-badge.vencido {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.alerta-badge.proximo {
+  color: #a16207;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.historial-panel {
+  background: #fff;
+  border: 1px solid #d9e2ec;
+  border-radius: 12px;
+  padding: 0.85rem;
+  margin-bottom: 0.9rem;
+}
+
+.historial-panel h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.historial-list {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.35rem;
 }
 
 .kpi-card {
@@ -255,6 +317,18 @@ tbody tr:last-child td {
   border-color: #d8b4fe;
 }
 
+.stage--certificacion {
+  color: #0c4a6e;
+  background: #ecfeff;
+  border-color: #67e8f9;
+}
+
+.stage--revision-final {
+  color: #7c2d12;
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
 .stage--publicacion {
   color: #166534;
   background: #effff2;
@@ -285,6 +359,45 @@ tbody tr:last-child td {
 }
 
 .status--rechazado {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.deadline-cell {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.deadline-cell small {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.deadline-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.deadline--ok {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.deadline--proximo {
+  color: #a16207;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.deadline--vencido {
   color: #b91c1c;
   background: #fef2f2;
   border-color: #fecaca;

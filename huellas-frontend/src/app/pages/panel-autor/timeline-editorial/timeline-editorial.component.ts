@@ -45,6 +45,8 @@ export class TimelineEditorialComponent implements OnInit {
   cargandoFlujo = false;
   error: string | null = null;
 
+  private readonly ordenEtapas: number[] = [1, 2, 6, 3, 4, 8, 9, 5];
+
   private readonly etapasBase: Array<{
     id: number;
     nombre: string;
@@ -69,6 +71,16 @@ export class TimelineEditorialComponent implements OnInit {
       id: 4,
       nombre: 'Revision por pares',
       descripcion: 'Evaluacion por revisores academicos',
+    },
+    {
+      id: 8,
+      nombre: 'Certificacion',
+      descripcion: 'Verificacion documental y editorial antes del cierre',
+    },
+    {
+      id: 9,
+      nombre: 'Revision final',
+      descripcion: 'Revision integral previa a la publicacion',
     },
     {
       id: 5,
@@ -165,6 +177,7 @@ export class TimelineEditorialComponent implements OnInit {
     }
 
     const etapaActualId = this.flujo.etapaActual?.id ?? 1;
+    const indiceEtapaActual = this.ordenEtapas.indexOf(etapaActualId);
     const historialPorEtapa = new Map<number, string>();
 
     for (const historial of this.flujo.historialEtapas ?? []) {
@@ -174,8 +187,9 @@ export class TimelineEditorialComponent implements OnInit {
     }
 
     return this.etapasBase.map((etapa) => {
+      const indiceEtapa = this.ordenEtapas.indexOf(etapa.id);
       const estado: 'completada' | 'actual' | 'pendiente' =
-        etapa.id < etapaActualId
+        indiceEtapa !== -1 && indiceEtapaActual !== -1 && indiceEtapa < indiceEtapaActual
           ? 'completada'
           : etapa.id === etapaActualId
             ? 'actual'

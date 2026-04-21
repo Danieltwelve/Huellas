@@ -1,10 +1,15 @@
 <aside class="sidebar" [class.collapsed]="collapsed">
-  <button class="hamburger" type="button" (click)="toggleSidebar()" aria-label="Colapsar menú">
-    ☰
-  </button>
+  <div class="sidebar-header">
+    <button class="menu-toggle" type="button" (click)="toggleSidebar()" aria-label="Colapsar menú" title="Minimizar menú">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
+      </svg>
+    </button>
+    <span class="sidebar-brand">Revista Huellas</span>
+  </div>
 
-  <nav class="menu">
-    <a class="menu-item" *ngFor="let item of (visibleMainItems$ | async) ?? []" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">
+  <nav class="sidebar-nav">
+    <a class="nav-item" *ngFor="let item of (visibleMainItems$ | async) ?? []" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">
       <span class="icon">
 
         <svg *ngIf="item.icon === 'list-check'" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
@@ -40,29 +45,36 @@
         </svg>
 
       </span>
-      <span class="label">{{ item.label }}</span>
+      <span class="nav-label">{{ item.label }}</span>
     </a>
   </nav>
 
-  <nav class="menu bottom">
-    <a class="menu-item" *ngFor="let item of bottomItems" (click)="logout()">
-      <span class="icon">
+  <div class="sidebar-footer">
+    <ng-container *ngFor="let item of bottomItems">
+      <button *ngIf="item.action === 'logout'" type="button" class="nav-item" (click)="logout()" title="Cerrar sesión">
+        <span class="icon">
 
-        <svg *ngIf="item.icon === 'logout'" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+          <svg *ngIf="item.icon === 'logout'" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
           fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-          <path fill-rule="evenodd"
+            <path fill-rule="evenodd"
             d="M10 12.5a.5.5 0 0 1 .5-.5h2.793l-1.147-1.146a.5.5 0 0 1 .708-.708l2 2a.5.5 0 0 1 0 .708l-2 2a.5.5 0 1 1-.708-.708L13.293 13H10.5a.5.5 0 0 1-.5-.5" />
-          <path fill-rule="evenodd"
+            <path fill-rule="evenodd"
             d="M3.5 3A1.5 1.5 0 0 0 2 4.5v7A1.5 1.5 0 0 0 3.5 13h5a.5.5 0 0 1 0 1h-5A2.5 2.5 0 0 1 1 11.5v-7A2.5 2.5 0 0 1 3.5 2h5a.5.5 0 0 1 0 1z" />
-        </svg>
+          </svg>
+        </span>
+        <span class="nav-label">{{ item.label }}</span>
+      </button>
 
-        <svg *ngIf="item.icon === 'settings'" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-          fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16">
-          <path
+      <a *ngIf="item.action !== 'logout'" class="nav-item" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" [title]="item.label">
+        <span class="icon">
+          <svg *ngIf="item.icon === 'settings'" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16">
+            <path
             d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" />
-        </svg>
-      </span>
-      <span class="label">{{ item.label }}</span>
-    </a>
-  </nav>
+          </svg>
+        </span>
+        <span class="nav-label">{{ item.label }}</span>
+      </a>
+    </ng-container>
+  </div>
 </aside>

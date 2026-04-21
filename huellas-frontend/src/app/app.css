@@ -14,7 +14,7 @@
 }
 
 .app-layout.sidebar-collapsed {
-  --sidebar-width: 80px;
+  --sidebar-width: 72px;
 }
 
 app-side-bar {

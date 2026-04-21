@@ -1,11 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import {
   ArticuloResumenBackend,
   ArticulosService,
+  ComiteEstadisticas,
+  ComiteEvaluacionHistorial,
 } from '../../../core/articulos/articulos.service';
 import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 type EstadoEvaluacionComite = 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado';
 type EstadoFiltroComite = 'todos' | EstadoEvaluacionComite;
@@ -21,6 +25,10 @@ interface ArticuloListado {
   estadoEvaluacion: EstadoEvaluacionComite;
   estadoEtiqueta: string;
   estadoClase: string;
+  fechaAsignacion: string;
+  fechaVencimiento: string;
+  diasRestantes: number | null;
+  estaVencido: boolean;
 }
 
 @Component({
@@ -30,19 +38,28 @@ interface ArticuloListado {
   templateUrl: './articulos.html',
   styleUrl: './articulos.css',
 })
-export class Articulos implements OnInit {
+export class Articulos implements OnInit, OnDestroy {
   private articulosService = inject(ArticulosService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private destroy$ = new Subject<void>();
 
   searchTerm = '';
   committeeView = false;
   loading = true;
   pageTitle = 'Artículos';
   filtroEstadoComite: EstadoFiltroComite = 'todos';
+  estadisticasComite: ComiteEstadisticas | null = null;
+  historialEvaluaciones: ComiteEvaluacionHistorial[] = [];
+  mostrarHistorial = false;
 
   articulos: ArticuloListado[] = [];
   filteredArticulos: ArticuloListado[] = [];
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   ngOnInit(): void {
     this.committeeView = this.route.snapshot.data['committeeView'] === true;
@@ -84,6 +101,31 @@ export class Articulos implements OnInit {
         console.error('Error al cargar el resumen de articulos:', error);
       },
     });
+
+    if (this.committeeView) {
+      this.cargarBloquesComite();
+    }
+  }
+
+  private cargarBloquesComite(): void {
+    this.articulosService.getEstadisticasComite().subscribe({
+      next: (stats) => {
+        this.estadisticasComite = stats;
+      },
+      error: () => {
+        this.estadisticasComite = null;
+      },
+    });
+
+    this.articulosService.getHistorialEvaluacionesComite().subscribe({
+      next: (historial) => {
+        this.historialEvaluaciones = historial;
+      },
+      error: () => {
+        this.historialEvaluaciones = [];
+      },
+    });
+
   }
 
   onSearch(term: string): void {
@@ -137,7 +179,80 @@ export class Articulos implements OnInit {
       estadoEvaluacion: estadoComite,
       estadoEtiqueta: this.getEstadoEtiqueta(estadoComite),
       estadoClase: this.getEstadoClase(estadoComite),
+      fechaAsignacion: this.formatFecha(this.parseFecha(articulo.fecha_asignacion ?? null)),
+      fechaVencimiento: this.formatFecha(this.parseFecha(articulo.fecha_vencimiento ?? null)),
+      diasRestantes: articulo.dias_restantes ?? null,
+      estaVencido: articulo.esta_vencido ?? false,
     };
+  }
+
+  getEstadoPlazoLabel(articulo: ArticuloListado): string {
+    if (articulo.estaVencido) {
+      return 'Vencido';
+    }
+
+    if (articulo.diasRestantes === null) {
+      return 'Sin plazo';
+    }
+
+    if (articulo.diasRestantes <= 5) {
+      return `Por vencer (${articulo.diasRestantes} dias)`;
+    }
+
+    return `${articulo.diasRestantes} dias restantes`;
+  }
+
+  getEstadoPlazoClase(articulo: ArticuloListado): string {
+    if (articulo.estaVencido) {
+      return 'deadline--vencido';
+    }
+
+    if (articulo.diasRestantes !== null && articulo.diasRestantes <= 5) {
+      return 'deadline--proximo';
+    }
+
+    return 'deadline--ok';
+  }
+
+  exportarExcel(): void {
+    this.articulosService.descargarReporteComiteExcel().subscribe({
+      next: (blob) => {
+        this.descargarBlob(
+          blob,
+          `reporte-comite-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        );
+      },
+    });
+  }
+
+  exportarPdf(): void {
+    this.articulosService.descargarReporteComitePdf().subscribe({
+      next: (blob) => {
+        this.descargarBlob(
+          blob,
+          `reporte-comite-${new Date().toISOString().slice(0, 10)}.pdf`,
+        );
+      },
+    });
+  }
+
+  irNotificaciones(): void {
+    if (!this.committeeView) {
+      return;
+    }
+
+    this.router.navigate(['/panel-comite-editorial/notificaciones']);
+  }
+
+  private descargarBlob(blob: Blob, nombreArchivo: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombreArchivo;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   }
 
   setFiltroEstadoComite(filtro: EstadoFiltroComite): void {
@@ -231,6 +346,14 @@ export class Articulos implements OnInit {
 
     if (etapaNormalizada.includes('revision por pares')) {
       return 'stage--revision-pares';
+    }
+
+    if (etapaNormalizada.includes('certificacion')) {
+      return 'stage--certificacion';
+    }
+
+    if (etapaNormalizada.includes('revision final')) {
+      return 'stage--revision-final';
     }
 
     if (etapaNormalizada.includes('comite editorial')) {

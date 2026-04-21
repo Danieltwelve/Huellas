@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Subscription, interval } from 'rxjs';
 import {
   ArticuloFlujo,
   ArticulosService,
@@ -24,6 +25,7 @@ interface ArchivoRegistro {
 
 interface RegistroFlujo {
   id: number;
+  etapaId?: number;
   fechaOrden: number;
   fecha: string;
   autor: string;
@@ -57,6 +59,12 @@ export class FlujoTrabajoArticulo {
   private readonly articulosService = inject(ArticulosService);
   private readonly authService = inject(AuthService);
   private readonly usersService = inject(UsersService);
+  private readonly autoRefreshMs = 12000;
+  private articuloIdActual: number | null = null;
+  private autoRefreshSubscription: Subscription | null = null;
+
+  private static readonly ETAPA_REVISION_PRELIMINAR = 1;
+  private static readonly ETAPA_COMITE_EDITORIAL = 6;
 
   articulo: ArticuloFlujo | null = null;
   loading = true;
@@ -86,14 +94,25 @@ export class FlujoTrabajoArticulo {
   archivoObservacion: File | null = null;
   nombreArchivoObservacion = '';
   etapaSeleccionadaId: number | null = null;
+  etapaMoverSeleccionadaId: number | null = null;
+  mostrarModalConfirmacionMover = false;
+  etapaDestinoConfirmacion: EtapaFlujo | null = null;
+  mostrarModalConfirmacionAsignacion = false;
+  miembroComiteConfirmacion: UsuarioBackend | null = null;
+  mostrarModalExitoAsignacion = false;
+  mensajeExitoAsignacion = '';
 
   tituloArticulo = 'Cargando...';
+
+  private readonly ordenEtapasFlujo: number[] = [1, 6, 3, 4, 8, 9, 5];
 
   readonly etapasDisponibles: EtapaFlujo[] = [
     { id: 1, titulo: 'Revisión Preliminar', activa: false },
     { id: 6, titulo: 'Comité Editorial', activa: false },
     { id: 3, titulo: 'Turniting', activa: false },
     { id: 4, titulo: 'Revisión por pares', activa: false },
+    { id: 8, titulo: 'Certificación', activa: false },
+    { id: 9, titulo: 'Revisión final', activa: false },
     { id: 5, titulo: 'Publicación', activa: false },
   ];
 
@@ -102,6 +121,8 @@ export class FlujoTrabajoArticulo {
     [6, 'Revisión del artículo por un miembro del Comité Editorial'],
     [3, 'Validación de originalidad y similitud (65% o menos)'],
     [4, 'Evaluación por revisores académicos'],
+    [8, 'Verificación de cumplimiento documental y editorial'],
+    [9, 'Revisión final de consistencia antes de publicar'],
     [5, 'Preparación y salida en volumen activo'],
   ]);
 
@@ -121,7 +142,9 @@ export class FlujoTrabajoArticulo {
     this.route.params.subscribe((params) => {
       const id = params['id'];
       if (id) {
-        this.cargarArticulo(+id);
+        this.articuloIdActual = +id;
+        this.cargarArticulo(this.articuloIdActual);
+        this.iniciarAutoRefresh();
       } else {
         this.error = 'No se encontró el ID del artículo';
         this.loading = false;
@@ -129,6 +152,44 @@ export class FlujoTrabajoArticulo {
     });
 
     this.loadCommitteeMembers();
+  }
+
+  ngOnDestroy(): void {
+    this.detenerAutoRefresh();
+  }
+
+  private iniciarAutoRefresh(): void {
+    this.detenerAutoRefresh();
+
+    this.autoRefreshSubscription = interval(this.autoRefreshMs).subscribe(() => {
+      this.recargarArticuloSilencioso();
+    });
+  }
+
+  private detenerAutoRefresh(): void {
+    this.autoRefreshSubscription?.unsubscribe();
+    this.autoRefreshSubscription = null;
+  }
+
+  private recargarArticuloSilencioso(): void {
+    if (!this.articuloIdActual || this.debePausarAutoRefresh) {
+      return;
+    }
+
+    this.articulosService.getArticuloFlujo(this.articuloIdActual).subscribe({
+      next: (data) => {
+        this.articulo = data;
+        this.tituloArticulo = `${data.codigo} - ${data.titulo}`;
+        this.actualizarEtapaActual(data.etapaActual.id);
+        this.etapaSeleccionadaId = data.etapaActual.id;
+        this.etapaMoverSeleccionadaId = this.etapaSiguientePermitida?.id ?? null;
+        this.committeeMemberSeleccionadoId = data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
+        this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
+      },
+      error: () => {
+        // En auto-refresh silencioso ignoramos errores temporales para no interrumpir la vista.
+      },
+    });
   }
 
   private loadCommitteeMembers(): void {
@@ -156,6 +217,11 @@ export class FlujoTrabajoArticulo {
         this.tituloArticulo = `${data.codigo} - ${data.titulo}`;
         this.actualizarEtapaActual(data.etapaActual.id);
         this.etapaSeleccionadaId = data.etapaActual.id;
+        this.etapaMoverSeleccionadaId = this.etapaSiguientePermitida?.id ?? null;
+        this.mostrarModalConfirmacionMover = false;
+        this.etapaDestinoConfirmacion = null;
+        this.mostrarModalConfirmacionAsignacion = false;
+        this.miembroComiteConfirmacion = null;
         this.committeeMemberSeleccionadoId = data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
         this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
         this.loading = false;
@@ -183,6 +249,7 @@ export class FlujoTrabajoArticulo {
 
         return {
           id: obs.id,
+          etapaId: obs.etapa?.id,
           fechaOrden: fecha.getTime(),
           fecha: this.formatearFecha(obs.fechaSubida),
           autor: obs.usuario?.nombre ?? 'Usuario desconocido',
@@ -370,6 +437,19 @@ export class FlujoTrabajoArticulo {
     );
   }
 
+  private esAsuntoEvaluacionComite(asunto: string): boolean {
+    const texto = (asunto ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    return (
+      texto.includes('evalu') &&
+      texto.includes('comite') &&
+      (texto.includes('acept') || texto.includes('rechaz'))
+    );
+  }
+
   get etapaActual(): string {
     const etapaActiva = this.etapas.find((etapa) => etapa.activa);
     return etapaActiva?.titulo ?? 'Sin etapa';
@@ -390,6 +470,7 @@ export class FlujoTrabajoArticulo {
     }
 
     const etapaActualId = this.articulo.etapaActual.id;
+    const indiceEtapaActual = this.ordenEtapasFlujo.indexOf(etapaActualId);
     const historialEtapas = this.articulo.historialEtapas ?? [];
     const historialPorEtapa = new Map<number, string>();
 
@@ -399,9 +480,29 @@ export class FlujoTrabajoArticulo {
       }
     }
 
+    if (this.estaEnRevisionPreliminar) {
+      const etapaActual = this.etapasDisponibles.find((etapa) => etapa.id === etapaActualId);
+      const fechaActual = historialPorEtapa.get(etapaActualId);
+
+      if (!etapaActual) {
+        return [];
+      }
+
+      return [
+        {
+          id: etapaActual.id,
+          titulo: etapaActual.titulo,
+          estado: 'actual',
+          fecha: fechaActual ? this.formatearFechaCorta(fechaActual) : 'Por definir',
+          descripcion: this.etapasDescripciones.get(etapaActual.id) ?? '',
+        },
+      ];
+    }
+
     return this.etapasDisponibles.map((etapa) => {
+      const indiceEtapa = this.ordenEtapasFlujo.indexOf(etapa.id);
       const estado: 'completada' | 'actual' | 'pendiente' =
-        etapa.id < etapaActualId
+        indiceEtapa !== -1 && indiceEtapaActual !== -1 && indiceEtapa < indiceEtapaActual
           ? 'completada'
           : etapa.id === etapaActualId
             ? 'actual'
@@ -432,8 +533,21 @@ export class FlujoTrabajoArticulo {
     });
   }
 
-  seleccionarEtapa(indice: number): void {
-    this.etapaSeleccionadaId = this.etapas[indice]?.id ?? null;
+  seleccionarEtapa(etapaId: number): void {
+    if (!etapaId) {
+      this.etapaSeleccionadaId = null;
+      return;
+    }
+
+    if (this.soloPuedeMoverAComiteEnPreliminar) {
+      this.etapaSeleccionadaId =
+        etapaId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL
+          ? etapaId
+          : FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL;
+      return;
+    }
+
+    this.etapaSeleccionadaId = etapaId;
   }
 
   onArchivoObservacionSeleccionado(event: Event): void {
@@ -460,11 +574,44 @@ export class FlujoTrabajoArticulo {
     this.nombreArchivoTurniting = file?.name ?? '';
   }
 
+  abrirConfirmacionAsignacionComite(): void {
+    if (!this.articulo || !this.committeeMemberSeleccionadoId || this.asignandoComite) {
+      return;
+    }
+
+    if (this.articulo.comiteEditorial) {
+      this.accionError = 'Este artículo ya tiene un integrante de comité asignado.';
+      this.accionExitosa = null;
+      return;
+    }
+
+    const miembroSeleccionado = this.miembroComiteSeleccionado;
+    if (!miembroSeleccionado) {
+      this.accionError = 'Selecciona un integrante válido del comité.';
+      this.accionExitosa = null;
+      return;
+    }
+
+    this.miembroComiteConfirmacion = miembroSeleccionado;
+    this.mostrarModalConfirmacionAsignacion = true;
+  }
+
+  cancelarConfirmacionAsignacionComite(): void {
+    this.mostrarModalConfirmacionAsignacion = false;
+    this.miembroComiteConfirmacion = null;
+  }
+
+  cerrarModalExitoAsignacion(): void {
+    this.mostrarModalExitoAsignacion = false;
+    this.mensajeExitoAsignacion = '';
+  }
+
   asignarComiteEditorial(): void {
     if (!this.articulo || !this.committeeMemberSeleccionadoId || this.asignandoComite) {
       return;
     }
 
+    this.cancelarConfirmacionAsignacionComite();
     this.asignandoComite = true;
     this.accionError = null;
     this.accionExitosa = null;
@@ -475,6 +622,9 @@ export class FlujoTrabajoArticulo {
         next: (respuesta) => {
           this.asignandoComite = false;
           this.accionExitosa = respuesta.message;
+          const nombreMiembro = this.miembroComiteSeleccionado?.nombre ?? 'el integrante seleccionado';
+          this.mensajeExitoAsignacion = `Se asigno correctamente ${nombreMiembro} al Comite Editorial.`;
+          this.mostrarModalExitoAsignacion = true;
           this.cargarArticulo(this.articulo!.id);
         },
         error: (err) => {
@@ -565,22 +715,59 @@ export class FlujoTrabajoArticulo {
       });
   }
 
-  moverArticulo(): void {
-    if (!this.articulo || !this.etapaSeleccionadaId) {
+  abrirConfirmacionMoverArticulo(): void {
+    if (!this.articulo) {
       return;
     }
 
-    if (this.etapaSeleccionadaId === this.articulo.etapaActual.id) {
-      this.accionError = 'El artículo ya se encuentra en la etapa seleccionada.';
+    const etapaSiguiente = this.etapaSiguientePermitida;
+
+    if (!etapaSiguiente) {
+      this.accionError = 'Este artículo ya se encuentra en la última etapa del flujo editorial.';
       this.accionExitosa = null;
       return;
     }
 
+    if (!this.etapaMoverSeleccionadaId || this.etapaMoverSeleccionadaId !== etapaSiguiente.id) {
+      this.accionError = `Solo puedes avanzar a la siguiente etapa: ${etapaSiguiente.titulo}.`;
+      this.accionExitosa = null;
+      return;
+    }
+
+    this.etapaDestinoConfirmacion = etapaSiguiente;
+    this.mostrarModalConfirmacionMover = true;
+  }
+
+  cancelarConfirmacionMoverArticulo(): void {
+    this.mostrarModalConfirmacionMover = false;
+    this.etapaDestinoConfirmacion = null;
+  }
+
+  moverArticulo(): void {
+    if (!this.articulo || !this.etapaMoverSeleccionadaId) {
+      return;
+    }
+
+    const etapaSiguiente = this.etapaSiguientePermitida;
+
+    if (!etapaSiguiente) {
+      this.accionError = 'Este artículo ya se encuentra en la última etapa del flujo editorial.';
+      this.accionExitosa = null;
+      return;
+    }
+
+    if (this.etapaMoverSeleccionadaId !== etapaSiguiente.id) {
+      this.accionError = `Solo puedes avanzar a la siguiente etapa: ${etapaSiguiente.titulo}.`;
+      this.accionExitosa = null;
+      return;
+    }
+
+    this.cancelarConfirmacionMoverArticulo();
     this.moviendoEtapa = true;
     this.accionError = null;
     this.accionExitosa = null;
 
-    this.articulosService.moverEtapa(this.articulo.id, this.etapaSeleccionadaId).subscribe({
+    this.articulosService.moverEtapa(this.articulo.id, this.etapaMoverSeleccionadaId).subscribe({
       next: () => {
         this.moviendoEtapa = false;
         this.accionExitosa = 'Etapa actualizada correctamente.';
@@ -635,7 +822,19 @@ export class FlujoTrabajoArticulo {
   }
 
   get estaEnEtapaComite(): boolean {
-    return this.articulo?.etapaActual?.id === 6;
+    return this.articulo?.etapaActual?.id === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL;
+  }
+
+  get estaEnRevisionPreliminar(): boolean {
+    return this.articulo?.etapaActual?.id === FlujoTrabajoArticulo.ETAPA_REVISION_PRELIMINAR;
+  }
+
+  get esAdminEditorial(): boolean {
+    return this.authService.hasAnyRole(['admin', 'director', 'monitor']);
+  }
+
+  get soloPuedeMoverAComiteEnPreliminar(): boolean {
+    return this.esAdminEditorial && this.estaEnRevisionPreliminar;
   }
 
   get documentosRubrica(): ArchivoRegistro[] {
@@ -662,8 +861,12 @@ export class FlujoTrabajoArticulo {
   }
 
   get puedeMostrarObservacion(): boolean {
+    if (this.soloPuedeMoverAComiteEnPreliminar) {
+      return false;
+    }
+
     const etapaActualId = this.articulo?.etapaActual?.id;
-    return etapaActualId === 1 || etapaActualId === 6;
+    return etapaActualId === FlujoTrabajoArticulo.ETAPA_REVISION_PRELIMINAR;
   }
 
   get puedeMostrarTurniting(): boolean {
@@ -671,7 +874,119 @@ export class FlujoTrabajoArticulo {
   }
 
   get puedeMostrarAsignacionComite(): boolean {
-    return this.puedeAsignarComite && this.articulo?.etapaActual?.id === 6;
+    return (
+      this.puedeAsignarComite &&
+      this.articulo?.etapaActual?.id === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL
+    );
+  }
+
+  get articuloYaEvaluadoPorComite(): boolean {
+    return this.historialVisible.some((registro) =>
+      registro.etapaId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL &&
+      this.esAsuntoEvaluacionComite(registro.asunto),
+    );
+  }
+
+  get resultadoEvaluacionComite(): 'aceptado' | 'rechazado' | null {
+    const evaluacionComite = this.historialVisible.find(
+      (registro) =>
+        registro.etapaId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL &&
+        this.esAsuntoEvaluacionComite(registro.asunto),
+    );
+
+    if (!evaluacionComite) {
+      return null;
+    }
+
+    const asunto = (evaluacionComite.asunto ?? '').toLowerCase();
+    if (asunto.includes('rechaz')) {
+      return 'rechazado';
+    }
+
+    if (asunto.includes('acept')) {
+      return 'aceptado';
+    }
+
+    return null;
+  }
+
+  get mensajeResultadoComite(): string {
+    if (this.resultadoEvaluacionComite === 'aceptado') {
+      return 'Comité Editorial aprobó el artículo. El equipo editorial (admin/director/monitor) ya puede moverlo a la siguiente etapa.';
+    }
+
+    if (this.resultadoEvaluacionComite === 'rechazado') {
+      return 'Comité Editorial rechazó el artículo. El artículo queda rechazado y no debe avanzar de etapa.';
+    }
+
+    return '';
+  }
+
+  get puedeMostrarEvaluacionComite(): boolean {
+    return (
+      this.esComiteEditorial &&
+      this.estaEnEtapaComite &&
+      !this.articuloYaEvaluadoPorComite
+    );
+  }
+
+  get etapasDisponiblesMover(): EtapaFlujo[] {
+    if (!this.etapaSiguientePermitida) {
+      return [];
+    }
+
+    return [this.etapaSiguientePermitida];
+  }
+
+  get etapaSiguientePermitida(): EtapaFlujo | null {
+    if (this.resultadoEvaluacionComite === 'rechazado') {
+      return null;
+    }
+
+    if (
+      this.estaEnEtapaComite &&
+      this.resultadoEvaluacionComite !== 'aceptado'
+    ) {
+      return null;
+    }
+
+    const etapaActualId = this.articulo?.etapaActual?.id;
+    if (!etapaActualId) {
+      return null;
+    }
+
+    const indiceActual = this.ordenEtapasFlujo.indexOf(etapaActualId);
+    if (indiceActual === -1) {
+      return null;
+    }
+
+    const siguienteEtapaId = this.ordenEtapasFlujo[indiceActual + 1];
+    if (!siguienteEtapaId) {
+      return null;
+    }
+
+    return this.etapas.find((etapa) => etapa.id === siguienteEtapaId) ?? null;
+  }
+
+  get mensajeReglaMovimiento(): string {
+    if (this.resultadoEvaluacionComite === 'rechazado') {
+      return 'El artículo fue rechazado por Comité Editorial y no puede avanzar de etapa.';
+    }
+
+    if (this.estaEnEtapaComite && this.resultadoEvaluacionComite !== 'aceptado') {
+      return 'Antes de mover a Turniting, el Comité Editorial debe evaluar y remitir la decisión del artículo.';
+    }
+
+    if (this.etapaSiguientePermitida) {
+      return `Solo puedes avanzar a la siguiente etapa: ${this.etapaSiguientePermitida.titulo}.`;
+    }
+
+    return 'Este artículo ya está en la última etapa del flujo editorial.';
+  }
+
+  getNumeroEtapa(etapaId: number): number {
+    const indice = this.ordenEtapasFlujo.indexOf(etapaId);
+    return indice === -1 ? 0 : indice + 1;
   }
 
   get miembroComiteSeleccionado(): UsuarioBackend | null {
@@ -686,13 +1001,32 @@ export class FlujoTrabajoArticulo {
   }
 
   get botonAsignacionLabel(): string {
-    if (!this.articulo?.comiteEditorial) {
-      return 'Asignar al comité';
-    }
+    return 'Asignar al comité';
+  }
 
-    return this.articulo.comiteEditorial.id === this.committeeMemberSeleccionadoId
-      ? 'Actualizar asignación'
-      : 'Reasignar al comité';
+  get puedeAsignarComiteInicial(): boolean {
+    return !this.articulo?.comiteEditorial;
+  }
+
+  get debePausarAutoRefresh(): boolean {
+    return (
+      this.loading ||
+      this.guardandoObservacion ||
+      this.moviendoEtapa ||
+      this.evaluandoTurniting ||
+      this.evaluandoComite ||
+      this.asignandoComite ||
+      this.mostrarModalConfirmacionMover ||
+      this.mostrarModalConfirmacionAsignacion ||
+      this.mostrarModalExitoAsignacion ||
+      !!this.archivoObservacion ||
+      !!this.archivoTurniting ||
+      !!this.archivoComite ||
+      this.asuntoObservacion.trim().length > 0 ||
+      this.comentarioObservacion.trim().length > 0 ||
+      this.observacionTurniting.trim().length > 0 ||
+      this.observacionComite.trim().length > 0
+    );
   }
 
   registrarEvaluacionTurniting(): void {

@@ -3,6 +3,75 @@
   gap: 1rem;
 }
 
+.banner-vencimiento {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  background: #fef3c7;
+  border: 2px solid #f59e0b;
+  color: #92400e;
+  font-weight: bold;
+  animation: slideDown 0.3s ease;
+
+  &.critico {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #7f1d1d;
+  }
+
+  &.vencido {
+    background: #ffe6e6;
+    border-color: #dc2626;
+    color: #7f1d1d;
+  }
+
+  .icon {
+    font-size: 1.5rem;
+  }
+
+  .content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.badge-new {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-left: 0.5rem;
+}
+
+.info-text {
+  background: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  padding: 0.75rem;
+  border-radius: 6px;
+  color: #1e40af;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
 .cabecera {
   display: flex;
   justify-content: space-between;
@@ -11,13 +80,10 @@
 }
 
 .cabecera.sticky {
-  position: sticky;
-  top: -0.25rem;
-  z-index: 12;
+  position: static;
   padding: 0.75rem 0.9rem;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(6px);
+  background: #ffffff;
   border: 1px solid #d9e4ee;
 }
 
@@ -181,9 +247,7 @@ textarea:focus {
 }
 
 .sticky-action {
-  position: sticky;
-  bottom: 0.35rem;
-  z-index: 14;
+  position: static;
   display: flex;
   align-items: center;
   justify-content: space-between;

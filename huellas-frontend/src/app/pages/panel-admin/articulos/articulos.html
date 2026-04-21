@@ -3,7 +3,8 @@
     <h1>{{ pageTitle }}</h1>
   </header>
 
-  <section class="kpi-grid" *ngIf="committeeView">
+  @if (committeeView) {
+  <section class="kpi-grid">
     <article class="kpi-card">
       <span class="kpi-label">Pendientes</span>
       <strong>{{ totalPendientes }}</strong>
@@ -16,7 +17,22 @@
       <span class="kpi-label">Rechazados</span>
       <strong>{{ totalRechazados }}</strong>
     </article>
+    @if (estadisticasComite) {
+    <article class="kpi-card">
+      <span class="kpi-label">Prom. evaluacion</span>
+      <strong>{{ estadisticasComite.promedioDiasEvaluacion }} días</strong>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Cumplimiento 30 días</span>
+      <strong>{{ estadisticasComite.tasaCumplimiento30Dias }}%</strong>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">Tasa de aprobación</span>
+      <strong>{{ estadisticasComite.tasaAprobacion }}%</strong>
+    </article>
+    }
   </section>
+  }
 
   <section class="articles-panel">
     <h2>{{ committeeView ? 'Bandeja del comité' : 'Detalles del artículo' }}</h2>
@@ -33,7 +49,8 @@
         </svg>
       </label>
 
-      <div class="filters" *ngIf="committeeView">
+      @if (committeeView) {
+      <div class="filters">
         <button
           type="button"
           class="filter-pill"
@@ -66,21 +83,56 @@
         >
           Rechazados
         </button>
+        <button type="button" class="filter-pill" (click)="exportarExcel()">Exportar Excel</button>
+        <button type="button" class="filter-pill" (click)="exportarPdf()">Exportar PDF</button>
+        <button type="button" class="filter-pill" (click)="mostrarHistorial = !mostrarHistorial">
+          {{ mostrarHistorial ? 'Ocultar historial' : 'Ver historial personal' }}
+        </button>
+        <button type="button" class="filter-pill" (click)="irNotificaciones()">Centro de notificaciones</button>
       </div>
+      }
     </div>
 
-    <div class="skeleton-list" *ngIf="loading">
-      <div class="skeleton-item" *ngFor="let _ of [1, 2, 3, 4]"></div>
-    </div>
+    @if (committeeView && mostrarHistorial) {
+    <section class="historial-panel">
+      <h3>Historial personal de evaluaciones</h3>
+      @if (historialEvaluaciones.length) {
+      <ul class="historial-list">
+        @for (h of historialEvaluaciones; track h.articuloId + '-' + h.fechaEvaluacion) {
+        <li>
+          <strong>{{ h.codigo }}</strong> - {{ h.decision }} - {{ h.fechaEvaluacion | date: 'short' }}
+          @if (h.diasEvaluacion !== null) {
+          <span>({{ h.diasEvaluacion }} días)</span>
+          }
+        </li>
+        }
+      </ul>
+      } @else {
+        <p class="empty-state">No tienes evaluaciones registradas.</p>
+      }
+    </section>
+    }
 
-    <div class="table-wrapper" *ngIf="!loading">
+    @if (loading) {
+    <div class="skeleton-list">
+      @for (item of [1, 2, 3, 4]; track $index) {
+      <div class="skeleton-item"></div>
+      }
+    </div>
+    }
+
+    @if (!loading) {
+    <div class="table-wrapper">
       <table>
         <thead>
           <tr>
             <th>Código</th>
             <th>Título</th>
             <th>Etapa actual</th>
-            <th *ngIf="committeeView">Estado</th>
+            @if (committeeView) {
+            <th>Estado</th>
+            <th>Plazo (30 días)</th>
+            }
             <th>Fecha de aceptación</th>
             <th>Tiempo en proceso</th>
             <th class="view-heading">Ver</th>
@@ -100,9 +152,24 @@
               <span class="stage-pill" [ngClass]="articulo.claseEtapa">{{ articulo.etapaActual }}</span>
             </td>
 
-            <td *ngIf="committeeView">
+            @if (committeeView) {
+            <td>
               <span class="status-pill" [ngClass]="articulo.estadoClase">{{ articulo.estadoEtiqueta }}</span>
             </td>
+            }
+
+            @if (committeeView) {
+            <td>
+              <div class="deadline-cell">
+                <span class="deadline-pill" [ngClass]="getEstadoPlazoClase(articulo)">
+                  {{ getEstadoPlazoLabel(articulo) }}
+                </span>
+                @if (articulo.fechaVencimiento !== '-') {
+                <small>Vence: {{ articulo.fechaVencimiento }}</small>
+                }
+              </div>
+            </td>
+            }
 
             <td class="date-cell">{{ articulo.fechaAceptacion }}</td>
             <td class="time-cell">{{ articulo.tiempoProceso }}</td>
@@ -118,14 +185,16 @@
           </tr>
           } @empty {
           <tr>
-            <td [attr.colspan]="committeeView ? 7 : 6" class="empty-state">No hay artículos que coincidan con la búsqueda.</td>
+            <td [attr.colspan]="committeeView ? 8 : 6" class="empty-state">No hay artículos que coincidan con la búsqueda.</td>
           </tr>
           }
         </tbody>
       </table>
     </div>
+    }
 
-    <div class="cards-wrapper" *ngIf="!loading">
+    @if (!loading) {
+    <div class="cards-wrapper">
       @for (articulo of filteredArticulos; track articulo.id) {
       <article class="article-card">
         <header>
@@ -135,9 +204,19 @@
 
         <h3>{{ articulo.titulo }}</h3>
 
-        <p class="meta" *ngIf="committeeView">
+        @if (committeeView) {
+        <p class="meta">
           <span class="status-pill" [ngClass]="articulo.estadoClase">{{ articulo.estadoEtiqueta }}</span>
         </p>
+        }
+
+        @if (committeeView) {
+        <p class="meta">
+          <span class="deadline-pill" [ngClass]="getEstadoPlazoClase(articulo)">
+            {{ getEstadoPlazoLabel(articulo) }}
+          </span>
+        </p>
+        }
 
         <p class="meta">Fecha: {{ articulo.fechaAceptacion }}</p>
         <p class="meta">Tiempo: {{ articulo.tiempoProceso }}</p>
@@ -150,5 +229,6 @@
       <p class="empty-state">No hay artículos que coincidan con la búsqueda.</p>
       }
     </div>
+    }
   </section>
 </section>

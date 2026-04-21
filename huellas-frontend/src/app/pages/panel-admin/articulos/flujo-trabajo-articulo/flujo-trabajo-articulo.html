@@ -11,10 +11,10 @@
   </header>
 
   <nav class="etapas-navbar" aria-label="Etapas del articulo">
-    @for (etapa of etapas; track $index) {
+    @for (etapa of etapas; track etapa.id) {
     <button class="etapa-boton" type="button" [class.etapa-boton--activa]="etapa.activa"
-      (click)="seleccionarEtapa($index)">
-      <span class="etapa-numero">{{ $index + 1 }}.</span>
+      (click)="seleccionarEtapa(etapa.id)">
+      <span class="etapa-numero">{{ getNumeroEtapa(etapa.id) }}.</span>
       <span class="etapa-texto">{{ etapa.titulo }}</span>
     </button>
     }
@@ -234,7 +234,7 @@
         </ng-template>
       </section>
 
-      <section class="accion-card card-evaluacion" *ngIf="esComiteEditorial">
+      <section class="accion-card card-evaluacion" *ngIf="puedeMostrarEvaluacionComite">
         <span class="accion-label">Evaluar artículo (Comité Editorial)</span>
         <span class="tag-mandatory" *ngIf="estaEnEtapaComite">En etapa de comité</span>
 
@@ -273,6 +273,21 @@
         </button>
       </section>
 
+      <section class="accion-card" *ngIf="esComiteEditorial && articuloYaEvaluadoPorComite">
+        <span class="accion-label">Evaluación de Comité Editorial</span>
+        <p class="asignacion-helper">Este artículo ya fue evaluado por el Comité Editorial y no admite una nueva evaluación.</p>
+      </section>
+
+      <section class="accion-card card-resultado-comite" *ngIf="resultadoEvaluacionComite as resultado">
+        <span class="accion-label">Resultado del Comité Editorial</span>
+        <span class="tag-flow-rule" [class.tag-flow-rule--rechazado]="resultado === 'rechazado'">
+          {{ resultado === 'aceptado' ? 'Aceptado por comité' : 'Rechazado por comité' }}
+        </span>
+        <p class="asignacion-helper" [class.asignacion-helper--rechazado]="resultado === 'rechazado'">
+          {{ mensajeResultadoComite }}
+        </p>
+      </section>
+
       <section class="accion-card card-asignacion" *ngIf="puedeMostrarAsignacionComite">
         <span class="accion-label">Asignar miembro del Comité Editorial</span>
         <p class="asignacion-helper">Selecciona el integrante responsable de evaluar este artículo.</p>
@@ -285,7 +300,7 @@
           </p>
         </div>
 
-        <div class="select-wrapper">
+        <div class="select-wrapper" *ngIf="puedeAsignarComiteInicial">
           <select aria-label="Seleccionar miembro del comité" [(ngModel)]="committeeMemberSeleccionadoId">
             <option *ngFor="let member of committeeMembers" [ngValue]="member.id">
               {{ member.nombre }}
@@ -293,33 +308,45 @@
           </select>
         </div>
 
-        <p class="file-name" *ngIf="miembroComiteSeleccionado as seleccionado">
+        <p class="file-name" *ngIf="puedeAsignarComiteInicial && miembroComiteSeleccionado as seleccionado">
           Correo del miembro seleccionado: {{ seleccionado.correo }}
         </p>
 
         <p class="asignacion-note">Regla activa: máximo 4 artículos por miembro del comité.</p>
 
+        <p class="asignacion-note" *ngIf="!puedeAsignarComiteInicial">
+          Este artículo ya tiene integrante asignado.
+        </p>
+
         <button
+          *ngIf="puedeAsignarComiteInicial"
           class="btn-outline-teal btn-full"
           type="button"
-          (click)="asignarComiteEditorial()"
+          (click)="abrirConfirmacionAsignacionComite()"
           [disabled]="asignandoComite || !committeeMemberSeleccionadoId"
         >
           {{ asignandoComite ? 'Guardando asignación...' : botonAsignacionLabel }}
         </button>
       </section>
 
-      <section class="accion-card card-mover">
+      <section class="accion-card card-mover" [class.card-mover--foco]="soloPuedeMoverAComiteEnPreliminar">
         <span class="accion-label">Mover artículo</span>
-        <span class="tag-mandatory">Mandatorio</span>
+        <span class="tag-flow-rule">Avance en orden</span>
+        <p class="asignacion-helper">{{ mensajeReglaMovimiento }}</p>
 
         <div class="select-wrapper">
-          <select aria-label="Seleccionar etapa" [(ngModel)]="etapaSeleccionadaId">
-            <option *ngFor="let etapa of etapas" [ngValue]="etapa.id">{{ etapa.titulo }}</option>
+          <select aria-label="Seleccionar etapa" [(ngModel)]="etapaMoverSeleccionadaId" [disabled]="!etapaSiguientePermitida">
+            <option [ngValue]="null" *ngIf="!etapaSiguientePermitida">No hay etapas siguientes</option>
+            <option *ngFor="let etapa of etapasDisponiblesMover" [ngValue]="etapa.id">{{ etapa.titulo }}</option>
           </select>
         </div>
 
-        <button class="btn-outline-teal btn-full" type="button" (click)="moverArticulo()" [disabled]="moviendoEtapa">
+        <button
+          class="btn-outline-teal btn-full"
+          type="button"
+          (click)="abrirConfirmacionMoverArticulo()"
+          [disabled]="moviendoEtapa || !etapaSiguientePermitida"
+        >
           {{ moviendoEtapa ? 'Moviendo...' : 'Mover Registro' }}
         </button>
       </section>
@@ -328,6 +355,48 @@
       <div class="mensaje-accion mensaje-accion--error" *ngIf="accionError">{{ accionError }}</div>
 
     </aside>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionMover" (click)="cancelarConfirmacionMoverArticulo()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar cambio de etapa" (click)="$event.stopPropagation()">
+      <h3>Confirmar cambio de etapa</h3>
+      <p *ngIf="articulo && etapaDestinoConfirmacion">
+        ¿Estás seguro de mover el artículo de <strong>{{ articulo.etapaActual.nombre }}</strong>
+        a <strong>{{ etapaDestinoConfirmacion.titulo }}</strong>?
+      </p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionMoverArticulo()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="moverArticulo()" [disabled]="moviendoEtapa">
+          {{ moviendoEtapa ? 'Moviendo...' : 'Sí, cambiar etapa' }}
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionAsignacion" (click)="cancelarConfirmacionAsignacionComite()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar asignación de comité" (click)="$event.stopPropagation()">
+      <h3>Confirmar asignación</h3>
+      <p *ngIf="articulo && miembroComiteConfirmacion">
+        ¿Deseas asignar este artículo a <strong>{{ miembroComiteConfirmacion.nombre }}</strong>
+        para evaluación de Comité Editorial?
+      </p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionAsignacionComite()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="asignarComiteEditorial()" [disabled]="asignandoComite">
+          {{ asignandoComite ? 'Asignando...' : 'Sí, asignar integrante' }}
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalExitoAsignacion" (click)="cerrarModalExitoAsignacion()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Asignación exitosa" (click)="$event.stopPropagation()">
+      <h3>Asignación exitosa</h3>
+      <p>{{ mensajeExitoAsignacion }}</p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-primario" (click)="cerrarModalExitoAsignacion()">Entendido</button>
+      </div>
+    </section>
   </div>
 </section>
 

@@ -1,0 +1,94 @@
+<div class="rubrica-container">
+  <div class="rubrica-header">
+    <h2>Rúbrica de Evaluación</h2>
+    <p class="articulo-titulo">{{ articuloTitulo }}</p>
+  </div>
+
+  <div class="criterios-list">
+    <div class="criterio-item" *ngFor="let criterio of criterios; let i = index">
+      <div class="criterio-header">
+        <div class="criterio-title">
+          <h3>{{ i + 1 }}. {{ criterio.nombre }}</h3>
+          <p class="criterio-descripcion">{{ criterio.descripcion }}</p>
+        </div>
+      </div>
+
+      <div class="criterio-evaluacion">
+        <div class="puntaje-input-group">
+          <label>Puntuación</label>
+          <div class="input-wrapper">
+            <input
+              type="number"
+              [(ngModel)]="criterio.puntajeOtorgado"
+              (change)="actualizarPuntaje(criterio.id, criterio.puntajeOtorgado)"
+              min="0"
+              [max]="criterio.puntajeMaximo"
+              class="puntaje-input"
+            />
+            <span class="puntaje-max">/ {{ criterio.puntajeMaximo }}</span>
+          </div>
+        </div>
+
+        <div class="puntaje-bar">
+          <div
+            class="puntaje-progress"
+            [class.success]="criterio.puntajeOtorgado >= criterio.puntajeMaximo * 0.7"
+            [class.warning]="
+              criterio.puntajeOtorgado >= criterio.puntajeMaximo * 0.5 &&
+              criterio.puntajeOtorgado < criterio.puntajeMaximo * 0.7
+            "
+            [class.danger]="criterio.puntajeOtorgado < criterio.puntajeMaximo * 0.5"
+            [style.width.%]="(criterio.puntajeOtorgado / criterio.puntajeMaximo) * 100"
+          ></div>
+        </div>
+      </div>
+
+      <div class="observacion-input">
+        <label>Observaciones (opcional)</label>
+        <textarea
+          [(ngModel)]="criterio.observaciones"
+          (change)="actualizarObservacion(criterio.id, criterio.observaciones)"
+          placeholder="Comentarios sobre este criterio..."
+          rows="2"
+        ></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="resumen-evaluacion">
+    <h3>Resumen</h3>
+
+    <div class="resumen-item">
+      <span>Puntaje Total Otorgado:</span>
+      <strong>{{ resultado.puntajeTotalOtorgado }} / {{ resultado.puntajeTotalPosible }}</strong>
+    </div>
+
+    <div class="resumen-item">
+      <span>Porcentaje Alcanzado:</span>
+      <div class="resumen-barra">
+        <div
+          class="resumen-progress"
+          [class]="getColorBarra(resultado.porcentajeAlcanzado)"
+          [style.width.%]="resultado.porcentajeAlcanzado"
+        ></div>
+      </div>
+      <strong>{{ resultado.porcentajeAlcanzado }}%</strong>
+    </div>
+
+    <div class="recomendacion" [class]="resultado.recomendacion">
+      <p>{{ getRecomendacionTexto() }}</p>
+    </div>
+  </div>
+
+  <div class="acciones">
+    <button type="button" class="btn-secundario" (click)="reiniciar()">Reiniciar Evaluación</button>
+    <button
+      type="button"
+      class="btn-primario"
+      (click)="completarEvaluacion()"
+      [disabled]="resultado.puntajeTotalOtorgado === 0"
+    >
+      Confirmar Evaluación
+    </button>
+  </div>
+</div>

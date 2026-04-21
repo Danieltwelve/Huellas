@@ -18,6 +18,7 @@ import {
   ParseIntPipe,
   Delete,
   Res,
+  Query,
   InternalServerErrorException,
   NotFoundException,
   ForbiddenException,
@@ -63,6 +64,77 @@ export class ArticulosController {
   @Roles('comite-editorial')
   @Get('comite/asignados')
   async getAsignadosComite(@Req() req: any) {
+    return await this.articulosService.getArticulosAsignadosComite(
+      req.user.userId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('comite-editorial')
+  @Get('comite/mis-evaluaciones')
+  async getMisEvaluacionesComite(@Req() req: any) {
+    return await this.articulosService.getHistorialEvaluacionesComite(
+      req.user.userId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('comite-editorial')
+  @Get('comite/estadisticas')
+  async getEstadisticasComite(@Req() req: any) {
+    return await this.articulosService.getEstadisticasComite(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('comite-editorial')
+  @Get('comite/notificaciones-vencimiento')
+  async getNotificacionesVencimientoComite(@Req() req: any) {
+    return await this.articulosService.getNotificacionesVencimientoComite(
+      req.user.userId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('comite-editorial')
+  @Get('comite/reporte/excel')
+  async descargarReporteComiteExcel(@Req() req: any, @Res() res: express.Response) {
+    const buffer = await this.articulosService.generarReporteComiteExcel(
+      req.user.userId,
+    );
+
+    const nombre = `reporte-comite-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${nombre}"`);
+    res.send(buffer);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('comite-editorial')
+  @Get('comite/reporte/pdf')
+  async descargarReporteComitePdf(@Req() req: any, @Res() res: express.Response) {
+    const buffer = await this.articulosService.generarReporteComitePdf(
+      req.user.userId,
+    );
+
+    const nombre = `reporte-comite-${new Date().toISOString().slice(0, 10)}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${nombre}"`);
+    res.send(buffer);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('comite-editorial')
+  @Get('comite/reporte')
+  async getReporteComite(@Req() req: any, @Query('tipo') tipo?: string) {
+    if (tipo === 'historial') {
+      return await this.articulosService.getHistorialEvaluacionesComite(
+        req.user.userId,
+      );
+    }
+
     return await this.articulosService.getArticulosAsignadosComite(
       req.user.userId,
     );

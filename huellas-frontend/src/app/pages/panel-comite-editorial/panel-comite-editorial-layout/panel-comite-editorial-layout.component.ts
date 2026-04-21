@@ -2,6 +2,8 @@ import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ArticulosService } from '../../../core/articulos/articulos.service';
+import { Subject, interval } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-panel-comite-editorial-layout',
@@ -14,33 +16,74 @@ export class PanelComiteEditorialLayoutComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly articulosService = inject(ArticulosService);
+  private destroy$ = new Subject<void>();
 
   collapsed = false;
-  totalAsignados = 0;
-  totalPendientes = 0;
-  totalEvaluados = 0;
+  totalNotificaciones = 0;
+  mostrarAlertaNotificaciones = false;
+  mensajeAlertaNotificaciones = '';
 
   ngOnInit(): void {
-    this.cargarContadores();
+    this.cargarNotificaciones();
+
+    interval(60000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.cargarNotificaciones(false));
   }
 
-  private cargarContadores(): void {
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private cargarNotificaciones(esPrimeraCarga = true): void {
     this.articulosService.getArticulosComiteAsignados().subscribe({
       next: (articulos) => {
-        this.totalAsignados = articulos.length;
-        this.totalPendientes = articulos.filter((articulo) => articulo.estado_evaluacion === 'pendiente').length;
-        this.totalEvaluados = articulos.filter(
-          (articulo) =>
-            articulo.estado_evaluacion === 'evaluado-aceptado' ||
-            articulo.estado_evaluacion === 'evaluado-rechazado',
-        ).length;
+        const idsActuales = articulos.map((a) => a.id);
+        const key = 'comite-notificaciones-vistos';
+        const idsPrevios = this.getIdsGuardados(key);
+        const nuevosAsignados = idsPrevios.length
+          ? idsActuales.filter((id) => !idsPrevios.includes(id)).length
+          : 0;
+
+        localStorage.setItem(key, JSON.stringify(idsActuales));
+
+        this.articulosService.getNotificacionesVencimientoComite().subscribe({
+          next: (recordatorios) => {
+            this.totalNotificaciones = nuevosAsignados + recordatorios.length;
+
+            if (!esPrimeraCarga && this.totalNotificaciones > 0) {
+              this.mostrarAlertaNotificaciones = true;
+              this.mensajeAlertaNotificaciones =
+                nuevosAsignados > 0
+                  ? `Se asignaron ${nuevosAsignados} artículo(s) nuevo(s).`
+                  : 'Tienes recordatorios de revisión pendientes.';
+            }
+          },
+          error: () => {
+            this.totalNotificaciones = nuevosAsignados;
+          },
+        });
       },
       error: () => {
-        this.totalAsignados = 0;
-        this.totalPendientes = 0;
-        this.totalEvaluados = 0;
+        this.totalNotificaciones = 0;
       },
     });
+  }
+
+  private getIdsGuardados(key: string): number[] {
+    const raw = localStorage.getItem(key);
+
+    if (!raw) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'number') : [];
+    } catch {
+      return [];
+    }
   }
 
   toggleSidebar(): void {

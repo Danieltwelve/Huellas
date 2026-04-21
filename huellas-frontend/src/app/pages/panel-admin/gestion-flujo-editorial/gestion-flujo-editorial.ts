@@ -4,8 +4,11 @@ import { Envios } from './envios/envios';
 type FlujoTabId =
   | 'envio'
   | 'revision-preliminar'
+  | 'comite-editorial'
+  | 'turniting'
   | 'revision-pares'
-  | 'correccion-estilo'
+  | 'certificacion'
+  | 'revision-final'
   | 'publicacion';
 
 interface FlujoTab {
@@ -24,8 +27,11 @@ export class GestionFlujoEditorial {
   readonly tabs: FlujoTab[] = [
     { id: 'envio', label: 'Envíos' },
     { id: 'revision-preliminar', label: 'Revisión Preliminar' },
+    { id: 'comite-editorial', label: 'Comité Editorial' },
+    { id: 'turniting', label: 'Turniting' },
     { id: 'revision-pares', label: 'Revisión por pares' },
-    { id: 'correccion-estilo', label: 'Corrección de estilo' },
+    { id: 'certificacion', label: 'Certificación' },
+    { id: 'revision-final', label: 'Revisión final' },
     { id: 'publicacion', label: 'Publicación' },
   ];
 

@@ -50,6 +50,12 @@ export class Articulo {
   @Column({ name: 'comite_editorial_id', nullable: true })
   comiteEditorialId!: number | null;
 
+  @Column({ name: 'fecha_asignacion_comite', type: 'timestamp', nullable: true })
+  fechaAsignacionComite!: Date | null;
+
+  @Column({ name: 'fecha_vencimiento_comite', type: 'timestamp', nullable: true })
+  fechaVencimientoComite!: Date | null;
+
   // Relaciones
   @ManyToOne(() => EtapaArticulo, (etapa) => etapa.articulos)
   @JoinColumn({ name: 'etapa_actual_id' })

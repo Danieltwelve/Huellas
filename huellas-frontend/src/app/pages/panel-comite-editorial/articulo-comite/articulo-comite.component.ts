@@ -7,6 +7,7 @@ import {
   ArticulosService,
 } from '../../../core/articulos/articulos.service';
 import { normalizarNombreArchivo } from '../../../core/utils/filename.utils';
+import { RubricaInteractivaComponent } from '../rubrica-interactiva/rubrica-interactiva.component';
 
 interface DocumentoArticulo {
   nombre: string;
@@ -19,12 +20,12 @@ interface DocumentoRubrica {
   archivo: string;
 }
 
-type SeccionDetalle = 'info' | 'rubricas' | 'documentos' | 'decision';
+type SeccionDetalle = 'info' | 'rubricas' | 'documentos' | 'decision' | 'rubrica-digital';
 
 @Component({
   selector: 'app-articulo-comite',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RubricaInteractivaComponent],
   templateUrl: './articulo-comite.component.html',
   styleUrl: './articulo-comite.component.css',
 })
@@ -45,12 +46,19 @@ export class ArticuloComiteComponent {
   nombreArchivoComite = '';
   guardandoEvaluacion = false;
   modalConfirmarDescarte = false;
+  mostrarRubricaDigital = false;
+
+  // Campos para información de vencimiento
+  diasRestantes: number | null = null;
+  estaVencido = false;
+  fechaVencimiento: Date | null = null;
 
   seccionesAbiertas: Record<SeccionDetalle, boolean> = {
     info: true,
-    rubricas: true,
+    rubricas: false,
     documentos: true,
     decision: true,
+    'rubrica-digital': false,
   };
 
   readonly documentosRubrica: DocumentoRubrica[] = [
@@ -87,6 +95,11 @@ export class ArticuloComiteComponent {
     this.articulosService.getArticuloFlujo(id).subscribe({
       next: (articulo) => {
         this.articulo = articulo;
+
+        // Cargar información de vencimiento desde la data completa del articulo
+        // Por ahora usamos una estimación, después se actualizará desde el backend
+        this.calcularVencimiento();
+
         this.loading = false;
       },
       error: (err) => {
@@ -94,6 +107,52 @@ export class ArticuloComiteComponent {
         this.loading = false;
       },
     });
+  }
+
+  private calcularVencimiento(): void {
+    if (!this.articulo) {
+      return;
+    }
+
+    const fechaAsignacion = this.articulo.fechaAsignacionComite
+      ? new Date(this.articulo.fechaAsignacionComite)
+      : this.articulo.historialEtapas
+          ?.filter((h) => h.etapaId === 6)
+          ?.sort(
+            (a, b) =>
+              new Date(a.fechaInicio).getTime() -
+              new Date(b.fechaInicio).getTime(),
+          )?.[0]?.fechaInicio
+        ? new Date(
+            this.articulo.historialEtapas
+              .filter((h) => h.etapaId === 6)
+              .sort(
+                (a, b) =>
+                  new Date(a.fechaInicio).getTime() -
+                  new Date(b.fechaInicio).getTime(),
+              )[0].fechaInicio,
+          )
+        : null;
+
+    const fechaVencimiento = this.articulo.fechaVencimientoComite
+      ? new Date(this.articulo.fechaVencimientoComite)
+      : fechaAsignacion
+        ? new Date(fechaAsignacion.getTime() + 30 * 24 * 60 * 60 * 1000)
+        : null;
+
+    if (!fechaVencimiento) {
+      this.fechaVencimiento = null;
+      this.diasRestantes = null;
+      this.estaVencido = false;
+      return;
+    }
+
+    this.fechaVencimiento = fechaVencimiento;
+    const ahora = new Date();
+    this.diasRestantes = Math.ceil(
+      (fechaVencimiento.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    this.estaVencido = this.diasRestantes < 0;
   }
 
   volverListado(): void {
@@ -108,8 +167,28 @@ export class ArticuloComiteComponent {
     this.nombreArchivoComite = file?.name ?? '';
   }
 
+  private esAsuntoEvaluacionComite(asunto?: string): boolean {
+    const texto = (asunto ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    return (
+      texto.includes('evalu') &&
+      texto.includes('comite') &&
+      (texto.includes('acept') || texto.includes('rechaz'))
+    );
+  }
+
   evaluarArticulo(forzarEnvio = false): void {
     if (!this.articulo || this.guardandoEvaluacion) {
+      return;
+    }
+
+    if (!this.puedeEvaluarComite) {
+      this.mensajeError =
+        'Este artículo ya fue evaluado por el comité o ya no está en etapa de comité.';
+      this.mensajeOk = null;
       return;
     }
 
@@ -156,6 +235,21 @@ export class ArticuloComiteComponent {
 
   toggleSeccion(seccion: SeccionDetalle): void {
     this.seccionesAbiertas[seccion] = !this.seccionesAbiertas[seccion];
+  }
+
+  alRubricaCompleta(resultado: any): void {
+    // Usar la recomendación de la rúbrica
+    this.decision = resultado.recomendacion === 'aceptar' ? 'aceptar' : 'rechazar';
+
+    // Pre-llenar la observación con el resultado
+    const criteriosEval = resultado.criterios
+      .filter((c: any) => c.observaciones)
+      .map((c: any) => `${c.nombre}: ${c.observaciones}`)
+      .join('\n');
+
+    this.observacion = `Evaluación de rúbrica: ${resultado.porcentajeAlcanzado}%\n\n${criteriosEval}`;
+    this.mostrarRubricaDigital = false;
+    this.seccionesAbiertas['decision'] = true;
   }
 
   cancelarDescarte(): void {
@@ -234,5 +328,37 @@ export class ArticuloComiteComponent {
   get palabrasClaveTexto(): string {
     const palabrasClave = this.articulo?.palabrasClave ?? [];
     return palabrasClave.length ? palabrasClave.join(', ') : 'Sin palabras clave';
+  }
+
+  get estaEnEtapaComite(): boolean {
+    return this.articulo?.etapaActual?.id === 6;
+  }
+
+  get yaEvaluadoPorComite(): boolean {
+    if (this.articulo?.evaluacionComiteRealizada) {
+      return true;
+    }
+
+    const observaciones = this.articulo?.observaciones ?? [];
+
+    return observaciones.some(
+      (obs) => obs.etapa?.id === 6 && this.esAsuntoEvaluacionComite(obs.asunto),
+    );
+  }
+
+  get puedeEvaluarComite(): boolean {
+    return this.estaEnEtapaComite && !this.yaEvaluadoPorComite;
+  }
+
+  get mensajeEstadoEvaluacion(): string {
+    if (this.yaEvaluadoPorComite) {
+      return 'Este artículo ya fue evaluado por el Comité Editorial. Solo está disponible para consulta.';
+    }
+
+    if (!this.estaEnEtapaComite) {
+      return 'Este artículo ya avanzó a otra etapa del flujo y no admite una nueva evaluación de comité.';
+    }
+
+    return '';
   }
 }

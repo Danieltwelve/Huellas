@@ -5,10 +5,13 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { createReadStream, existsSync, promises as fs } from 'fs';
-import { DataSource, IsNull, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
+import ExcelJS from 'exceljs';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
 import { EdicionRevista } from '../ediciones/edicion-revista.entity';
 import { Articulo } from './entities/articulo.entity';
@@ -19,12 +22,16 @@ import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/a
 import { InjectRepository } from '@nestjs/typeorm';
 import { FerchContador } from './entities/ferch-contador.entity';
 import { User } from '../users/user.entity';
+import { Tema } from '../temas/entities/tema.entity';
 
 @Injectable()
 export class ArticulosService {
+  private readonly logger = new Logger(ArticulosService.name);
+
   private static readonly ETAPA_REVISION_PRELIMINAR = 1;
   private static readonly ETAPA_TURNITING = 3;
   private static readonly ETAPA_COMITE_EDITORIAL = 6;
+  private static readonly ETAPAS_FLUJO_ORDENADO = [1, 6, 3, 4, 8, 9, 5];
   private static readonly ETAPA_DESCARTADO = 7;
   private static readonly MAX_ARTICULOS_ASIGNADOS_COMITE = 4;
   private static readonly ASUNTO_CORRECCION_AUTOR =
@@ -56,6 +63,18 @@ export class ArticulosService {
         'Este artículo fue descartado y no puede continuar en el proceso editorial.',
       );
     }
+  }
+
+  private getSiguienteEtapaPermitida(etapaActualId: number): number | null {
+    const indiceActual = ArticulosService.ETAPAS_FLUJO_ORDENADO.indexOf(
+      etapaActualId,
+    );
+
+    if (indiceActual === -1) {
+      return null;
+    }
+
+    return ArticulosService.ETAPAS_FLUJO_ORDENADO[indiceActual + 1] ?? null;
   }
 
   async crearEnvioArticulo(
@@ -111,10 +130,29 @@ export class ArticulosService {
         titulo: dto.titulo,
         resumen: dto.resumen,
         palabrasClave: palabrasClaveString,
-        etapaActualId: ArticulosService.ETAPA_COMITE_EDITORIAL,
+        etapaActualId: ArticulosService.ETAPA_REVISION_PRELIMINAR,
         edicionId: edicionActiva.id,
       });
       const articuloGuardado = await queryRunner.manager.save(nuevoArticulo);
+
+      const temaSeleccionado = await queryRunner.manager.findOne(Tema, {
+        where: { id: dto.tema_id },
+      });
+
+      if (!temaSeleccionado) {
+        throw new BadRequestException('El tema seleccionado no existe.');
+      }
+
+      const autoresExistentes = await queryRunner.manager.find(User, {
+        where: { id: In(dto.usuarios_ids) },
+        select: ['id'],
+      });
+
+      if (autoresExistentes.length !== dto.usuarios_ids.length) {
+        throw new BadRequestException(
+          'Uno o más autores seleccionados no existen.',
+        );
+      }
 
       // 3. Insertar en articulo_temas
       await queryRunner.manager
@@ -162,22 +200,10 @@ export class ArticulosService {
           articuloId: articuloGuardado.id,
           etapaId: ArticulosService.ETAPA_REVISION_PRELIMINAR,
           fechaInicio: ahora,
-          fechaFin: ahora,
           usuarioId: usuarioEmisorId,
         },
       );
       await queryRunner.manager.save(historialEtapaRevision);
-
-      const historialEtapaComite = queryRunner.manager.create(
-        ArticuloHistorialEtapa,
-        {
-          articuloId: articuloGuardado.id,
-          etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
-          fechaInicio: ahora,
-          usuarioId: usuarioEmisorId,
-        },
-      );
-      await queryRunner.manager.save(historialEtapaComite);
 
       // FINALIZACIÓN: Confirmar transacción
       await queryRunner.commitTransaction();
@@ -189,6 +215,13 @@ export class ArticulosService {
     } catch (error) {
       // ROLLBACK: Revertir todo si hay error
       await queryRunner.rollbackTransaction();
+
+      this.logger.error(
+        `Error al registrar envío de artículo: ${
+          error instanceof Error ? error.message : 'Error desconocido'
+        }`,
+        error instanceof Error ? error.stack : undefined,
+      );
 
       // Borrar archivo huérfano
       if (archivoPath) {
@@ -206,8 +239,9 @@ export class ArticulosService {
         throw error;
       }
       throw new InternalServerErrorException(
-        'Error crítico al registrar el envío. Transacción revertida.',
-        error instanceof Error ? error.message : 'Error desconocido',
+        `Error al registrar el envío. ${
+          error instanceof Error ? error.message : 'Error desconocido'
+        }`,
       );
     } finally {
       // Liberar el runner
@@ -242,10 +276,20 @@ export class ArticulosService {
       .sort((a, b) => a.fechaInicio.getTime() - b.fechaInicio.getTime())[0]
       ?.fechaInicio;
 
+    const evaluacionComiteRealizada = (articulo.observaciones ?? []).some((obs) =>
+      [
+        ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
+        ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
+      ].includes(obs.asunto),
+    );
+
     return {
       id: articulo.id,
       codigo: articulo.codigo,
       titulo: articulo.titulo,
+      evaluacionComiteRealizada,
+      fechaAsignacionComite: articulo.fechaAsignacionComite ?? null,
+      fechaVencimientoComite: articulo.fechaVencimientoComite ?? null,
       resumen: articulo.resumen,
       palabrasClave: articulo.palabrasClave
         .split(',')
@@ -395,6 +439,63 @@ export class ArticulosService {
 
       if (articulo.etapaActualId === nuevaEtapaId) {
         throw new BadRequestException('El artículo ya se encuentra en esta etapa');
+      }
+
+      const etapaSiguientePermitida = this.getSiguienteEtapaPermitida(
+        articulo.etapaActualId,
+      );
+
+      if (!etapaSiguientePermitida) {
+        throw new BadRequestException(
+          'El artículo ya está en la última etapa del flujo editorial.',
+        );
+      }
+
+      if (nuevaEtapaId !== etapaSiguientePermitida) {
+        throw new BadRequestException(
+          'Solo puedes avanzar a la siguiente etapa del flujo editorial.',
+        );
+      }
+
+      if (
+        articulo.etapaActualId === ArticulosService.ETAPA_COMITE_EDITORIAL &&
+        nuevaEtapaId === ArticulosService.ETAPA_TURNITING
+      ) {
+        const evaluacionComiteAceptada = await queryRunner.manager.findOne(
+          Observacion,
+          {
+            where: {
+              articuloId,
+              etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
+              asunto: ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
+            },
+            select: ['id'],
+          },
+        );
+
+        const evaluacionComiteRechazada = await queryRunner.manager.findOne(
+          Observacion,
+          {
+            where: {
+              articuloId,
+              etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
+              asunto: ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
+            },
+            select: ['id'],
+          },
+        );
+
+        if (evaluacionComiteRechazada) {
+          throw new BadRequestException(
+            'El artículo fue rechazado por el Comité Editorial y no puede avanzar a Turniting.',
+          );
+        }
+
+        if (!evaluacionComiteAceptada) {
+          throw new BadRequestException(
+            'Para mover a Turniting, primero debes contar con una evaluación aprobada del Comité Editorial.',
+          );
+        }
       }
 
       const etapaDestino = await queryRunner.manager.findOne(EtapaArticulo, {
@@ -614,10 +715,33 @@ export class ArticulosService {
         );
       }
 
-      const etapaDestinoId =
-        decision === 'aceptar'
-          ? ArticulosService.ETAPA_TURNITING
-          : ArticulosService.ETAPA_DESCARTADO;
+      const observacionesComite = await queryRunner.manager.find(Observacion, {
+        where: {
+          articuloId,
+          etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
+        },
+        select: ['id', 'asunto'],
+      });
+
+      const evaluacionComiteExistente = observacionesComite.find((obs) => {
+        const asuntoNormalizado = (obs.asunto ?? '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+
+        return (
+          asuntoNormalizado.includes('evalu') &&
+          asuntoNormalizado.includes('comite') &&
+          (asuntoNormalizado.includes('acept') ||
+            asuntoNormalizado.includes('rechaz'))
+        );
+      });
+
+      if (evaluacionComiteExistente) {
+        throw new BadRequestException(
+          'Este artículo ya fue evaluado por el Comité Editorial y no puede evaluarse nuevamente.',
+        );
+      }
 
       const asuntoEvaluacion =
         decision === 'aceptar'
@@ -632,8 +756,8 @@ export class ArticulosService {
         comentarios:
           observacion?.trim() ||
           (decision === 'aceptar'
-            ? 'El comité editorial aprueba el artículo para continuar el flujo.'
-            : 'El comité editorial rechaza el artículo y lo retorna al equipo editorial.'),
+            ? 'El comité editorial aprueba el artículo. El equipo editorial continuará el flujo.'
+            : 'El comité editorial rechaza el artículo. El equipo editorial revisará la decisión.'),
       });
 
       const observacionGuardada = await queryRunner.manager.save(
@@ -650,49 +774,16 @@ export class ArticulosService {
         await queryRunner.manager.save(registroArchivo);
       }
 
-      const historialAbierto = await queryRunner.manager.findOne(
-        ArticuloHistorialEtapa,
-        {
-          where: {
-            articuloId,
-            fechaFin: IsNull(),
-          },
-          order: { fechaInicio: 'DESC' },
-        },
-      );
-
-      const ahora = new Date();
-
-      if (historialAbierto) {
-        historialAbierto.fechaFin = ahora;
-        await queryRunner.manager.save(historialAbierto);
-      }
-
-      articulo.etapaActualId = etapaDestinoId;
-      articulo.comiteEditorialId = null;
-      await queryRunner.manager.save(articulo);
-
-      const nuevoHistorial = queryRunner.manager.create(ArticuloHistorialEtapa, {
-        articuloId,
-        etapaId: etapaDestinoId,
-        usuarioId: usuarioComiteId,
-        fechaInicio: ahora,
-      });
-
-      await queryRunner.manager.save(nuevoHistorial);
       await queryRunner.commitTransaction();
 
       return {
         message:
           decision === 'aceptar'
-            ? 'Artículo evaluado y enviado a la siguiente fase editorial.'
-            : 'Artículo rechazado y descartado del proceso editorial.',
+            ? 'Evaluación registrada. El equipo editorial puede avanzar el artículo manualmente.'
+            : 'Evaluación registrada como rechazo. El equipo editorial debe definir el siguiente paso.',
         etapaActual: {
-          id: etapaDestinoId,
-          nombre:
-            etapaDestinoId === ArticulosService.ETAPA_TURNITING
-              ? 'TURNITING'
-              : 'DESCARTADO',
+          id: articulo.etapaActualId,
+          nombre: 'COMITE EDITORIAL',
         },
       };
     } catch (error) {
@@ -766,6 +857,14 @@ export class ArticulosService {
 
     articulo.comiteEditorialId = comiteEditorialId;
     articulo.comiteEditorial = comiteMember;
+    
+    // Registrar fechas de asignación y vencimiento (30 días)
+    const ahora = new Date();
+    articulo.fechaAsignacionComite = ahora;
+    const fechaVencimiento = new Date(ahora);
+    fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
+    articulo.fechaVencimientoComite = fechaVencimiento;
+    
     await this.articuloRepository.save(articulo);
 
     return {
@@ -803,7 +902,8 @@ export class ArticulosService {
         const evaluacionReciente = evaluacionesComite[0];
         const pendiente =
           articulo.comiteEditorialId === usuarioId &&
-          articulo.etapaActualId === ArticulosService.ETAPA_COMITE_EDITORIAL;
+          articulo.etapaActualId === ArticulosService.ETAPA_COMITE_EDITORIAL &&
+          !evaluacionReciente;
 
         let estadoEvaluacion: 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado' =
           'pendiente';
@@ -820,6 +920,41 @@ export class ArticulosService {
           return null;
         }
 
+        // Calcular fecha de asignacion y vencimiento (fallback para asignaciones historicas)
+        const fechaAsignacionBase =
+          articulo.fechaAsignacionComite ??
+          articulo.historialEtapas
+            ?.filter((h) => h.etapaId === ArticulosService.ETAPA_COMITE_EDITORIAL)
+            ?.sort(
+              (a, b) =>
+                new Date(a.fechaInicio).getTime() -
+                new Date(b.fechaInicio).getTime(),
+            )?.[0]?.fechaInicio ??
+          null;
+
+        const fechaVencimientoBase =
+          articulo.fechaVencimientoComite ??
+          (fechaAsignacionBase
+            ? new Date(
+                new Date(fechaAsignacionBase).getTime() +
+                  30 * 24 * 60 * 60 * 1000,
+              )
+            : null);
+
+        // Calcular si está vencido y dias restantes
+        const ahora = new Date();
+        const fechaVencimientoDate = fechaVencimientoBase
+          ? new Date(fechaVencimientoBase)
+          : null;
+        const estaVencido =
+          !!fechaVencimientoDate && fechaVencimientoDate.getTime() < ahora.getTime();
+        const diasRestantes = fechaVencimientoDate
+          ? Math.ceil(
+              (fechaVencimientoDate.getTime() - ahora.getTime()) /
+                (1000 * 60 * 60 * 24),
+            )
+          : null;
+
         return {
           id: articulo.id,
           codigo: articulo.codigo,
@@ -828,9 +963,360 @@ export class ArticulosService {
           fecha_inicio:
             articulo.historialEtapas?.[0]?.fechaInicio?.toISOString() ?? null,
           estado_evaluacion: pendiente ? 'pendiente' : estadoEvaluacion,
+          fecha_asignacion: fechaAsignacionBase
+            ? new Date(fechaAsignacionBase).toISOString()
+            : null,
+          fecha_vencimiento: fechaVencimientoDate
+            ? fechaVencimientoDate.toISOString()
+            : null,
+          esta_vencido: estaVencido ?? false,
+          dias_restantes: diasRestantes ?? null,
         };
       })
       .filter((item) => item !== null);
+  }
+
+  async getHistorialEvaluacionesComite(usuarioId: number) {
+    const articulos = await this.articuloRepository.find({
+      relations: ['etapaActual', 'observaciones', 'historialEtapas'],
+      order: { id: 'DESC' },
+    });
+
+    const evaluaciones = articulos
+      .flatMap((articulo) => {
+        const evaluacionesComite = (articulo.observaciones ?? [])
+          .filter((obs) => obs.usuarioId === usuarioId)
+          .filter((obs) =>
+            [
+              ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
+              ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
+            ].includes(obs.asunto),
+          );
+
+        return evaluacionesComite.map((obs) => {
+          const fechaAsignacionBase =
+            articulo.fechaAsignacionComite ??
+            articulo.historialEtapas
+              ?.filter((h) => h.etapaId === ArticulosService.ETAPA_COMITE_EDITORIAL)
+              ?.sort(
+                (a, b) =>
+                  new Date(a.fechaInicio).getTime() -
+                  new Date(b.fechaInicio).getTime(),
+              )?.[0]?.fechaInicio ??
+            null;
+
+          const diasEvaluacion = fechaAsignacionBase
+            ? Math.max(
+                0,
+                Math.ceil(
+                  (new Date(obs.fechaSubida).getTime() -
+                    new Date(fechaAsignacionBase).getTime()) /
+                    (1000 * 60 * 60 * 24),
+                ),
+              )
+            : null;
+
+          return {
+            articuloId: articulo.id,
+            codigo: articulo.codigo,
+            titulo: articulo.titulo,
+            decision:
+              obs.asunto === ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO
+                ? 'aceptado'
+                : 'rechazado',
+            fechaEvaluacion: obs.fechaSubida,
+            diasEvaluacion,
+            etapaActual: articulo.etapaActual?.nombre ?? 'Sin etapa',
+          };
+        });
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.fechaEvaluacion).getTime() -
+          new Date(a.fechaEvaluacion).getTime(),
+      );
+
+    return evaluaciones;
+  }
+
+  async getEstadisticasComite(usuarioId: number) {
+    const historial = await this.getHistorialEvaluacionesComite(usuarioId);
+    const asignados = await this.getArticulosAsignadosComite(usuarioId);
+
+    const totalEvaluadas = historial.length;
+    const totalAceptadas = historial.filter((h) => h.decision === 'aceptado').length;
+    const totalRechazadas = historial.filter((h) => h.decision === 'rechazado').length;
+    const totalPendientes = asignados.filter(
+      (a) => a.estado_evaluacion === 'pendiente',
+    ).length;
+
+    const tiempos = historial
+      .map((h) => h.diasEvaluacion)
+      .filter((d) => d !== null) as number[];
+    const promedioDiasEvaluacion =
+      tiempos.length > 0
+        ? Number((tiempos.reduce((acc, v) => acc + v, 0) / tiempos.length).toFixed(2))
+        : 0;
+
+    const tasaAprobacion =
+      totalEvaluadas > 0
+        ? Number(((totalAceptadas / totalEvaluadas) * 100).toFixed(2))
+        : 0;
+
+    const tasaCumplimiento30Dias =
+      totalEvaluadas > 0
+        ? Number(
+            ((historial.filter((h) => (h.diasEvaluacion ?? 9999) <= 30).length /
+              totalEvaluadas) *
+              100).toFixed(2),
+          )
+        : 0;
+
+    return {
+      totalAsignadas: asignados.length,
+      totalPendientes,
+      totalEvaluadas,
+      totalAceptadas,
+      totalRechazadas,
+      tasaAprobacion,
+      promedioDiasEvaluacion,
+      tasaCumplimiento30Dias,
+    };
+  }
+
+  async getNotificacionesVencimientoComite(usuarioId: number) {
+    const asignados = await this.getArticulosAsignadosComite(usuarioId);
+
+    return asignados
+      .filter((articulo) => articulo.estado_evaluacion === 'pendiente')
+      .filter(
+        (articulo) =>
+          articulo.esta_vencido ||
+          (articulo.dias_restantes !== null && articulo.dias_restantes <= 5),
+      )
+      .map((articulo) => ({
+        articuloId: articulo.id,
+        codigo: articulo.codigo,
+        titulo: articulo.titulo,
+        tipo: articulo.esta_vencido ? 'vencido' : 'proximo-vencer',
+        diasRestantes: articulo.dias_restantes,
+        mensaje: articulo.esta_vencido
+          ? `El articulo ${articulo.codigo} vencio su plazo de 30 dias para evaluacion.`
+          : `El articulo ${articulo.codigo} vence en ${articulo.dias_restantes} dia(s).`,
+      }));
+  }
+
+  async generarReporteComiteExcel(usuarioId: number): Promise<Buffer> {
+    const asignados = await this.getArticulosAsignadosComite(usuarioId);
+    const historial = await this.getHistorialEvaluacionesComite(usuarioId);
+    const estadisticas = await this.getEstadisticasComite(usuarioId);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Revista Huellas';
+    workbook.lastModifiedBy = 'Sistema Editorial Huellas';
+    workbook.created = new Date();
+
+    const resumenSheet = workbook.addWorksheet('Resumen');
+    resumenSheet.columns = [
+      { header: 'Indicador', key: 'indicador', width: 34 },
+      { header: 'Valor', key: 'valor', width: 20 },
+    ];
+
+    resumenSheet.mergeCells('A1:B1');
+    resumenSheet.getCell('A1').value = 'REVISTA HUELLAS - REPORTE COMITE EDITORIAL';
+    resumenSheet.getCell('A1').font = {
+      bold: true,
+      color: { argb: 'FFFFFFFF' },
+      size: 13,
+    };
+    resumenSheet.getCell('A1').alignment = { horizontal: 'center' };
+    resumenSheet.getCell('A1').fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0F766E' },
+    };
+
+    const resumenRows = [
+      { indicador: 'Fecha de generación', valor: new Date().toLocaleString('es-CO') },
+      { indicador: 'Total asignadas', valor: estadisticas.totalAsignadas },
+      { indicador: 'Total pendientes', valor: estadisticas.totalPendientes },
+      { indicador: 'Total evaluadas', valor: estadisticas.totalEvaluadas },
+      { indicador: 'Tasa de aprobación (%)', valor: estadisticas.tasaAprobacion },
+      { indicador: 'Promedio días de evaluación', valor: estadisticas.promedioDiasEvaluacion },
+      {
+        indicador: 'Cumplimiento dentro de 30 días (%)',
+        valor: estadisticas.tasaCumplimiento30Dias,
+      },
+    ];
+
+    resumenRows.forEach((row) => resumenSheet.addRow(row));
+
+    const asignadosSheet = workbook.addWorksheet('Asignados');
+    asignadosSheet.columns = [
+      { header: 'Código', key: 'codigo', width: 18 },
+      { header: 'Título', key: 'titulo', width: 42 },
+      { header: 'Estado', key: 'estado', width: 18 },
+      { header: 'Fecha asignación', key: 'fechaAsignacion', width: 22 },
+      { header: 'Fecha vencimiento', key: 'fechaVencimiento', width: 22 },
+      { header: 'Días restantes', key: 'diasRestantes', width: 16 },
+    ];
+
+    asignadosSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    asignadosSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF155E75' },
+    };
+
+    asignados.forEach((item) => {
+      asignadosSheet.addRow({
+        codigo: item.codigo,
+        titulo: item.titulo,
+        estado: item.estado_evaluacion,
+        fechaAsignacion: item.fecha_asignacion ?? '-',
+        fechaVencimiento: item.fecha_vencimiento ?? '-',
+        diasRestantes: item.dias_restantes ?? '-',
+      });
+    });
+
+    const historialSheet = workbook.addWorksheet('Historial');
+    historialSheet.columns = [
+      { header: 'Código', key: 'codigo', width: 18 },
+      { header: 'Título', key: 'titulo', width: 42 },
+      { header: 'Decisión', key: 'decision', width: 18 },
+      { header: 'Fecha evaluación', key: 'fecha', width: 22 },
+      { header: 'Días para evaluar', key: 'dias', width: 18 },
+    ];
+
+    historialSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    historialSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1E293B' },
+    };
+
+    historial.forEach((item) => {
+      historialSheet.addRow({
+        codigo: item.codigo,
+        titulo: item.titulo,
+        decision: item.decision,
+        fecha: new Date(item.fechaEvaluacion).toLocaleString('es-CO'),
+        dias: item.diasEvaluacion ?? '-',
+      });
+    });
+
+    const data = await workbook.xlsx.writeBuffer();
+    return Buffer.from(data as ArrayBuffer);
+  }
+
+  async generarReporteComitePdf(usuarioId: number): Promise<Buffer> {
+    const historial = await this.getHistorialEvaluacionesComite(usuarioId);
+    const estadisticas = await this.getEstadisticasComite(usuarioId);
+
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([842, 595]);
+    const { width, height } = page.getSize();
+    const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    const colorBrand = rgb(0.06, 0.46, 0.43);
+    const colorDark = rgb(0.11, 0.16, 0.23);
+    const colorMuted = rgb(0.36, 0.43, 0.5);
+
+    page.drawRectangle({
+      x: 0,
+      y: height - 78,
+      width,
+      height: 78,
+      color: colorBrand,
+    });
+
+    page.drawText('REVISTA HUELLAS', {
+      x: 36,
+      y: height - 42,
+      size: 20,
+      font: fontBold,
+      color: rgb(1, 1, 1),
+    });
+
+    page.drawText('Reporte Corporativo de Evaluaciones - Comite Editorial', {
+      x: 36,
+      y: height - 60,
+      size: 11,
+      font: fontRegular,
+      color: rgb(0.91, 0.98, 0.97),
+    });
+
+    page.drawText(`Generado: ${new Date().toLocaleString('es-CO')}`, {
+      x: 36,
+      y: height - 96,
+      size: 9,
+      font: fontRegular,
+      color: colorMuted,
+    });
+
+    const stats = [
+      `Total evaluadas: ${estadisticas.totalEvaluadas}`,
+      `Total pendientes: ${estadisticas.totalPendientes}`,
+      `Tasa aprobación: ${estadisticas.tasaAprobacion}%`,
+      `Promedio días evaluación: ${estadisticas.promedioDiasEvaluacion}`,
+      `Cumplimiento <= 30 días: ${estadisticas.tasaCumplimiento30Dias}%`,
+    ];
+
+    let cursorY = height - 130;
+    page.drawText('Indicadores del evaluador', {
+      x: 36,
+      y: cursorY,
+      size: 12,
+      font: fontBold,
+      color: colorDark,
+    });
+
+    cursorY -= 22;
+    stats.forEach((line) => {
+      page.drawText(`• ${line}`, {
+        x: 42,
+        y: cursorY,
+        size: 10,
+        font: fontRegular,
+        color: colorDark,
+      });
+      cursorY -= 15;
+    });
+
+    cursorY -= 10;
+    page.drawText('Historial de evaluaciones', {
+      x: 36,
+      y: cursorY,
+      size: 12,
+      font: fontBold,
+      color: colorDark,
+    });
+
+    cursorY -= 18;
+    const maxRows = 16;
+    historial.slice(0, maxRows).forEach((item, index) => {
+      const line = `${index + 1}. ${item.codigo} | ${item.decision.toUpperCase()} | ${new Date(item.fechaEvaluacion).toLocaleDateString('es-CO')} | ${item.diasEvaluacion ?? '-'} día(s)`;
+      page.drawText(line, {
+        x: 42,
+        y: cursorY,
+        size: 9,
+        font: fontRegular,
+        color: colorDark,
+      });
+      cursorY -= 13;
+    });
+
+    page.drawText('Documento generado automaticamente por el sistema editorial Huellas.', {
+      x: 36,
+      y: 22,
+      size: 8,
+      font: fontRegular,
+      color: colorMuted,
+    });
+
+    const bytes = await pdfDoc.save();
+    return Buffer.from(bytes);
   }
 
   async getResumenArticulos() {

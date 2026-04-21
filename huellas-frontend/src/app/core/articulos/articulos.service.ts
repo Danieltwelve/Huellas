@@ -11,12 +11,49 @@ export interface ArticuloResumenBackend {
   etapa_nombre: string;
   fecha_inicio: string | null;
   estado_evaluacion?: 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado';
+  fecha_asignacion?: string | null;
+  fecha_vencimiento?: string | null;
+  esta_vencido?: boolean;
+  dias_restantes?: number | null;
+}
+
+export interface ComiteEvaluacionHistorial {
+  articuloId: number;
+  codigo: string;
+  titulo: string;
+  decision: 'aceptado' | 'rechazado';
+  fechaEvaluacion: string;
+  diasEvaluacion: number | null;
+  etapaActual: string;
+}
+
+export interface ComiteEstadisticas {
+  totalAsignadas: number;
+  totalPendientes: number;
+  totalEvaluadas: number;
+  totalAceptadas: number;
+  totalRechazadas: number;
+  tasaAprobacion: number;
+  promedioDiasEvaluacion: number;
+  tasaCumplimiento30Dias: number;
+}
+
+export interface ComiteNotificacionVencimiento {
+  articuloId: number;
+  codigo: string;
+  titulo: string;
+  tipo: 'vencido' | 'proximo-vencer';
+  diasRestantes: number | null;
+  mensaje: string;
 }
 
 export interface ArticuloFlujo {
   id: number;
   codigo: string;
   titulo: string;
+  evaluacionComiteRealizada?: boolean;
+  fechaAsignacionComite?: string | null;
+  fechaVencimientoComite?: string | null;
   resumen: string;
   palabrasClave: string[];
   temas: string[];
@@ -232,6 +269,114 @@ export class ArticulosService {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           },
         ),
+      ),
+    );
+  }
+
+  getHistorialEvaluacionesComite(): Observable<ComiteEvaluacionHistorial[]> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesion activa para consultar historial de evaluaciones.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<ComiteEvaluacionHistorial[]>(
+          `${environment.apiUrlBackend}/articulos/comite/mis-evaluaciones`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  getEstadisticasComite(): Observable<ComiteEstadisticas> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesion activa para consultar estadisticas.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<ComiteEstadisticas>(
+          `${environment.apiUrlBackend}/articulos/comite/estadisticas`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  getNotificacionesVencimientoComite(): Observable<ComiteNotificacionVencimiento[]> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesion activa para consultar notificaciones.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<ComiteNotificacionVencimiento[]>(
+          `${environment.apiUrlBackend}/articulos/comite/notificaciones-vencimiento`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  getReporteComite(tipo?: 'historial' | 'asignados'): Observable<any[]> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesion activa para exportar reporte.'));
+    }
+
+    const query = tipo ? `?tipo=${tipo}` : '';
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<any[]>(`${environment.apiUrlBackend}/articulos/comite/reporte${query}`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
+      ),
+    );
+  }
+
+  descargarReporteComiteExcel(): Observable<Blob> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesion activa para exportar Excel.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get(`${environment.apiUrlBackend}/articulos/comite/reporte/excel`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          responseType: 'blob',
+        }),
+      ),
+    );
+  }
+
+  descargarReporteComitePdf(): Observable<Blob> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesion activa para exportar PDF.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get(`${environment.apiUrlBackend}/articulos/comite/reporte/pdf`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          responseType: 'blob',
+        }),
       ),
     );
   }
