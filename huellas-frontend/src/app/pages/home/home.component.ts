@@ -17,7 +17,7 @@ export class HomeComponent {
 
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(18);
-    pdf.text('Guia de Autores - Revista Huellas', left, y);
+    pdf.text('Guía de Autores - Revista Huellas', left, y);
 
     y += 28;
     pdf.setFont('helvetica', 'normal');
@@ -25,10 +25,10 @@ export class HomeComponent {
 
     const lineas = [
       '1. Verifique que su manuscrito cumpla la estructura solicitada por la revista.',
-      '2. Incluya resumen, palabras clave, referencias completas y afiliacion institucional.',
+      '2. Incluya resumen, palabras clave, referencias completas y afiliación institucional.',
       '3. Adjunte carta de originalidad y datos de contacto de los autores.',
-      '4. Revise los requisitos tecnicos de formato antes de enviar su articulo.',
-      '5. Consulte las directrices completas en la seccion Envios del portal.',
+      '4. Revise los requisitos técnicos de formato antes de enviar su artículo.',
+      '5. Consulte las directrices completas en la sección Envíos del portal.',
     ];
 
     lineas.forEach((linea) => {

@@ -59,33 +59,33 @@ export class TimelineEditorialComponent implements OnInit {
     },
     {
       id: 2,
-      nombre: 'Recepcion',
-      descripcion: 'Registro formal del articulo en la revista',
+      nombre: 'Recepción',
+      descripcion: 'Registro formal del artículo en la revista',
     },
     {
       id: 3,
       nombre: 'Turniting',
-      descripcion: 'Validacion de originalidad y similitud',
+      descripcion: 'Validación de originalidad y similitud',
     },
     {
       id: 4,
-      nombre: 'Revision por pares',
-      descripcion: 'Evaluacion por revisores academicos',
+      nombre: 'Revisión por pares',
+      descripcion: 'Evaluación por revisores académicos',
     },
     {
       id: 8,
-      nombre: 'Certificacion',
-      descripcion: 'Verificacion documental y editorial antes del cierre',
+      nombre: 'Certificación',
+      descripcion: 'Verificación documental y editorial antes del cierre',
     },
     {
       id: 9,
-      nombre: 'Revision final',
-      descripcion: 'Revision integral previa a la publicacion',
+      nombre: 'Revisión final',
+      descripcion: 'Revisión integral previa a la publicación',
     },
     {
       id: 5,
-      nombre: 'Publicacion',
-      descripcion: 'Preparacion y salida en volumen activo',
+      nombre: 'Publicación',
+      descripcion: 'Preparación y salida en volumen activo',
     },
   ];
 
@@ -122,8 +122,8 @@ export class TimelineEditorialComponent implements OnInit {
         }
       },
       error: (err) => {
-        console.error('Error cargando articulos del autor:', err);
-        this.error = 'No fue posible cargar tus articulos.';
+        console.error('Error cargando artículos del autor:', err);
+        this.error = 'No fue posible cargar tus artículos.';
         this.cargandoLista = false;
       },
     });
@@ -156,8 +156,8 @@ export class TimelineEditorialComponent implements OnInit {
         this.cargandoFlujo = false;
       },
       error: (err) => {
-        console.error('Error al cargar timeline del articulo:', err);
-        this.error = 'No fue posible cargar el seguimiento del articulo.';
+        console.error('Error al cargar timeline del artículo:', err);
+        this.error = 'No fue posible cargar el seguimiento del artículo.';
         this.cargandoFlujo = false;
       },
     });
@@ -165,7 +165,7 @@ export class TimelineEditorialComponent implements OnInit {
 
   get titulo(): string {
     if (!this.flujo) {
-      return 'Selecciona un articulo para ver su seguimiento';
+      return 'Selecciona un artículo para ver su seguimiento';
     }
 
     return `${this.flujo.codigo} - ${this.flujo.titulo}`;

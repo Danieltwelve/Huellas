@@ -87,7 +87,7 @@ export class EdicionesRevistaService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para crear una edicion.'));
+      return throwError(() => new Error('No hay sesión activa para crear una edición.'));
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -107,7 +107,7 @@ export class EdicionesRevistaService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para eliminar una edicion.'));
+      return throwError(() => new Error('No hay sesión activa para eliminar una edición.'));
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -129,7 +129,7 @@ export class EdicionesRevistaService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para editar una edicion.'));
+      return throwError(() => new Error('No hay sesión activa para editar una edición.'));
     }
 
     return from(currentUser.getIdToken()).pipe(

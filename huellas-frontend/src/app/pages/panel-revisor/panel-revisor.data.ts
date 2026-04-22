@@ -109,22 +109,22 @@ export const HISTORIAL_REVISIONES_MOCK: RegistroHistorialRevision[] = [
 export const NOTIFICACIONES_REVISOR_MOCK: NotificacionRevisor[] = [
   {
     id: 'N-101',
-    titulo: 'Nuevo articulo asignado',
-    detalle: 'Se asigno REV-2026-018 para evaluacion de primera ronda.',
+    titulo: 'Nuevo artículo asignado',
+    detalle: 'Se asignó REV-2026-018 para evaluación de primera ronda.',
     fecha: '2026-04-04T08:20:00',
     tipo: 'asignacion',
   },
   {
     id: 'N-102',
     titulo: 'Plazo cercano',
-    detalle: 'REV-2026-011 vence en 14 dias. Programa tu revision final.',
+    detalle: 'REV-2026-011 vence en 14 días. Programa tu revisión final.',
     fecha: '2026-04-05T09:40:00',
     tipo: 'plazo',
   },
   {
     id: 'N-103',
     titulo: 'Mensaje del editor',
-    detalle: 'Recuerda usar la rubrica vigente para articulos de innovacion pedagogica.',
+    detalle: 'Recuerda usar la rúbrica vigente para artículos de innovación pedagógica.',
     fecha: '2026-04-05T17:10:00',
     tipo: 'mensaje',
   },

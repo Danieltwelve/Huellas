@@ -253,8 +253,8 @@ export class FlujoTrabajoArticulo {
           fechaOrden: fecha.getTime(),
           fecha: this.formatearFecha(obs.fechaSubida),
           autor: obs.usuario?.nombre ?? 'Usuario desconocido',
-          rol: obs.usuario?.roles[0]?.nombre ?? 'Sin rol',
-          asunto: obs.asunto,
+          rol: this.formatearRolHistorial(obs.usuario?.roles[0]?.nombre),
+          asunto: this.formatearAsuntoHistorial(obs.asunto),
           comentario: obs.comentarios ?? undefined,
           esCorreccionAutor,
           expandido: esCorreccionAutor,
@@ -295,6 +295,36 @@ export class FlujoTrabajoArticulo {
     }
 
     return historial;
+  }
+
+  private formatearRolHistorial(rol?: string): string {
+    const valor = (rol ?? '').trim();
+    if (!valor) {
+      return 'Sin rol';
+    }
+
+    const normalizado = valor
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    if (normalizado.includes('comite-editorial') || normalizado.includes('comite editorial')) {
+      return 'Comité editorial';
+    }
+
+    return valor.replace(/-/g, ' ');
+  }
+
+  private formatearAsuntoHistorial(asunto?: string): string {
+    const valor = (asunto ?? '').trim();
+    if (!valor) {
+      return 'Sin asunto';
+    }
+
+    return valor.replace(
+      /evaluaci[oó]n\s+de\s+comite[-\s]editorial/gi,
+      'Evaluación de comité editorial',
+    );
   }
 
   toggleRegistro(registro: RegistroFlujo): void {
@@ -623,7 +653,7 @@ export class FlujoTrabajoArticulo {
           this.asignandoComite = false;
           this.accionExitosa = respuesta.message;
           const nombreMiembro = this.miembroComiteSeleccionado?.nombre ?? 'el integrante seleccionado';
-          this.mensajeExitoAsignacion = `Se asigno correctamente ${nombreMiembro} al Comite Editorial.`;
+          this.mensajeExitoAsignacion = `Se asignó correctamente ${nombreMiembro} al Comité Editorial.`;
           this.mostrarModalExitoAsignacion = true;
           this.cargarArticulo(this.articulo!.id);
         },

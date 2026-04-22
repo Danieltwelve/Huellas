@@ -242,7 +242,7 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para consultar articulos.'));
+      return throwError(() => new Error('No hay sesión activa para consultar artículos.'));
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -258,7 +258,7 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para consultar articulos asignados.'));
+      return throwError(() => new Error('No hay sesión activa para consultar artículos asignados.'));
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -277,7 +277,7 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para consultar historial de evaluaciones.'));
+      return throwError(() => new Error('No hay sesión activa para consultar historial de evaluaciones.'));
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -296,7 +296,7 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para consultar estadisticas.'));
+      return throwError(() => new Error('No hay sesión activa para consultar estadísticas.'));
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -315,7 +315,7 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para consultar notificaciones.'));
+      return throwError(() => new Error('No hay sesión activa para consultar notificaciones.'));
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -334,7 +334,7 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para exportar reporte.'));
+      return throwError(() => new Error('No hay sesión activa para exportar reporte.'));
     }
 
     const query = tipo ? `?tipo=${tipo}` : '';
@@ -351,7 +351,7 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para exportar Excel.'));
+      return throwError(() => new Error('No hay sesión activa para exportar Excel.'));
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -368,7 +368,7 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para exportar PDF.'));
+      return throwError(() => new Error('No hay sesión activa para exportar PDF.'));
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -385,7 +385,7 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para consultar articulos.'));
+      return throwError(() => new Error('No hay sesión activa para consultar artículos.'));
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -506,7 +506,7 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesion activa para crear articulo.'));
+      return throwError(() => new Error('No hay sesión activa para crear artículo.'));
     }
 
     return from(currentUser.getIdToken()).pipe(

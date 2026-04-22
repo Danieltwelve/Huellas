@@ -35,17 +35,17 @@ export class ArticulosService {
   private static readonly ETAPA_DESCARTADO = 7;
   private static readonly MAX_ARTICULOS_ASIGNADOS_COMITE = 4;
   private static readonly ASUNTO_CORRECCION_AUTOR =
-    'Correccion enviada por autor';
+    'Corrección enviada por autor';
   private static readonly ASUNTO_CORRECCION_ACEPTADA =
-    'Correccion aceptada por equipo editorial';
+    'Corrección aceptada por equipo editorial';
   private static readonly ASUNTO_EVALUACION_TURNITING_CORRECCION =
-    'Evaluacion de Turniting: REQUIERE CORRECCION';
+    'Evaluación de Turniting: REQUIERE CORRECCIÓN';
   private static readonly ASUNTO_EVALUACION_TURNITING_DESCARTADO =
-    'Evaluacion de Turniting: DESCARTADO';
+    'Evaluación de Turniting: DESCARTADO';
   private static readonly ASUNTO_EVALUACION_COMITE_APROBADO =
-    'Evaluacion de comite editorial: ACEPTADO';
+    'Evaluación de comité editorial: ACEPTADO';
   private static readonly ASUNTO_EVALUACION_COMITE_RECHAZADO =
-    'Evaluacion de comite editorial: RECHAZADO';
+    'Evaluación de comité editorial: RECHAZADO';
 
   constructor(
     private dataSource: DataSource,
@@ -66,6 +66,7 @@ export class ArticulosService {
   }
 
   private getSiguienteEtapaPermitida(etapaActualId: number): number | null {
+    // eslint-disable-next-line prettier/prettier
     const indiceActual = ArticulosService.ETAPAS_FLUJO_ORDENADO.indexOf(
       etapaActualId,
     );
@@ -271,16 +272,18 @@ export class ArticulosService {
       throw new BadRequestException('Artículo no encontrado');
     }
 
-    const fechaEnvioInicial = articulo.historialEtapas
-      ?.filter((historial) => historial.etapaId === 1)
-      .sort((a, b) => a.fechaInicio.getTime() - b.fechaInicio.getTime())[0]
-      ?.fechaInicio;
+    const historialEnvioInicial = (articulo.historialEtapas ?? [])
+      .filter((historial) => historial.etapaId === 1)
+      .sort((a, b) => a.fechaInicio.getTime() - b.fechaInicio.getTime());
 
-    const evaluacionComiteRealizada = (articulo.observaciones ?? []).some((obs) =>
-      [
-        ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
-        ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
-      ].includes(obs.asunto),
+    const fechaEnvioInicial = historialEnvioInicial[0]?.fechaInicio;
+
+    const evaluacionComiteRealizada = (articulo.observaciones ?? []).some(
+      (obs) =>
+        [
+          ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
+          ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
+        ].includes(obs.asunto),
     );
 
     return {
@@ -379,9 +382,11 @@ export class ArticulosService {
 
     const etapaId = payload.etapaId ?? articulo.etapaActualId;
 
-    const etapaExiste = await this.dataSource.getRepository(EtapaArticulo).findOne({
-      where: { id: etapaId },
-    });
+    const etapaExiste = await this.dataSource
+      .getRepository(EtapaArticulo)
+      .findOne({
+        where: { id: etapaId },
+      });
 
     if (!etapaExiste) {
       throw new BadRequestException('La etapa indicada no existe');
@@ -408,7 +413,9 @@ export class ArticulosService {
           archivoNombreOriginal: archivo.originalname,
         });
 
-      await this.dataSource.getRepository(ObservacionArchivo).save(registroArchivo);
+      await this.dataSource
+        .getRepository(ObservacionArchivo)
+        .save(registroArchivo);
     }
 
     return {
@@ -438,7 +445,9 @@ export class ArticulosService {
       this.ensureArticuloNoDescartado(articulo);
 
       if (articulo.etapaActualId === nuevaEtapaId) {
-        throw new BadRequestException('El artículo ya se encuentra en esta etapa');
+        throw new BadRequestException(
+          'El artículo ya se encuentra en esta etapa',
+        );
       }
 
       const etapaSiguientePermitida = this.getSiguienteEtapaPermitida(
@@ -527,12 +536,15 @@ export class ArticulosService {
       articulo.etapaActualId = nuevaEtapaId;
       await queryRunner.manager.save(articulo);
 
-      const nuevoHistorial = queryRunner.manager.create(ArticuloHistorialEtapa, {
-        articuloId,
-        etapaId: nuevaEtapaId,
-        usuarioId,
-        fechaInicio: ahora,
-      });
+      const nuevoHistorial = queryRunner.manager.create(
+        ArticuloHistorialEtapa,
+        {
+          articuloId,
+          etapaId: nuevaEtapaId,
+          usuarioId,
+          fechaInicio: ahora,
+        },
+      );
 
       await queryRunner.manager.save(nuevoHistorial);
       await queryRunner.commitTransaction();
@@ -597,9 +609,8 @@ export class ArticulosService {
         comentarios: observacion?.trim() || comentarioBase,
       });
 
-      const observacionGuardada = await queryRunner.manager.save(
-        observacionTurniting,
-      );
+      const observacionGuardada =
+        await queryRunner.manager.save(observacionTurniting);
 
       if (archivo) {
         const registroArchivo = queryRunner.manager.create(ObservacionArchivo, {
@@ -697,7 +708,10 @@ export class ArticulosService {
 
       this.ensureArticuloNoDescartado(articulo);
 
-      if (articulo.comiteEditorialId && articulo.comiteEditorialId !== usuarioComiteId) {
+      if (
+        articulo.comiteEditorialId &&
+        articulo.comiteEditorialId !== usuarioComiteId
+      ) {
         throw new ForbiddenException(
           'Este artículo está asignado a otro miembro del Comité Editorial.',
         );
@@ -783,7 +797,7 @@ export class ArticulosService {
             : 'Evaluación registrada como rechazo. El equipo editorial debe definir el siguiente paso.',
         etapaActual: {
           id: articulo.etapaActualId,
-          nombre: 'COMITE EDITORIAL',
+          nombre: 'COMITÉ EDITORIAL',
         },
       };
     } catch (error) {
@@ -857,14 +871,14 @@ export class ArticulosService {
 
     articulo.comiteEditorialId = comiteEditorialId;
     articulo.comiteEditorial = comiteMember;
-    
+
     // Registrar fechas de asignación y vencimiento (30 días)
     const ahora = new Date();
     articulo.fechaAsignacionComite = ahora;
     const fechaVencimiento = new Date(ahora);
     fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
     articulo.fechaVencimientoComite = fechaVencimiento;
-    
+
     await this.articuloRepository.save(articulo);
 
     return {
@@ -905,14 +919,22 @@ export class ArticulosService {
           articulo.etapaActualId === ArticulosService.ETAPA_COMITE_EDITORIAL &&
           !evaluacionReciente;
 
-        let estadoEvaluacion: 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado' =
-          'pendiente';
+        let estadoEvaluacion:
+          | 'pendiente'
+          | 'evaluado-aceptado'
+          | 'evaluado-rechazado' = 'pendiente';
 
-        if (evaluacionReciente?.asunto === ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO) {
+        if (
+          evaluacionReciente?.asunto ===
+          ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO
+        ) {
           estadoEvaluacion = 'evaluado-aceptado';
         }
 
-        if (evaluacionReciente?.asunto === ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO) {
+        if (
+          evaluacionReciente?.asunto ===
+          ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO
+        ) {
           estadoEvaluacion = 'evaluado-rechazado';
         }
 
@@ -924,7 +946,9 @@ export class ArticulosService {
         const fechaAsignacionBase =
           articulo.fechaAsignacionComite ??
           articulo.historialEtapas
-            ?.filter((h) => h.etapaId === ArticulosService.ETAPA_COMITE_EDITORIAL)
+            ?.filter(
+              (h) => h.etapaId === ArticulosService.ETAPA_COMITE_EDITORIAL,
+            )
             ?.sort(
               (a, b) =>
                 new Date(a.fechaInicio).getTime() -
@@ -947,7 +971,8 @@ export class ArticulosService {
           ? new Date(fechaVencimientoBase)
           : null;
         const estaVencido =
-          !!fechaVencimientoDate && fechaVencimientoDate.getTime() < ahora.getTime();
+          !!fechaVencimientoDate &&
+          fechaVencimientoDate.getTime() < ahora.getTime();
         const diasRestantes = fechaVencimientoDate
           ? Math.ceil(
               (fechaVencimientoDate.getTime() - ahora.getTime()) /
@@ -997,7 +1022,9 @@ export class ArticulosService {
           const fechaAsignacionBase =
             articulo.fechaAsignacionComite ??
             articulo.historialEtapas
-              ?.filter((h) => h.etapaId === ArticulosService.ETAPA_COMITE_EDITORIAL)
+              ?.filter(
+                (h) => h.etapaId === ArticulosService.ETAPA_COMITE_EDITORIAL,
+              )
               ?.sort(
                 (a, b) =>
                   new Date(a.fechaInicio).getTime() -
@@ -1044,18 +1071,26 @@ export class ArticulosService {
     const asignados = await this.getArticulosAsignadosComite(usuarioId);
 
     const totalEvaluadas = historial.length;
-    const totalAceptadas = historial.filter((h) => h.decision === 'aceptado').length;
-    const totalRechazadas = historial.filter((h) => h.decision === 'rechazado').length;
+    const totalAceptadas = historial.filter(
+      (h) => h.decision === 'aceptado',
+    ).length;
+    const totalRechazadas = historial.filter(
+      (h) => h.decision === 'rechazado',
+    ).length;
     const totalPendientes = asignados.filter(
       (a) => a.estado_evaluacion === 'pendiente',
     ).length;
 
     const tiempos = historial
       .map((h) => h.diasEvaluacion)
-      .filter((d) => d !== null) as number[];
+      .filter((d) => d !== null);
     const promedioDiasEvaluacion =
       tiempos.length > 0
-        ? Number((tiempos.reduce((acc, v) => acc + v, 0) / tiempos.length).toFixed(2))
+        ? Number(
+            (tiempos.reduce((acc, v) => acc + v, 0) / tiempos.length).toFixed(
+              2,
+            ),
+          )
         : 0;
 
     const tasaAprobacion =
@@ -1066,9 +1101,12 @@ export class ArticulosService {
     const tasaCumplimiento30Dias =
       totalEvaluadas > 0
         ? Number(
-            ((historial.filter((h) => (h.diasEvaluacion ?? 9999) <= 30).length /
-              totalEvaluadas) *
-              100).toFixed(2),
+            (
+              (historial.filter((h) => (h.diasEvaluacion ?? 9999) <= 30)
+                .length /
+                totalEvaluadas) *
+              100
+            ).toFixed(2),
           )
         : 0;
 
@@ -1123,7 +1161,8 @@ export class ArticulosService {
     ];
 
     resumenSheet.mergeCells('A1:B1');
-    resumenSheet.getCell('A1').value = 'REVISTA HUELLAS - REPORTE COMITE EDITORIAL';
+    resumenSheet.getCell('A1').value =
+      'REVISTA HUELLAS - REPORTE COMITÉ EDITORIAL';
     resumenSheet.getCell('A1').font = {
       bold: true,
       color: { argb: 'FFFFFFFF' },
@@ -1137,12 +1176,21 @@ export class ArticulosService {
     };
 
     const resumenRows = [
-      { indicador: 'Fecha de generación', valor: new Date().toLocaleString('es-CO') },
+      {
+        indicador: 'Fecha de generación',
+        valor: new Date().toLocaleString('es-CO'),
+      },
       { indicador: 'Total asignadas', valor: estadisticas.totalAsignadas },
       { indicador: 'Total pendientes', valor: estadisticas.totalPendientes },
       { indicador: 'Total evaluadas', valor: estadisticas.totalEvaluadas },
-      { indicador: 'Tasa de aprobación (%)', valor: estadisticas.tasaAprobacion },
-      { indicador: 'Promedio días de evaluación', valor: estadisticas.promedioDiasEvaluacion },
+      {
+        indicador: 'Tasa de aprobación (%)',
+        valor: estadisticas.tasaAprobacion,
+      },
+      {
+        indicador: 'Promedio días de evaluación',
+        valor: estadisticas.promedioDiasEvaluacion,
+      },
       {
         indicador: 'Cumplimiento dentro de 30 días (%)',
         valor: estadisticas.tasaCumplimiento30Dias,
@@ -1239,7 +1287,7 @@ export class ArticulosService {
       color: rgb(1, 1, 1),
     });
 
-    page.drawText('Reporte Corporativo de Evaluaciones - Comite Editorial', {
+    page.drawText('Reporte Corporativo de Evaluaciones - Comité Editorial', {
       x: 36,
       y: height - 60,
       size: 11,
@@ -1307,13 +1355,16 @@ export class ArticulosService {
       cursorY -= 13;
     });
 
-    page.drawText('Documento generado automaticamente por el sistema editorial Huellas.', {
-      x: 36,
-      y: 22,
-      size: 8,
-      font: fontRegular,
-      color: colorMuted,
-    });
+    page.drawText(
+      'Documento generado automaticamente por el sistema editorial Huellas.',
+      {
+        x: 36,
+        y: 22,
+        size: 8,
+        font: fontRegular,
+        color: colorMuted,
+      },
+    );
 
     const bytes = await pdfDoc.save();
     return Buffer.from(bytes);
@@ -1426,7 +1477,9 @@ export class ArticulosService {
         archivoNombreOriginal: archivo.originalname,
       });
 
-    await this.dataSource.getRepository(ObservacionArchivo).save(observacionArchivo);
+    await this.dataSource
+      .getRepository(ObservacionArchivo)
+      .save(observacionArchivo);
 
     return {
       message: 'Corrección cargada correctamente',
@@ -1459,7 +1512,9 @@ export class ArticulosService {
       throw new NotFoundException('La corrección seleccionada no existe');
     }
 
-    const autoresIds = new Set((articulo.autores ?? []).map((autor) => autor.id));
+    const autoresIds = new Set(
+      (articulo.autores ?? []).map((autor) => autor.id),
+    );
     const usuarioObservacionId =
       observacionCorreccion.usuarioId ?? observacionCorreccion.usuario?.id;
 
@@ -1475,7 +1530,11 @@ export class ArticulosService {
     const textoCorreccionAutor =
       `${observacionCorreccion.asunto ?? ''} ${observacionCorreccion.comentarios ?? ''}`.toLowerCase();
 
-    if (!/correccion enviada por autor|corrección enviada por autor/.test(textoCorreccionAutor)) {
+    if (
+      !/correccion enviada por autor|corrección enviada por autor/.test(
+        textoCorreccionAutor,
+      )
+    ) {
       throw new BadRequestException(
         'La observación indicada no corresponde a una corrección de autor',
       );
@@ -1505,7 +1564,8 @@ export class ArticulosService {
         return false;
       }
 
-      const texto = `${obs.asunto ?? ''} ${obs.comentarios ?? ''}`.toLowerCase();
+      const texto =
+        `${obs.asunto ?? ''} ${obs.comentarios ?? ''}`.toLowerCase();
       return /correccion aceptada|corrección aceptada|correccion aprobada|corrección aprobada/.test(
         texto,
       );
@@ -1517,15 +1577,17 @@ export class ArticulosService {
       };
     }
 
-    const observacionAceptacion = this.dataSource.getRepository(Observacion).create({
-      articuloId,
-      usuarioId: usuarioAdminId,
-      etapaId: articulo.etapaActualId,
-      asunto: ArticulosService.ASUNTO_CORRECCION_ACEPTADA,
-      comentarios:
-        comentarios?.trim() ||
-        'Se confirma que la corrección del autor fue revisada y aceptada.',
-    });
+    const observacionAceptacion = this.dataSource
+      .getRepository(Observacion)
+      .create({
+        articuloId,
+        usuarioId: usuarioAdminId,
+        etapaId: articulo.etapaActualId,
+        asunto: ArticulosService.ASUNTO_CORRECCION_ACEPTADA,
+        comentarios:
+          comentarios?.trim() ||
+          'Se confirma que la corrección del autor fue revisada y aceptada.',
+      });
 
     const registro = await this.dataSource
       .getRepository(Observacion)
@@ -1537,8 +1599,13 @@ export class ArticulosService {
     };
   }
 
-  private tieneCorreccionPendiente(articulo: Articulo, userId: number): boolean {
-    const autoresIds = new Set((articulo.autores ?? []).map((autor) => autor.id));
+  private tieneCorreccionPendiente(
+    articulo: Articulo,
+    userId: number,
+  ): boolean {
+    const autoresIds = new Set(
+      (articulo.autores ?? []).map((autor) => autor.id),
+    );
     const observaciones = articulo.observaciones ?? [];
 
     let ultimaSolicitudCorreccion: Date | null = null;
@@ -1551,15 +1618,21 @@ export class ArticulosService {
         continue;
       }
 
-      const usuarioObservacionId = observacion.usuarioId ?? observacion.usuario?.id;
+      const usuarioObservacionId =
+        observacion.usuarioId ?? observacion.usuario?.id;
       const esAutor =
-        (typeof usuarioObservacionId === 'number' && autoresIds.has(usuarioObservacionId)) ||
+        (typeof usuarioObservacionId === 'number' &&
+          autoresIds.has(usuarioObservacionId)) ||
         false;
 
-      const texto = `${observacion.asunto ?? ''} ${observacion.comentarios ?? ''}`.toLowerCase();
+      const texto =
+        `${observacion.asunto ?? ''} ${observacion.comentarios ?? ''}`.toLowerCase();
 
       const esAceptacionCorreccion =
-        !esAutor && /(correccion aceptada|corrección aceptada|correccion aprobada|corrección aprobada)/.test(texto);
+        !esAutor &&
+        /(correccion aceptada|corrección aceptada|correccion aprobada|corrección aprobada)/.test(
+          texto,
+        );
 
       if (esAceptacionCorreccion) {
         if (!ultimaAceptacionCorreccion || fecha > ultimaAceptacionCorreccion) {
@@ -1569,7 +1642,8 @@ export class ArticulosService {
       }
 
       const esSolicitudCorreccion =
-        !esAutor && /(correccion|corrección|ajuste|subsan|pendiente)/.test(texto);
+        !esAutor &&
+        /(correccion|corrección|ajuste|subsan|pendiente)/.test(texto);
 
       if (esSolicitudCorreccion) {
         if (!ultimaSolicitudCorreccion || fecha > ultimaSolicitudCorreccion) {
@@ -1580,7 +1654,8 @@ export class ArticulosService {
 
       const esRespuestaAutorCorreccion =
         usuarioObservacionId === userId &&
-        (observacion.asunto ?? '').trim() === ArticulosService.ASUNTO_CORRECCION_AUTOR;
+        (observacion.asunto ?? '').trim() ===
+          ArticulosService.ASUNTO_CORRECCION_AUTOR;
 
       if (esRespuestaAutorCorreccion) {
         if (!ultimaRespuestaAutor || fecha > ultimaRespuestaAutor) {
@@ -1596,7 +1671,8 @@ export class ArticulosService {
     if (
       ultimaAceptacionCorreccion &&
       ultimaAceptacionCorreccion >= ultimaSolicitudCorreccion &&
-      (!ultimaRespuestaAutor || ultimaAceptacionCorreccion >= ultimaRespuestaAutor)
+      (!ultimaRespuestaAutor ||
+        ultimaAceptacionCorreccion >= ultimaRespuestaAutor)
     ) {
       return false;
     }
@@ -1667,8 +1743,11 @@ export class ArticulosService {
           continue;
         }
 
-        const texto = `${obs.asunto ?? ''} ${obs.comentarios ?? ''}`.toLowerCase();
-        const tipo = /(correccion|corrección|ajuste|subsan|pendiente)/.test(texto)
+        const texto =
+          `${obs.asunto ?? ''} ${obs.comentarios ?? ''}`.toLowerCase();
+        const tipo = /(correccion|corrección|ajuste|subsan|pendiente)/.test(
+          texto,
+        )
           ? 'accion'
           : 'informacion';
 
@@ -1726,7 +1805,13 @@ export class ArticulosService {
     const esAutor =
       articulo.autores?.some((autor) => autor.id === userId) ?? false;
 
-    if (!esAdmin && !esAutor && !esDirector && !esMonitor && !esComiteEditorial) {
+    if (
+      !esAdmin &&
+      !esAutor &&
+      !esDirector &&
+      !esMonitor &&
+      !esComiteEditorial
+    ) {
       throw new ForbiddenException(
         'No tienes permiso para descargar este archivo',
       );

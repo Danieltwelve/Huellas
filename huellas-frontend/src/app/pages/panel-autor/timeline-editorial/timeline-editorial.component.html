@@ -1,6 +1,6 @@
 <div class="timeline-container">
   <div class="selector-card">
-    <label for="articuloSelector">Articulo a seguir</label>
+    <label for="articuloSelector">Artículo a seguir</label>
     <select
       id="articuloSelector"
       [value]="articuloSeleccionadoId ?? ''"
@@ -14,7 +14,7 @@
   </div>
 
   @if (cargandoLista || cargandoFlujo) {
-    <div class="demo-banner">Cargando seguimiento del articulo...</div>
+    <div class="demo-banner">Cargando seguimiento del artículo...</div>
   }
 
   @if (error) {
@@ -22,7 +22,7 @@
   }
 
   @if (!cargandoLista && articulos.length === 0) {
-    <div class="demo-banner">Aun no tienes articulos enviados para seguimiento.</div>
+    <div class="demo-banner">Aún no tienes artículos enviados para seguimiento.</div>
   }
 
   @if (flujo) {
@@ -30,7 +30,7 @@
   <div class="header-card">
     <div class="header-info">
       <p class="eyebrow">Proceso editorial</p>
-      <h1>Timeline del articulo</h1>
+      <h1>Timeline del artículo</h1>
       <p>{{ titulo }}</p>
     </div>
     <div class="progress-section">
