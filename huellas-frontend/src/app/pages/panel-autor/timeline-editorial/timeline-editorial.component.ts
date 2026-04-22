@@ -45,7 +45,7 @@ export class TimelineEditorialComponent implements OnInit {
   cargandoFlujo = false;
   error: string | null = null;
 
-  private readonly ordenEtapas: number[] = [1, 2, 6, 3, 4, 8, 9, 5];
+  private readonly ordenEtapas: number[] = [1, 6, 3, 4, 8, 9, 5];
 
   private readonly etapasBase: Array<{
     id: number;
@@ -58,9 +58,9 @@ export class TimelineEditorialComponent implements OnInit {
       descripcion: 'Validacion editorial inicial del envio',
     },
     {
-      id: 2,
-      nombre: 'Recepción',
-      descripcion: 'Registro formal del artículo en la revista',
+      id: 6,
+      nombre: 'Comité editorial',
+      descripcion: 'Evaluación y decision del comite editorial',
     },
     {
       id: 3,

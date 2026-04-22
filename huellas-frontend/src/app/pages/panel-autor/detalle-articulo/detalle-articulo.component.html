@@ -1,0 +1,131 @@
+<section class="detalle-page">
+  <header class="encabezado" *ngIf="!loading && articulo">
+    <div>
+      <p class="kicker">Panel autor</p>
+      <h1>Detalle del artículo</h1>
+      <p class="subtitle">{{ tituloArticulo }}</p>
+    </div>
+    <span class="estado-pill">{{ etapaActualLabel }}</span>
+  </header>
+
+  <div class="loading" *ngIf="loading">Cargando información del artículo...</div>
+  <div class="error" *ngIf="!loading && error">{{ error }}</div>
+
+  <ng-container *ngIf="!loading && !error && articulo">
+    <nav class="etapas-navbar" aria-label="Etapas del artículo">
+      <button
+        type="button"
+        class="etapa-chip"
+        *ngFor="let etapa of etapas; let i = index"
+        [class.etapa-chip--actual]="etapa.estado === 'actual'"
+        [class.etapa-chip--completada]="etapa.estado === 'completada'"
+      >
+        <span class="etapa-numero">{{ i + 1 }}.</span>
+        <span class="etapa-texto">{{ etapa.titulo }}</span>
+      </button>
+    </nav>
+
+    <section class="info-section">
+      <div class="section-head">
+        <span>Contexto editorial</span>
+        <h2>Información enviada por el autor</h2>
+      </div>
+
+      <div class="info-grid">
+        <article class="info-card">
+          <h3>Autores</h3>
+          <p>{{ autoresTexto }}</p>
+        </article>
+        <article class="info-card">
+          <h3>Temas</h3>
+          <p>{{ temasTexto }}</p>
+        </article>
+        <article class="info-card">
+          <h3>Palabras clave</h3>
+          <p>{{ palabrasClaveTexto }}</p>
+        </article>
+        <article class="info-card">
+          <h3>Fecha de envío</h3>
+          <p>{{ fechaEnvioTexto }}</p>
+        </article>
+      </div>
+
+      <article class="info-card info-card--full">
+        <h3>Resumen</h3>
+        <p>{{ articulo.resumen }}</p>
+      </article>
+    </section>
+
+    <div class="main-grid">
+      <section class="panel-left card-surface">
+        <div class="section-head section-head--compact">
+          <span>Seguimiento</span>
+          <h2>Historial de observaciones</h2>
+        </div>
+
+        <article class="historial-item" *ngFor="let obs of historial">
+          <header>
+            <h3>{{ obs.asunto || 'Observación editorial' }}</h3>
+            <small>{{ formatearFechaHistorial(obs.fechaSubida) }}</small>
+          </header>
+          <p class="meta">
+            {{ obs.usuario?.nombre || 'Equipo editorial' }}
+            <span *ngIf="obs.etapa?.nombre"> - {{ obs.etapa?.nombre }}</span>
+          </p>
+          <p class="comentario" *ngIf="obs.comentarios">{{ obs.comentarios }}</p>
+
+          <div class="archivos" *ngIf="obs.archivos.length > 0">
+            <button
+              type="button"
+              class="archivo-btn"
+              *ngFor="let archivo of obs.archivos"
+              (click)="descargarArchivo(archivo.archivoPath, archivo.archivoNombreOriginal)"
+            >
+              {{ archivo.archivoNombreOriginal }}
+            </button>
+          </div>
+        </article>
+
+        <article class="historial-empty" *ngIf="historial.length === 0">
+          Aún no hay observaciones registradas para este artículo.
+        </article>
+      </section>
+
+      <aside class="panel-right">
+        <section class="escenario" [class]="'escenario ' + getEscenarioClass(escenarioActual.tipo)">
+          <p class="escenario-kicker">Acciones del autor</p>
+          <h3>{{ escenarioActual.titulo }}</h3>
+          <p>{{ escenarioActual.detalle }}</p>
+          <ul>
+            <li *ngFor="let accion of escenarioActual.acciones">{{ accion }}</li>
+          </ul>
+        </section>
+
+        <section class="correccion-box" *ngIf="mostrarFormularioCorreccion">
+          <h3>Enviar corrección del artículo</h3>
+          <p>Sube la nueva versión con los ajustes solicitados.</p>
+
+          <label for="archivoCorreccion">Archivo de corrección</label>
+          <input id="archivoCorreccion" type="file" accept=".pdf,.doc,.docx" (change)="onArchivoCorreccionSeleccionado($event)" />
+          <small *ngIf="nombreArchivoCorreccion">{{ nombreArchivoCorreccion }}</small>
+
+          <label for="comentariosCorreccion">Comentarios (opcional)</label>
+          <textarea
+            id="comentariosCorreccion"
+            rows="4"
+            maxlength="2000"
+            [(ngModel)]="comentariosCorreccion"
+            placeholder="Describe brevemente los cambios realizados"
+          ></textarea>
+
+          <div class="msg ok" *ngIf="mensajeCorreccion">{{ mensajeCorreccion }}</div>
+          <div class="msg error" *ngIf="errorCorreccion">{{ errorCorreccion }}</div>
+
+          <button type="button" (click)="enviarCorreccion()" [disabled]="enviandoCorreccion">
+            {{ enviandoCorreccion ? 'Enviando...' : 'Enviar corrección' }}
+          </button>
+        </section>
+      </aside>
+    </div>
+  </ng-container>
+</section>

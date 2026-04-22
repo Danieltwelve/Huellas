@@ -7,6 +7,7 @@ import { CertificadosComponent } from './certificados/certificados.component';
 import { TimelineEditorialComponent } from './timeline-editorial/timeline-editorial.component';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { ConfiguracionAutorComponent } from './configuracion/configuracion.component';
+import { DetalleArticuloComponent } from './detalle-articulo/detalle-articulo.component';
 
 export const PANEL_AUTOR_ROUTES: Routes = [
   {
@@ -15,6 +16,7 @@ export const PANEL_AUTOR_ROUTES: Routes = [
     children: [
       { path: '', redirectTo: 'mi-panel', pathMatch: 'full' },
       { path: 'mi-panel', component: MiPanelComponent },
+      { path: 'mi-panel/articulo/:id', component: DetalleArticuloComponent },
       { path: 'nuevo-articulo', component: NuevoArticuloComponent },
       { path: 'recursos', component: RecursosAutoresComponent },
       { path: 'certificados', component: CertificadosComponent },

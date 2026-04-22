@@ -1,7 +1,18 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { ArticulosAutorService, ArticuloAutor } from '../../../core/articulos/articulos-autor.service';
+import {
+  ArticulosAutorService,
+  ArticuloAutor,
+  NotificacionAutorBackend,
+} from '../../../core/articulos/articulos-autor.service';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+
+interface EscenarioAcciones {
+  tipo: 'alerta' | 'accion' | 'informacion' | 'exito';
+  titulo: string;
+  descripcion: string;
+  acciones: string[];
+}
 
 @Component({
   selector: 'app-mi-panel',
@@ -23,6 +34,11 @@ export class MiPanelComponent implements OnInit {
   nombreArchivoCorreccionActivo = '';
   comentariosCorreccionActivo = '';
   errorModalCorreccion: string | null = null;
+  articuloVistaAccionesActiva: ArticuloAutor | null = null;
+  notificacionesVistaAcciones: NotificacionAutorBackend[] = [];
+  cargandoVistaAcciones = false;
+  errorVistaAcciones: string | null = null;
+  private notificacionesCache: NotificacionAutorBackend[] | null = null;
   arrastrandoArchivoCorreccion = false;
   subiendoCorreccionIds = new Set<number>();
   estadoFiltro: 'todos' | 'revision' | 'correccion' | 'publicado' = 'todos';
@@ -128,9 +144,274 @@ export class MiPanelComponent implements OnInit {
   }
 
   verSeguimientoArticulo(articuloId: number): void {
-    this.router.navigate(['/panel-autor/timeline'], {
-      queryParams: { articuloId },
+    this.router.navigate(['/panel-autor/mi-panel/articulo', articuloId]);
+  }
+
+  cerrarVistaAcciones(): void {
+    this.articuloVistaAccionesActiva = null;
+    this.notificacionesVistaAcciones = [];
+    this.cargandoVistaAcciones = false;
+    this.errorVistaAcciones = null;
+  }
+
+  get escenarioVistaAcciones(): EscenarioAcciones | null {
+    if (!this.articuloVistaAccionesActiva) {
+      return null;
+    }
+
+    return this.construirEscenarioAcciones(
+      this.articuloVistaAccionesActiva,
+      this.notificacionesVistaAcciones,
+    );
+  }
+
+  get notificacionesRecientesVistaAcciones(): NotificacionAutorBackend[] {
+    return [...this.notificacionesVistaAcciones]
+      .sort(
+        (a, b) =>
+          new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+      )
+      .slice(0, 3);
+  }
+
+  getTipoEscenarioClass(tipo: EscenarioAcciones['tipo']): string {
+    if (tipo === 'alerta') {
+      return 'escenario-alerta';
+    }
+
+    if (tipo === 'exito') {
+      return 'escenario-exito';
+    }
+
+    if (tipo === 'accion') {
+      return 'escenario-accion';
+    }
+
+    return 'escenario-info';
+  }
+
+  getAccionPrincipalLabel(articulo: ArticuloAutor): string | null {
+    const escenario = this.construirEscenarioAcciones(
+      articulo,
+      this.notificacionesVistaAcciones,
+    );
+
+    if (escenario.tipo === 'alerta') {
+      return 'Ver notificaciones';
+    }
+
+    if (articulo.correccion_pendiente) {
+      return 'Añadir correccion';
+    }
+
+    if (this.getEstadoArticulo(articulo) === 'publicado') {
+      return 'Ver certificados';
+    }
+
+    return 'Ver notificaciones';
+  }
+
+  ejecutarAccionPrincipal(articulo: ArticuloAutor): void {
+    this.cerrarVistaAcciones();
+
+    if (articulo.correccion_pendiente) {
+      this.abrirModalCorreccion(articulo);
+      return;
+    }
+
+    if (this.getEstadoArticulo(articulo) === 'publicado') {
+      this.router.navigate(['/panel-autor/certificados']);
+      return;
+    }
+
+    this.router.navigate(['/panel-autor/notificaciones']);
+  }
+
+  getFechaRelativa(fechaIso: string): string {
+    const fecha = new Date(fechaIso);
+    if (isNaN(fecha.getTime())) {
+      return 'Sin fecha';
+    }
+
+    const ahora = Date.now();
+    const diffMs = Math.max(0, ahora - fecha.getTime());
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHoras = Math.floor(diffMin / 60);
+    const diffDias = Math.floor(diffHoras / 24);
+
+    if (diffMin < 1) {
+      return 'Hace unos segundos';
+    }
+
+    if (diffMin < 60) {
+      return `Hace ${diffMin} min`;
+    }
+
+    if (diffHoras < 24) {
+      return `Hace ${diffHoras} h`;
+    }
+
+    if (diffDias === 1) {
+      return 'Ayer';
+    }
+
+    if (diffDias < 7) {
+      return `Hace ${diffDias} dias`;
+    }
+
+    return fecha.toLocaleDateString('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     });
+  }
+
+  private filtrarNotificacionesArticulo(
+    notificaciones: NotificacionAutorBackend[],
+    articuloId: number,
+  ): NotificacionAutorBackend[] {
+    return notificaciones.filter((item) => item.articuloId === articuloId);
+  }
+
+  private construirEscenarioAcciones(
+    articulo: ArticuloAutor,
+    notificaciones: NotificacionAutorBackend[],
+  ): EscenarioAcciones {
+    const textoNotificaciones = this.normalizar(
+      notificaciones
+        .map((item) => `${item.titulo} ${item.detalle}`)
+        .join(' '),
+    );
+
+    const etapa = this.normalizar(articulo.etapa_nombre);
+
+    const fueDescartado =
+      etapa.includes('descart') ||
+      textoNotificaciones.includes('descartado') ||
+      textoNotificaciones.includes('rechazado');
+
+    if (fueDescartado) {
+      return {
+        tipo: 'alerta',
+        titulo: 'Articulo descartado en evaluacion editorial',
+        descripcion:
+          'Tu articulo no continuara en el flujo. Revisa la observacion para conocer el motivo (por ejemplo, resultado de Turniting o decision editorial).',
+        acciones: [
+          'Leer el detalle de la notificacion y observacion registrada por el equipo editorial.',
+          'Si aplica, preparar una nueva version para un futuro envio.',
+          'Contactar al equipo editorial en caso de requerir aclaraciones.',
+        ],
+      };
+    }
+
+    const requiereCorreccion =
+      articulo.correccion_pendiente ||
+      textoNotificaciones.includes('requiere correccion') ||
+      textoNotificaciones.includes('correccion enviada por autor') ||
+      textoNotificaciones.includes('correccion pendiente');
+
+    if (requiereCorreccion) {
+      return {
+        tipo: 'accion',
+        titulo: 'Correccion solicitada al autor',
+        descripcion:
+          'El equipo editorial solicito ajustes sobre tu manuscrito. Debes cargar una nueva version para continuar en el proceso.',
+        acciones: [
+          'Actualizar el manuscrito con base en las observaciones recibidas.',
+          'Adjuntar el archivo corregido desde el boton Añadir correccion.',
+          'Incluir comentarios cortos con los cambios realizados.',
+        ],
+      };
+    }
+
+    if (etapa.includes('publicac')) {
+      return {
+        tipo: 'exito',
+        titulo: 'Articulo publicado',
+        descripcion:
+          'Tu articulo completo el flujo editorial y ya se encuentra en estado de publicacion.',
+        acciones: [
+          'Consultar certificados y soportes disponibles del proceso.',
+          'Revisar las notificaciones historicas del articulo.',
+          'Mantener actualizada tu informacion para proximos envios.',
+        ],
+      };
+    }
+
+    if (etapa.includes('turniting')) {
+      return {
+        tipo: 'informacion',
+        titulo: 'Evaluacion de similitud en Turniting',
+        descripcion:
+          'El articulo esta en validacion de similitud. Si el resultado supera el umbral permitido, el sistema puede marcarlo como descartado o solicitar correccion segun la decision editorial.',
+        acciones: [
+          'Revisar notificaciones para conocer el resultado de Turniting.',
+          'Estar atento a solicitud de correccion o cambio de estado.',
+          'Preparar ajustes en caso de requerimiento del equipo editorial.',
+        ],
+      };
+    }
+
+    if (etapa.includes('comite')) {
+      return {
+        tipo: 'informacion',
+        titulo: 'Evaluacion del Comite Editorial',
+        descripcion:
+          'Tu articulo esta siendo evaluado por un miembro del Comite Editorial para decision de avance o rechazo.',
+        acciones: [
+          'Monitorear notificaciones de avance y decision del comite.',
+          'Revisar observaciones registradas sobre el articulo.',
+          'Mantener disponibilidad para atender posibles ajustes.',
+        ],
+      };
+    }
+
+    if (etapa.includes('pares')) {
+      return {
+        tipo: 'informacion',
+        titulo: 'Revision por pares academicos',
+        descripcion:
+          'El manuscrito esta en evaluacion por pares. En esta etapa pueden generarse recomendaciones para ajustes.',
+        acciones: [
+          'Esperar resultado de evaluacion de pares.',
+          'Consultar notificaciones cuando el equipo editorial registre novedades.',
+          'Preparar respuesta si se solicitan correcciones.',
+        ],
+      };
+    }
+
+    if (etapa.includes('certific') || etapa.includes('revision final')) {
+      return {
+        tipo: 'informacion',
+        titulo: 'Validaciones editoriales finales',
+        descripcion:
+          'El articulo se encuentra en la fase final de validaciones previas a publicacion.',
+        acciones: [
+          'Mantener seguimiento de notificaciones de cierre.',
+          'Revisar observaciones finales del equipo editorial.',
+          'Esperar confirmacion del cambio a publicacion.',
+        ],
+      };
+    }
+
+    return {
+      tipo: 'informacion',
+      titulo: 'Proceso editorial en curso',
+      descripcion:
+        'Tu articulo continua avanzando en el flujo editorial segun la etapa actual registrada.',
+      acciones: [
+        'Revisar notificaciones recientes del articulo.',
+        'Consultar el timeline editorial para ver trazabilidad completa.',
+        'Atender cualquier solicitud del equipo editorial.',
+      ],
+    };
+  }
+
+  private normalizar(texto: string): string {
+    return (texto ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
   }
 
   abrirModalCorreccion(articulo: ArticuloAutor): void {
@@ -234,6 +515,7 @@ export class MiPanelComponent implements OnInit {
       next: () => {
         this.subiendoCorreccionIds.delete(articulo.id);
         this.mensajeCorreccion = 'Correccion enviada correctamente.';
+        this.notificacionesCache = null;
         this.cerrarModalCorreccion();
         this.cargarArticulos();
       },
