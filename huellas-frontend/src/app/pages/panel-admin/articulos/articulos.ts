@@ -52,6 +52,7 @@ export class Articulos implements OnInit, OnDestroy {
   estadisticasComite: ComiteEstadisticas | null = null;
   historialEvaluaciones: ComiteEvaluacionHistorial[] = [];
   mostrarHistorial = false;
+  mostrarAccionesRapidas = true;
 
   articulos: ArticuloListado[] = [];
   filteredArticulos: ArticuloListado[] = [];
@@ -133,6 +134,10 @@ export class Articulos implements OnInit, OnDestroy {
     this.applySearch();
   }
 
+  toggleAccionesRapidas(): void {
+    this.mostrarAccionesRapidas = !this.mostrarAccionesRapidas;
+  }
+
   private applySearch(): void {
     const normalizedTerm = this.searchTerm.trim().toLowerCase();
 
@@ -165,7 +170,10 @@ export class Articulos implements OnInit, OnDestroy {
 
   private mapArticulo(articulo: ArticuloResumenBackend): ArticuloListado {
     const etapaActual = articulo.etapa_nombre?.trim() || 'Desconocida';
-    const fecha = this.parseFecha(articulo.fecha_inicio);
+    const fechaReferencia = this.committeeView
+      ? articulo.fecha_asignacion ?? articulo.fecha_inicio
+      : articulo.fecha_inicio;
+    const fecha = this.parseFecha(fechaReferencia);
     const estadoComite = this.mapEstadoComite(articulo.estado_evaluacion);
 
     return {
@@ -196,10 +204,10 @@ export class Articulos implements OnInit, OnDestroy {
     }
 
     if (articulo.diasRestantes <= 5) {
-      return `Por vencer (${articulo.diasRestantes} dias)`;
+      return 'Por vencer';
     }
 
-    return `${articulo.diasRestantes} dias restantes`;
+    return `${articulo.diasRestantes} días restantes`;
   }
 
   getEstadoPlazoClase(articulo: ArticuloListado): string {
@@ -340,8 +348,8 @@ export class Articulos implements OnInit, OnDestroy {
       return 'stage--revision-preliminar';
     }
 
-    if (etapaNormalizada.includes('turniting') || etapaNormalizada.includes('turnitin')) {
-      return 'stage--turniting';
+    if (etapaNormalizada.includes('turnitin')) {
+      return 'stage--turnitin';
     }
 
     if (etapaNormalizada.includes('revision por pares')) {

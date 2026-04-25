@@ -161,48 +161,59 @@
         </button>
       </div>
 
-      <section class="accion-card card-turniting" *ngIf="puedeMostrarTurniting">
-        <span class="accion-label">Evaluación Turniting</span>
+      <section class="accion-card card-turnitin" *ngIf="puedeMostrarTurnitin && !articuloYaEvaluadoPorTurnitin">
+        <span class="accion-label">Evaluación Turnitin</span>
         <p class="asignacion-helper">Si la similitud es 65% o más, el artículo queda descartado. Si es menor, el autor podrá hacer una sola corrección.</p>
+        <p class="asignacion-helper">
+          Si el porcentaje es menor a 65%, debes registrar observación y adjuntar soporte de Turnitin (máximo 10 MB).
+        </p>
 
         <div class="select-wrapper select-wrapper--compact">
           <input
             type="number"
             class="input-control"
-            [(ngModel)]="porcentajeTurniting"
+            [(ngModel)]="porcentajeTurnitin"
+            (input)="onPorcentajeTurnitinInput($event)"
             min="0"
             max="100"
             step="0.1"
             placeholder="Porcentaje de similitud"
-            aria-label="Porcentaje de similitud Turniting"
+            aria-label="Porcentaje de similitud Turnitin"
           />
         </div>
 
         <textarea
           class="input-control"
-          [(ngModel)]="observacionTurniting"
+          [(ngModel)]="observacionTurnitin"
           rows="4"
-          placeholder="Observación opcional sobre la evaluación"
-          aria-label="Observación Turniting"
+          [placeholder]="requiereSoporteCorreccionTurnitin ? 'Observación obligatoria para corrección' : 'Observación opcional sobre la evaluación'"
+          aria-label="Observación Turnitin"
         ></textarea>
 
-        <label class="file-label" for="archivoTurniting">Adjuntar soporte de Turniting (opcional)</label>
+        <label class="file-label" for="archivoTurnitin">
+          Adjuntar soporte de Turnitin {{ requiereSoporteCorreccionTurnitin ? '(obligatorio, máximo 10 MB)' : '(opcional, máximo 10 MB)' }}
+        </label>
         <input
-          id="archivoTurniting"
+          id="archivoTurnitin"
           type="file"
           class="file-input"
-          (change)="onArchivoTurnitingSeleccionado($event)"
+          (change)="onArchivoTurnitinSeleccionado($event)"
         />
-        <p class="file-name" *ngIf="nombreArchivoTurniting">{{ nombreArchivoTurniting }}</p>
+        <p class="file-name" *ngIf="nombreArchivoTurnitin">{{ nombreArchivoTurnitin }}</p>
 
         <button
           class="btn-outline-teal btn-full"
           type="button"
-          (click)="registrarEvaluacionTurniting()"
-          [disabled]="evaluandoTurniting"
+          (click)="abrirConfirmacionEvaluacionTurnitin()"
+          [disabled]="evaluandoTurnitin"
         >
-          {{ evaluandoTurniting ? 'Registrando...' : 'Registrar evaluación Turniting' }}
+          {{ evaluandoTurnitin ? 'Registrando...' : 'Registrar evaluación Turnitin' }}
         </button>
+      </section>
+
+      <section class="accion-card card-resultado-turnitin" *ngIf="puedeMostrarTurnitin && articuloYaEvaluadoPorTurnitin">
+        <span class="accion-label">Evaluación Turnitin</span>
+        <p class="asignacion-helper">Este artículo ya tiene una evaluación de Turnitin registrada y no admite una nueva evaluación.</p>
       </section>
 
       <section class="accion-group" *ngIf="esComiteEditorial">
@@ -351,10 +362,20 @@
         </button>
       </section>
 
-      <div class="mensaje-accion mensaje-accion--ok" *ngIf="accionExitosa">{{ accionExitosa }}</div>
       <div class="mensaje-accion mensaje-accion--error" *ngIf="accionError">{{ accionError }}</div>
 
     </aside>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalExitoMover" (click)="cerrarModalExitoMover()">
+    <section class="modal-confirmacion modal-confirmacion--mover-exito" role="dialog" aria-modal="true" aria-label="Etapa actualizada correctamente" (click)="$event.stopPropagation()">
+      <span class="modal-mover-badge">Etapa actualizada</span>
+      <h3>Cambio de etapa completado</h3>
+      <p>{{ mensajeExitoMover }}</p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-primario" (click)="cerrarModalExitoMover()">Entendido</button>
+      </div>
+    </section>
   </div>
 
   <div class="modal-overlay" *ngIf="mostrarModalConfirmacionMover" (click)="cancelarConfirmacionMoverArticulo()">
@@ -395,6 +416,32 @@
       <p>{{ mensajeExitoAsignacion }}</p>
       <div class="modal-acciones">
         <button type="button" class="btn-primario" (click)="cerrarModalExitoAsignacion()">Entendido</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionTurnitin" (click)="cancelarConfirmacionEvaluacionTurnitin()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar evaluación Turnitin" (click)="$event.stopPropagation()">
+      <h3>Confirmar evaluación Turnitin</h3>
+      <p>
+        ¿Deseas registrar esta evaluación con <strong>{{ porcentajeTurnitin }}%</strong> de similitud?
+      </p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionEvaluacionTurnitin()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="registrarEvaluacionTurnitin()" [disabled]="evaluandoTurnitin">
+          {{ evaluandoTurnitin ? 'Registrando...' : 'Sí, registrar evaluación' }}
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalExitoTurnitin" (click)="cerrarModalExitoTurnitin()">
+    <section class="modal-confirmacion modal-confirmacion--turnitin-exito" role="dialog" aria-modal="true" aria-label="Evaluación Turnitin registrada" (click)="$event.stopPropagation()">
+      <span class="modal-turnitin-badge">Evaluación registrada</span>
+      <h3>Turnitin procesado correctamente</h3>
+      <p>{{ mensajeExitoTurnitin }}</p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-primario" (click)="cerrarModalExitoTurnitin()">Entendido</button>
       </div>
     </section>
   </div>

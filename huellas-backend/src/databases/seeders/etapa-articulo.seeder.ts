@@ -25,7 +25,7 @@ export class EtapaArticuloSeeder implements OnModuleInit {
       },
       {
         id: 3,
-        nombre: 'TURNITING',
+        nombre: 'TURNITIN',
         descripcion:
           'Se está realizando la verificación de originalidad mediante la herramienta Turnitin.',
       },

@@ -64,7 +64,7 @@ export class TimelineEditorialComponent implements OnInit {
     },
     {
       id: 3,
-      nombre: 'Turniting',
+      nombre: 'Turnitin',
       descripcion: 'Validación de originalidad y similitud',
     },
     {

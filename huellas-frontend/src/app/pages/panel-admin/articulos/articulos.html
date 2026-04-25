@@ -50,45 +50,120 @@
       </label>
 
       @if (committeeView) {
-      <div class="filters">
-        <button
-          type="button"
-          class="filter-pill"
-          [class.active]="filtroEstadoComite === 'todos'"
-          (click)="setFiltroEstadoComite('todos')"
-        >
-          Todos
-        </button>
-        <button
-          type="button"
-          class="filter-pill"
-          [class.active]="filtroEstadoComite === 'pendiente'"
-          (click)="setFiltroEstadoComite('pendiente')"
-        >
-          Pendientes
-        </button>
-        <button
-          type="button"
-          class="filter-pill"
-          [class.active]="filtroEstadoComite === 'evaluado-aceptado'"
-          (click)="setFiltroEstadoComite('evaluado-aceptado')"
-        >
-          Aceptados
-        </button>
-        <button
-          type="button"
-          class="filter-pill"
-          [class.active]="filtroEstadoComite === 'evaluado-rechazado'"
-          (click)="setFiltroEstadoComite('evaluado-rechazado')"
-        >
-          Rechazados
-        </button>
-        <button type="button" class="filter-pill" (click)="exportarExcel()">Exportar Excel</button>
-        <button type="button" class="filter-pill" (click)="exportarPdf()">Exportar PDF</button>
-        <button type="button" class="filter-pill" (click)="mostrarHistorial = !mostrarHistorial">
-          {{ mostrarHistorial ? 'Ocultar historial' : 'Ver historial personal' }}
-        </button>
-        <button type="button" class="filter-pill" (click)="irNotificaciones()">Centro de notificaciones</button>
+      <div class="toolbar-cluster">
+        <div class="filters">
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="filtroEstadoComite === 'todos'"
+            (click)="setFiltroEstadoComite('todos')"
+          >
+            Todos
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="filtroEstadoComite === 'pendiente'"
+            (click)="setFiltroEstadoComite('pendiente')"
+          >
+            Pendientes
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="filtroEstadoComite === 'evaluado-aceptado'"
+            (click)="setFiltroEstadoComite('evaluado-aceptado')"
+          >
+            Aceptados
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="filtroEstadoComite === 'evaluado-rechazado'"
+            (click)="setFiltroEstadoComite('evaluado-rechazado')"
+          >
+            Rechazados
+          </button>
+        </div>
+
+        <div class="quick-actions-panel" [class.quick-actions-panel--collapsed]="!mostrarAccionesRapidas" aria-label="Acciones rápidas del comité">
+          <button
+            type="button"
+            class="quick-actions-header"
+            (click)="toggleAccionesRapidas()"
+            [attr.aria-expanded]="mostrarAccionesRapidas"
+          >
+            <div class="quick-actions-copy">
+              <span class="quick-actions-kicker">Acciones rápidas</span>
+              <p>Exporta, revisa historial o entra a notificaciones sin perder el contexto.</p>
+            </div>
+
+            <span class="quick-actions-toggle">
+              <span>{{ mostrarAccionesRapidas ? 'Contraer' : 'Expandir' }}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.rotated]="!mostrarAccionesRapidas">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+          </button>
+
+          @if (mostrarAccionesRapidas) {
+          <div class="quick-actions">
+            <button type="button" class="quick-action quick-action--excel" (click)="exportarExcel()">
+              <span class="quick-action__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <path d="M14 2v6h6"/>
+                  <path d="M9 12l3 3 3-3M12 15V9"/>
+                </svg>
+              </span>
+              <span>
+                <strong>Excel</strong>
+                <small>Exportación editable</small>
+              </span>
+            </button>
+
+            <button type="button" class="quick-action quick-action--pdf" (click)="exportarPdf()">
+              <span class="quick-action__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <path d="M14 2v6h6"/>
+                  <path d="M8 16h8M8 12h8"/>
+                </svg>
+              </span>
+              <span>
+                <strong>PDF</strong>
+                <small>Informe listo para imprimir</small>
+              </span>
+            </button>
+
+            <button type="button" class="quick-action quick-action--ghost" (click)="mostrarHistorial = !mostrarHistorial">
+              <span class="quick-action__icon quick-action__icon--ghost" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M12 7v5l3 3"/>
+                </svg>
+              </span>
+              <span>
+                <strong>{{ mostrarHistorial ? 'Ocultar historial' : 'Ver historial' }}</strong>
+                <small>Seguimiento personal</small>
+              </span>
+            </button>
+
+            <button type="button" class="quick-action quick-action--ghost" (click)="irNotificaciones()">
+              <span class="quick-action__icon quick-action__icon--ghost" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                  <path d="M10.5 21a1.5 1.5 0 0 0 3 0"/>
+                </svg>
+              </span>
+              <span>
+                <strong>Notificaciones</strong>
+                <small>Centro de alertas</small>
+              </span>
+            </button>
+          </div>
+          }
+        </div>
       </div>
       }
     </div>
@@ -165,7 +240,7 @@
                   {{ getEstadoPlazoLabel(articulo) }}
                 </span>
                 @if (articulo.fechaVencimiento !== '-') {
-                <small>Vence: {{ articulo.fechaVencimiento }}</small>
+                <span class="deadline-date">Vence: {{ articulo.fechaVencimiento }}</span>
                 }
               </div>
             </td>
@@ -212,8 +287,13 @@
 
         @if (committeeView) {
         <p class="meta">
-          <span class="deadline-pill" [ngClass]="getEstadoPlazoClase(articulo)">
-            {{ getEstadoPlazoLabel(articulo) }}
+          <span class="deadline-cell">
+            <span class="deadline-pill" [ngClass]="getEstadoPlazoClase(articulo)">
+              {{ getEstadoPlazoLabel(articulo) }}
+            </span>
+            @if (articulo.fechaVencimiento !== '-') {
+            <span class="deadline-date">Vence: {{ articulo.fechaVencimiento }}</span>
+            }
           </span>
         </p>
         }

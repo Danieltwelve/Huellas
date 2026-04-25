@@ -295,7 +295,7 @@ export class MiPanelComponent implements OnInit {
         tipo: 'alerta',
         titulo: 'Articulo descartado en evaluacion editorial',
         descripcion:
-          'Tu articulo no continuara en el flujo. Revisa la observacion para conocer el motivo (por ejemplo, resultado de Turniting o decision editorial).',
+          'Tu articulo no continuara en el flujo. Revisa la observacion para conocer el motivo (por ejemplo, resultado de Turnitin o decision editorial).',
         acciones: [
           'Leer el detalle de la notificacion y observacion registrada por el equipo editorial.',
           'Si aplica, preparar una nueva version para un futuro envio.',
@@ -338,14 +338,14 @@ export class MiPanelComponent implements OnInit {
       };
     }
 
-    if (etapa.includes('turniting')) {
+    if (etapa.includes('turnitin')) {
       return {
         tipo: 'informacion',
-        titulo: 'Evaluacion de similitud en Turniting',
+        titulo: 'Evaluacion de similitud en Turnitin',
         descripcion:
           'El articulo esta en validacion de similitud. Si el resultado supera el umbral permitido, el sistema puede marcarlo como descartado o solicitar correccion segun la decision editorial.',
         acciones: [
-          'Revisar notificaciones para conocer el resultado de Turniting.',
+          'Revisar notificaciones para conocer el resultado de Turnitin.',
           'Estar atento a solicitud de correccion o cambio de estado.',
           'Preparar ajustes en caso de requerimiento del equipo editorial.',
         ],

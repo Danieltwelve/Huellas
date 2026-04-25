@@ -29,7 +29,7 @@ export class ArticulosService {
   private readonly logger = new Logger(ArticulosService.name);
 
   private static readonly ETAPA_REVISION_PRELIMINAR = 1;
-  private static readonly ETAPA_TURNITING = 3;
+  private static readonly ETAPA_TURNITIN = 3;
   private static readonly ETAPA_COMITE_EDITORIAL = 6;
   private static readonly ETAPAS_FLUJO_ORDENADO = [1, 6, 3, 4, 8, 9, 5];
   private static readonly ETAPA_DESCARTADO = 7;
@@ -38,10 +38,10 @@ export class ArticulosService {
     'Corrección enviada por autor';
   private static readonly ASUNTO_CORRECCION_ACEPTADA =
     'Corrección aceptada por equipo editorial';
-  private static readonly ASUNTO_EVALUACION_TURNITING_CORRECCION =
-    'Evaluación de Turniting: REQUIERE CORRECCIÓN';
-  private static readonly ASUNTO_EVALUACION_TURNITING_DESCARTADO =
-    'Evaluación de Turniting: DESCARTADO';
+  private static readonly ASUNTO_EVALUACION_TURNITIN_CORRECCION =
+    'Evaluación de Turnitin: REQUIERE CORRECCIÓN';
+  private static readonly ASUNTO_EVALUACION_TURNITIN_DESCARTADO =
+    'Evaluación de Turnitin: DESCARTADO';
   private static readonly ASUNTO_EVALUACION_COMITE_APROBADO =
     'Evaluación de comité editorial: ACEPTADO';
   private static readonly ASUNTO_EVALUACION_COMITE_RECHAZADO =
@@ -468,7 +468,7 @@ export class ArticulosService {
 
       if (
         articulo.etapaActualId === ArticulosService.ETAPA_COMITE_EDITORIAL &&
-        nuevaEtapaId === ArticulosService.ETAPA_TURNITING
+        nuevaEtapaId === ArticulosService.ETAPA_TURNITIN
       ) {
         const evaluacionComiteAceptada = await queryRunner.manager.findOne(
           Observacion,
@@ -496,13 +496,13 @@ export class ArticulosService {
 
         if (evaluacionComiteRechazada) {
           throw new BadRequestException(
-            'El artículo fue rechazado por el Comité Editorial y no puede avanzar a Turniting.',
+            'El artículo fue rechazado por el Comité Editorial y no puede avanzar a Turnitin.',
           );
         }
 
         if (!evaluacionComiteAceptada) {
           throw new BadRequestException(
-            'Para mover a Turniting, primero debes contar con una evaluación aprobada del Comité Editorial.',
+            'Para mover a Turnitin, primero debes contar con una evaluación aprobada del Comité Editorial.',
           );
         }
       }
@@ -564,7 +564,7 @@ export class ArticulosService {
     }
   }
 
-  async evaluarArticuloTurniting(
+  async evaluarArticuloTurnitin(
     articuloId: number,
     usuarioId: number,
     porcentaje: number,
@@ -586,31 +586,35 @@ export class ArticulosService {
 
       this.ensureArticuloNoDescartado(articulo);
 
-      if (articulo.etapaActualId !== ArticulosService.ETAPA_TURNITING) {
+      if (articulo.etapaActualId !== ArticulosService.ETAPA_TURNITIN) {
         throw new BadRequestException(
-          'El artículo no está en la etapa de Turniting.',
+          'El artículo no está en la etapa de Turnitin.',
         );
       }
 
       const evaluacionDescarta = porcentaje >= 65;
       const asuntoEvaluacion = evaluacionDescarta
-        ? ArticulosService.ASUNTO_EVALUACION_TURNITING_DESCARTADO
-        : ArticulosService.ASUNTO_EVALUACION_TURNITING_CORRECCION;
+        ? ArticulosService.ASUNTO_EVALUACION_TURNITIN_DESCARTADO
+        : ArticulosService.ASUNTO_EVALUACION_TURNITIN_CORRECCION;
 
       const comentarioBase = evaluacionDescarta
-        ? `Evaluación de Turniting: ${porcentaje}% de similitud. El artículo supera el umbral permitido y queda descartado.`
-        : `Evaluación de Turniting: ${porcentaje}% de similitud. El artículo puede continuar con una única corrección del autor.`;
+        ? `Evaluación de Turnitin: ${porcentaje}% de similitud. El artículo supera el umbral permitido y queda descartado.`
+        : `Evaluación de Turnitin: ${porcentaje}% de similitud. El artículo puede continuar con una única corrección del autor.`;
 
-      const observacionTurniting = queryRunner.manager.create(Observacion, {
+      const observacionFinal = observacion?.trim()
+        ? `${observacion.trim()}\n\n${comentarioBase}`
+        : comentarioBase;
+
+      const observacionTurnitin = queryRunner.manager.create(Observacion, {
         articuloId,
         usuarioId,
-        etapaId: ArticulosService.ETAPA_TURNITING,
+        etapaId: ArticulosService.ETAPA_TURNITIN,
         asunto: asuntoEvaluacion,
-        comentarios: observacion?.trim() || comentarioBase,
+        comentarios: observacionFinal,
       });
 
       const observacionGuardada =
-        await queryRunner.manager.save(observacionTurniting);
+        await queryRunner.manager.save(observacionTurnitin);
 
       if (archivo) {
         const registroArchivo = queryRunner.manager.create(ObservacionArchivo, {
@@ -664,8 +668,8 @@ export class ArticulosService {
 
       return {
         message: evaluacionDescarta
-          ? 'Artículo descartado por resultado de Turniting.'
-          : 'Turniting aprobado. Se notificó al autor para una única corrección.',
+          ? 'Artículo descartado por resultado de Turnitin.'
+          : 'Turnitin aprobado. Se notificó al autor para una única corrección.',
         evaluacion: {
           porcentaje,
           resultado: evaluacionDescarta ? 'descartado' : 'correccion-requerida',
@@ -674,8 +678,8 @@ export class ArticulosService {
         etapaActual: {
           id: evaluacionDescarta
             ? ArticulosService.ETAPA_DESCARTADO
-            : ArticulosService.ETAPA_TURNITING,
-          nombre: evaluacionDescarta ? 'DESCARTADO' : 'TURNITING',
+            : ArticulosService.ETAPA_TURNITIN,
+          nombre: evaluacionDescarta ? 'DESCARTADO' : 'TURNITIN',
         },
       };
     } catch (error) {

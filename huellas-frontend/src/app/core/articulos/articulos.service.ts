@@ -192,7 +192,7 @@ export class ArticulosService {
     );
   }
 
-  evaluarTurniting(
+  evaluarTurnitin(
     articuloId: number,
     payload: {
       porcentaje: number;
@@ -207,7 +207,7 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para evaluar Turniting.'));
+      return throwError(() => new Error('No hay sesión activa para evaluar Turnitin.'));
     }
 
     const formData = new FormData();
@@ -228,7 +228,7 @@ export class ArticulosService {
           evaluacion: { porcentaje: number; resultado: 'descartado' | 'correccion-requerida'; observacionId: number };
           etapaActual: { id: number; nombre: string };
         }>(
-          `${environment.apiUrlBackend}/articulos/${articuloId}/turniting/evaluacion`,
+          `${environment.apiUrlBackend}/articulos/${articuloId}/turnitin/evaluacion`,
           formData,
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),

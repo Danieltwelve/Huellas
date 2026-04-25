@@ -65,8 +65,16 @@
 
         <article class="historial-item" *ngFor="let obs of historial">
           <header>
-            <h3>{{ obs.asunto || 'Observación editorial' }}</h3>
-            <small>{{ formatearFechaHistorial(obs.fechaSubida) }}</small>
+            <div class="historial-titulo-wrap">
+              <h3>{{ obs.asunto || 'Observación editorial' }}</h3>
+              <span
+                class="turnitin-badge"
+                *ngIf="esObservacionTurnitin(obs)"
+              >
+                Similitud: {{ textoSimilitudTurnitin(obs) }}
+              </span>
+            </div>
+            <small class="historial-fecha">{{ formatearFechaHistorial(obs.fechaSubida) }}</small>
           </header>
           <p class="meta">
             {{ obs.usuario?.nombre || 'Equipo editorial' }}

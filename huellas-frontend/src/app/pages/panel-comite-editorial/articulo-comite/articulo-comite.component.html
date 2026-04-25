@@ -126,11 +126,16 @@
 
   <div class="modal-overlay" *ngIf="modalConfirmarDescarte">
     <div class="modal-box" role="dialog" aria-modal="true">
-      <h3>Confirmar rechazo del artículo</h3>
-      <p>Esta acción registrará el rechazo del comité para que el equipo editorial tome la decisión de etapa.</p>
+      <h3>Confirmar acción</h3>
+      <p *ngIf="decision === 'aceptar'">
+        ¿Deseas registrar este criterio y aprobar el artículo en la evaluación del comité?
+      </p>
+      <p *ngIf="decision === 'rechazar'">
+        ¿Deseas registrar este criterio y rechazar el artículo en la evaluación del comité?
+      </p>
       <div class="modal-actions">
         <button type="button" class="btn-secundario" (click)="cancelarDescarte()">Cancelar</button>
-        <button type="button" class="btn-primario" (click)="confirmarDescarte()">Sí, registrar rechazo</button>
+        <button type="button" class="btn-primario" (click)="confirmarDescarte()">Sí, emitir criterio</button>
       </div>
     </div>
   </div>

@@ -5,7 +5,7 @@ type FlujoTabId =
   | 'envio'
   | 'revision-preliminar'
   | 'comite-editorial'
-  | 'turniting'
+  | 'turnitin'
   | 'revision-pares'
   | 'certificacion'
   | 'revision-final'
@@ -28,7 +28,7 @@ export class GestionFlujoEditorial {
     { id: 'envio', label: 'Envíos' },
     { id: 'revision-preliminar', label: 'Revisión Preliminar' },
     { id: 'comite-editorial', label: 'Comité Editorial' },
-    { id: 'turniting', label: 'Turniting' },
+    { id: 'turnitin', label: 'Turnitin' },
     { id: 'revision-pares', label: 'Revisión por pares' },
     { id: 'certificacion', label: 'Certificación' },
     { id: 'revision-final', label: 'Revisión final' },

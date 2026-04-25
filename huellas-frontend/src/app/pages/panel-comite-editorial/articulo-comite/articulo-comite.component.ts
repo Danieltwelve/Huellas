@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, finalize, takeUntil, timeout } from 'rxjs';
 import {
   ArticuloFlujo,
   ArticulosService,
@@ -29,10 +30,11 @@ type SeccionDetalle = 'info' | 'rubricas' | 'documentos' | 'decision' | 'rubrica
   templateUrl: './articulo-comite.component.html',
   styleUrl: './articulo-comite.component.css',
 })
-export class ArticuloComiteComponent {
+export class ArticuloComiteComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly articulosService = inject(ArticulosService);
+  private readonly destroy$ = new Subject<void>();
 
   articulo: ArticuloFlujo | null = null;
   loading = true;
@@ -75,7 +77,7 @@ export class ArticuloComiteComponent {
   ];
 
   ngOnInit(): void {
-    this.route.params.subscribe((params) => {
+    this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       const id = Number(params['id']);
 
       if (!id) {
@@ -88,25 +90,39 @@ export class ArticuloComiteComponent {
     });
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   cargarArticulo(id: number): void {
     this.loading = true;
     this.error = null;
 
-    this.articulosService.getArticuloFlujo(id).subscribe({
-      next: (articulo) => {
-        this.articulo = articulo;
+    this.articulosService
+      .getArticuloFlujo(id)
+      .pipe(
+        timeout(15000),
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.loading = false;
+        }),
+      )
+      .subscribe({
+        next: (articulo) => {
+          this.articulo = articulo;
 
-        // Cargar información de vencimiento desde la data completa del articulo
-        // Por ahora usamos una estimación, después se actualizará desde el backend
-        this.calcularVencimiento();
-
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = err?.error?.message ?? 'No fue posible cargar el artículo.';
-        this.loading = false;
-      },
-    });
+          // Cargar información de vencimiento desde la data completa del articulo
+          // Por ahora usamos una estimación, después se actualizará desde el backend
+          this.calcularVencimiento();
+        },
+        error: (err) => {
+          this.error =
+            err?.name === 'TimeoutError'
+              ? 'La carga del artículo tardó demasiado. Intenta nuevamente.'
+              : err?.error?.message ?? 'No fue posible cargar el artículo.';
+        },
+      });
   }
 
   private calcularVencimiento(): void {
@@ -192,15 +208,15 @@ export class ArticuloComiteComponent {
       return;
     }
 
-    if (this.decision === 'rechazar' && !forzarEnvio) {
-      this.modalConfirmarDescarte = true;
-      return;
-    }
-
     if (this.decision === 'rechazar' && !this.observacion.trim()) {
       this.mensajeError = 'Debes agregar una observación para rechazar el artículo.';
       this.mensajeOk = null;
       this.modalConfirmarDescarte = false;
+      return;
+    }
+
+    if (!forzarEnvio) {
+      this.modalConfirmarDescarte = true;
       return;
     }
 

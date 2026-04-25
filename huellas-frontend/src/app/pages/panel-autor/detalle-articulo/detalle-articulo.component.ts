@@ -61,7 +61,7 @@ export class DetalleArticuloComponent implements OnInit {
   private readonly etapasBase: Array<{ id: number; titulo: string; descripcion: string }> = [
     { id: 1, titulo: 'Revisión preliminar', descripcion: 'Validación editorial inicial del envío' },
     { id: 6, titulo: 'Comité Editorial', descripcion: 'Revisión del artículo por un miembro del comité' },
-    { id: 3, titulo: 'Turniting', descripcion: 'Validación de originalidad y similitud' },
+    { id: 3, titulo: 'Turnitin', descripcion: 'Validación de originalidad y similitud' },
     { id: 4, titulo: 'Revisión por pares', descripcion: 'Evaluación por revisores académicos' },
     { id: 8, titulo: 'Certificación', descripcion: 'Verificación documental y editorial' },
     { id: 9, titulo: 'Revisión final', descripcion: 'Revisión integral previa a publicación' },
@@ -175,7 +175,7 @@ export class DetalleArticuloComponent implements OnInit {
       etapa.includes('descart') ||
       texto.includes('descartado') ||
       texto.includes('rechazado por el comite') ||
-      texto.includes('evaluacion de turniting: descartado');
+      texto.includes('evaluacion de turnitin: descartado');
 
     if (descartado) {
       return {
@@ -219,10 +219,10 @@ export class DetalleArticuloComponent implements OnInit {
       };
     }
 
-    if (etapa.includes('turniting')) {
+    if (etapa.includes('turnitin')) {
       return {
         tipo: 'informacion',
-        titulo: 'Evaluación de Turniting en curso',
+        titulo: 'Evaluación de Turnitin en curso',
         detalle:
           'El equipo editorial está validando similitud y originalidad del artículo. El resultado definirá si continúa, requiere corrección o se descarta.',
         acciones: [
@@ -365,16 +365,32 @@ export class DetalleArticuloComponent implements OnInit {
   }
 
   formatearFechaHistorial(fechaIso: string): string {
-    const fecha = new Date(fechaIso);
-    if (isNaN(fecha.getTime())) {
-      return 'Sin fecha';
+    return this.formatearFechaExacta(fechaIso) || 'Sin fecha';
+  }
+
+  esObservacionTurnitin(obs: ObservacionBackend): boolean {
+    const texto = this.normalizar(`${obs.asunto ?? ''} ${obs.etapa?.nombre ?? ''}`);
+    return texto.includes('turnitin');
+  }
+
+  obtenerPorcentajeTurnitin(obs: ObservacionBackend): string | null {
+    const fuente = `${obs.asunto ?? ''} ${obs.comentarios ?? ''}`;
+    const match = fuente.match(/(\d+(?:[\.,]\d+)?)\s*%/);
+
+    if (!match) {
+      return null;
     }
 
-    return new Intl.DateTimeFormat('es-CO', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone: 'America/Bogota',
-    }).format(fecha);
+    const valor = Number(match[1].replace(',', '.'));
+    if (!Number.isFinite(valor)) {
+      return null;
+    }
+
+    return `${valor % 1 === 0 ? valor.toFixed(0) : valor.toFixed(1)}%`;
+  }
+
+  textoSimilitudTurnitin(obs: ObservacionBackend): string {
+    return this.obtenerPorcentajeTurnitin(obs) ?? 'No registrada';
   }
 
 
@@ -402,15 +418,58 @@ export class DetalleArticuloComponent implements OnInit {
   }
 
   private formatearFechaCorta(fechaIso: string): string {
-    const fecha = new Date(fechaIso);
+    const valor = this.formatearFechaExacta(fechaIso, false);
+    return valor || 'Por definir';
+  }
+
+  private formatearFechaExacta(fechaIso: string, incluirHora = true): string | null {
+    const valor = (fechaIso ?? '').trim();
+    if (!valor) {
+      return null;
+    }
+
+    const sinZonaHoraria = !/(z|[+-]\d{2}:\d{2})$/i.test(valor);
+
+    if (sinZonaHoraria) {
+      const match = valor.match(
+        /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::\d{2}(?:\.\d{1,3})?)?$/,
+      );
+
+      if (match) {
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+        const hour24 = Number(match[4]);
+        const minute = Number(match[5]);
+
+        const fecha = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+        if (!incluirHora) {
+          return fecha;
+        }
+
+        const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+        const periodo = hour24 >= 12 ? 'p. m.' : 'a. m.';
+        return `${fecha}, ${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${periodo}`;
+      }
+    }
+
+    const fecha = new Date(valor);
     if (isNaN(fecha.getTime())) {
-      return 'Por definir';
+      return null;
     }
 
     return new Intl.DateTimeFormat('es-CO', {
       day: '2-digit',
-      month: 'short',
+      month: '2-digit',
       year: 'numeric',
+      ...(incluirHora
+        ? {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'America/Bogota',
+          }
+        : {}),
     }).format(fecha);
   }
 

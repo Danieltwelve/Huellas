@@ -55,6 +55,8 @@ interface EtapaTimeline {
   standalone: true,
 })
 export class FlujoTrabajoArticulo {
+  private static readonly MAX_TURNITIN_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+  private static readonly MODAL_EXITO_MOVER_AUTOCLOSE_MS = 3500;
   private readonly route = inject(ActivatedRoute);
   private readonly articulosService = inject(ArticulosService);
   private readonly authService = inject(AuthService);
@@ -62,6 +64,7 @@ export class FlujoTrabajoArticulo {
   private readonly autoRefreshMs = 12000;
   private articuloIdActual: number | null = null;
   private autoRefreshSubscription: Subscription | null = null;
+  private modalExitoMoverTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   private static readonly ETAPA_REVISION_PRELIMINAR = 1;
   private static readonly ETAPA_COMITE_EDITORIAL = 6;
@@ -75,11 +78,11 @@ export class FlujoTrabajoArticulo {
 
   guardandoObservacion = false;
   moviendoEtapa = false;
-  evaluandoTurniting = false;
-  porcentajeTurniting: number | null = null;
-  observacionTurniting = '';
-  archivoTurniting: File | null = null;
-  nombreArchivoTurniting = '';
+  evaluandoTurnitin = false;
+  porcentajeTurnitin: number | null = null;
+  observacionTurnitin = '';
+  archivoTurnitin: File | null = null;
+  nombreArchivoTurnitin = '';
   evaluandoComite = false;
   decisionComite: 'aceptar' | 'rechazar' = 'aceptar';
   observacionComite = '';
@@ -97,10 +100,15 @@ export class FlujoTrabajoArticulo {
   etapaMoverSeleccionadaId: number | null = null;
   mostrarModalConfirmacionMover = false;
   etapaDestinoConfirmacion: EtapaFlujo | null = null;
+  mostrarModalExitoMover = false;
+  mensajeExitoMover = '';
   mostrarModalConfirmacionAsignacion = false;
   miembroComiteConfirmacion: UsuarioBackend | null = null;
   mostrarModalExitoAsignacion = false;
   mensajeExitoAsignacion = '';
+  mostrarModalConfirmacionTurnitin = false;
+  mostrarModalExitoTurnitin = false;
+  mensajeExitoTurnitin = '';
 
   tituloArticulo = 'Cargando...';
 
@@ -109,7 +117,7 @@ export class FlujoTrabajoArticulo {
   readonly etapasDisponibles: EtapaFlujo[] = [
     { id: 1, titulo: 'Revisión Preliminar', activa: false },
     { id: 6, titulo: 'Comité Editorial', activa: false },
-    { id: 3, titulo: 'Turniting', activa: false },
+    { id: 3, titulo: 'Turnitin', activa: false },
     { id: 4, titulo: 'Revisión por pares', activa: false },
     { id: 8, titulo: 'Certificación', activa: false },
     { id: 9, titulo: 'Revisión final', activa: false },
@@ -155,6 +163,7 @@ export class FlujoTrabajoArticulo {
   }
 
   ngOnDestroy(): void {
+    this.limpiarTemporizadorModalExitoMover();
     this.detenerAutoRefresh();
   }
 
@@ -209,7 +218,7 @@ export class FlujoTrabajoArticulo {
     });
   }
 
-  cargarArticulo(id: number): void {
+  cargarArticulo(id: number, alCompletar?: () => void): void {
     this.loading = true;
     this.articulosService.getArticuloFlujo(id).subscribe({
       next: (data) => {
@@ -220,11 +229,18 @@ export class FlujoTrabajoArticulo {
         this.etapaMoverSeleccionadaId = this.etapaSiguientePermitida?.id ?? null;
         this.mostrarModalConfirmacionMover = false;
         this.etapaDestinoConfirmacion = null;
+        this.limpiarTemporizadorModalExitoMover();
+        this.mostrarModalExitoMover = false;
+        this.mensajeExitoMover = '';
         this.mostrarModalConfirmacionAsignacion = false;
         this.miembroComiteConfirmacion = null;
+        this.mostrarModalConfirmacionTurnitin = false;
+        this.mostrarModalExitoTurnitin = false;
+        this.mensajeExitoTurnitin = '';
         this.committeeMemberSeleccionadoId = data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
         this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
         this.loading = false;
+        alCompletar?.();
       },
       error: (err) => {
         console.error('Error al cargar artículo:', err);
@@ -480,6 +496,15 @@ export class FlujoTrabajoArticulo {
     );
   }
 
+  private esAsuntoEvaluacionTurnitin(asunto: string): boolean {
+    const texto = (asunto ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    return texto.includes('evalu') && texto.includes('turnitin');
+  }
+
   get etapaActual(): string {
     const etapaActiva = this.etapas.find((etapa) => etapa.activa);
     return etapaActiva?.titulo ?? 'Sin etapa';
@@ -596,12 +621,49 @@ export class FlujoTrabajoArticulo {
     this.nombreArchivoComite = file?.name ?? '';
   }
 
-  onArchivoTurnitingSeleccionado(event: Event): void {
+  onArchivoTurnitinSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files && input.files.length > 0 ? input.files[0] : null;
 
-    this.archivoTurniting = file;
-    this.nombreArchivoTurniting = file?.name ?? '';
+    if (file && !this.esTamanoArchivoTurnitinValido(file)) {
+      this.archivoTurnitin = null;
+      this.nombreArchivoTurnitin = '';
+      input.value = '';
+      this.accionError = 'El archivo de Turnitin no puede superar los 10 MB.';
+      this.accionExitosa = null;
+      return;
+    }
+
+    this.archivoTurnitin = file;
+    this.nombreArchivoTurnitin = file?.name ?? '';
+  }
+
+  onPorcentajeTurnitinInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const valorCrudo = input.value.trim();
+
+    if (!valorCrudo) {
+      this.porcentajeTurnitin = null;
+      return;
+    }
+
+    const numero = Number(valorCrudo.replace(',', '.'));
+    if (!Number.isFinite(numero)) {
+      input.value = '';
+      this.porcentajeTurnitin = null;
+      return;
+    }
+
+    const valorAcotado = Math.min(100, Math.max(0, numero));
+    this.porcentajeTurnitin = valorAcotado;
+
+    if (valorAcotado !== numero) {
+      input.value = String(valorAcotado);
+    }
+  }
+
+  private esTamanoArchivoTurnitinValido(file: File): boolean {
+    return file.size <= FlujoTrabajoArticulo.MAX_TURNITIN_FILE_SIZE_BYTES;
   }
 
   abrirConfirmacionAsignacionComite(): void {
@@ -773,6 +835,29 @@ export class FlujoTrabajoArticulo {
     this.etapaDestinoConfirmacion = null;
   }
 
+  cerrarModalExitoMover(): void {
+    this.limpiarTemporizadorModalExitoMover();
+    this.mostrarModalExitoMover = false;
+    this.mensajeExitoMover = '';
+  }
+
+  private programarCierreModalExitoMover(): void {
+    this.limpiarTemporizadorModalExitoMover();
+
+    this.modalExitoMoverTimeoutId = setTimeout(() => {
+      this.mostrarModalExitoMover = false;
+      this.mensajeExitoMover = '';
+      this.modalExitoMoverTimeoutId = null;
+    }, FlujoTrabajoArticulo.MODAL_EXITO_MOVER_AUTOCLOSE_MS);
+  }
+
+  private limpiarTemporizadorModalExitoMover(): void {
+    if (this.modalExitoMoverTimeoutId) {
+      clearTimeout(this.modalExitoMoverTimeoutId);
+      this.modalExitoMoverTimeoutId = null;
+    }
+  }
+
   moverArticulo(): void {
     if (!this.articulo || !this.etapaMoverSeleccionadaId) {
       return;
@@ -800,8 +885,12 @@ export class FlujoTrabajoArticulo {
     this.articulosService.moverEtapa(this.articulo.id, this.etapaMoverSeleccionadaId).subscribe({
       next: () => {
         this.moviendoEtapa = false;
-        this.accionExitosa = 'Etapa actualizada correctamente.';
-        this.cargarArticulo(this.articulo!.id);
+        this.cargarArticulo(this.articulo!.id, () => {
+          this.accionExitosa = null;
+          this.mensajeExitoMover = `El artículo avanzó correctamente a ${etapaSiguiente.titulo}.`;
+          this.mostrarModalExitoMover = true;
+          this.programarCierreModalExitoMover();
+        });
       },
       error: (err) => {
         console.error('Error al mover etapa:', err);
@@ -899,7 +988,7 @@ export class FlujoTrabajoArticulo {
     return etapaActualId === FlujoTrabajoArticulo.ETAPA_REVISION_PRELIMINAR;
   }
 
-  get puedeMostrarTurniting(): boolean {
+  get puedeMostrarTurnitin(): boolean {
     return this.articulo?.etapaActual?.id === 3 && this.authService.hasAnyRole(['admin', 'director', 'monitor']);
   }
 
@@ -914,6 +1003,12 @@ export class FlujoTrabajoArticulo {
     return this.historialVisible.some((registro) =>
       registro.etapaId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL &&
       this.esAsuntoEvaluacionComite(registro.asunto),
+    );
+  }
+
+  get articuloYaEvaluadoPorTurnitin(): boolean {
+    return this.historialVisible.some((registro) =>
+      registro.etapaId === 3 && this.esAsuntoEvaluacionTurnitin(registro.asunto),
     );
   }
 
@@ -942,7 +1037,7 @@ export class FlujoTrabajoArticulo {
 
   get mensajeResultadoComite(): string {
     if (this.resultadoEvaluacionComite === 'aceptado') {
-      return 'Comité Editorial aprobó el artículo. El equipo editorial (admin/director/monitor) ya puede moverlo a la siguiente etapa.';
+      return 'Comité Editorial aprobó el artículo. El equipo editorial ya puede moverlo a la siguiente etapa.';
     }
 
     if (this.resultadoEvaluacionComite === 'rechazado') {
@@ -1004,7 +1099,7 @@ export class FlujoTrabajoArticulo {
     }
 
     if (this.estaEnEtapaComite && this.resultadoEvaluacionComite !== 'aceptado') {
-      return 'Antes de mover a Turniting, el Comité Editorial debe evaluar y remitir la decisión del artículo.';
+      return 'Antes de mover a Turnitin, el Comité Editorial debe evaluar y remitir la decisión del artículo.';
     }
 
     if (this.etapaSiguientePermitida) {
@@ -1043,63 +1138,137 @@ export class FlujoTrabajoArticulo {
       this.loading ||
       this.guardandoObservacion ||
       this.moviendoEtapa ||
-      this.evaluandoTurniting ||
+      this.evaluandoTurnitin ||
       this.evaluandoComite ||
       this.asignandoComite ||
       this.mostrarModalConfirmacionMover ||
       this.mostrarModalConfirmacionAsignacion ||
       this.mostrarModalExitoAsignacion ||
+      this.mostrarModalConfirmacionTurnitin ||
+      this.mostrarModalExitoTurnitin ||
       !!this.archivoObservacion ||
-      !!this.archivoTurniting ||
+      !!this.archivoTurnitin ||
       !!this.archivoComite ||
       this.asuntoObservacion.trim().length > 0 ||
       this.comentarioObservacion.trim().length > 0 ||
-      this.observacionTurniting.trim().length > 0 ||
+      this.observacionTurnitin.trim().length > 0 ||
       this.observacionComite.trim().length > 0
     );
   }
 
-  registrarEvaluacionTurniting(): void {
-    if (!this.articulo || !this.puedeMostrarTurniting || this.evaluandoTurniting) {
+  abrirConfirmacionEvaluacionTurnitin(): void {
+    if (!this.articulo || !this.puedeMostrarTurnitin || this.evaluandoTurnitin) {
       return;
     }
 
-    if (this.porcentajeTurniting === null || this.porcentajeTurniting === undefined) {
-      this.accionError = 'Debes indicar el porcentaje de Turniting.';
+    if (this.articuloYaEvaluadoPorTurnitin) {
+      this.accionError = 'Este artículo ya fue evaluado en Turnitin y no admite una nueva evaluación.';
       this.accionExitosa = null;
       return;
     }
 
-    if (this.porcentajeTurniting < 0 || this.porcentajeTurniting > 100) {
-      this.accionError = 'El porcentaje debe estar entre 0 y 100.';
-      this.accionExitosa = null;
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    if (!this.validarFormularioTurnitin()) {
       return;
     }
 
-    this.evaluandoTurniting = true;
+    this.mostrarModalConfirmacionTurnitin = true;
+  }
+
+  cancelarConfirmacionEvaluacionTurnitin(): void {
+    this.mostrarModalConfirmacionTurnitin = false;
+  }
+
+  cerrarModalExitoTurnitin(): void {
+    this.mostrarModalExitoTurnitin = false;
+    this.mensajeExitoTurnitin = '';
+  }
+
+  private validarFormularioTurnitin(): boolean {
+    if (this.porcentajeTurnitin === null || this.porcentajeTurnitin === undefined) {
+      this.accionError = 'Debes indicar el porcentaje de Turnitin.';
+      this.accionExitosa = null;
+      return false;
+    }
+
+    if (!Number.isFinite(this.porcentajeTurnitin) || this.porcentajeTurnitin < 0 || this.porcentajeTurnitin > 100) {
+      this.accionError = 'El porcentaje de Turnitin debe estar entre 0 y 100%.';
+      this.accionExitosa = null;
+      return false;
+    }
+
+    if (this.requiereSoporteCorreccionTurnitin && !this.observacionTurnitin.trim()) {
+      this.accionError =
+        'Debes escribir una observación cuando la evaluación de Turnitin requiere correcciones.';
+      this.accionExitosa = null;
+      return false;
+    }
+
+    if (this.requiereSoporteCorreccionTurnitin && !this.archivoTurnitin) {
+      this.accionError =
+        'Debes adjuntar el soporte de Turnitin cuando la evaluación requiere correcciones.';
+      this.accionExitosa = null;
+      return false;
+    }
+
+    if (this.archivoTurnitin && !this.esTamanoArchivoTurnitinValido(this.archivoTurnitin)) {
+      this.accionError = 'El archivo de Turnitin no puede superar los 10 MB.';
+      this.accionExitosa = null;
+      return false;
+    }
+
+    return true;
+  }
+
+  registrarEvaluacionTurnitin(): void {
+    if (!this.articulo || !this.puedeMostrarTurnitin || this.evaluandoTurnitin || this.articuloYaEvaluadoPorTurnitin) {
+      return;
+    }
+
+    if (!this.validarFormularioTurnitin()) {
+      return;
+    }
+
+    const porcentaje = this.porcentajeTurnitin;
+    if (porcentaje === null) {
+      return;
+    }
+
+    this.cancelarConfirmacionEvaluacionTurnitin();
+
+    this.evaluandoTurnitin = true;
     this.accionError = null;
     this.accionExitosa = null;
 
     this.articulosService
-      .evaluarTurniting(this.articulo.id, {
-        porcentaje: this.porcentajeTurniting,
-        observacion: this.observacionTurniting.trim() || undefined,
-        archivo: this.archivoTurniting,
+      .evaluarTurnitin(this.articulo.id, {
+        porcentaje,
+        observacion: this.observacionTurnitin.trim() || undefined,
+        archivo: this.archivoTurnitin,
       })
       .subscribe({
         next: (respuesta) => {
-          this.evaluandoTurniting = false;
-          this.porcentajeTurniting = null;
-          this.observacionTurniting = '';
-          this.archivoTurniting = null;
-          this.nombreArchivoTurniting = '';
-          this.accionExitosa = respuesta.message;
+          this.evaluandoTurnitin = false;
+          this.porcentajeTurnitin = null;
+          this.observacionTurnitin = '';
+          this.archivoTurnitin = null;
+          this.nombreArchivoTurnitin = '';
+          this.mensajeExitoTurnitin =
+            respuesta.message || 'Evaluación de Turnitin registrada correctamente.';
+          this.mostrarModalExitoTurnitin = true;
+          this.accionExitosa = null;
           this.cargarArticulo(this.articulo!.id);
         },
         error: (err) => {
-          this.evaluandoTurniting = false;
-          this.accionError = err?.error?.message ?? 'No se pudo registrar la evaluación de Turniting.';
+          this.evaluandoTurnitin = false;
+          this.accionError = err?.error?.message ?? 'No se pudo registrar la evaluación de Turnitin.';
         },
       });
+  }
+
+  get requiereSoporteCorreccionTurnitin(): boolean {
+    return this.porcentajeTurnitin !== null && this.porcentajeTurnitin < 65;
   }
 }

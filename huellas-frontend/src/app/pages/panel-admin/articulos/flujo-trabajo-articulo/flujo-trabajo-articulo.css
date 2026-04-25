@@ -578,7 +578,7 @@
     linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
 }
 
-.card-turniting {
+.card-turnitin {
   border-color: rgba(180, 83, 9, 0.2);
   background:
     radial-gradient(700px 90px at 8% -24%, rgba(251, 146, 60, 0.14) 0%, transparent 42%),
@@ -590,6 +590,13 @@
   background:
     radial-gradient(700px 90px at 8% -24%, rgba(16, 185, 129, 0.12) 0%, transparent 42%),
     linear-gradient(180deg, #ffffff 0%, #f6fffb 100%);
+}
+
+.card-resultado-turnitin {
+  border-color: rgba(20, 184, 166, 0.3);
+  background:
+    radial-gradient(700px 90px at 8% -24%, rgba(20, 184, 166, 0.12) 0%, transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f4fffd 100%);
 }
 
 .asignacion-helper {
@@ -780,6 +787,72 @@
   margin: 0;
   color: #334155;
   line-height: 1.45;
+}
+
+.modal-confirmacion--turnitin-exito {
+  width: min(500px, 100%);
+  border-color: rgba(20, 184, 166, 0.28);
+  background:
+    radial-gradient(760px 140px at 14% -28%, rgba(20, 184, 166, 0.24) 0%, transparent 56%),
+    linear-gradient(180deg, #ffffff 0%, #f6fffd 100%);
+  box-shadow: 0 30px 54px -30px rgba(20, 184, 166, 0.52);
+  padding-top: 0.9rem;
+}
+
+.modal-confirmacion--mover-exito {
+  width: min(500px, 100%);
+  border-color: rgba(59, 130, 246, 0.28);
+  background:
+    radial-gradient(760px 140px at 14% -28%, rgba(59, 130, 246, 0.22) 0%, transparent 56%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 30px 54px -30px rgba(59, 130, 246, 0.45);
+  padding-top: 0.9rem;
+}
+
+.modal-mover-badge {
+  justify-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(59, 130, 246, 0.32);
+  border-radius: 999px;
+  padding: 0.3rem 0.62rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #1d4ed8;
+  background: rgba(239, 246, 255, 0.96);
+}
+
+.modal-mover-badge::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16);
+}
+
+.modal-turnitin-badge {
+  justify-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(20, 184, 166, 0.38);
+  border-radius: 999px;
+  padding: 0.3rem 0.62rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #0f766e;
+  background: rgba(240, 253, 250, 0.95);
+}
+
+.modal-turnitin-badge::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #0d9488;
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.18);
 }
 
 .modal-acciones {

@@ -32,7 +32,7 @@ import { CambiarEtapaDto } from './dto/cambiar-etapa.dto';
 import { SubmitCorreccionDto } from './dto/submit-correccion.dto';
 import { AceptarCorreccionDto } from './dto/aceptar-correccion.dto';
 import { EvaluarComiteDto } from './dto/evaluar-comite.dto';
-import { EvaluarTurnitingDto } from './dto/evaluar-turniting.dto';
+import { EvaluarTurnitinDto } from './dto/evaluar-turnitin.dto';
 import { diskStorage } from 'multer';
 import { validateOrReject, ValidationError } from 'class-validator';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -367,7 +367,7 @@ export class ArticulosController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'director', 'monitor')
-  @Post(':id/turniting/evaluacion')
+  @Post(':id/turnitin/evaluacion')
   @UseInterceptors(
     FileInterceptor('archivo', {
       storage: diskStorage({
@@ -381,9 +381,9 @@ export class ArticulosController {
       }),
     }),
   )
-  async evaluarTurniting(
+  async evaluarTurnitin(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: EvaluarTurnitingDto,
+    @Body() body: EvaluarTurnitinDto,
     @Req() req: any,
     @UploadedFile() archivo?: Express.Multer.File,
   ) {
@@ -395,12 +395,12 @@ export class ArticulosController {
       }
 
       throw new BadRequestException(
-        'El porcentaje de Turniting debe estar entre 0 y 100.',
+        'El porcentaje de Turnitin debe estar entre 0 y 100.',
       );
     }
 
     try {
-      return await this.articulosService.evaluarArticuloTurniting(
+      return await this.articulosService.evaluarArticuloTurnitin(
         id,
         req.user.userId,
         porcentaje,
