@@ -24,6 +24,11 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "css",
+            "optimization": {
+              "fonts": {
+                "inline": false
+              }
+            },
             "assets": [
               {
                 "glob": "**/*",
