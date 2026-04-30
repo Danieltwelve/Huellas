@@ -7,7 +7,7 @@ import {
   ArticulosService,
   ObservacionBackend,
 } from '../../../../core/articulos/articulos.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { normalizarNombreArchivo } from '../../../../core/utils/filename.utils';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { UsersService, UsuarioBackend } from '../../../../core/users/users.service';
@@ -61,6 +61,7 @@ export class FlujoTrabajoArticulo {
   private readonly articulosService = inject(ArticulosService);
   private readonly authService = inject(AuthService);
   private readonly usersService = inject(UsersService);
+  private readonly router = inject(Router);
   private readonly autoRefreshMs = 12000;
   private articuloIdActual: number | null = null;
   private autoRefreshSubscription: Subscription | null = null;
@@ -165,6 +166,11 @@ export class FlujoTrabajoArticulo {
   ngOnDestroy(): void {
     this.limpiarTemporizadorModalExitoMover();
     this.detenerAutoRefresh();
+  }
+
+  volverAlListado(): void {
+    // Ir al listado de artículos del panel de administración
+    this.router.navigate(['/articulos']);
   }
 
   private iniciarAutoRefresh(): void {

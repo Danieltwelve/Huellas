@@ -17,7 +17,7 @@ interface Miembro {
   selector: 'app-miembro-biografia',
   imports: [CommonModule, RouterLink],
   templateUrl: './miembro-biografia.html',
-  styleUrl: './miembro-biografia.scss',
+  styleUrl: './miembro-biografia.css',
   standalone: true
 })
 export class MiembroBiografia implements OnInit {

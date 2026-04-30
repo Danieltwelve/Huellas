@@ -30,7 +30,7 @@ type ResultadoTipo = 'success' | 'error';
   standalone: true,
   imports: [FormsModule],
   templateUrl: './modal-editar-edicion.html',
-  styleUrl: './modal-editar-edicion.scss',
+  styleUrl: './modal-editar-edicion.css',
 })
 export class ModalEditarEdicion {
   private readonly edicionesRevistaService = inject(EdicionesRevistaService);

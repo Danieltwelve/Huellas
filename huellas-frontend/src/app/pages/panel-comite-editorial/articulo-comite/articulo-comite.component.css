@@ -79,6 +79,17 @@
   gap: 1rem;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  margin-right: 0.6rem;
+}
+
+.btn-back {
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+}
+
 .cabecera.sticky {
   position: static;
   padding: 0.75rem 0.9rem;

@@ -43,3 +43,32 @@ select {
   font: inherit;
 }
 
+/* Global teal outlined button used across detail pages */
+.btn-outline-teal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #ffffff;
+  color: #0f766e;
+  border: 1.5px solid #44b2a9;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-outline-teal:hover {
+  transform: translateY(-1px);
+  background: #f0fdfa;
+  border-color: #2d9f97;
+  box-shadow: 0 14px 22px -20px rgba(68, 178, 169, 0.7);
+}
+
+.btn-back {
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+}
+

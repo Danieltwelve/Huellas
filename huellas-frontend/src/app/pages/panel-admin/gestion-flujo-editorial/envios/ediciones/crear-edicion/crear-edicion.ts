@@ -18,7 +18,7 @@ interface CrearEdicionForm {
   standalone: true,
   imports: [DatePipe, FormsModule],
   templateUrl: './crear-edicion.html',
-  styleUrl: './crear-edicion.scss',
+  styleUrl: './crear-edicion.css',
 })
 export class CrearEdicion {
   private readonly edicionesRevistaService = inject(EdicionesRevistaService);

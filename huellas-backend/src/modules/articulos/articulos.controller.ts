@@ -61,6 +61,13 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'monitor', 'director', 'comite-editorial')
+  @Get('estadisticas')
+  async getEstadisticasGenerales() {
+    return await this.articulosService.getEstadisticasGenerales();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('comite-editorial')
   @Get('comite/asignados')
   async getAsignadosComite(@Req() req: any) {
@@ -222,6 +229,24 @@ export class ArticulosController {
 
       throw error;
     }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor', 'comite-editorial', 'autor')
+  @Get('configuracion/envios')
+  async getEstadoEnviosArticulos() {
+    return await this.articulosService.getEstadoEnviosArticulos();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Patch('configuracion/envios')
+  async actualizarEstadoEnviosArticulos(@Body() body: { habilitado: boolean }) {
+    if (typeof body?.habilitado !== 'boolean') {
+      throw new BadRequestException('El valor habilitado debe ser booleano.');
+    }
+
+    return await this.articulosService.actualizarEstadoEnviosArticulos(body.habilitado);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

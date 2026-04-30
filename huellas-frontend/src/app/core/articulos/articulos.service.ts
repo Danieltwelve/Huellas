@@ -47,6 +47,30 @@ export interface ComiteNotificacionVencimiento {
   mensaje: string;
 }
 
+export interface EstadoEnviosArticulos {
+  habilitado: boolean;
+}
+
+export interface EstadisticasGeneralesArticulosBackend {
+  totalArticulos: number;
+  promedioAutores: number;
+  promedioTemas: number;
+  promedioDiasDesdeEnvio: number;
+  articulosEnPublicacion: number;
+  articulosEnProceso: number;
+  etapaDistribucion: Array<{ etapa: string; cantidad: number }>;
+  temaDistribucion: Array<{ tema: string; cantidad: number }>;
+  mensualDistribucion: Array<{ mes: string; cantidad: number }>;
+  articulosRecientes: Array<{
+    codigo: string;
+    titulo: string;
+    etapa: string;
+    fechaEnvio: string | null;
+    autores: number;
+    observaciones: number;
+  }>;
+}
+
 export interface ArticuloFlujo {
   id: number;
   codigo: string;
@@ -514,6 +538,61 @@ export class ArticulosService {
         this.http.post<any>(`${environment.apiUrlBackend}/articulos/envio`, formData, {
           headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
         }),
+      ),
+    );
+  }
+
+  getEstadoEnviosArticulos(): Observable<EstadoEnviosArticulos> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para consultar la configuración de envíos.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<EstadoEnviosArticulos>(`${environment.apiUrlBackend}/articulos/configuracion/envios`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
+      ),
+    );
+  }
+
+  actualizarEstadoEnviosArticulos(habilitado: boolean): Observable<EstadoEnviosArticulos> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para actualizar la configuración de envíos.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.patch<EstadoEnviosArticulos>(
+          `${environment.apiUrlBackend}/articulos/configuracion/envios`,
+          { habilitado },
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  getEstadisticasGeneralesArticulos(): Observable<EstadisticasGeneralesArticulosBackend> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para consultar estadísticas generales.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<EstadisticasGeneralesArticulosBackend>(
+          `${environment.apiUrlBackend}/articulos/estadisticas`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
       ),
     );
   }

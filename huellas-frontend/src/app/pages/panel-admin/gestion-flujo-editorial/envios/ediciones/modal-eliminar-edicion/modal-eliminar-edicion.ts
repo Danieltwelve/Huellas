@@ -6,7 +6,7 @@ import { EdicionesRevistaService } from '../../../../../../core/ediciones-revist
   standalone: true,
   imports: [],
   templateUrl: './modal-eliminar-edicion.html',
-  styleUrl: './modal-eliminar-edicion.scss',
+  styleUrl: './modal-eliminar-edicion.css',
 })
 export class ModalEliminarEdicion {
   private readonly edicionesRevistaService = inject(EdicionesRevistaService);

@@ -1,7 +1,58 @@
 <section class="gestion-flujo-editorial">
   <header class="page-header">
     <h1>Gestión del flujo editorial</h1>
+    <p>Control central del proceso editorial y del estado de recepción de artículos.</p>
   </header>
+
+  <section class="envios-card">
+    <div class="envios-card__copy">
+      <span class="envios-card__kicker">Recepción de artículos</span>
+      <h2>Enviar artículos</h2>
+      <p>
+        Activa o desactiva la opción para que los autores puedan enviar nuevos artículos.
+      </p>
+    </div>
+
+    <div class="envios-card__actions">
+      <span class="envios-card__estado" [class.envios-card__estado--off]="!envioHabilitado">
+        {{ cargandoEstadoEnvios ? 'Cargando...' : (envioHabilitado ? 'Habilitado' : 'Deshabilitado') }}
+      </span>
+
+      <button
+        type="button"
+        class="envios-card__button"
+        (click)="alternarEstadoEnvios()"
+        [disabled]="cargandoEstadoEnvios || guardandoEstadoEnvios"
+      >
+        {{ guardandoEstadoEnvios ? 'Guardando...' : (envioHabilitado ? 'Deshabilitar envío' : 'Habilitar envío') }}
+      </button>
+    </div>
+  </section>
+
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionEnvios" (click)="cancelarConfirmacionEnvios()">
+    <section
+      class="modal-confirmacion"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Confirmar cambio de estado de envíos"
+      (click)="$event.stopPropagation()"
+    >
+      <h3>
+        {{ estadoEnvioPendiente ? 'Habilitar envío de artículos' : 'Deshabilitar envío de artículos' }}
+      </h3>
+      <p>
+        {{ estadoEnvioPendiente
+          ? 'Los autores podrán volver a enviar nuevos artículos.'
+          : 'Los autores ya no podrán enviar nuevos artículos mientras el envío esté desactivado.' }}
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="cancelarConfirmacionEnvios()">Cancelar</button>
+        <button type="button" class="btn-primary" (click)="confirmarEstadoEnvios()">
+          {{ estadoEnvioPendiente ? 'Sí, habilitar' : 'Sí, deshabilitar' }}
+        </button>
+      </div>
+    </section>
+  </div>
 
   <nav class="flujo-tabs" aria-label="Etapas del flujo editorial">
     @for (tab of tabs; track tab.id) {

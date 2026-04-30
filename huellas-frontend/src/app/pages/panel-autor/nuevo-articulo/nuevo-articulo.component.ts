@@ -73,6 +73,8 @@ export class NuevoArticuloComponent implements OnInit {
   errorEnvio = '';
   exito = false;
   usuarioActualId: number | null = null;
+  envioHabilitado = true;
+  estadoEnvioCargando = true;
 
   claims$: Observable<AccessClaims> = this.authService.claims$;
 
@@ -110,6 +112,23 @@ export class NuevoArticuloComponent implements OnInit {
       asunto: ['', Validators.required],
       comentarios: [''],
       usuarios_ids: this.fb.array([]),
+    });
+
+    this.cargarEstadoEnvios();
+  }
+
+  private cargarEstadoEnvios(): void {
+    this.estadoEnvioCargando = true;
+
+    this.articulosService.getEstadoEnviosArticulos().subscribe({
+      next: (estado) => {
+        this.envioHabilitado = estado.habilitado;
+        this.estadoEnvioCargando = false;
+      },
+      error: () => {
+        this.envioHabilitado = true;
+        this.estadoEnvioCargando = false;
+      },
     });
   }
 
@@ -224,6 +243,11 @@ export class NuevoArticuloComponent implements OnInit {
   }
 
   submit(): void {
+    if (!this.envioHabilitado) {
+      this.errorEnvio = 'El envío de artículos está deshabilitado temporalmente.';
+      return;
+    }
+
     if (this.form.invalid || !this.archivoSeleccionado) {
       this.form.markAllAsTouched();
       if (!this.archivoSeleccionado) this.archivoError = 'El archivo es requerido';

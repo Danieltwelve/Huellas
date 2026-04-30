@@ -11,6 +11,9 @@ descripcion: string;
 autores: number;
 articulos: number;
 pdf: string;
+portada?: string;
+enlaceRevista?: string;
+enlacePublicacion?: string;
 }
 
 interface Articulo {
@@ -33,6 +36,8 @@ busqueda = '';
 anioFiltro = '';
 edicionSeleccionada: Edicion | null = null;
 articulosDeEdicion: Articulo[] = [];
+readonly portadaFallback = '/equipo/portada.jpg';
+readonly enlaceRevistaGeneral = '/acerca-de';
 
 anios = ['2025','2024','2023','2022','2021','2020','2019','2018','2017','2016','2015','2014'];
 
@@ -281,7 +286,12 @@ pdf:'assets/pdfs/vol1.pdf'
 }
 
 ].sort((a,b)=>b.id-a.id)
- .map(edicion => ({ ...edicion, articulos: 10 }));
+ .map(edicion => ({
+   ...edicion,
+   articulos: 10,
+   enlacePublicacion: edicion.pdf,
+   enlaceRevista: '/acerca-de',
+ }));
 
 verEdicion(edicion: Edicion){
 this.edicionSeleccionada = edicion;

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import {
   ArticuloFlujo,
@@ -41,6 +41,7 @@ interface EscenarioAutor {
 export class DetalleArticuloComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly location = inject(Location);
+  private readonly router = inject(Router);
   private readonly articulosService = inject(ArticulosService);
   private readonly articulosAutorService = inject(ArticulosAutorService);
 
@@ -263,7 +264,8 @@ export class DetalleArticuloComponent implements OnInit {
   }
 
   volverAtras(): void {
-    this.location.back();
+    // Navegar al listado del autor para mantener la misma experiencia visual
+    this.router.navigate(['/panel-autor/mi-panel']);
   }
 
   onArchivoCorreccionSeleccionado(event: Event): void {

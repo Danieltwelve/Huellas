@@ -1,10 +1,12 @@
 <section class="comite-detalle" *ngIf="!loading; else estadoCarga">
   <header class="cabecera sticky">
+    <div class="header-actions">
+      <button class="btn-outline-teal btn-back" type="button" (click)="volverListado()">Volver al listado</button>
+    </div>
     <div>
       <h1>Evaluación de Artículo</h1>
       <p class="subtitulo" *ngIf="articulo">{{ articulo.codigo }} - {{ articulo.titulo }}</p>
     </div>
-    <button type="button" class="btn-secundario" (click)="volverListado()">Volver al listado</button>
   </header>
 
   <!-- Banner de vencimiento -->

@@ -14,7 +14,7 @@ interface EnvioSidebarItem {
   standalone: true,
   imports: [Ediciones, Requisitos],
   templateUrl: './envios.html',
-  styleUrl: './envios.scss',
+  styleUrl: './envios.css',
 })
 export class Envios {
   @Output() guardar = new EventEmitter<void>();

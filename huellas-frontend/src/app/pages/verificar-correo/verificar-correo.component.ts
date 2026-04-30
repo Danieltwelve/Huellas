@@ -9,7 +9,7 @@ import { applyActionCode } from 'firebase/auth';
   standalone: true,
   imports: [CommonModule, RouterLink],
   templateUrl: './verificar-correo.component.html',
-  styleUrl: './verificar-correo.component.scss',
+  styleUrl: './verificar-correo.component.css',
 })
 export class VerificarCorreoComponent {
   private readonly route = inject(ActivatedRoute);

@@ -57,9 +57,30 @@
       *ngFor="let edicion of edicionesFiltradas()"
     >
 
+      <a
+        class="card-cover"
+        [href]="edicion.enlacePublicacion || edicion.pdf"
+        target="_blank"
+        rel="noopener"
+        [attr.aria-label]="'Abrir publicación de ' + edicion.titulo"
+      >
+        <img
+          class="card-cover-image"
+          [src]="edicion.portada || portadaFallback"
+          [alt]="'Portada de ' + edicion.titulo"
+          loading="lazy"
+        >
+        <span class="cover-year">{{ edicion.anio }}</span>
+        <span class="cover-badge">Ver portada</span>
+      </a>
+
       <div class="card-header">
         <h2>{{ edicion.titulo }}</h2>
-        <span class="fecha">{{ edicion.fecha }}</span>
+        <div class="card-meta">
+          <span class="fecha">{{ edicion.fecha }}</span>
+          <span class="meta-separator">•</span>
+          <span class="meta-text">Edición disponible</span>
+        </div>
       </div>
 
       <div class="card-content">
@@ -68,30 +89,52 @@
           {{ edicion.descripcion }}
         </p>
 
-        <div class="stats">
+        <div class="stats-row">
 
-          <div class="stat">
-            <span class="label">Autores</span>
-            <span class="value">{{ edicion.autores }}</span>
+          <div class="stat-pill">
+            <span class="stat-label">Autores</span>
+            <span class="stat-value">{{ edicion.autores }}</span>
           </div>
 
-          <div class="stat">
-            <span class="label">Artículos</span>
-            <span class="value">{{ edicion.articulos }}</span>
+          <div class="stat-pill">
+            <span class="stat-label">Artículos</span>
+            <span class="stat-value">{{ edicion.articulos }}</span>
           </div>
 
         </div>
+
+        <div class="link-panel">
+          <span class="link-panel-label">Enlace de publicación</span>
+          <a
+            class="link-panel-value"
+            [href]="edicion.enlacePublicacion || edicion.pdf"
+            target="_blank"
+            rel="noopener"
+          >
+            Abrir la edición publicada
+          </a>
+        </div>
+
+        <p class="card-caption">
+          Portada destacada y acceso directo al contenido publicado.
+        </p>
 
       </div>
 
       <div class="card-actions">
 
-        <button 
-          class="btn-primary"
-          (click)="verEdicion(edicion)"
-        >
-          Ver Edición
+        <button class="btn-primary" (click)="verEdicion(edicion)">
+          Ver artículos
         </button>
+
+        <a
+          class="btn-secondary"
+          [href]="edicion.enlaceRevista || enlaceRevistaGeneral"
+          target="_blank"
+          rel="noopener"
+        >
+          Revista general
+        </a>
 
       </div>
 
@@ -100,7 +143,7 @@
   </div>
 
   <div class="edicion-detalle" *ngIf="edicionSeleccionada">
-    <button class="btn-volver" (click)="volverAListado()">Volver al listado</button>
+    <button class="btn-outline-teal btn-back" (click)="volverAListado()">Volver al listado</button>
 
     <div class="articulos-grid">
       <article class="articulo-card" *ngFor="let articulo of articulosDeEdicion">

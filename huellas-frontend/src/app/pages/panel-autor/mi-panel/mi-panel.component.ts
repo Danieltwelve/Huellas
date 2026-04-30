@@ -4,6 +4,7 @@ import {
   ArticuloAutor,
   NotificacionAutorBackend,
 } from '../../../core/articulos/articulos-autor.service';
+import { ArticulosService } from '../../../core/articulos/articulos.service';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
@@ -23,6 +24,7 @@ interface EscenarioAcciones {
 })
 export class MiPanelComponent implements OnInit {
   private articulosService = inject(ArticulosAutorService);
+  private articulosEditorService = inject(ArticulosService);
   private router = inject(Router);
 
   articulos: ArticuloAutor[] = [];
@@ -43,6 +45,8 @@ export class MiPanelComponent implements OnInit {
   subiendoCorreccionIds = new Set<number>();
   estadoFiltro: 'todos' | 'revision' | 'correccion' | 'publicado' = 'todos';
   readonly hoy = new Date();
+  envioHabilitado = true;
+  cargandoEstadoEnvios = true;
 
   get totalArticulos() { return this.articulos.length; }
   get enRevision() { return this.articulos.filter(a => this.getEstadoArticulo(a) === 'revision').length; }
@@ -71,6 +75,22 @@ export class MiPanelComponent implements OnInit {
 
   ngOnInit() {
     this.cargarArticulos();
+    this.cargarEstadoEnvios();
+  }
+
+  private cargarEstadoEnvios(): void {
+    this.cargandoEstadoEnvios = true;
+
+    this.articulosEditorService.getEstadoEnviosArticulos().subscribe({
+      next: (estado) => {
+        this.envioHabilitado = estado.habilitado;
+        this.cargandoEstadoEnvios = false;
+      },
+      error: () => {
+        this.envioHabilitado = true;
+        this.cargandoEstadoEnvios = false;
+      },
+    });
   }
 
   private cargarArticulos(): void {

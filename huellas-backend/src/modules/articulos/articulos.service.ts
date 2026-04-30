@@ -23,6 +23,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FerchContador } from './entities/ferch-contador.entity';
 import { User } from '../users/user.entity';
 import { Tema } from '../temas/entities/tema.entity';
+import { ArticulosConfiguracion } from './entities/articulos-configuracion.entity';
 
 @Injectable()
 export class ArticulosService {
@@ -55,7 +56,43 @@ export class ArticulosService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(FerchContador)
     private readonly ferchContadorRepository: Repository<FerchContador>,
+    @InjectRepository(ArticulosConfiguracion)
+    private readonly articulosConfiguracionRepository: Repository<ArticulosConfiguracion>,
   ) {}
+
+  private readonly configuracionEnviosKey = 'envios_articulos_habilitados';
+
+  private async obtenerConfiguracionEnvios(): Promise<ArticulosConfiguracion> {
+    const configuracion = await this.articulosConfiguracionRepository.findOne({
+      where: { clave: this.configuracionEnviosKey },
+    });
+
+    if (configuracion) {
+      return configuracion;
+    }
+
+    const nuevaConfiguracion = this.articulosConfiguracionRepository.create({
+      clave: this.configuracionEnviosKey,
+      valorBooleano: true,
+    });
+
+    return await this.articulosConfiguracionRepository.save(nuevaConfiguracion);
+  }
+
+  async getEstadoEnviosArticulos(): Promise<{ habilitado: boolean }> {
+    const configuracion = await this.obtenerConfiguracionEnvios();
+    return { habilitado: configuracion.valorBooleano };
+  }
+
+  async actualizarEstadoEnviosArticulos(
+    habilitado: boolean,
+  ): Promise<{ habilitado: boolean }> {
+    const configuracion = await this.obtenerConfiguracionEnvios();
+    configuracion.valorBooleano = habilitado;
+    await this.articulosConfiguracionRepository.save(configuracion);
+
+    return { habilitado: configuracion.valorBooleano };
+  }
 
   private ensureArticuloNoDescartado(articulo: Articulo): void {
     if (articulo.etapaActualId === ArticulosService.ETAPA_DESCARTADO) {
@@ -84,6 +121,13 @@ export class ArticulosService {
     archivoNombreOriginal: string,
     usuarioEmisorId: number,
   ) {
+    const estadoEnvios = await this.getEstadoEnviosArticulos();
+    if (!estadoEnvios.habilitado) {
+      throw new ForbiddenException(
+        'El envío de artículos está deshabilitado temporalmente.',
+      );
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -1400,6 +1444,117 @@ export class ArticulosService {
     }));
   }
 
+  async getEstadisticasGenerales() {
+    const articulos = await this.articuloRepository.find({
+      relations: [
+        'etapaActual',
+        'temas',
+        'autores',
+        'historialEtapas',
+        'observaciones',
+      ],
+    });
+
+    const porEtapa = new Map<string, number>();
+    const porTema = new Map<string, number>();
+    const porMes = new Map<string, number>();
+
+    let totalAutores = 0;
+    let totalTemas = 0;
+    let totalDiasDesdeEnvio = 0;
+    let articulosConFecha = 0;
+
+    const articulosRecientes = [...articulos]
+      .map((articulo) => ({
+        articulo,
+        fechaEnvio: this.obtenerFechaEnvioArticulo(articulo),
+      }))
+      .sort((a, b) => {
+        const fechaA = a.fechaEnvio?.getTime() ?? 0;
+        const fechaB = b.fechaEnvio?.getTime() ?? 0;
+        return fechaB - fechaA;
+      })
+      .slice(0, 8)
+      .map(({ articulo, fechaEnvio }) => ({
+        codigo: articulo.codigo,
+        titulo: articulo.titulo,
+        etapa: articulo.etapaActual?.nombre ?? 'Desconocida',
+        fechaEnvio: fechaEnvio ? fechaEnvio.toISOString() : null,
+        autores: articulo.autores?.length ?? 0,
+        observaciones: articulo.observaciones?.length ?? 0,
+      }));
+
+    for (const articulo of articulos) {
+      const etapa = articulo.etapaActual?.nombre?.trim() || 'Desconocida';
+      porEtapa.set(etapa, (porEtapa.get(etapa) ?? 0) + 1);
+
+      totalAutores += articulo.autores?.length ?? 0;
+      totalTemas += articulo.temas?.length ?? 0;
+
+      for (const tema of articulo.temas ?? []) {
+        const nombreTema = tema.nombre?.trim() || 'Sin tema';
+        porTema.set(nombreTema, (porTema.get(nombreTema) ?? 0) + 1);
+      }
+
+      const fechaEnvio = this.obtenerFechaEnvioArticulo(articulo);
+      if (fechaEnvio) {
+        articulosConFecha += 1;
+        totalDiasDesdeEnvio += Math.max(
+          0,
+          Math.floor(
+            (Date.now() - fechaEnvio.getTime()) / (1000 * 60 * 60 * 24),
+          ),
+        );
+
+        const mes = new Intl.DateTimeFormat('es-CO', {
+          month: 'short',
+          year: 'numeric',
+        }).format(fechaEnvio);
+        porMes.set(mes, (porMes.get(mes) ?? 0) + 1);
+      }
+    }
+
+    const etapaDistribucion = [...porEtapa.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([etapa, cantidad]) => ({ etapa, cantidad }));
+
+    const temaDistribucion = [...porTema.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([tema, cantidad]) => ({ tema, cantidad }));
+
+    const mensualDistribucion = [...porMes.entries()].map(
+      ([mes, cantidad]) => ({ mes, cantidad }),
+    );
+
+    return {
+      totalArticulos: articulos.length,
+      promedioAutores: articulos.length
+        ? Number((totalAutores / articulos.length).toFixed(1))
+        : 0,
+      promedioTemas: articulos.length
+        ? Number((totalTemas / articulos.length).toFixed(1))
+        : 0,
+      promedioDiasDesdeEnvio: articulosConFecha
+        ? Number((totalDiasDesdeEnvio / articulosConFecha).toFixed(1))
+        : 0,
+      articulosEnPublicacion: articulos.filter((articulo) =>
+        this.normalizarTexto(articulo.etapaActual?.nombre ?? '').includes(
+          'publicacion',
+        ),
+      ).length,
+      articulosEnProceso: articulos.filter((articulo) => {
+        return !this.normalizarTexto(
+          articulo.etapaActual?.nombre ?? '',
+        ).includes('publicacion');
+      }).length,
+      etapaDistribucion,
+      temaDistribucion,
+      mensualDistribucion,
+      articulosRecientes,
+    };
+  }
+
   async getArticulosPorAutor(userId: number) {
     const articulos = await this.articuloRepository
       .createQueryBuilder('articulo')
@@ -1420,6 +1575,28 @@ export class ArticulosService {
       fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
       correccion_pendiente: this.tieneCorreccionPendiente(articulo, userId),
     }));
+  }
+
+  private obtenerFechaEnvioArticulo(articulo: Articulo): Date | null {
+    const historialOrdenado = [...(articulo.historialEtapas ?? [])].sort(
+      (a, b) =>
+        new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime(),
+    );
+
+    const primeraEtapa = historialOrdenado[0];
+    if (!primeraEtapa?.fechaInicio) {
+      return null;
+    }
+
+    const fecha = new Date(primeraEtapa.fechaInicio);
+    return Number.isNaN(fecha.getTime()) ? null : fecha;
+  }
+
+  private normalizarTexto(texto: string): string {
+    return (texto ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
   }
 
   async subirCorreccionAutor(

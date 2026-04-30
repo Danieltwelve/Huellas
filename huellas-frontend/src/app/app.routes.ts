@@ -3,7 +3,7 @@ import { claimsGuard } from './core/auth/claims.guard';
 import { redirectIfAuthenticatedGuard } from './core/auth/redirect-if-authenticated.guard';
 
 export const routes: Routes = [
-  { path: '', loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent) },
+  { path: '', pathMatch: 'full', loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent) },
   {
     path: 'login',
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent),
@@ -67,6 +67,19 @@ export const routes: Routes = [
     data: {
       requiredClaim: 'canManageArticulos',
       allowedRoles: ['admin', 'director', 'monitor'],
+    },
+  },
+
+  {
+    path: 'estadisticas',
+    loadComponent: () =>
+      import('./pages/panel-admin/estadisticas/estadisticas.component').then(
+        m => m.EstadisticasComponent,
+      ),
+    canActivate: [claimsGuard],
+    data: {
+      requiredClaim: 'canManageArticulos',
+      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
     },
   },
 

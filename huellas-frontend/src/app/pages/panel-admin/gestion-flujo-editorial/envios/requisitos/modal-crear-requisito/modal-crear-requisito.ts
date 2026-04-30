@@ -8,7 +8,7 @@ import { RequisitosRevistaService } from '../../../../../../core/requisitos-revi
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './modal-crear-requisito.html',
-  styleUrl: './modal-crear-requisito.scss',
+  styleUrl: './modal-crear-requisito.css',
 })
 export class ModalCrearRequisito {
   @Output() requisitoCreado = new EventEmitter<void>();

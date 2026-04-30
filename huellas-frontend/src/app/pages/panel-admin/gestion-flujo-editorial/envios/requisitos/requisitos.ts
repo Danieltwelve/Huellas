@@ -10,7 +10,7 @@ import { ModalCrearRequisito } from './modal-crear-requisito/modal-crear-requisi
   standalone: true,
   imports: [CommonModule, ModalEliminarRequisito, ModalCrearRequisito],
   templateUrl: './requisitos.html',
-  styleUrl: './requisitos.scss',
+  styleUrl: './requisitos.css',
 })
 export class Requisitos implements OnInit {
   @Output() guardar = new EventEmitter<void>();

@@ -205,9 +205,12 @@
 
         <!-- Acciones -->
         <div class="form-actions">
+          <p class="envio-desactivado" *ngIf="!estadoEnvioCargando && !envioHabilitado">
+            El envío de artículos está deshabilitado temporalmente por el equipo editorial.
+          </p>
           <button type="button" class="btn-secondary" (click)="volver()">Cancelar</button>
-          <button type="submit" class="btn-primary" [disabled]="enviando">
-            {{ enviando ? 'Enviando...' : 'Enviar artículo' }}
+          <button type="submit" class="btn-primary" [disabled]="enviando || !envioHabilitado">
+            {{ enviando ? 'Enviando...' : (envioHabilitado ? 'Enviar artículo' : 'Envío deshabilitado') }}
           </button>
         </div>
 

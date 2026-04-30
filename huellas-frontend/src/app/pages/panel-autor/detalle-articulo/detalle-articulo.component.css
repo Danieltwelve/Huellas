@@ -32,6 +32,17 @@
   margin-bottom: 1.1rem;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  margin-right: 0.6rem;
+}
+
+.btn-back {
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+}
+
 .kicker {
   margin: 0;
   text-transform: uppercase;

@@ -27,7 +27,7 @@ interface EdicionItem {
   standalone: true,
   imports: [CrearEdicion, ModalEliminarEdicion, ModalEditarEdicion],
   templateUrl: './ediciones.html',
-  styleUrl: './ediciones.scss',
+  styleUrl: './ediciones.css',
 })
 export class Ediciones implements OnInit {
   private readonly edicionesRevistaService = inject(EdicionesRevistaService);

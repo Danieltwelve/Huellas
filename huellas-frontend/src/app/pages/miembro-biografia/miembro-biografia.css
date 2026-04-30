@@ -122,7 +122,7 @@
     }
 }
 
-// Responsive Design
+/* Responsive Design */
 @media (max-width: 968px) {
     .content-wrapper {
         grid-template-columns: 1fr 350px;

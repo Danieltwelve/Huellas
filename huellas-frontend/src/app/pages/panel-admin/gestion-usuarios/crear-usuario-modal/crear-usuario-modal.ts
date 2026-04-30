@@ -15,7 +15,7 @@ interface CreateUserForm {
   standalone: true,
   imports: [FormsModule],
   templateUrl: './crear-usuario-modal.html',
-  styleUrl: './crear-usuario-modal.scss',
+  styleUrl: './crear-usuario-modal.css',
 })
 export class CrearUsuarioModal implements OnInit {
   private usersService = inject(UsersService);

@@ -7,7 +7,7 @@ import { RequisitosRevistaService } from '../../../../../../core/requisitos-revi
   standalone: true,
   imports: [CommonModule],
   templateUrl: './modal-eliminar-requisito.html',
-  styleUrl: './modal-eliminar-requisito.scss',
+  styleUrl: './modal-eliminar-requisito.css',
 })
 export class ModalEliminarRequisito {
   @Output() requisitoEliminado = new EventEmitter<void>();

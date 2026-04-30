@@ -6,12 +6,24 @@
       <p class="hero-sub">
         Visualiza el estado de cada articulo, revisa tareas pendientes y envia nuevas versiones en un solo flujo.
       </p>
+      <div class="submission-status" [class.submission-status--off]="!envioHabilitado">
+        <span class="submission-status__label">
+          {{ cargandoEstadoEnvios ? 'Verificando estado...' : (envioHabilitado ? 'Envío activo' : 'Envío deshabilitado') }}
+        </span>
+        <p>
+          {{ envioHabilitado
+            ? 'Puedes enviar nuevos artículos desde la opción principal.'
+            : 'El equipo editorial ha pausado temporalmente la recepción de nuevos artículos.' }}
+        </p>
+      </div>
       <a href="/panel-autor/nuevo-articulo" class="btn-primary" (click)="irANuevoArticulo($event)">Enviar nuevo articulo</a>
     </div>
     <div class="hero-metric">
       <span class="metric-label">Proximo vencimiento</span>
       <strong class="metric-value">{{ proximoVencimiento ? formatFecha(proximoVencimiento.toISOString()) : 'Sin pendientes' }}</strong>
-      <span class="metric-help">Correcciones pendientes por autor</span>
+      <span class="metric-help">
+        {{ envioHabilitado ? 'Correcciones pendientes por autor' : 'Recepción de artículos pausada temporalmente' }}
+      </span>
     </div>
   </section>
 

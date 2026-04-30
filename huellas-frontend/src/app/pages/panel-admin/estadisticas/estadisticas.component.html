@@ -1,0 +1,168 @@
+<section class="estadisticas-page">
+  <header class="page-header">
+    <div class="page-header__copy">
+      <span class="eyebrow">Panel admin</span>
+      <h1>Estadísticas de artículos</h1>
+      <p>Vista exclusiva para análisis, reportes e informes con datos reales del flujo editorial.</p>
+    </div>
+    <div class="header-actions" aria-label="Exportar reportes">
+      <button type="button" class="btn-report" (click)="descargarReporteEjecutivoCsv()">CSV ejecutivo</button>
+      <button type="button" class="btn-report btn-report--secondary" (click)="descargarReporteTablasCsv()">CSV detallado</button>
+      <button type="button" class="btn-report btn-report--pdf" (click)="descargarReportePdf()">PDF profesional</button>
+    </div>
+  </header>
+
+  @if (loading) {
+  <section class="loading-card">Cargando estadísticas...</section>
+  }
+
+  @if (error) {
+  <section class="error-card">{{ error }}</section>
+  }
+
+  @if (!loading && estadisticas) {
+  <section class="dashboard-strip">
+    <div class="dashboard-strip__item">
+      <span>Actualización</span>
+      <strong>Datos consolidados del flujo editorial</strong>
+    </div>
+    <div class="dashboard-strip__item">
+      <span>Visión general</span>
+      <strong>{{ estadisticas.totalArticulos }} artículos analizados</strong>
+    </div>
+    <div class="dashboard-strip__item dashboard-strip__item--highlight">
+      <span>Estado operativo</span>
+      <strong>{{ estadisticas.articulosEnProceso }} activos y {{ estadisticas.articulosEnPublicacion }} en publicación</strong>
+    </div>
+  </section>
+
+  <section class="kpi-grid">
+    @for (kpi of kpis; track kpi.label) {
+    <article class="kpi-card">
+      <span>{{ kpi.label }}</span>
+      <strong>{{ kpi.value }}</strong>
+      <small>{{ kpi.hint }}</small>
+    </article>
+    }
+  </section>
+
+  <section class="charts-grid">
+    <article class="chart-card">
+      <div class="chart-card__head">
+        <div>
+          <span class="chart-kicker">Distribución por etapa</span>
+          <h2>Flujo editorial</h2>
+        </div>
+      </div>
+      <div class="donut-wrap">
+        <div class="donut" [style.background]="donutEtapasStyle">
+          <div class="donut__inner">
+            <strong>{{ estadisticas.etapaDistribucion.length }}</strong>
+            <span>etapas</span>
+          </div>
+        </div>
+        <ul class="legend">
+          @for (item of circuloEtapas; track item.label) {
+          <li>
+            <span class="legend-dot" [style.background]="item.color"></span>
+            <span>{{ item.label }}</span>
+            <strong>{{ item.value }}</strong>
+            <small>{{ item.percentage }}%</small>
+          </li>
+          }
+        </ul>
+      </div>
+    </article>
+
+    <article class="chart-card">
+      <div class="chart-card__head">
+        <div>
+          <span class="chart-kicker">Distribución temática</span>
+          <h2>Temas más usados</h2>
+        </div>
+      </div>
+      <div class="donut-wrap">
+        <div class="donut" [style.background]="donutTemasStyle">
+          <div class="donut__inner">
+            <strong>{{ estadisticas.temaDistribucion.length }}</strong>
+            <span>temas</span>
+          </div>
+        </div>
+        <ul class="legend">
+          @for (item of circuloTemas; track item.label) {
+          <li>
+            <span class="legend-dot" [style.background]="item.color"></span>
+            <span>{{ item.label }}</span>
+            <strong>{{ item.value }}</strong>
+            <small>{{ item.percentage }}%</small>
+          </li>
+          }
+        </ul>
+      </div>
+    </article>
+
+    <article class="chart-card chart-card--full">
+      <div class="chart-card__head">
+        <div>
+          <span class="chart-kicker">Ingresos mensuales</span>
+          <h2>Artículos por mes</h2>
+        </div>
+      </div>
+      <div class="donut-wrap donut-wrap--month">
+        <div class="donut donut--month" [style.background]="donutMesesStyle">
+          <div class="donut__inner">
+            <strong>{{ estadisticas.mensualDistribucion.length }}</strong>
+            <span>meses</span>
+          </div>
+        </div>
+        <ul class="legend legend--month">
+          @for (item of mesesTop; track item.label) {
+          <li>
+            <span class="legend-dot" [style.background]="item.color"></span>
+            <span>{{ item.label }}</span>
+            <strong>{{ item.value }}</strong>
+            <small>{{ item.percentage }}%</small>
+          </li>
+          }
+        </ul>
+      </div>
+    </article>
+  </section>
+
+  <section class="table-card">
+    <div class="chart-card__head">
+      <div>
+        <span class="chart-kicker">Informe resumido</span>
+        <h2>Últimos artículos registrados</h2>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Título</th>
+            <th>Etapa</th>
+            <th>Fecha de envío</th>
+            <th>Autores</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (articulo of estadisticas.articulosRecientes; track articulo.codigo) {
+          <tr>
+            <td>{{ articulo.codigo }}</td>
+            <td class="title-cell">{{ articulo.titulo }}</td>
+            <td>{{ articulo.etapa }}</td>
+            <td>{{ articulo.fechaEnvio ? (articulo.fechaEnvio | date: 'shortDate') : 'Sin fecha' }}</td>
+            <td>{{ articulo.autores }}</td>
+            <td>{{ articulo.observaciones }}</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  }
+</section>

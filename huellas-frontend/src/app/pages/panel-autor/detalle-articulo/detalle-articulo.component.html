@@ -1,5 +1,8 @@
 <section class="detalle-page">
   <header class="encabezado" *ngIf="!loading && articulo">
+    <div class="header-actions">
+      <button class="btn-outline-teal btn-back" type="button" (click)="volverAtras()">Volver al listado</button>
+    </div>
     <div>
       <p class="kicker">Panel autor</p>
       <h1>Detalle del artículo</h1>

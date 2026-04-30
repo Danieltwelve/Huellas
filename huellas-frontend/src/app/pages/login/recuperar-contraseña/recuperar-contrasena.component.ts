@@ -10,7 +10,7 @@ import { SuccessModalComponent } from './modal/success-modal.component';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, SuccessModalComponent],
   templateUrl: './recuperar-contrasena.component.html',
-  styleUrls: ['./recuperar-contrasena.component.scss']
+  styleUrls: ['./recuperar-contrasena.component.css']
 })
 export class RecuperarContrasenaComponent {
   private authService = inject(AuthService);

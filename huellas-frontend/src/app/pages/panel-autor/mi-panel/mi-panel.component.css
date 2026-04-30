@@ -35,6 +35,44 @@
   max-width: 52ch;
 }
 
+.submission-status {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 1rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.submission-status__label {
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #d8fff7;
+}
+
+.submission-status p {
+  margin: 0;
+  color: #ebfffb;
+  line-height: 1.45;
+  font-size: 0.9rem;
+}
+
+.submission-status--off {
+  background: rgba(255, 247, 237, 0.18);
+  border-color: rgba(251, 191, 36, 0.32);
+}
+
+.submission-status--off .submission-status__label {
+  color: #fff3c4;
+}
+
+.submission-status--off p {
+  color: #fff8e7;
+}
+
 .btn-primary {
   display: inline-flex;
   align-items: center;
