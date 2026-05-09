@@ -123,7 +123,7 @@
                     </svg>
                     Ver
                   </button>
-                  @if (articulo.correccion_pendiente) {
+                  @if (puedeEnviarCorreccion(articulo)) {
                     <button
                       class="btn-outline-sm btn-correction"
                       type="button"
@@ -132,6 +132,9 @@
                     >
                       {{ isSubiendoCorreccion(articulo.id) ? 'Enviando...' : 'Añadir corrección' }}
                     </button>
+                  }
+                  @if (correccionEnRevision(articulo)) {
+                    <p class="correccion-lock-msg">Corrección ya enviada, en revisión editorial.</p>
                   }
                 </td>
               </tr>
@@ -172,7 +175,7 @@
                 <button class="btn-outline-sm" type="button" (click)="verSeguimientoArticulo(articulo.id)">
                   Ver acciones
                 </button>
-                @if (articulo.correccion_pendiente) {
+                @if (puedeEnviarCorreccion(articulo)) {
                   <button
                     class="btn-outline-sm btn-correction"
                     type="button"
@@ -181,6 +184,9 @@
                   >
                     {{ isSubiendoCorreccion(articulo.id) ? 'Enviando...' : 'Añadir corrección' }}
                   </button>
+                }
+                @if (correccionEnRevision(articulo)) {
+                  <p class="correccion-lock-msg">Corrección ya enviada, en revisión editorial.</p>
                 }
               </div>
             </article>

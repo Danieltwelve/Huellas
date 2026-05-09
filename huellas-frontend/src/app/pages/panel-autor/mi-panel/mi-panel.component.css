@@ -337,6 +337,18 @@ td {
   flex-wrap: wrap;
 }
 
+.correccion-lock-msg {
+  margin: 0.2rem 0 0;
+  width: 100%;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #0f766e;
+  background: #ecfeff;
+  border: 1px solid #99f6e4;
+  border-radius: 0.55rem;
+  padding: 0.3rem 0.5rem;
+}
+
 .file-label {
   font-size: 0.84rem;
   font-weight: 700;

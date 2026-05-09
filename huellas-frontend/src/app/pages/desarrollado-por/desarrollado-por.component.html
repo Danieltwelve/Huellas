@@ -1,16 +1,31 @@
 <div class="page-wrap">
   
   <section class="team-section">
-    <h2>Equipo de Desarrollo</h2>
+    <div class="team-head">
+      <p class="team-kicker">Talento Humano</p>
+      <h2>Equipo de Desarrollo</h2>
+      <p class="team-intro">
+        Profesionales responsables de la construccion y evolucion de la plataforma de
+        Revista Huellas.
+      </p>
+    </div>
+
     <div class="team-grid">
-      <article class="team-card" *ngFor="let member of desarrolladores">
+      <article class="team-card" *ngFor="let member of desarrolladores; index as i">
+        <div class="member-top">
+          <span class="member-id">DEV 0{{ i + 1 }}</span>
+        </div>
         <h3>{{ member.nombre }}</h3>
         <p class="role">{{ member.rol }}</p>
+        <p class="member-note">Implementacion full stack y mejora continua de la experiencia digital.</p>
       </article>
     </div>
 
     <article class="advisor-card">
-      <p class="advisor-label">Asesoria Academica y de Proyecto</p>
+      <div class="advisor-header">
+        <p class="advisor-label">Asesoria Academica y de Proyecto</p>
+        <span class="advisor-pill">Mentoria estrategica</span>
+      </div>
       <h3>{{ asesora.nombre }}</h3>
       <p class="role">{{ asesora.rol }}</p>
       <p class="detail">{{ asesora.aporte }}</p>

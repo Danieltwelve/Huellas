@@ -110,6 +110,9 @@ export class FlujoTrabajoArticulo {
   mostrarModalConfirmacionTurnitin = false;
   mostrarModalExitoTurnitin = false;
   mensajeExitoTurnitin = '';
+  mostrarModalConfirmacionCorreccion = false;
+  registroCorreccionConfirmacion: RegistroFlujo | null = null;
+  comentarioAceptacionCorreccion = '';
 
   tituloArticulo = 'Cargando...';
 
@@ -433,20 +436,26 @@ export class FlujoTrabajoArticulo {
       return;
     }
 
-    const confirmado = window.confirm(
-      '¿Deseas marcar como aceptada la corrección enviada por el autor?',
-    );
+    this.registroCorreccionConfirmacion = registro;
+    this.comentarioAceptacionCorreccion = '';
+    this.mostrarModalConfirmacionCorreccion = true;
+  }
 
-    if (!confirmado) {
+  cancelarConfirmacionAceptacionCorreccion(): void {
+    this.mostrarModalConfirmacionCorreccion = false;
+    this.registroCorreccionConfirmacion = null;
+    this.comentarioAceptacionCorreccion = '';
+  }
+
+  confirmarAceptacionCorreccionModal(): void {
+    const registro = this.registroCorreccionConfirmacion;
+    if (!registro) {
       return;
     }
 
-    const comentarios =
-      window.prompt(
-        'Comentario opcional para el autor (puedes dejarlo vacío):',
-      ) ?? undefined;
-
-    this.aceptarCorreccionAutor(registro, comentarios);
+    const comentario = this.comentarioAceptacionCorreccion.trim() || undefined;
+    this.cancelarConfirmacionAceptacionCorreccion();
+    this.aceptarCorreccionAutor(registro, comentario);
   }
 
   aceptarCorreccionAutor(registro: RegistroFlujo, comentarios?: string): void {

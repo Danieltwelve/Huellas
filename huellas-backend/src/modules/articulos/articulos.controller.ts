@@ -104,7 +104,10 @@ export class ArticulosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('comite-editorial')
   @Get('comite/reporte/excel')
-  async descargarReporteComiteExcel(@Req() req: any, @Res() res: express.Response) {
+  async descargarReporteComiteExcel(
+    @Req() req: any,
+    @Res() res: express.Response,
+  ) {
     const buffer = await this.articulosService.generarReporteComiteExcel(
       req.user.userId,
     );
@@ -121,7 +124,10 @@ export class ArticulosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('comite-editorial')
   @Get('comite/reporte/pdf')
-  async descargarReporteComitePdf(@Req() req: any, @Res() res: express.Response) {
+  async descargarReporteComitePdf(
+    @Req() req: any,
+    @Res() res: express.Response,
+  ) {
     const buffer = await this.articulosService.generarReporteComitePdf(
       req.user.userId,
     );
@@ -246,7 +252,9 @@ export class ArticulosController {
       throw new BadRequestException('El valor habilitado debe ser booleano.');
     }
 
-    return await this.articulosService.actualizarEstadoEnviosArticulos(body.habilitado);
+    return await this.articulosService.actualizarEstadoEnviosArticulos(
+      body.habilitado,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -63,6 +63,30 @@ h2 {
   margin-bottom: 20px;
 }
 
+.team-head {
+  margin-bottom: 18px;
+}
+
+.team-kicker {
+  margin: 0 0 8px;
+  display: inline-flex;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0f766e;
+  background: rgba(0, 178, 169, 0.14);
+}
+
+.team-intro {
+  margin: 0;
+  max-width: 760px;
+  color: #475569;
+  line-height: 1.55;
+}
+
 .team-card,
 .tech-card,
 .relevant-card,
@@ -75,6 +99,53 @@ h2 {
 
 .team-card {
   border-left: 4px solid #00b2a9;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.team-card::after {
+  content: "";
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  right: -50px;
+  top: -56px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 178, 169, 0.14) 0%, rgba(0, 178, 169, 0) 72%);
+  pointer-events: none;
+}
+
+.team-card:hover {
+  transform: translateY(-4px);
+  border-color: #9ed8ff;
+  box-shadow: 0 14px 30px rgba(2, 132, 199, 0.14);
+}
+
+.member-top {
+  margin-bottom: 10px;
+}
+
+.member-id {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+  background: #f0fdfa;
+}
+
+.member-note {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.45;
+  font-size: 0.94rem;
 }
 
 h3 {
@@ -100,16 +171,38 @@ h3 {
   border-radius: 14px;
   padding: 22px;
   border: 1px solid #f0dba5;
-  background: linear-gradient(135deg, #fff9ea 0%, #ffffff 100%);
+  background:
+    linear-gradient(135deg, #fff9ea 0%, #ffffff 100%),
+    radial-gradient(circle at right top, rgba(234, 179, 8, 0.2), transparent 48%);
+}
+
+.advisor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .advisor-label {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-weight: 800;
   color: #a16207;
+}
+
+.advisor-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
 }
 
 .tech-grid {
@@ -228,5 +321,9 @@ h3 {
   .btn-primary,
   .btn-outline {
     width: 100%;
+  }
+
+  .team-intro {
+    font-size: 0.95rem;
   }
 }

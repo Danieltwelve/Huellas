@@ -1,0 +1,221 @@
+.notification-wrapper {
+  position: relative;
+  display: inline-flex;
+  z-index: 255;
+}
+
+.icon-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #d4dee8;
+  border-radius: 50%;
+  background: #fff;
+  color: #41526b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.icon-btn:hover,
+.icon-btn.active {
+  border-color: #0f9f96;
+  color: #0f766e;
+  box-shadow: 0 10px 20px -16px rgba(15, 118, 110, 0.55);
+}
+
+.notification-trigger svg {
+  display: block;
+}
+
+.notification-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 12px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.18);
+  padding: 0.9rem;
+  overflow: hidden;
+  min-width: 320px;
+  max-width: 380px;
+  width: max-content;
+}
+
+.notification-menu__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.notification-menu__eyebrow {
+  margin: 0;
+  color: #0f8e86;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.notification-menu__header h3 {
+  margin: 0.2rem 0 0;
+  font-size: 1rem;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.notification-menu__state {
+  flex: 0 0 auto;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #0f8e86;
+  background: rgba(15, 142, 134, 0.08);
+  border: 1px solid rgba(15, 142, 134, 0.16);
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+}
+
+.notification-menu__list {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.6rem;
+  overflow: auto;
+}
+
+.notification-menu__item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  text-align: left;
+  border: 1px solid #dbe5ee;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  padding: 0.8rem 0.9rem;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.notification-menu__item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(15, 142, 134, 0.38);
+  box-shadow: 0 12px 26px -18px rgba(15, 23, 42, 0.45);
+}
+
+.notification-menu__item--read {
+  opacity: 0.62;
+}
+
+.notification-menu__dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  margin-top: 0.3rem;
+  background: radial-gradient(circle at 30% 30%, #7ae3db 0%, #0f8e86 100%);
+  box-shadow: 0 0 0 4px rgba(15, 142, 134, 0.08);
+  flex: 0 0 auto;
+}
+
+.notification-menu__copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  color: #334155;
+}
+
+.notification-menu__copy strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.notification-menu__copy span,
+.notification-menu__copy small {
+  color: #64748b;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.notification-menu__copy small {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.notification-menu__empty {
+  margin: 0.75rem 0 0;
+  padding: 0.95rem 0.85rem;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.88rem;
+}
+
+.notification-menu__empty--error {
+  background: #fff1f2;
+  color: #9f1239;
+  border: 1px solid rgba(225, 29, 72, 0.15);
+}
+
+.notification-menu__footer {
+  width: 100%;
+  margin-top: 0.15rem;
+  border: 1px solid rgba(15, 142, 134, 0.18);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(15, 142, 134, 0.08) 0%, rgba(15, 118, 110, 0.14) 100%);
+  color: #0f766e;
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding: 0.72rem 0.9rem;
+  cursor: pointer;
+}
+
+.notification-menu__footer:hover {
+  border-color: rgba(15, 142, 134, 0.35);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #0f8e86;
+  color: #ffffff;
+  font-size: 0.67rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(15, 142, 134, 0.08);
+}
+
+@media (max-width: 640px) {
+  .notification-menu {
+    border-radius: 16px;
+    padding: 0.8rem;
+  }
+
+  .notification-menu__item {
+    padding: 0.75rem 0.8rem;
+  }
+
+  .notification-menu__copy strong {
+    font-size: 0.88rem;
+  }
+}

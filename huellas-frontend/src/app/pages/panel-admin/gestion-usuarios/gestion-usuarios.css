@@ -418,6 +418,14 @@
   z-index: 3200;
 }
 
+.restriction-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(4px);
+  z-index: 3400;
+}
+
 .delete-modal {
   position: fixed;
   top: 50%;
@@ -429,6 +437,88 @@
   padding: 1.5rem 1.6rem;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   z-index: 3300;
+}
+
+.restriction-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, 92vw);
+  background: linear-gradient(180deg, #fffdfd 0%, #ffffff 100%);
+  border-radius: 18px;
+  padding: 1.6rem 1.6rem 1.35rem;
+  box-shadow: 0 28px 60px -30px rgba(15, 23, 42, 0.45);
+  border: 1px solid #fecaca;
+  z-index: 3500;
+  text-align: left;
+}
+
+.restriction-modal-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.85rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.restriction-modal-kicker {
+  margin: 0 0 0.3rem;
+  color: #b91c1c !important;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.restriction-modal h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.restriction-modal-message {
+  margin-top: 0.75rem !important;
+  color: #334155 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.55 !important;
+}
+
+.restriction-modal-actions {
+  margin-top: 1.35rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.restriction-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+.restriction-modal-close:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.restriction-modal-close svg {
+  width: 20px;
+  height: 20px;
 }
 
 .delete-modal h3 {
@@ -448,6 +538,39 @@
 .delete-modal-description {
   margin-top: 0.75rem !important;
   color: #64748b !important;
+}
+
+.delete-modal-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  margin: 0.75rem 0;
+}
+
+.delete-modal-warning svg {
+  width: 20px;
+  height: 20px;
+  color: #dc2626;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.delete-modal-warning strong {
+  display: block;
+  color: #991b1b;
+  font-size: 0.94rem;
+  margin-bottom: 0.25rem;
+}
+
+.delete-modal-warning p {
+  color: #7f1d1d;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 0;
 }
 
 .delete-modal-close {
@@ -567,6 +690,18 @@
 
   .btn-cancel-delete,
   .btn-confirm-delete {
+    width: 100%;
+  }
+
+  .restriction-modal {
+    padding: 1.25rem 1.1rem 1.1rem;
+  }
+
+  .restriction-modal-actions {
+    justify-content: stretch;
+  }
+
+  .restriction-modal-actions .btn-confirm-delete {
     width: 100%;
   }
 }

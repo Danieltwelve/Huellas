@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -37,12 +38,19 @@ interface SmtpConfig {
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
+  private static readonly ARTICULO_ETAPAS_TERMINALES = [5, 7];
 
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
     @InjectRepository(Role)
     private readonly rolesRepository: Repository<Role>,
+    @InjectRepository(Articulo)
+    private readonly articuloRepository: Repository<Articulo>,
+    @InjectRepository(Observacion)
+    private readonly observacionRepository: Repository<Observacion>,
+    @InjectRepository(ArticuloHistorialEtapa)
+    private readonly historialEtapaRepository: Repository<ArticuloHistorialEtapa>,
     @Inject(FIREBASE_AUTH) private readonly firebaseAuth: Auth,
     private readonly configService: ConfigService,
   ) {}
@@ -182,6 +190,20 @@ export class UsersService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
+    // Validar que el usuario no esté activo
+    if (user.estado_cuenta === true) {
+      throw new ConflictException(
+        'No se puede eliminar este usuario porque la cuenta está activa. Primero debe desactivar la cuenta.',
+      );
+    }
+
+    // Validar que no tenga acciones pendientes
+    const validationResult = await this.validateUserDeletion(id);
+    
+    if (!validationResult.canDelete) {
+      throw new ConflictException(validationResult.reason);
+    }
+
     await this.deleteFirebaseUserByEmail(user.correo);
 
     await this.userRepository.manager.transaction(async (manager) => {
@@ -222,6 +244,75 @@ export class UsersService {
 
       await manager.getRepository(User).delete(id);
     });
+  }
+
+  private async validateUserDeletion(userId: number): Promise<{ canDelete: boolean; reason: string }> {
+    const terminalStages = UsersService.ARTICULO_ETAPAS_TERMINALES;
+
+    // Validar artículos como autor en etapas no terminales
+    const articulosComoAutor = await this.articuloRepository
+      .createQueryBuilder('articulo')
+      .innerJoin('articulo.autores', 'autor', 'autor.id = :userId', { userId })
+      .where('articulo.etapaActualId NOT IN (:...terminalStages)', { terminalStages })
+      .getCount();
+
+    if (articulosComoAutor > 0) {
+      return {
+        canDelete: false,
+        reason: `No se puede eliminar este usuario porque tiene ${articulosComoAutor} artículo(s) activo(s) como autor en proceso de evaluación.`,
+      };
+    }
+
+    // Validar artículos como comité editorial en etapas no terminales
+    const articulosComoComite = await this.articuloRepository
+      .createQueryBuilder('articulo')
+      .where('articulo.comiteEditorialId = :userId', { userId })
+      .andWhere('articulo.etapaActualId NOT IN (:...terminalStages)', { terminalStages })
+      .getCount();
+
+    if (articulosComoComite > 0) {
+      return {
+        canDelete: false,
+        reason: `No se puede eliminar este usuario porque tiene ${articulosComoComite} artículo(s) asignado(s) en el comité editorial que aún está(n) en proceso.`,
+      };
+    }
+
+    // Validar observaciones pendientes
+    const observacionesPendientes = await this.observacionRepository
+      .createQueryBuilder('observacion')
+      .innerJoin('observacion.articulo', 'articulo')
+      .where('observacion.usuarioId = :userId', { userId })
+      .andWhere('articulo.etapaActualId NOT IN (:...terminalStages)', { terminalStages })
+      .getCount();
+
+    if (observacionesPendientes > 0) {
+      return {
+        canDelete: false,
+        reason: `No se puede eliminar este usuario porque tiene ${observacionesPendientes} observación(es) activa(s) en artículos en proceso.`,
+      };
+    }
+
+    // Validar historial de etapas pendientes
+    const historialPendiente = await this.historialEtapaRepository
+      .createQueryBuilder('historial')
+      .innerJoin('historial.articulo', 'articulo')
+      .where('historial.usuarioId = :userId', { userId })
+      .andWhere('articulo.etapaActualId NOT IN (:...terminalStages)', { terminalStages })
+      .getCount();
+
+    if (historialPendiente > 0) {
+      return {
+        canDelete: false,
+        reason: `No se puede eliminar este usuario porque hay acciones pendientes vinculadas a artículos en proceso.`,
+      };
+    }
+
+    return { canDelete: true, reason: '' };
+  }
+
+  private async hasPendingArticleWork(userId: number): Promise<boolean> {
+    const validationResult = await this.validateUserDeletion(userId);
+    return !validationResult.canDelete;
   }
 
   private async sendVerificationEmail(

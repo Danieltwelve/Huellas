@@ -67,6 +67,25 @@
         <a routerLink="/panel-comite-editorial/notificaciones" class="notification-alert__link">Ver centro</a>
       </section>
     }
+      <header class="top-header">
+        <div class="top-header-spacer"></div>
+        <div class="user-actions">
+          <app-notification-dropdown
+            [items]="notifications"
+            [loading]="notificationLoading"
+            [error]="notificationError"
+            (itemSelected)="navigateToNotification($event)"
+            (centerSelected)="goToNotificationCenter()"
+          ></app-notification-dropdown>
+
+          <button type="button" class="icon-btn user-trigger" aria-label="Cerrar sesión" (click)="logout()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+              <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+            </svg>
+          </button>
+        </div>
+      </header>
     <main class="main-content">
       <router-outlet></router-outlet>
     </main>

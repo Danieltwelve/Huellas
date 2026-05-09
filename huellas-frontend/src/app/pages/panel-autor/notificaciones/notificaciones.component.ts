@@ -83,6 +83,7 @@ export class NotificacionesComponent implements OnInit {
   marcarTodasLeidas() {
     this.notificaciones = this.notificaciones.map((n) => ({ ...n, leida: true }));
     this.guardarIdsLeidas(new Set(this.notificaciones.map((n) => n.id)));
+    window.dispatchEvent(new CustomEvent('huellas-notifications-updated'));
   }
 
   marcarLeida(notificacion: Notificacion): void {
@@ -94,6 +95,7 @@ export class NotificacionesComponent implements OnInit {
     const idsLeidas = this.obtenerIdsLeidas();
     idsLeidas.add(notificacion.id);
     this.guardarIdsLeidas(idsLeidas);
+    window.dispatchEvent(new CustomEvent('huellas-notifications-updated'));
   }
 
   private obtenerIdsLeidas(): Set<string> {

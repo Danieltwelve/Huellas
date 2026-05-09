@@ -28,16 +28,14 @@ export class MiembroBiografia implements OnInit {
     {
       id: 1,
       nombre: 'Omar Villota Pantoja',
-      cargo: 'Director editorial',
-      especialidad: 'Colombiano',
-      descripcion: 'Es ingeniero civil de la Escuela de Ingeniería de Antioquia, cuenta con un MBA con énfasis en Finanzas de Boston University Graduate School of Management.',
+      cargo: 'Director académico',
+      especialidad: 'Doctorado en Ciencias de la Educación - Magister en Educación - Licenciado en Informática',
+      descripcion: 'Es Licenciado en Informática de la Universidad de Nariño, es Magíster en Educación y además posee un doctorado en Ciencias de la Educación.',
       imagen: '/equipo/Omar.png',
-      email: 'ricardo.jaramillo@huellas-revista.com',
-      biografia: `Es ingeniero civil de la Escuela de Ingeniería de Antioquia, cuenta con un MBA con énfasis en Finanzas de Boston University Graduate School of Management.
+      email: 'omarvillota@udenar.edu.co',
+      biografia: `Es Licenciado en Informática de la Universidad de Nariño. Magíster en Educación y además posee un doctorado en Ciencias de la Educación. Actualmente es profesor hora cátedra por concurso y director del Departamento de Estudios Pedagógicos de la Universidad de Nariño, director del Grupo de Investigación GITFIM y Director académico de Huellas Revista. Ha sido investigador visitante en la Universidad de Granada, España, y ha participado en proyectos de investigación relacionados con la educación y las tecnologías digitales. Es autor de varios artículos científicos y capítulos de libros en el ámbito de la educación y las TIC.`
 
-Actualmente, se desempeña como Presidente de Grupo Sura, holding del Conglomerado Financiero Sura – Bancolombia. Antes, se desempeñó como Vicepresidente de Desarrollo de Negocios y Finanzas de Grupo Sura. Previamente, estuvo vinculado a Banca de Inversión Bancolombia en los cargos de Presidente, Vicepresidente de Finanzas y Gerente de Proyectos, y a Fiduciaria Bancolombia.
 
-Hace parte como miembro de las juntas directivas de Suramericana, SURA Asset Management, Grupo Argos, así como de los consejos directivos de la Asociación Medellín Cultural, Orquesta Filarmónica de Medellín, y del Consejo Superior de la Universidad EIA. Previamente, hizo parte de las juntas directivas de ARUS y Renting Colombia.`
     },
     {
       id: 2,

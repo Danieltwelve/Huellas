@@ -120,17 +120,22 @@
 }
 
 .top-header {
-  position: relative;
-  z-index: 300;
-  min-height: 66px;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  height: 70px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  gap: 8px;
+  padding: 0 18px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: 0 6px 24px -20px rgba(15, 23, 42, 0.45);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.top-header-spacer {
+  flex: 1;
 }
 
 .top-header-title {
@@ -170,25 +175,89 @@
   gap: 8px;
 }
 
+.notification-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.notification-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 360px;
+  max-height: 520px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+  padding: 0.85rem;
+  z-index: 240;
+}
+
+.notification-menu__list {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+}
+
+.notification-menu__footer {
+  width: 100%;
+  margin-top: 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fbff;
+  color: #0f766e;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+}
+
 .icon-btn {
-  width: 42px;
-  height: 42px;
-  border: 1px solid rgba(15, 23, 42, 0.18);
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #d4dee8;
   border-radius: 50%;
   background: #fff;
-  color: #334155;
+  color: #41526b;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.25s ease;
+  text-decoration: none;
 }
 
 .icon-btn:hover,
 .icon-btn.active {
-  background: rgba(20, 184, 166, 0.12);
-  border-color: rgba(15, 118, 110, 0.65);
-  color: #00a39a;
+  border-color: #0f9f96;
+  color: #0f766e;
+  box-shadow: 0 10px 20px -16px rgba(15, 118, 110, 0.55);
+}
+
+.notification-trigger svg,
+.user-trigger svg {
+  display: block;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #0f8e86;
+  color: #ffffff;
+  font-size: 0.67rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
 }
 
 .user-menu {
@@ -202,6 +271,12 @@
   box-shadow: 0 16px 30px rgba(15, 23, 42, 0.2);
   padding: 0.45rem;
   z-index: 500;
+}
+
+@media (max-width: 960px) {
+  .top-header {
+    padding: 0 14px;
+  }
 }
 
 .role-title {

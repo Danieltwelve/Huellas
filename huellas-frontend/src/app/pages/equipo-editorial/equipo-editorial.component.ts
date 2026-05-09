@@ -13,9 +13,9 @@ export class EquipoEditorialComponent {
   coordinador = {
     id: 1,
     nombre: 'Dr. Omar Armando Villota Pantoja',
-    cargo: 'Editor Académico',
+    cargo: 'Director Académico',
     institucion: 'Universidad de Nariño',
-    facultad: 'Facultad de Educación',
+    facultad: 'Facultad de Educación - Departamento de Estúdios pedagógicos',
     imagen: '/equipo/Omar.png'
   };
 

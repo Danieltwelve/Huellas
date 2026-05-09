@@ -4,9 +4,7 @@
   }
 
   <div class="content-layout">
-    @if (!(isPanelLayout$ | async)) {
-    <app-navbar></app-navbar>
-    }
+    <app-navbar [compactMode]="(isPanelLayout$ | async) ?? false"></app-navbar>
 
     <main class="page-content">
       <router-outlet></router-outlet>

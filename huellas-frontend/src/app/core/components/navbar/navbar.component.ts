@@ -1,6 +1,7 @@
-import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, HostListener, Input, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { NotificationDropdownComponent } from '../notification-dropdown/notification-dropdown.component';
 import { combineLatest, interval, Subject } from 'rxjs';
 import { filter, map, startWith, takeUntil } from 'rxjs/operators';
 import { AccessClaims, AuthService } from '../../auth/auth.service';
@@ -12,6 +13,7 @@ import {
   ArticulosAutorService,
   NotificacionAutorBackend,
 } from '../../articulos/articulos-autor.service';
+import { NOTIFICACIONES_REVISOR_MOCK } from '../../../pages/panel-revisor/panel-revisor.data';
 
 interface NavbarNotificacion {
   id: string;
@@ -32,15 +34,17 @@ interface NavbarNotificacionVista extends NavbarNotificacion {
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css'],
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, NotificationDropdownComponent],
 })
 export class NavbarComponent implements OnInit {
+  @Input() compactMode = false;
 
   private authService = inject(AuthService);
   private router = inject(Router);
   private articulosService = inject(ArticulosService);
   private articulosAutorService = inject(ArticulosAutorService);
   private destroy$ = new Subject<void>();
+  @ViewChild(NotificationDropdownComponent) notificationDropdown?: NotificationDropdownComponent;
   menuOpen = false;
   openDropdown: string | null = null;
   userMenuOpen = false;
@@ -147,6 +151,21 @@ export class NavbarComponent implements OnInit {
     this.lastScrollPosition = currentScroll <= 0 ? 0 : currentScroll;
   }
 
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const insideNotification = !!target.closest('.notification-wrapper');
+    const insideUserActions = !!target.closest('.user-actions');
+
+    if (!insideNotification) {
+      this.notificationMenuOpen = false;
+    }
+
+    if (!insideUserActions) {
+      this.userMenuOpen = false;
+    }
+  }
+
   toggleMenu() {
     this.menuOpen = !this.menuOpen;
   }
@@ -162,14 +181,34 @@ export class NavbarComponent implements OnInit {
     this.openDropdown = this.openDropdown === dropdown ? null : dropdown;
   }
 
-  toggleUserMenu() {
-    this.notificationMenuOpen = false;
+  toggleUserMenu() {    this.notificationDropdown?.close();    this.notificationMenuOpen = false;
     this.userMenuOpen = !this.userMenuOpen;
   }
 
   toggleNotifications(): void {
     this.userMenuOpen = false;
     this.notificationMenuOpen = !this.notificationMenuOpen;
+  }
+
+  goToNotificationCenter(): void {
+    this.notificationMenuOpen = false;
+
+    if (this.authService.hasAnyRole(['autor'])) {
+      this.router.navigate(['/panel-autor/notificaciones']);
+      return;
+    }
+
+    if (this.authService.hasAnyRole(['revisor'])) {
+      this.router.navigate(['/panel-revisor/notificaciones']);
+      return;
+    }
+
+    if (this.authService.hasAnyRole(['comite-editorial'])) {
+      this.router.navigate(['/panel-comite-editorial/notificaciones']);
+      return;
+    }
+
+    this.router.navigate(['/articulos']);
   }
 
   navigateToNotification(notification: NavbarNotificacion): void {
@@ -194,6 +233,11 @@ export class NavbarComponent implements OnInit {
       return;
     }
 
+    if (this.authService.hasAnyRole(['revisor'])) {
+      this.cargarNotificacionesRevisor();
+      return;
+    }
+
     if (
       this.authService.hasAnyRole(['admin', 'director', 'monitor', 'comite-editorial']) ||
       claims.canManageArticulos ||
@@ -205,6 +249,31 @@ export class NavbarComponent implements OnInit {
 
     this.notifications = [];
     this.notificationError = null;
+  }
+
+  private cargarNotificacionesRevisor(): void {
+    this.notificationLoading = true;
+    this.notificationError = null;
+
+    const idsLeidos = this.obtenerIdsLeidos();
+
+    this.notifications = NOTIFICACIONES_REVISOR_MOCK
+      .map((item) => ({
+        id: `revisor-${item.id}`,
+        articuloId: 0,
+        codigoArticulo: 'REV',
+        titulo: item.titulo,
+        detalle: item.detalle,
+        fecha: new Date(item.fecha),
+        enlace: '/panel-revisor/notificaciones',
+      }))
+      .map((item) => ({
+        ...item,
+        leida: idsLeidos.has(item.id),
+      }))
+      .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+
+    this.notificationLoading = false;
   }
 
   private cargarNotificacionesAutor(): void {
@@ -272,20 +341,56 @@ export class NavbarComponent implements OnInit {
   private mapearNotificacionEditorial(
     articulo: ArticuloResumenBackend,
   ): NavbarNotificacion {
+    const tituloEstado = this.obtenerTituloEstadoArticulo(articulo);
+
     return {
       id: `nuevo-envio-${articulo.id}`,
       articuloId: articulo.id,
       codigoArticulo: articulo.codigo,
-      titulo: 'Nuevo artículo recibido',
+      titulo: tituloEstado,
       detalle: `${articulo.codigo} - ${articulo.titulo}`,
       fecha: articulo.fecha_inicio ? new Date(articulo.fecha_inicio) : new Date(),
       enlace: this.obtenerEnlaceArticulo(articulo.id),
     };
   }
 
+  private obtenerTituloEstadoArticulo(articulo: ArticuloResumenBackend): string {
+    const etapa = (articulo.etapa_nombre ?? '').toLowerCase();
+
+    if (etapa.includes('public')) {
+      return 'Artículo publicado';
+    }
+
+    if (etapa.includes('turnitin')) {
+      return 'Cambio de estado: Turnitin';
+    }
+
+    if (etapa.includes('comite')) {
+      return 'Cambio de estado: Comité Editorial';
+    }
+
+    if (etapa.includes('pares')) {
+      return 'Acción pendiente: revisión por pares';
+    }
+
+    if (etapa.includes('certific')) {
+      return 'Cambio de estado: Certificación';
+    }
+
+    if (etapa.includes('revision final')) {
+      return 'Cambio de estado: Revisión final';
+    }
+
+    return 'Nuevo artículo recibido';
+  }
+
   private obtenerEnlaceArticulo(articuloId: number): string {
     if (this.authService.hasAnyRole(['autor'])) {
       return `/panel-autor/detalle-articulo/${articuloId}`;
+    }
+
+    if (this.authService.hasAnyRole(['revisor'])) {
+      return '/panel-revisor/notificaciones';
     }
 
     if (this.authService.hasAnyRole(['comite-editorial'])) {
@@ -350,6 +455,7 @@ export class NavbarComponent implements OnInit {
 
   async logout() {
     try {
+      this.notificationDropdown?.close();
       await this.authService.logout();
       this.userMenuOpen = false;
       this.notificationMenuOpen = false;

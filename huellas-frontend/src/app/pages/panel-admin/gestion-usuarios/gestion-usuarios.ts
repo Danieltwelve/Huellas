@@ -36,7 +36,9 @@ export class GestionUsuarios implements OnInit {
   showCreateModal = false;
   showEditModal = false;
   showDeleteConfirmModal = false;
+  showRestrictionModal = false;
   deletingUserId: number | null = null;
+  restrictionMessage = '';
 
   users: Usuario[] = [];
   filteredUsers: Usuario[] = [];
@@ -158,6 +160,14 @@ export class GestionUsuarios implements OnInit {
       return;
     }
 
+    if (user.estado === 'Activa') {
+      this.openRestrictionModal(
+        `No se puede eliminar a ${user.nombre} porque su cuenta está activa. Primero debes desactivarla desde el panel de edición.`,
+      );
+      this.cdr.detectChanges();
+      return;
+    }
+
     this.selectedUserToDelete = user;
     this.showDeleteConfirmModal = true;
     this.errorMessage = '';
@@ -171,6 +181,12 @@ export class GestionUsuarios implements OnInit {
 
     this.selectedUserToDelete = null;
     this.showDeleteConfirmModal = false;
+    this.cdr.detectChanges();
+  }
+
+  closeRestrictionModal(): void {
+    this.showRestrictionModal = false;
+    this.restrictionMessage = '';
     this.cdr.detectChanges();
   }
 
@@ -189,14 +205,22 @@ export class GestionUsuarios implements OnInit {
         this.deletingUserId = null;
         this.loadUsers();
       },
-      error: () => {
+      error: (error) => {
         this.selectedUserToDelete = null;
         this.showDeleteConfirmModal = false;
         this.deletingUserId = null;
-        this.errorMessage = 'No se pudo eliminar el usuario. Intenta de nuevo.';
+        this.openRestrictionModal(
+          error?.error?.message ||
+          'No se pudo eliminar el usuario. Intenta de nuevo.',
+        );
         this.cdr.detectChanges();
       },
     });
+  }
+
+  private openRestrictionModal(message: string): void {
+    this.restrictionMessage = message;
+    this.showRestrictionModal = true;
   }
 
   private getRoleLabel(role: string): string {

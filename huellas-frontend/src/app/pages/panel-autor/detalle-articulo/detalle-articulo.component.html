@@ -138,5 +138,20 @@
         </section>
       </aside>
     </div>
+
+    <div class="modal-overlay" *ngIf="mostrarModalConfirmacionCorreccion" (click)="cancelarConfirmacionCorreccion()">
+      <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar envío de corrección" (click)="$event.stopPropagation()">
+        <h3>Confirmar envío de corrección</h3>
+        <p>
+          ¿Deseas enviar esta corrección al equipo editorial?
+        </p>
+        <div class="modal-acciones">
+          <button type="button" class="btn-secundario" (click)="cancelarConfirmacionCorreccion()">Cancelar</button>
+          <button type="button" class="btn-primario" (click)="confirmarEnvioCorreccion()" [disabled]="enviandoCorreccion">
+            {{ enviandoCorreccion ? 'Enviando...' : 'Sí, enviar corrección' }}
+          </button>
+        </div>
+      </section>
+    </div>
   </ng-container>
 </section>

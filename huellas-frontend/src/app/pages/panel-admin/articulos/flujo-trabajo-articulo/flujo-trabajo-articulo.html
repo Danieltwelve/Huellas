@@ -448,5 +448,28 @@
       </div>
     </section>
   </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionCorreccion" (click)="cancelarConfirmacionAceptacionCorreccion()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar aceptación de corrección" (click)="$event.stopPropagation()">
+      <h3>Confirmar aceptación de corrección</h3>
+      <p>
+        ¿Deseas aceptar la corrección enviada por el autor?
+      </p>
+      <textarea
+        class="input-control"
+        rows="3"
+        maxlength="2000"
+        [(ngModel)]="comentarioAceptacionCorreccion"
+        placeholder="Comentario opcional para el autor"
+        aria-label="Comentario opcional para aceptar corrección"
+      ></textarea>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionAceptacionCorreccion()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="confirmarAceptacionCorreccionModal()">
+          Sí, aceptar corrección
+        </button>
+      </div>
+    </section>
+  </div>
 </section>
 

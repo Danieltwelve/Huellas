@@ -7,6 +7,7 @@ import {
 import { ArticulosService } from '../../../core/articulos/articulos.service';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { catchError, of } from 'rxjs';
 
 interface EscenarioAcciones {
   tipo: 'alerta' | 'accion' | 'informacion' | 'exito';
@@ -41,6 +42,7 @@ export class MiPanelComponent implements OnInit {
   cargandoVistaAcciones = false;
   errorVistaAcciones: string | null = null;
   private notificacionesCache: NotificacionAutorBackend[] | null = null;
+  private notificacionesPorArticulo = new Map<number, NotificacionAutorBackend[]>();
   arrastrandoArchivoCorreccion = false;
   subiendoCorreccionIds = new Set<number>();
   estadoFiltro: 'todos' | 'revision' | 'correccion' | 'publicado' = 'todos';
@@ -98,12 +100,33 @@ export class MiPanelComponent implements OnInit {
       next: (data) => {
         this.articulos = data;
         this.loading = false;
+        this.cargarNotificacionesCorreccion();
       },
       error: (err) => {
         console.error(err);
         this.loading = false;
       }
     });
+  }
+
+  private cargarNotificacionesCorreccion(): void {
+    this.articulosService
+      .getMisNotificaciones()
+      .pipe(catchError(() => of([] as NotificacionAutorBackend[])))
+      .subscribe((notificaciones) => {
+        this.notificacionesPorArticulo.clear();
+
+        for (const item of notificaciones) {
+          const actual = this.notificacionesPorArticulo.get(item.articuloId) ?? [];
+          actual.push(item);
+          this.notificacionesPorArticulo.set(item.articuloId, actual);
+        }
+
+        this.articulos = this.articulos.map((articulo) => ({
+          ...articulo,
+          correccion_pendiente: this.puedeEnviarCorreccion(articulo),
+        }));
+      });
   }
 
   setFiltro(filtro: 'todos' | 'revision' | 'correccion' | 'publicado') {
@@ -220,7 +243,7 @@ export class MiPanelComponent implements OnInit {
       return 'Ver notificaciones';
     }
 
-    if (articulo.correccion_pendiente) {
+    if (this.puedeEnviarCorreccion(articulo)) {
       return 'Añadir correccion';
     }
 
@@ -234,7 +257,7 @@ export class MiPanelComponent implements OnInit {
   ejecutarAccionPrincipal(articulo: ArticuloAutor): void {
     this.cerrarVistaAcciones();
 
-    if (articulo.correccion_pendiente) {
+    if (this.puedeEnviarCorreccion(articulo)) {
       this.abrirModalCorreccion(articulo);
       return;
     }
@@ -327,7 +350,6 @@ export class MiPanelComponent implements OnInit {
     const requiereCorreccion =
       articulo.correccion_pendiente ||
       textoNotificaciones.includes('requiere correccion') ||
-      textoNotificaciones.includes('correccion enviada por autor') ||
       textoNotificaciones.includes('correccion pendiente');
 
     if (requiereCorreccion) {
@@ -435,7 +457,9 @@ export class MiPanelComponent implements OnInit {
   }
 
   abrirModalCorreccion(articulo: ArticuloAutor): void {
-    if (!articulo.correccion_pendiente || this.isSubiendoCorreccion(articulo.id)) {
+    if (!this.puedeEnviarCorreccion(articulo) || this.isSubiendoCorreccion(articulo.id)) {
+      this.errorCorreccion =
+        'La corrección ya fue enviada y está en revisión. No puedes volver a enviarla.';
       return;
     }
 
@@ -515,6 +539,12 @@ export class MiPanelComponent implements OnInit {
       return;
     }
 
+    if (!this.puedeEnviarCorreccion(this.articuloCorreccionActivo)) {
+      this.errorModalCorreccion =
+        'La corrección ya fue enviada y está en revisión. No puedes volver a enviarla.';
+      return;
+    }
+
     if (!this.archivoCorreccionActivo) {
       this.errorModalCorreccion = 'Debes seleccionar un archivo para enviar la correccion.';
       return;
@@ -536,6 +566,7 @@ export class MiPanelComponent implements OnInit {
         this.subiendoCorreccionIds.delete(articulo.id);
         this.mensajeCorreccion = 'Correccion enviada correctamente.';
         this.notificacionesCache = null;
+        this.marcarCorreccionComoEnviada(articulo.id);
         this.cerrarModalCorreccion();
         this.cargarArticulos();
       },
@@ -551,5 +582,76 @@ export class MiPanelComponent implements OnInit {
 
   isSubiendoCorreccion(articuloId: number): boolean {
     return this.subiendoCorreccionIds.has(articuloId);
+  }
+
+  correccionEnRevision(articulo: ArticuloAutor): boolean {
+    return this.obtenerEstadoCorreccionDesdeNotificaciones(articulo.id) === 'enviada';
+  }
+
+  puedeEnviarCorreccion(articulo: ArticuloAutor): boolean {
+    if (!articulo.correccion_pendiente) {
+      return false;
+    }
+
+    const estadoNotificacion = this.obtenerEstadoCorreccionDesdeNotificaciones(articulo.id);
+    return estadoNotificacion !== 'enviada';
+  }
+
+  private marcarCorreccionComoEnviada(articuloId: number): void {
+    this.articulos = this.articulos.map((articulo) =>
+      articulo.id === articuloId ? { ...articulo, correccion_pendiente: false } : articulo,
+    );
+
+    const notificaciones = this.notificacionesPorArticulo.get(articuloId) ?? [];
+    this.notificacionesPorArticulo.set(articuloId, [
+      {
+        id: `local-correccion-enviada-${articuloId}-${Date.now()}`,
+        articuloId,
+        codigoArticulo: this.articulos.find((item) => item.id === articuloId)?.codigo ?? 'S/N',
+        tituloArticulo: this.articulos.find((item) => item.id === articuloId)?.titulo ?? 'Artículo',
+        titulo: 'Corrección enviada por autor',
+        detalle: 'Corrección enviada al equipo editorial para validación.',
+        tipo: 'informacion',
+        fecha: new Date().toISOString(),
+        origen: 'observacion',
+      },
+      ...notificaciones,
+    ]);
+  }
+
+  private obtenerEstadoCorreccionDesdeNotificaciones(
+    articuloId: number,
+  ): 'solicitada' | 'enviada' | 'aceptada' | null {
+    const notificaciones = this.notificacionesPorArticulo.get(articuloId) ?? [];
+    if (!notificaciones.length) {
+      return null;
+    }
+
+    const ultima = [...notificaciones]
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+      .find((item) => {
+        const texto = this.normalizar(`${item.titulo} ${item.detalle}`);
+        return texto.includes('correccion');
+      });
+
+    if (!ultima) {
+      return null;
+    }
+
+    const texto = this.normalizar(`${ultima.titulo} ${ultima.detalle}`);
+
+    if (texto.includes('aceptada') || texto.includes('aprobada')) {
+      return 'aceptada';
+    }
+
+    if (texto.includes('enviada por autor')) {
+      return 'enviada';
+    }
+
+    if (texto.includes('requiere correccion') || texto.includes('correccion pendiente')) {
+      return 'solicitada';
+    }
+
+    return null;
   }
 }

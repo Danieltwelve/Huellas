@@ -147,6 +147,19 @@
     <p>
       Vas a eliminar a <strong>{{ selectedUserToDelete.nombre }}</strong>.
     </p>
+
+    @if (selectedUserToDelete.estado === 'Activa') {
+    <div class="delete-modal-warning">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0l-5.708 9.8a1.13 1.13 0 0 0 .98 1.694h11.396a1.13 1.13 0 0 0 .98-1.694L8.982 1.566zM8 5a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 5zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+      </svg>
+      <div>
+        <strong>Cuenta activa</strong>
+        <p>No se puede eliminar este usuario porque su cuenta está activa. Primero debe desactivar la cuenta.</p>
+      </div>
+    </div>
+    }
+
     <p class="delete-modal-description">
       Esta acción no se puede deshacer.
     </p>
@@ -155,8 +168,37 @@
       <button class="btn-cancel-delete" type="button" (click)="cancelDeleteUser()" [disabled]="deletingUserId !== null">
         Cancelar
       </button>
-      <button class="btn-confirm-delete" type="button" (click)="confirmDeleteUser()" [disabled]="deletingUserId !== null">
+      <button class="btn-confirm-delete" type="button" (click)="confirmDeleteUser()" [disabled]="selectedUserToDelete.estado === 'Activa' || deletingUserId !== null">
         {{ deletingUserId !== null ? 'Eliminando...' : 'Eliminar usuario' }}
+      </button>
+    </div>
+  </div>
+  }
+
+  @if (showRestrictionModal) {
+  <div class="restriction-modal-backdrop" (click)="closeRestrictionModal()"></div>
+  <div class="restriction-modal" role="dialog" aria-modal="true" aria-label="No se puede eliminar el usuario">
+    <button class="restriction-modal-close" type="button" (click)="closeRestrictionModal()" aria-label="Cerrar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="restriction-modal-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0l-5.708 9.8a1.13 1.13 0 0 0 .98 1.694h11.396a1.13 1.13 0 0 0 .98-1.694L8.982 1.566zM8 5a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 5zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+      </svg>
+    </div>
+
+    <p class="restriction-modal-kicker">Acción bloqueada</p>
+    <h3>No se puede eliminar el usuario</h3>
+    <p class="restriction-modal-message">{{ restrictionMessage }}</p>
+
+    <div class="restriction-modal-actions">
+      <button class="btn-confirm-delete" type="button" (click)="closeRestrictionModal()">
+        Entendido
       </button>
     </div>
   </div>

@@ -3,7 +3,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import {
   ArticuloFlujo,
   ArticulosService,
@@ -58,6 +58,7 @@ export class DetalleArticuloComponent implements OnInit {
   enviandoCorreccion = false;
   mensajeCorreccion: string | null = null;
   errorCorreccion: string | null = null;
+  mostrarModalConfirmacionCorreccion = false;
 
   private readonly etapasBase: Array<{ id: number; titulo: string; descripcion: string }> = [
     { id: 1, titulo: 'Revisión preliminar', descripcion: 'Validación editorial inicial del envío' },
@@ -193,7 +194,9 @@ export class DetalleArticuloComponent implements OnInit {
     }
 
     const correccionPendiente = this.resumenAutor?.correccion_pendiente === true;
-    if (correccionPendiente || texto.includes('requiere correccion')) {
+    const estadoCorreccion = this.obtenerEstadoCorreccionDesdeNotificaciones();
+
+    if (correccionPendiente && estadoCorreccion !== 'enviada') {
       return {
         tipo: 'accion',
         titulo: 'Corrección requerida del autor',
@@ -203,6 +206,20 @@ export class DetalleArticuloComponent implements OnInit {
           'Actualizar el manuscrito según observaciones.',
           'Subir el archivo corregido desde esta página.',
           'Agregar un comentario breve sobre los cambios.',
+        ],
+      };
+    }
+
+    if (estadoCorreccion === 'enviada') {
+      return {
+        tipo: 'informacion',
+        titulo: 'Corrección enviada al equipo editorial',
+        detalle:
+          'La corrección ya fue enviada y está en revisión. Te notificaremos cuando cambie el estado.',
+        acciones: [
+          'Revisar notificaciones recientes del artículo.',
+          'Esperar validación del equipo editorial.',
+          'No volver a enviar la corrección hasta nueva solicitud.',
         ],
       };
     }
@@ -260,7 +277,8 @@ export class DetalleArticuloComponent implements OnInit {
   }
 
   get mostrarFormularioCorreccion(): boolean {
-    return this.escenarioActual.tipo === 'accion';
+    const correccionPendiente = this.resumenAutor?.correccion_pendiente === true;
+    return correccionPendiente && this.obtenerEstadoCorreccionDesdeNotificaciones() !== 'enviada';
   }
 
   volverAtras(): void {
@@ -290,6 +308,12 @@ export class DetalleArticuloComponent implements OnInit {
   }
 
   enviarCorreccion(): void {
+    if (!this.mostrarFormularioCorreccion) {
+      this.errorCorreccion =
+        'La corrección ya fue enviada y está en revisión. No puedes volver a enviarla.';
+      return;
+    }
+
     if (!this.articulo?.id) {
       return;
     }
@@ -298,6 +322,29 @@ export class DetalleArticuloComponent implements OnInit {
       this.errorCorreccion = 'Debes adjuntar el archivo de corrección.';
       return;
     }
+
+    this.errorCorreccion = null;
+    this.mostrarModalConfirmacionCorreccion = true;
+  }
+
+  cancelarConfirmacionCorreccion(): void {
+    this.mostrarModalConfirmacionCorreccion = false;
+  }
+
+  confirmarEnvioCorreccion(): void {
+    if (!this.mostrarFormularioCorreccion) {
+      this.errorCorreccion =
+        'La corrección ya fue enviada y está en revisión. No puedes volver a enviarla.';
+      this.mostrarModalConfirmacionCorreccion = false;
+      return;
+    }
+
+    if (!this.articulo?.id || !this.archivoCorreccion) {
+      this.mostrarModalConfirmacionCorreccion = false;
+      return;
+    }
+
+    this.mostrarModalConfirmacionCorreccion = false;
 
     this.enviandoCorreccion = true;
     this.errorCorreccion = null;
@@ -313,6 +360,9 @@ export class DetalleArticuloComponent implements OnInit {
         next: () => {
           this.enviandoCorreccion = false;
           this.mensajeCorreccion = 'Corrección enviada correctamente.';
+          this.resumenAutor = this.resumenAutor
+            ? { ...this.resumenAutor, correccion_pendiente: false }
+            : this.resumenAutor;
           this.archivoCorreccion = null;
           this.nombreArchivoCorreccion = '';
           this.comentariosCorreccion = '';
@@ -402,8 +452,12 @@ export class DetalleArticuloComponent implements OnInit {
 
     forkJoin({
       flujo: this.articulosService.getArticuloFlujo(articuloId),
-      notificaciones: this.articulosAutorService.getMisNotificaciones(),
-      resumen: this.articulosAutorService.getMisArticulos(),
+      notificaciones: this.articulosAutorService.getMisNotificaciones().pipe(
+        catchError(() => of([] as NotificacionAutorBackend[])),
+      ),
+      resumen: this.articulosAutorService.getMisArticulos().pipe(
+        catchError(() => of([] as ArticuloAutor[])),
+      ),
     }).subscribe({
       next: ({ flujo, notificaciones, resumen }) => {
         this.articulo = flujo;
@@ -417,6 +471,46 @@ export class DetalleArticuloComponent implements OnInit {
         this.loading = false;
       },
     });
+  }
+
+  private obtenerEstadoCorreccionDesdeNotificaciones(): 'solicitada' | 'enviada' | 'aceptada' | null {
+    if (!this.notificacionesArticulo.length) {
+      return null;
+    }
+
+    const ultima = [...this.notificacionesArticulo]
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+      .find((item) => {
+        const texto = this.normalizar(`${item.titulo} ${item.detalle}`);
+        return texto.includes('correccion') || texto.includes('corrección');
+      });
+
+    if (!ultima) {
+      return null;
+    }
+
+    const texto = this.normalizar(`${ultima.titulo} ${ultima.detalle}`);
+
+    if (
+      texto.includes('aceptada') ||
+      texto.includes('aprobada')
+    ) {
+      return 'aceptada';
+    }
+
+    if (texto.includes('enviada por autor')) {
+      return 'enviada';
+    }
+
+    if (
+      texto.includes('requiere correccion') ||
+      texto.includes('correccion pendiente') ||
+      texto.includes('corrección pendiente')
+    ) {
+      return 'solicitada';
+    }
+
+    return null;
   }
 
   private formatearFechaCorta(fechaIso: string): string {
