@@ -13,14 +13,14 @@ export class AvisosComponent {
     {
       id: 1,
       titulo: 'Convocatoria para Edición Especial 2025',
-      fecha: '15 Febrero 2024',
+      fecha: '15 Enero 2025',
       tipo: 'importante',
       contenido: 'Se abre convocatoria para la edición especial de 2025 sobre "Sostenibilidad e Innovación"'
     },
     {
       id: 2,
       titulo: 'Cambios en el Proceso de Revisión',
-      fecha: '10 Febrero 2024',
+      fecha: '10 Febrero 2025',
       tipo: 'actualización',
       contenido: 'A partir de marzo implementaremos un nuevo sistema de revisión por pares de tres fases'
     },

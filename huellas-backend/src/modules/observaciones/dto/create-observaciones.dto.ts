@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import { Transform } from '@nestjs/class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsInt,
   IsPositive,

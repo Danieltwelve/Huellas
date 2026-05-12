@@ -287,31 +287,45 @@ export class ArticulosService {
 
     return from(currentUser.getIdToken()).pipe(
       switchMap((token) =>
-        this.http.get<ArticuloResumenBackend[]>(
-          `${environment.apiUrlBackend}/articulos/comite/asignados`,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
+        this.http.get<ArticuloResumenBackend[]>(`${environment.apiUrlBackend}/articulos/comite/asignados`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
       ),
     );
   }
 
-  getHistorialEvaluacionesComite(): Observable<ComiteEvaluacionHistorial[]> {
+  getArticulosComiteAsignadosPaged(opts?: { page?: number; limit?: number }): Observable<any> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para consultar artículos asignados.'));
+    }
+
+    const query = opts ? `?page=${opts.page ?? 1}&limit=${opts.limit ?? 25}` : '';
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get(`${environment.apiUrlBackend}/articulos/comite/asignados${query}`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
+      ),
+    );
+  }
+
+  getHistorialEvaluacionesComite(opts?: { page?: number; limit?: number }): Observable<any> {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
       return throwError(() => new Error('No hay sesión activa para consultar historial de evaluaciones.'));
     }
 
+    const query = opts ? `?page=${opts.page ?? 1}&limit=${opts.limit ?? 25}` : '';
+
     return from(currentUser.getIdToken()).pipe(
       switchMap((token) =>
-        this.http.get<ComiteEvaluacionHistorial[]>(
-          `${environment.apiUrlBackend}/articulos/comite/mis-evaluaciones`,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
+        this.http.get(`${environment.apiUrlBackend}/articulos/comite/mis-evaluaciones${query}`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
       ),
     );
   }

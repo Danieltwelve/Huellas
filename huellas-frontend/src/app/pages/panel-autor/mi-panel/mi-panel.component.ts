@@ -8,6 +8,7 @@ import { ArticulosService } from '../../../core/articulos/articulos.service';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
+import { inferCorrectionState } from '../../../core/articulos/correction-notification.util';
 
 interface EscenarioAcciones {
   tipo: 'alerta' | 'accion' | 'informacion' | 'exito';
@@ -614,6 +615,7 @@ export class MiPanelComponent implements OnInit {
         tipo: 'informacion',
         fecha: new Date().toISOString(),
         origen: 'observacion',
+        estadoCorreccion: 'enviada',
       },
       ...notificaciones,
     ]);
@@ -627,29 +629,15 @@ export class MiPanelComponent implements OnInit {
       return null;
     }
 
-    const ultima = [...notificaciones]
-      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-      .find((item) => {
-        const texto = this.normalizar(`${item.titulo} ${item.detalle}`);
-        return texto.includes('correccion');
-      });
+    const ordenadas = [...notificaciones].sort(
+      (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+    );
 
-    if (!ultima) {
-      return null;
-    }
-
-    const texto = this.normalizar(`${ultima.titulo} ${ultima.detalle}`);
-
-    if (texto.includes('aceptada') || texto.includes('aprobada')) {
-      return 'aceptada';
-    }
-
-    if (texto.includes('enviada por autor')) {
-      return 'enviada';
-    }
-
-    if (texto.includes('requiere correccion') || texto.includes('correccion pendiente')) {
-      return 'solicitada';
+    for (const notificacion of ordenadas) {
+      const estado = inferCorrectionState(notificacion);
+      if (estado) {
+        return estado;
+      }
     }
 
     return null;

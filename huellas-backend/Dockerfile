@@ -5,8 +5,8 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm ci
+# Instalar dependencias necesarias para compilar TS aun con NODE_ENV=production
+RUN npm ci --include=dev
 
 # Copiar código fuente
 COPY . .

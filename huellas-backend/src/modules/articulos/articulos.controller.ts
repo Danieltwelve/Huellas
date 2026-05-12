@@ -70,7 +70,14 @@ export class ArticulosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('comite-editorial')
   @Get('comite/asignados')
-  async getAsignadosComite(@Req() req: any) {
+  async getAsignadosComite(@Req() req: any, @Query() query?: any) {
+    if (query?.page || query?.limit) {
+      return await this.articulosService.getArticulosAsignadosComitePaged(
+        req.user.userId,
+        query,
+      );
+    }
+
     return await this.articulosService.getArticulosAsignadosComite(
       req.user.userId,
     );

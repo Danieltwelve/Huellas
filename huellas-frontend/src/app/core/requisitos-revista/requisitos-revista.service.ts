@@ -9,6 +9,18 @@ export interface RequisitoRevista {
   requisito: string;
 }
 
+export interface RequisitosPageMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface RequisitosPageResponse {
+  items: RequisitoRevista[];
+  meta: RequisitosPageMeta;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -17,18 +29,30 @@ export class RequisitosRevistaService {
 
   constructor(private http: HttpClient) {}
 
-  findAll(): Observable<RequisitoRevista[]> {
+  findAll(params?: { page?: number; limit?: number }): Observable<RequisitosPageResponse> {
     const currentUser = this.auth.currentUser;
+    const queryParts = new URLSearchParams();
+
+    if (typeof params?.page === 'number') {
+      queryParts.set('page', String(params.page));
+    }
+
+    if (typeof params?.limit === 'number') {
+      queryParts.set('limit', String(params.limit));
+    }
+
+    const queryString = queryParts.toString();
+
     if (currentUser){
       return from(currentUser.getIdToken()).pipe(
         switchMap((token) =>
-          this.http.get<RequisitoRevista[]>(`${environment.apiUrlBackend}/requisitos-revista`, {
+          this.http.get<RequisitosPageResponse>(`${environment.apiUrlBackend}/requisitos-revista${queryString ? `?${queryString}` : ''}`, {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           }),
         ),
       );
     } else {
-      return this.http.get<RequisitoRevista[]>(`${environment.apiUrlBackend}/requisitos-revista`);
+      return this.http.get<RequisitosPageResponse>(`${environment.apiUrlBackend}/requisitos-revista${queryString ? `?${queryString}` : ''}`);
     }
   }
 

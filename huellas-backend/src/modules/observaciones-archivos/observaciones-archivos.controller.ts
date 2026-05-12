@@ -1,5 +1,6 @@
-import { Controller, Get, Body, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Body, Param, Delete, Query } from '@nestjs/common';
 import { ObservacionesArchivosService } from './observaciones-archivos.service';
+import { PaginationQueryDto } from 'src/common/dto/pagination.query.dto';
 
 @Controller('observaciones-archivos')
 export class ObservacionesArchivosController {
@@ -8,8 +9,8 @@ export class ObservacionesArchivosController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.observacionesArchivosService.findAll();
+  findAll(@Query() query: PaginationQueryDto) {
+    return this.observacionesArchivosService.findAll(query);
   }
 
   @Get(':id')

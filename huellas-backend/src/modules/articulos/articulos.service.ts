@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { createReadStream, existsSync, promises as fs } from 'fs';
 import { DataSource, In, IsNull, Repository } from 'typeorm';
+import { PaginationQueryDto } from 'src/common/dto/pagination.query.dto';
 import ExcelJS from 'exceljs';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
@@ -39,6 +40,8 @@ export class ArticulosService {
     'Corrección enviada por autor';
   private static readonly ASUNTO_CORRECCION_ACEPTADA =
     'Corrección aceptada por equipo editorial';
+  private static readonly ASUNTO_CORRECCION_SOLICITADA =
+    'Corrección requerida por equipo editorial';
   private static readonly ASUNTO_EVALUACION_TURNITIN_CORRECCION =
     'Evaluación de Turnitin: REQUIERE CORRECCIÓN';
   private static readonly ASUNTO_EVALUACION_TURNITIN_DESCARTADO =
@@ -945,7 +948,7 @@ export class ArticulosService {
       order: { id: 'DESC' },
     });
 
-    return articulos
+    const mapped = articulos
       .map((articulo) => {
         const evaluacionesComite = (articulo.observaciones ?? [])
           .filter((obs) => obs.usuarioId === usuarioId)
@@ -1046,7 +1049,19 @@ export class ArticulosService {
           dias_restantes: diasRestantes ?? null,
         };
       })
-      .filter((item) => item !== null);
+      .filter((item) => item !== null) as any[];
+
+    return mapped;
+  }
+
+  async getArticulosAsignadosComitePaged(usuarioId: number, query?: PaginationQueryDto) {
+    const mapped = await this.getArticulosAsignadosComite(usuarioId);
+    const page = Number(query?.page ?? 1);
+    const limit = Number(query?.limit ?? 25);
+    const total = mapped.length;
+    const start = (page - 1) * limit;
+    const items = mapped.slice(start, start + limit);
+    return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
   async getHistorialEvaluacionesComite(usuarioId: number) {
@@ -1892,6 +1907,7 @@ export class ArticulosService {
       tipo: 'accion' | 'informacion' | 'exito';
       fecha: Date;
       origen: 'etapa' | 'observacion';
+      estadoCorreccion?: 'solicitada' | 'enviada' | 'aceptada' | null;
     }> = [];
 
     for (const articulo of articulosDelAutor) {
@@ -1924,13 +1940,8 @@ export class ArticulosService {
           continue;
         }
 
-        const texto =
-          `${obs.asunto ?? ''} ${obs.comentarios ?? ''}`.toLowerCase();
-        const tipo = /(correccion|corrección|ajuste|subsan|pendiente)/.test(
-          texto,
-        )
-          ? 'accion'
-          : 'informacion';
+        const estadoCorreccion = this.obtenerEstadoCorreccionDesdeObservacion(obs);
+        const tipo = estadoCorreccion ? 'accion' : 'informacion';
 
         notificaciones.push({
           id: `obs-${articulo.id}-${obs.id}`,
@@ -1944,6 +1955,7 @@ export class ArticulosService {
           tipo,
           fecha: obs.fechaSubida,
           origen: 'observacion',
+          estadoCorreccion,
         });
       }
     }
@@ -1954,6 +1966,33 @@ export class ArticulosService {
         ...item,
         fecha: item.fecha.toISOString(),
       }));
+  }
+
+  private obtenerEstadoCorreccionDesdeObservacion(
+    observacion: Observacion,
+  ): 'solicitada' | 'enviada' | 'aceptada' | null {
+    const texto = `${observacion.asunto ?? ''} ${observacion.comentarios ?? ''}`.toLowerCase();
+
+    if (
+      /(correccion aceptada|corrección aceptada|correccion aprobada|corrección aprobada)/.test(
+        texto,
+      )
+    ) {
+      return 'aceptada';
+    }
+
+    if (texto.includes(ArticulosService.ASUNTO_CORRECCION_AUTOR.toLowerCase())) {
+      return 'enviada';
+    }
+
+    if (
+      /(correccion|corrección|ajuste|subsan|pendiente)/.test(texto) ||
+      texto.includes(ArticulosService.ASUNTO_CORRECCION_SOLICITADA.toLowerCase())
+    ) {
+      return 'solicitada';
+    }
+
+    return null;
   }
 
   async getArticuloFileStream(

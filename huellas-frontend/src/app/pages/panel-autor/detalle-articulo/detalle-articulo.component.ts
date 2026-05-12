@@ -14,6 +14,7 @@ import {
   ArticulosAutorService,
   NotificacionAutorBackend,
 } from '../../../core/articulos/articulos-autor.service';
+import { inferCorrectionState } from '../../../core/articulos/correction-notification.util';
 import { normalizarNombreArchivo } from '../../../core/utils/filename.utils';
 
 interface EtapaVista {
@@ -478,36 +479,15 @@ export class DetalleArticuloComponent implements OnInit {
       return null;
     }
 
-    const ultima = [...this.notificacionesArticulo]
-      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-      .find((item) => {
-        const texto = this.normalizar(`${item.titulo} ${item.detalle}`);
-        return texto.includes('correccion') || texto.includes('corrección');
-      });
+    const ordenadas = [...this.notificacionesArticulo].sort(
+      (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+    );
 
-    if (!ultima) {
-      return null;
-    }
-
-    const texto = this.normalizar(`${ultima.titulo} ${ultima.detalle}`);
-
-    if (
-      texto.includes('aceptada') ||
-      texto.includes('aprobada')
-    ) {
-      return 'aceptada';
-    }
-
-    if (texto.includes('enviada por autor')) {
-      return 'enviada';
-    }
-
-    if (
-      texto.includes('requiere correccion') ||
-      texto.includes('correccion pendiente') ||
-      texto.includes('corrección pendiente')
-    ) {
-      return 'solicitada';
+    for (const notificacion of ordenadas) {
+      const estado = inferCorrectionState(notificacion);
+      if (estado) {
+        return estado;
+      }
     }
 
     return null;

@@ -157,6 +157,57 @@
   gap: 1rem;
 }
 
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+}
+
+.pagination-info {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.pagination-page {
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.pagination-btn {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  border-radius: 10px;
+  padding: 0.5rem 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .user-card,
 .empty-card {
   background: #fff;
@@ -410,50 +461,6 @@
   color: #64748b;
 }
 
-.delete-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(2px);
-  z-index: 3200;
-}
-
-.restriction-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.48);
-  backdrop-filter: blur(4px);
-  z-index: 3400;
-}
-
-.delete-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(460px, 92vw);
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.5rem 1.6rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  z-index: 3300;
-}
-
-.restriction-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(520px, 92vw);
-  background: linear-gradient(180deg, #fffdfd 0%, #ffffff 100%);
-  border-radius: 18px;
-  padding: 1.6rem 1.6rem 1.35rem;
-  box-shadow: 0 28px 60px -30px rgba(15, 23, 42, 0.45);
-  border: 1px solid #fecaca;
-  z-index: 3500;
-  text-align: left;
-}
-
 .restriction-modal-icon {
   width: 3rem;
   height: 3rem;
@@ -487,45 +494,6 @@
   color: #334155 !important;
   font-size: 0.95rem !important;
   line-height: 1.55 !important;
-}
-
-.restriction-modal-actions {
-  margin-top: 1.35rem;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.restriction-modal-close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 34px;
-  height: 34px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-}
-
-.restriction-modal-close:hover {
-  background: #f8fafc;
-  color: #0f172a;
-}
-
-.restriction-modal-close svg {
-  width: 20px;
-  height: 20px;
-}
-
-.delete-modal h3 {
-  margin: 0 0 1rem;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #0f172a;
 }
 
 .delete-modal p {
@@ -693,15 +661,13 @@
     width: 100%;
   }
 
-  .restriction-modal {
-    padding: 1.25rem 1.1rem 1.1rem;
+  .pagination-bar {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .restriction-modal-actions {
-    justify-content: stretch;
+  .pagination-actions {
+    justify-content: space-between;
   }
 
-  .restriction-modal-actions .btn-confirm-delete {
-    width: 100%;
-  }
 }

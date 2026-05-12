@@ -1,0 +1,36 @@
+<div class="modal-backdrop" role="presentation" (click)="onBackdropClick()">
+  <section
+    #modalCard
+    class="modal-card"
+    [ngClass]="panelClass"
+    [style.width]="width"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="ariaLabel || title"
+    tabindex="-1"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="modal-header">
+      <div class="modal-heading">
+        <p class="modal-kicker" *ngIf="panelClass === 'modal-card--danger'">Acción bloqueada</p>
+        <h3>{{ title }}</h3>
+      </div>
+
+      @if (showClose) {
+      <button type="button" class="modal-close-btn" aria-label="Cerrar modal" (click)="close()">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7a1 1 0 1 0-1.4 1.4l4.9 4.9-4.9 4.9a1 1 0 0 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 0 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4z" />
+        </svg>
+      </button>
+      }
+    </header>
+
+    <div class="modal-body" [ngClass]="bodyClass">
+      <ng-content select="[modal-body]"></ng-content>
+    </div>
+
+    <footer class="modal-footer" [ngClass]="footerClass">
+      <ng-content select="[modal-footer]"></ng-content>
+    </footer>
+  </section>
+</div>

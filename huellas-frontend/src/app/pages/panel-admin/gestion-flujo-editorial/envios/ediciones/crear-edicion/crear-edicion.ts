@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ModalShellComponent } from '../../../../../../core/components/modal-shell/modal-shell.component';
 import {
   CreateEdicionRevistaPayload,
   EdicionesRevistaService,
@@ -16,7 +17,7 @@ interface CrearEdicionForm {
 @Component({
   selector: 'app-crear-edicion',
   standalone: true,
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, ModalShellComponent],
   templateUrl: './crear-edicion.html',
   styleUrl: './crear-edicion.css',
 })

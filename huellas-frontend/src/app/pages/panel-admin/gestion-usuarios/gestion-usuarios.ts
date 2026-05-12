@@ -5,6 +5,7 @@ import { UsersService } from '../../../core/users/users.service';
 import { CrearUsuarioModal } from './crear-usuario-modal/crear-usuario-modal';
 import { EditarUsuarioModal } from './editar-usuario-modal/editar-usuario-modal';
 import { CommonModule } from '@angular/common';
+import { ModalShellComponent } from '../../../core/components/modal-shell/modal-shell.component';
 
 interface Usuario {
   id: number;
@@ -21,7 +22,7 @@ interface Usuario {
 @Component({
   selector: 'app-gestion-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule, CrearUsuarioModal, EditarUsuarioModal],
+  imports: [CommonModule, FormsModule, CrearUsuarioModal, EditarUsuarioModal, ModalShellComponent],
   templateUrl: './gestion-usuarios.html',
   styleUrl: './gestion-usuarios.css',
 })
@@ -33,6 +34,13 @@ export class GestionUsuarios implements OnInit {
   searchTerm = '';
   loading = false;
   errorMessage = '';
+  currentPage = 1;
+  pageSize = 8;
+  totalUsersCount = 0;
+  activeUsersCount = 0;
+  pendingUsersCount = 0;
+  roleUsersCountValue = 0;
+  totalPages = 1;
   showCreateModal = false;
   showEditModal = false;
   showDeleteConfirmModal = false;
@@ -46,15 +54,21 @@ export class GestionUsuarios implements OnInit {
   selectedUserToDelete: Usuario | null = null;
 
   ngOnInit(): void {
-    this.loadUsers();
+    this.loadUsers(1);
   }
 
-  private loadUsers(): void {
+  private loadUsers(page = this.currentPage): void {
     this.loading = true;
     this.errorMessage = '';
+    this.currentPage = page;
 
-    this.usersService.getAll().subscribe({
-      next: (data) => {
+    this.usersService.getAll({
+      page: this.currentPage,
+      limit: this.pageSize,
+      search: this.searchTerm.trim() || undefined,
+    }).subscribe({
+      next: (response) => {
+        const data = response.items;
         const loggedUserEmail = this.auth.currentUser?.email?.trim().toLowerCase() ?? '';
         const visibleUsers = loggedUserEmail
           ? data.filter((u) => u.correo.toLowerCase() !== loggedUserEmail)
@@ -72,6 +86,11 @@ export class GestionUsuarios implements OnInit {
           rolClass: this.getRoleClass(u.roles?.[0]?.rol ?? ''),
         }));
         this.filteredUsers = [...this.users];
+        this.totalUsersCount = response.meta.total;
+        this.activeUsersCount = response.meta.activeUsers;
+        this.pendingUsersCount = response.meta.pendingUsers;
+        this.roleUsersCountValue = response.meta.roleUsersCount;
+        this.totalPages = response.meta.totalPages;
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -84,23 +103,7 @@ export class GestionUsuarios implements OnInit {
   }
 
   onSearch(): void {
-    const term = this.searchTerm.trim().toLowerCase();
-
-    if (!term) {
-      this.filteredUsers = [...this.users];
-      return;
-    }
-
-    this.filteredUsers = this.users.filter((user) => {
-      return (
-        user.nombre.toLowerCase().includes(term) ||
-        user.correo.toLowerCase().includes(term) ||
-        user.telefono.toLowerCase().includes(term) ||
-        user.correoVerificado.toLowerCase().includes(term) ||
-        user.estado.toLowerCase().includes(term) ||
-        user.rol.toLowerCase().includes(term)
-      );
-    });
+    this.loadUsers(1);
   }
 
   onCreateUser(): void {
@@ -126,33 +129,27 @@ export class GestionUsuarios implements OnInit {
   }
 
   onUserEdited(): void {
-    this.loadUsers();
+    this.loadUsers(this.currentPage);
   }
 
   onUserCreated(): void {
-    this.loadUsers();
+    this.loadUsers(this.currentPage);
   }
 
-  get totalUsers(): number {
-    return this.users.length;
+  previousPage(): void {
+    if (this.currentPage <= 1) {
+      return;
+    }
+
+    this.loadUsers(this.currentPage - 1);
   }
 
-  get activeUsers(): number {
-    return this.users.filter((user) => user.estado === 'Activa').length;
-  }
+  nextPage(): void {
+    if (this.currentPage >= this.totalPages) {
+      return;
+    }
 
-  get pendingUsers(): number {
-    return this.users.filter((user) => user.correoVerificado === 'Pendiente').length;
-  }
-
-  get roleUsersCount(): number {
-    return this.users.filter(
-      (user) =>
-        user.rol.toLowerCase().includes('comité editorial') ||
-        user.rol.toLowerCase().includes('admin') ||
-        user.rol.toLowerCase().includes('director') ||
-        user.rol.toLowerCase().includes('monitor'),
-    ).length;
+    this.loadUsers(this.currentPage + 1);
   }
 
   onDeleteUser(user: Usuario): void {
@@ -203,7 +200,7 @@ export class GestionUsuarios implements OnInit {
         this.selectedUserToDelete = null;
         this.showDeleteConfirmModal = false;
         this.deletingUserId = null;
-        this.loadUsers();
+        this.loadUsers(this.currentPage);
       },
       error: (error) => {
         this.selectedUserToDelete = null;

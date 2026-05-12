@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Auth } from '@angular/fire/auth';
 import { from, Observable, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environments';
+import { CorrectionState } from './correction-notification.util';
 
 export interface ArticuloAutor {
   id: number;
@@ -23,6 +24,7 @@ export interface NotificacionAutorBackend {
   tipo: 'accion' | 'informacion' | 'exito';
   fecha: string;
   origen: 'etapa' | 'observacion';
+  estadoCorreccion?: CorrectionState;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -14,6 +14,21 @@ export interface UsuarioBackend {
   roles: { id: number; rol: string }[];
 }
 
+export interface UsersPageMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  activeUsers: number;
+  pendingUsers: number;
+  roleUsersCount: number;
+}
+
+export interface UsersPageResponse {
+  items: UsuarioBackend[];
+  meta: UsersPageMeta;
+}
+
 export interface AdminCreateUserPayload {
   nombre: string;
   correo: string;
@@ -32,16 +47,32 @@ export class UsersService {
   private http = inject(HttpClient);
   private auth = inject(Auth);
 
-  getAll(): Observable<UsuarioBackend[]> {
+  getAll(params?: { page?: number; limit?: number; search?: string }): Observable<UsersPageResponse> {
     return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.get<UsuarioBackend[]>(
-          `${environment.apiUrlBackend}/usuarios`,
+      switchMap((token) => {
+        const queryParts = new URLSearchParams();
+
+        if (typeof params?.page === 'number') {
+          queryParts.set('page', String(params.page));
+        }
+
+        if (typeof params?.limit === 'number') {
+          queryParts.set('limit', String(params.limit));
+        }
+
+        if (params?.search) {
+          queryParts.set('search', params.search);
+        }
+
+        const queryString = queryParts.toString();
+
+        return this.http.get<UsersPageResponse>(
+          `${environment.apiUrlBackend}/usuarios${queryString ? `?${queryString}` : ''}`,
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           },
-        ),
-      ),
+        );
+      }),
     );
   }
 

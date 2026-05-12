@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -17,14 +18,15 @@ import { UsersService } from './users.service';
 import { User } from './user.entity';
 import { AdminCreateUserDto } from './dto/admin.create.users.dto';
 import { Role } from '../roles/roles.entity';
+import { UsersListQueryDto } from './dto/users-list.query.dto';
 
 @Controller('usuarios')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  async findAll(): Promise<User[]> {
-    return this.usersService.findAll();
+  async findAll(@Query() query: UsersListQueryDto) {
+    return this.usersService.findAll(query);
   }
 
   @Get('autores')

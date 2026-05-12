@@ -1,5 +1,6 @@
-import { Controller, Get, Body, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Body, Param, Delete, Query } from '@nestjs/common';
 import { ArticulosHistorialEtapasService } from './articulos-historial-etapas.service';
+import { PaginationQueryDto } from 'src/common/dto/pagination.query.dto';
 
 @Controller('articulos-historial-etapas')
 export class ArticulosHistorialEtapasController {
@@ -8,8 +9,8 @@ export class ArticulosHistorialEtapasController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.articulosHistorialEtapasService.findAll();
+  findAll(@Query() query: PaginationQueryDto) {
+    return this.articulosHistorialEtapasService.findAll(query);
   }
 
   @Get(':id')
