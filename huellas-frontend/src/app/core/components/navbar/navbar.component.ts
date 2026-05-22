@@ -193,17 +193,17 @@ export class NavbarComponent implements OnInit {
   goToNotificationCenter(): void {
     this.notificationMenuOpen = false;
 
-    if (this.authService.hasAnyRole(['autor'])) {
+    if (this.hasRole('autor')) {
       this.router.navigate(['/panel-autor/notificaciones']);
       return;
     }
 
-    if (this.authService.hasAnyRole(['revisor'])) {
+    if (this.hasRole('revisor')) {
       this.router.navigate(['/panel-revisor/notificaciones']);
       return;
     }
 
-    if (this.authService.hasAnyRole(['comite-editorial'])) {
+    if (this.hasRole('comite-editorial')) {
       this.router.navigate(['/panel-comite-editorial/notificaciones']);
       return;
     }
@@ -214,7 +214,66 @@ export class NavbarComponent implements OnInit {
   navigateToNotification(notification: NavbarNotificacion): void {
     this.marcarNotificacionLeida(notification.id);
     this.notificationMenuOpen = false;
-    this.router.navigateByUrl(notification.enlace);
+
+    // Ensure claims are available (up to a short timeout) to avoid guards rejecting navigation
+    this.waitForClaims(1500)
+      .then(() => {
+        // Prefer using the provided enlace when available (it may include query params)
+        const enlace = notification.enlace?.trim();
+        if (enlace && enlace.startsWith('/')) {
+          this.router
+            .navigateByUrl(enlace)
+            .then((ok) => {
+              if (!ok) {
+                this.navegacionFallback(notification);
+              }
+            })
+            .catch(() => this.navegacionFallback(notification));
+          return;
+        }
+
+        this.navegacionFallback(notification);
+      })
+      .catch(() => {
+        // If waiting for claims times out, still try fallback navigation
+        this.navegacionFallback(notification);
+      });
+  }
+
+  private waitForClaims(timeoutMs: number): Promise<void> {
+    return new Promise((resolve) => {
+      const sub = this.authService.claims$.subscribe((claims) => {
+        if (claims && Object.keys(claims).length > 0) {
+          sub.unsubscribe();
+          resolve();
+        }
+      });
+
+      // Fallback: resolve after timeout to avoid blocking forever
+      setTimeout(() => {
+        try {
+          sub.unsubscribe();
+        } catch {}
+        resolve();
+      }, timeoutMs);
+    });
+  }
+
+  private navegacionFallback(notification: NavbarNotificacion): void {
+    const destino = this.obtenerDestinoNotificacion(notification);
+    if (!destino) {
+      this.goToNotificationCenter();
+      return;
+    }
+
+    this.router
+      .navigate(destino.commands, destino.extras)
+      .then((ok) => {
+        if (!ok) {
+          this.goToNotificationCenter();
+        }
+      })
+      .catch(() => this.goToNotificationCenter());
   }
 
   get notificationCount(): number {
@@ -327,6 +386,9 @@ export class NavbarComponent implements OnInit {
   }
 
   private mapearNotificacionAutor(item: NotificacionAutorBackend): NavbarNotificacion {
+    const texto = `${item.titulo ?? ''} ${item.detalle ?? ''}`.toLowerCase();
+    const esCertificado = /certific/i.test(texto);
+
     return {
       id: item.id,
       articuloId: item.articuloId,
@@ -334,7 +396,7 @@ export class NavbarComponent implements OnInit {
       titulo: item.titulo,
       detalle: item.detalle,
       fecha: new Date(item.fecha),
-      enlace: this.obtenerEnlaceArticulo(item.articuloId),
+      enlace: esCertificado ? '/panel-autor/certificados' : this.obtenerEnlaceArticulo(item.articuloId),
     };
   }
 
@@ -386,7 +448,7 @@ export class NavbarComponent implements OnInit {
 
   private obtenerEnlaceArticulo(articuloId: number): string {
     if (this.authService.hasAnyRole(['autor'])) {
-      return `/panel-autor/detalle-articulo/${articuloId}`;
+      return `/panel-autor/timeline?articuloId=${articuloId}`;
     }
 
     if (this.authService.hasAnyRole(['revisor'])) {
@@ -398,6 +460,62 @@ export class NavbarComponent implements OnInit {
     }
 
     return `/flujo-trabajo-articulo/${articuloId}`;
+  }
+
+  private obtenerDestinoNotificacion(notification: NavbarNotificacion): {
+    commands: Array<string | number>;
+    extras?: { queryParams?: Record<string, number> };
+  } | null {
+    const articuloId = Number(notification.articuloId);
+    const tieneIdValido = Number.isFinite(articuloId) && articuloId > 0;
+
+    if (this.hasRole('autor')) {
+      if (!tieneIdValido) {
+        return { commands: ['/panel-autor/notificaciones'] };
+      }
+
+      return {
+        commands: ['/panel-autor/timeline'],
+        extras: { queryParams: { articuloId } },
+      };
+    }
+
+    if (this.hasRole('revisor')) {
+      return { commands: ['/panel-revisor/notificaciones'] };
+    }
+
+    if (this.hasRole('comite-editorial')) {
+      if (!tieneIdValido) {
+        return { commands: ['/panel-comite-editorial/notificaciones'] };
+      }
+
+      return { commands: ['/panel-comite-editorial/articulos', articuloId] };
+    }
+
+    if (
+      this.hasRole('admin') ||
+      this.hasRole('director') ||
+      this.hasRole('monitor') ||
+      this.currentClaims?.canManageArticulos
+    ) {
+      if (!tieneIdValido) {
+        return { commands: ['/articulos'] };
+      }
+
+      return { commands: ['/flujo-trabajo-articulo', articuloId] };
+    }
+
+    return null;
+  }
+
+  private hasRole(role: string): boolean {
+    const roles = this.currentClaims?.roles;
+
+    if (Array.isArray(roles) && roles.includes(role)) {
+      return true;
+    }
+
+    return this.authService.hasAnyRole([role]);
   }
 
   private obtenerStorageKey(): string {

@@ -17,7 +17,7 @@
     }
 
     @for (item of visibles; track item.titulo + item.fecha) {
-      <article class="notify-item" [class.unread]="!item.leida" (click)="marcarLeida(item)">
+      <article class="notify-item" [class.unread]="!item.leida" (click)="abrirNotificacion(item)">
         <span class="type" [class.type-action]="item.tipo === 'accion'" [class.type-info]="item.tipo === 'informacion'" [class.type-success]="item.tipo === 'exito'"></span>
         <div>
           <h3>{{ item.titulo }}</h3>

@@ -9,33 +9,66 @@
   <p class="message">{{ mensaje }}</p>
 }
 
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Articulo</th>
-        <th>Fecha limite</th>
-        <th>Dias restantes</th>
-        <th>Prorroga</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (articulo of articulos; track articulo.id) {
+<section class="table-shell">
+  <div class="table-shell__header">
+    <div>
+      <h2>Articulos asignados</h2>
+      <p>Ordena por llegada, fecha limite o codigo para revisar primero lo mas urgente.</p>
+    </div>
+
+    <div class="sort-panel">
+      <span class="sort-panel__label">Ordenar por</span>
+      <div class="sort-panel__control">
+        <select
+          #sortSelect
+          class="sort-panel__select"
+          [value]="ordenArticulos"
+          (change)="setOrdenArticulos(sortSelect.value)"
+          aria-label="Ordenar artículos"
+        >
+          <option value="llegada-reciente">Orden de llegada: más reciente</option>
+          <option value="llegada-antigua">Orden de llegada: más antiguo</option>
+          <option value="fecha-limite-desc">Fecha límite: descendente</option>
+          <option value="fecha-limite-asc">Fecha límite: ascendente</option>
+          <option value="codigo-asc">Código: ascendente</option>
+          <option value="codigo-desc">Código: descendente</option>
+        </select>
+
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="sort-panel__chevron">
+          <path d="m7 10 5 5 5-5"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
         <tr>
-          <td>{{ articulo.codigo }} - {{ articulo.titulo }}</td>
-          <td>{{ articulo.fechaLimite }}</td>
-          <td>{{ diasRestantes(articulo.fechaLimite) }}</td>
-          <td>
-            <button
-              type="button"
-              (click)="solicitarProrroga(articulo.id)"
-              [disabled]="tieneProrroga(articulo.id)"
-            >
-              {{ tieneProrroga(articulo.id) ? 'Prorroga usada' : 'Solicitar 15 dias' }}
-            </button>
-          </td>
+          <th>Articulo</th>
+          <th>Fecha limite</th>
+          <th>Dias restantes</th>
+          <th>Prorroga</th>
         </tr>
-      }
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody>
+        @for (articulo of articulosOrdenados; track articulo.id) {
+          <tr>
+            <td>{{ articulo.codigo }} - {{ articulo.titulo }}</td>
+            <td>{{ articulo.fechaLimite }}</td>
+            <td>{{ diasRestantes(articulo.fechaLimite) }}</td>
+            <td>
+              <button
+                type="button"
+                (click)="solicitarProrroga(articulo.id)"
+                [disabled]="tieneProrroga(articulo.id)"
+              >
+                {{ tieneProrroga(articulo.id) ? 'Prorroga usada' : 'Solicitar 15 dias' }}
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

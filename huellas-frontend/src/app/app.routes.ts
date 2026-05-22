@@ -84,6 +84,19 @@ export const routes: Routes = [
   },
 
   {
+    path: 'certificados-editoriales',
+    loadComponent: () =>
+      import('./pages/panel-admin/certificados/certificados-editoriales.component').then(
+        m => m.CertificadosEditorialesComponent,
+      ),
+    canActivate: [claimsGuard],
+    data: {
+      requiredClaim: 'canManageArticulos',
+      allowedRoles: ['admin', 'director', 'monitor'],
+    },
+  },
+
+  {
     path: 'flujo-trabajo-articulo/:id',
     loadComponent: () =>
       import('./pages/panel-admin/articulos/flujo-trabajo-articulo/flujo-trabajo-articulo').then(

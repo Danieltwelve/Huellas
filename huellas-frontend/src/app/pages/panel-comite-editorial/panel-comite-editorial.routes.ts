@@ -5,6 +5,7 @@ import { ArticuloComiteComponent } from './articulo-comite/articulo-comite.compo
 import { RubricasComiteComponent } from './rubricas-comite/rubricas-comite.component';
 import { DashboardComiteComponent } from './dashboard-comite/dashboard-comite.component';
 import { NotificacionesComiteComponent } from './notificaciones-comite/notificaciones-comite.component';
+import { CertificadosComiteComponent } from './certificados-comite/certificados-comite.component';
 
 export const PANEL_COMITE_EDITORIAL_ROUTES: Routes = [
   {
@@ -32,6 +33,10 @@ export const PANEL_COMITE_EDITORIAL_ROUTES: Routes = [
       {
         path: 'notificaciones',
         component: NotificacionesComiteComponent,
+      },
+      {
+        path: 'certificados',
+        component: CertificadosComiteComponent,
       },
     ],
   },

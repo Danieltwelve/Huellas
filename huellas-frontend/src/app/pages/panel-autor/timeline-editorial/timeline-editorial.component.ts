@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   ArticuloFlujo,
@@ -40,6 +40,8 @@ export class TimelineEditorialComponent implements OnInit {
 
   articulos: ArticuloAutor[] = [];
   articuloSeleccionadoId: number | null = null;
+  selectorOpen = false;
+  searchTerm = '';
   flujo: ArticuloFlujo | null = null;
   cargandoLista = true;
   cargandoFlujo = false;
@@ -96,6 +98,24 @@ export class TimelineEditorialComponent implements OnInit {
     });
   }
 
+  get articuloSeleccionado(): ArticuloAutor | null {
+    return this.articulos.find((articulo) => articulo.id === this.articuloSeleccionadoId) ?? null;
+  }
+
+  get filteredArticulos(): ArticuloAutor[] {
+    if (!this.searchTerm) {
+      return this.articulos;
+    }
+
+    const q = this.searchTerm.trim().toLowerCase();
+    return this.articulos.filter((a) => {
+      return (
+        String(a.codigo ?? '').toLowerCase().includes(q) ||
+        String(a.titulo ?? '').toLowerCase().includes(q)
+      );
+    });
+  }
+
   cargarArticulos(articuloIdQuery: number | null): void {
     this.cargandoLista = true;
     this.error = null;
@@ -116,10 +136,8 @@ export class TimelineEditorialComponent implements OnInit {
             ? articuloIdQuery
             : this.articulos[0].id;
 
-        if (this.articuloSeleccionadoId !== articuloValido) {
-          this.articuloSeleccionadoId = articuloValido;
-          this.cargarFlujo(articuloValido);
-        }
+        this.articuloSeleccionadoId = articuloValido;
+        this.cargarFlujo(articuloValido);
       },
       error: (err) => {
         console.error('Error cargando artículos del autor:', err);
@@ -129,21 +147,52 @@ export class TimelineEditorialComponent implements OnInit {
     });
   }
 
-  onSeleccionArticulo(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    const id = Number(target.value);
-
-    if (isNaN(id)) {
+  toggleSelector(): void {
+    if (this.cargandoLista || this.articulos.length === 0) {
       return;
     }
 
-    this.articuloSeleccionadoId = id;
+    this.selectorOpen = !this.selectorOpen;
+
+    if (this.selectorOpen) {
+      // focus the search box when menu opens
+      setTimeout(() => {
+        const input = document.querySelector('.selector-menu .selector-search') as HTMLInputElement | null;
+        input?.focus();
+      }, 60);
+    } else {
+      this.searchTerm = '';
+    }
+  }
+
+  seleccionarArticulo(articulo: ArticuloAutor): void {
+    if (!articulo?.id) {
+      this.selectorOpen = false;
+      return;
+    }
+
+    // always set selected id and reload its flujo so the header updates
+    this.articuloSeleccionadoId = articulo.id;
+    this.selectorOpen = false;
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { articuloId: id },
+      queryParams: { articuloId: articulo.id },
       queryParamsHandling: 'merge',
     });
-    this.cargarFlujo(id);
+    this.cargarFlujo(articulo.id);
+  }
+
+  onSearch(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.searchTerm = input.value ?? '';
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('.selector-card')) {
+      this.selectorOpen = false;
+    }
   }
 
   private cargarFlujo(articuloId: number): void {
@@ -164,11 +213,15 @@ export class TimelineEditorialComponent implements OnInit {
   }
 
   get titulo(): string {
-    if (!this.flujo) {
-      return 'Selecciona un artículo para ver su seguimiento';
+    if (this.flujo) {
+      return `${this.flujo.codigo} - ${this.flujo.titulo}`;
     }
 
-    return `${this.flujo.codigo} - ${this.flujo.titulo}`;
+    if (this.articuloSeleccionado) {
+      return `${this.articuloSeleccionado.codigo} - ${this.articuloSeleccionado.titulo}`;
+    }
+
+    return 'Selecciona un artículo para ver su seguimiento';
   }
 
   get etapas(): EtapaEditorial[] {
@@ -226,8 +279,13 @@ export class TimelineEditorialComponent implements OnInit {
   }
 
   get progreso(): number {
-    const completadas = this.etapas.filter((etapa) => etapa.estado === 'completada').length;
-    return Math.round((completadas / this.etapas.length) * 100);
+    const etapas = this.etapas;
+    if (!etapas || etapas.length === 0) {
+      return 0;
+    }
+
+    const completadas = etapas.filter((etapa) => etapa.estado === 'completada').length;
+    return Math.round((completadas / etapas.length) * 100);
   }
 
   get siguientePaso(): EtapaEditorial | null {

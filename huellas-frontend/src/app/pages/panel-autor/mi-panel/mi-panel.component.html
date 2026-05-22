@@ -74,6 +74,26 @@
           <button type="button" class="filter-chip" [class.active]="estadoFiltro === 'correccion'" (click)="setFiltro('correccion')">Correccion</button>
           <button type="button" class="filter-chip" [class.active]="estadoFiltro === 'publicado'" (click)="setFiltro('publicado')">Publicados</button>
         </div>
+
+        <div class="sort-panel">
+          <span class="sort-panel__label">Ordenar por</span>
+          <select
+            #sortSelect
+            class="sort-panel__select"
+            [value]="ordenArticulos"
+            (change)="setOrdenArticulos(sortSelect.value)"
+            aria-label="Ordenar artículos"
+          >
+            <option value="llegada-reciente">Orden de llegada: más reciente</option>
+            <option value="llegada-antigua">Orden de llegada: más antiguo</option>
+            <option value="fecha-desc">Fecha: descendente</option>
+            <option value="fecha-asc">Fecha: ascendente</option>
+            <option value="titulo-asc">Título: A - Z</option>
+            <option value="titulo-desc">Título: Z - A</option>
+            <option value="codigo-asc">Código: ascendente</option>
+            <option value="codigo-desc">Código: descendente</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -87,6 +107,7 @@
               <th>Etapa</th>
               <th>Estado</th>
               <th>Fecha envio</th>
+              <th>Tiempo en proceso</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -115,6 +136,7 @@
                   </span>
                 </td>
                 <td>{{ formatFecha(articulo.fecha_inicio) }}</td>
+                <td>{{ articulo.tiempoProceso }}</td>
                 <td class="actions-cell">
                   <button class="btn-outline-sm" type="button" (click)="verSeguimientoArticulo(articulo.id)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
@@ -164,6 +186,7 @@
               </div>
               <h3>{{ articulo.titulo }}</h3>
               <p class="article-meta">{{ formatFecha(articulo.fecha_inicio) }}</p>
+              <p class="article-meta">Tiempo en proceso: {{ articulo.tiempoProceso }}</p>
               <span
                 class="badge"
                 [class.badge-yellow]="getEtapaClass(articulo.etapa_nombre) === 'badge-yellow'"

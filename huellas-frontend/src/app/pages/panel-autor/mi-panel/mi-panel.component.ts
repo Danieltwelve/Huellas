@@ -10,11 +10,27 @@ import { FormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { inferCorrectionState } from '../../../core/articulos/correction-notification.util';
 
+type OrdenArticulos =
+  | 'llegada-reciente'
+  | 'llegada-antigua'
+  | 'fecha-desc'
+  | 'fecha-asc'
+  | 'titulo-asc'
+  | 'titulo-desc'
+  | 'codigo-asc'
+  | 'codigo-desc';
+
 interface EscenarioAcciones {
   tipo: 'alerta' | 'accion' | 'informacion' | 'exito';
   titulo: string;
   descripcion: string;
   acciones: string[];
+}
+
+interface ArticuloAutorListado extends ArticuloAutor {
+  fechaReferencia: Date | null;
+  ordenLlegada: number;
+  tiempoProceso: string;
 }
 
 @Component({
@@ -29,7 +45,7 @@ export class MiPanelComponent implements OnInit {
   private articulosEditorService = inject(ArticulosService);
   private router = inject(Router);
 
-  articulos: ArticuloAutor[] = [];
+  articulos: ArticuloAutorListado[] = [];
   loading = true;
   mensajeCorreccion: string | null = null;
   errorCorreccion: string | null = null;
@@ -47,6 +63,7 @@ export class MiPanelComponent implements OnInit {
   arrastrandoArchivoCorreccion = false;
   subiendoCorreccionIds = new Set<number>();
   estadoFiltro: 'todos' | 'revision' | 'correccion' | 'publicado' = 'todos';
+  ordenArticulos: OrdenArticulos = 'llegada-reciente';
   readonly hoy = new Date();
   envioHabilitado = true;
   cargandoEstadoEnvios = true;
@@ -65,15 +82,13 @@ export class MiPanelComponent implements OnInit {
     return pendientes[0] ?? null;
   }
 
-  get articulosFiltrados(): ArticuloAutor[] {
-    if (this.estadoFiltro === 'todos') {
-      return this.articulos;
-    }
-
-    return this.articulos.filter((articulo) => {
+  get articulosFiltrados(): ArticuloAutorListado[] {
+    const filtrados = this.articulos.filter((articulo) => {
       const estado = this.getEstadoArticulo(articulo);
-      return estado === this.estadoFiltro;
+      return this.estadoFiltro === 'todos' || estado === this.estadoFiltro;
     });
+
+    return this.ordenarArticulos(filtrados);
   }
 
   ngOnInit() {
@@ -99,7 +114,7 @@ export class MiPanelComponent implements OnInit {
   private cargarArticulos(): void {
     this.articulosService.getMisArticulos().subscribe({
       next: (data) => {
-        this.articulos = data;
+        this.articulos = data.map((articulo, index) => this.normalizarArticulo(articulo, index));
         this.loading = false;
         this.cargarNotificacionesCorreccion();
       },
@@ -132,6 +147,14 @@ export class MiPanelComponent implements OnInit {
 
   setFiltro(filtro: 'todos' | 'revision' | 'correccion' | 'publicado') {
     this.estadoFiltro = filtro;
+  }
+
+  setOrdenArticulos(orden: string): void {
+    if (!this.esOrdenArticulosValido(orden)) {
+      return;
+    }
+
+    this.ordenArticulos = orden;
   }
 
   getEstadoArticulo(articulo: ArticuloAutor): 'revision' | 'correccion' | 'publicado' {
@@ -176,6 +199,93 @@ export class MiPanelComponent implements OnInit {
       month: '2-digit',
       year: 'numeric',
     }).format(valor);
+  }
+
+  private parseFecha(fecha: string | null): Date | null {
+    if (!fecha) {
+      return null;
+    }
+
+    const valor = new Date(fecha);
+    return isNaN(valor.getTime()) ? null : valor;
+  }
+
+  private calcularTiempoProceso(fecha: Date | null): string {
+    if (!fecha) {
+      return '-';
+    }
+
+    const diferenciaMs = Date.now() - fecha.getTime();
+    const dias = Math.max(0, Math.floor(diferenciaMs / (1000 * 60 * 60 * 24)));
+    return `${dias} ${dias === 1 ? 'dia' : 'dias'}`;
+  }
+
+  private normalizarArticulo(articulo: ArticuloAutor, ordenLlegada: number): ArticuloAutorListado {
+    const fechaReferencia = this.parseFecha(articulo.fecha_inicio);
+
+    return {
+      ...articulo,
+      fechaReferencia,
+      ordenLlegada: fechaReferencia ? fechaReferencia.getTime() : ordenLlegada,
+      tiempoProceso: this.calcularTiempoProceso(fechaReferencia),
+    };
+  }
+
+  private ordenarArticulos(articulos: ArticuloAutorListado[]): ArticuloAutorListado[] {
+    const base = [...articulos];
+
+    base.sort((a, b) => {
+      switch (this.ordenArticulos) {
+        case 'llegada-antigua':
+          return a.ordenLlegada - b.ordenLlegada;
+        case 'fecha-desc':
+          return this.compararFechas(b.fechaReferencia, a.fechaReferencia);
+        case 'fecha-asc':
+          return this.compararFechas(a.fechaReferencia, b.fechaReferencia);
+        case 'titulo-asc':
+          return a.titulo.localeCompare(b.titulo, 'es', { sensitivity: 'base' });
+        case 'titulo-desc':
+          return b.titulo.localeCompare(a.titulo, 'es', { sensitivity: 'base' });
+        case 'codigo-asc':
+          return a.codigo.localeCompare(b.codigo, 'es', { numeric: true, sensitivity: 'base' });
+        case 'codigo-desc':
+          return b.codigo.localeCompare(a.codigo, 'es', { numeric: true, sensitivity: 'base' });
+        case 'llegada-reciente':
+        default:
+          return b.ordenLlegada - a.ordenLlegada;
+      }
+    });
+
+    return base;
+  }
+
+  private compararFechas(fechaA: Date | null, fechaB: Date | null): number {
+    if (!fechaA && !fechaB) {
+      return 0;
+    }
+
+    if (!fechaA) {
+      return 1;
+    }
+
+    if (!fechaB) {
+      return -1;
+    }
+
+    return fechaA.getTime() - fechaB.getTime();
+  }
+
+  private esOrdenArticulosValido(orden: string): orden is OrdenArticulos {
+    return [
+      'llegada-reciente',
+      'llegada-antigua',
+      'fecha-desc',
+      'fecha-asc',
+      'titulo-asc',
+      'titulo-desc',
+      'codigo-asc',
+      'codigo-desc',
+    ].includes(orden);
   }
 
   etapaEnMayusculas(etapa: string): string {

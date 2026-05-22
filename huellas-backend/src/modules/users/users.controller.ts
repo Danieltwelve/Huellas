@@ -3,10 +3,12 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   NotFoundException,
   Param,
   ParseIntPipe,
   Post,
+  Req,
   Put,
   UseGuards,
   Query,
@@ -20,8 +22,16 @@ import { AdminCreateUserDto } from './dto/admin.create.users.dto';
 import { Role } from '../roles/roles.entity';
 import { UsersListQueryDto } from './dto/users-list.query.dto';
 
+type RequestWithUser = {
+  user?: {
+    userId?: string | number;
+  };
+};
+
 @Controller('usuarios')
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name);
+
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
@@ -60,38 +70,71 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'director', 'monitor')
   @Post()
-  async createAdmin(@Body() adminCreateDto: AdminCreateUserDto): Promise<User> {
-    return this.usersService.createWithAdmin(adminCreateDto);
+  async createAdmin(
+    @Body() adminCreateDto: AdminCreateUserDto,
+    @Req() req: RequestWithUser,
+  ): Promise<User> {
+    const created = await this.usersService.createWithAdmin(adminCreateDto);
+    this.logger.log(
+      `Usuario creado por ${req.user?.userId ?? 'unknown'} con rol ${adminCreateDto.rolId}`,
+    );
+    return created;
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'director', 'monitor')
   @Put(':id')
-  async updateUser(@Param('id') id: number, @Body() data: Partial<User>) {
-    return this.usersService.update(id, data);
+  async updateUser(
+    @Param('id') id: number,
+    @Body() data: Partial<User>,
+    @Req() req: RequestWithUser,
+  ) {
+    const updated = await this.usersService.update(id, data);
+    this.logger.log(
+      `Usuario ${id} actualizado por ${req.user?.userId ?? 'unknown'}`,
+    );
+    return updated;
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'director', 'monitor')
   @Post(':id/reenviar-verificacion')
-  async resendVerificationEmail(@Param('id', ParseIntPipe) id: number) {
+  async resendVerificationEmail(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: RequestWithUser,
+  ) {
     await this.usersService.resendVerificationEmail(id);
+    this.logger.log(
+      `Verificacion reenviada a usuario ${id} por ${req.user?.userId ?? 'unknown'}`,
+    );
     return { message: 'Correo de verificación reenviado exitosamente.' };
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'director', 'monitor')
   @Post(':id/restablecer-acceso')
-  async restoreAccess(@Param('id', ParseIntPipe) id: number) {
+  async restoreAccess(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: RequestWithUser,
+  ) {
     await this.usersService.restoreFirebaseAccess(id);
+    this.logger.log(
+      `Acceso restablecido para usuario ${id} por ${req.user?.userId ?? 'unknown'}`,
+    );
     return { message: 'Acceso restablecido y correo de recuperación enviado.' };
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'director', 'monitor')
   @Delete(':id')
-  async deleteUser(@Param('id', ParseIntPipe) id: number) {
+  async deleteUser(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: RequestWithUser,
+  ) {
     await this.usersService.deleteUser(id);
+    this.logger.log(
+      `Usuario ${id} eliminado por ${req.user?.userId ?? 'unknown'}`,
+    );
     return { message: 'Usuario eliminado exitosamente.' };
   }
 }

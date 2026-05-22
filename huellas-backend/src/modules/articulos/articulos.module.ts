@@ -20,6 +20,7 @@ import { User } from '../users/user.entity';
 import { FerchContador } from './entities/ferch-contador.entity';
 import { FerchContadorSeeder } from 'src/databases/seeders/ferch-articulo.seeder';
 import { ArticulosConfiguracion } from './entities/articulos-configuracion.entity';
+import { ArticuloCertificado } from './entities/articulo-certificado.entity';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ArticulosConfiguracion } from './entities/articulos-configuracion.entit
       User,
       FerchContador,
       ArticulosConfiguracion,
+      ArticuloCertificado,
     ]),
     FirebaseAdminModule,
     UsersModule,

@@ -18,6 +18,18 @@ export class TemaSeeder implements OnModuleInit {
         descripcion: 'Artículos relacionados con la ciencia en general',
       },
       {
+        nombre: 'Ciencias Naturales',
+        descripcion: 'Biología, química, física y ciencias de la tierra',
+      },
+      {
+        nombre: 'Lingüística',
+        descripcion: 'Estudio del lenguaje, la comunicación y sus formas de análisis',
+      },
+      {
+        nombre: 'Educación',
+        descripcion: 'Pedagogía, didáctica, innovación educativa y formación',
+      },
+      {
         nombre: 'Tecnología',
         descripcion: 'Innovaciones y avances tecnológicos',
       },
@@ -26,8 +38,16 @@ export class TemaSeeder implements OnModuleInit {
         descripcion: 'Medicina, bienestar y salud pública',
       },
       {
-        nombre: 'Educación',
-        descripcion: 'Pedagogía, métodos educativos y formación',
+        nombre: 'Matemáticas',
+        descripcion: 'Álgebra, cálculo, modelación y pensamiento matemático',
+      },
+      {
+        nombre: 'Lengua y Literatura',
+        descripcion: 'Análisis del discurso, escritura, lectura y literatura',
+      },
+      {
+        nombre: 'Ciencias Sociales',
+        descripcion: 'Historia, geografía, sociedad y estudios culturales',
       },
       {
         nombre: 'Medio Ambiente',

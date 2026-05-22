@@ -1,6 +1,8 @@
 import {
   ChangeDetectorRef,
+  ElementRef,
   Component,
+  HostListener,
   inject,
   OnInit,
 } from '@angular/core';
@@ -15,23 +17,9 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { ArticulosService } from '../../../core/articulos/articulos.service';
+import { ArticulosService, TemaCatalogoBackend } from '../../../core/articulos/articulos.service';
 import { AuthService, AccessClaims } from '../../../core/auth/auth.service';
 import { Observable } from 'rxjs';
-
-// Mapeo de temas: área -> tema_id
-const TEMAS = [
-  { id: 1, nombre: 'Ciencias de la Computación' },
-  { id: 2, nombre: 'Ingeniería de Sistemas' },
-  { id: 3, nombre: 'Inteligencia Artificial' },
-  { id: 4, nombre: 'Redes y Telecomunicaciones' },
-  { id: 5, nombre: 'Seguridad Informática' },
-  { id: 6, nombre: 'Bases de Datos' },
-  { id: 7, nombre: 'Desarrollo de Software' },
-  { id: 8, nombre: 'Bioinformática' },
-  { id: 9, nombre: 'Matemáticas Aplicadas' },
-  { id: 10, nombre: 'Otra' },
-];
 
 function resumenLengthValidator(
   control: AbstractControl
@@ -63,13 +51,17 @@ export class NuevoArticuloComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
+  private elementRef = inject(ElementRef<HTMLElement>);
 
-  temas = TEMAS;
+  temas: TemaCatalogoBackend[] = [];
+  temaMenuAbierto = false;
   form!: FormGroup;
   archivoSeleccionado: File | null = null;
   archivoError = '';
+  archivoTocado = false;
   keywordInput = '';
   enviando = false;
+  showConfirmationModal = false;
   errorEnvio = '';
   exito = false;
   usuarioActualId: number | null = null;
@@ -114,7 +106,54 @@ export class NuevoArticuloComponent implements OnInit {
       usuarios_ids: this.fb.array([]),
     });
 
+    this.cargarTemas();
     this.cargarEstadoEnvios();
+  }
+
+  private cargarTemas(): void {
+    this.articulosService.getTemasCatalogo().subscribe({
+      next: (temas) => {
+        this.temas = temas;
+      },
+      error: () => {
+        this.temas = [];
+      },
+    });
+  }
+
+  abrirCerrarTemaMenu(): void {
+    this.temaMenuAbierto = !this.temaMenuAbierto;
+  }
+
+  cerrarTemaMenu(): void {
+    this.temaMenuAbierto = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  cerrarMenuAlHacerClickFuera(event: MouseEvent): void {
+    if (!this.temaMenuAbierto) {
+      return;
+    }
+
+    const target = event.target as Node | null;
+    if (target && !this.elementRef.nativeElement.contains(target)) {
+      this.temaMenuAbierto = false;
+    }
+  }
+
+  seleccionarTema(id: number): void {
+    this.form.get('tema_id')?.setValue(id);
+    this.form.get('tema_id')?.markAsTouched();
+    this.temaMenuAbierto = false;
+  }
+
+  get temaSeleccionado(): TemaCatalogoBackend | null {
+    const temaId = Number(this.form.get('tema_id')?.value);
+    return this.temas.find((tema) => tema.id === temaId) ?? null;
+  }
+
+  get temaSeleccionadoTexto(): string {
+    return this.temaSeleccionado?.nombre ?? '— Seleccione un tema —';
   }
 
   private cargarEstadoEnvios(): void {
@@ -130,6 +169,63 @@ export class NuevoArticuloComponent implements OnInit {
         this.estadoEnvioCargando = false;
       },
     });
+  }
+
+  private getGrupoTema(nombre: string): string {
+    const normalized = nombre.toLowerCase();
+
+    if (
+      ['ciencias de la computación', 'ingeniería de sistemas', 'inteligencia artificial', 'redes y telecomunicaciones', 'seguridad informática', 'bases de datos', 'desarrollo de software', 'tecnología'].some((item) => normalized.includes(item))
+    ) {
+      return 'Tecnología y computación';
+    }
+
+    if (['educación', 'pedagogía', 'didáctica'].some((item) => normalized.includes(item))) {
+      return 'Educación y pedagogía';
+    }
+
+    if (['lingüística', 'lengua', 'literatura', 'comunicación'].some((item) => normalized.includes(item))) {
+      return 'Lengua y comunicación';
+    }
+
+    if (['ciencias naturales', 'salud', 'medio ambiente', 'bioinformática'].some((item) => normalized.includes(item))) {
+      return 'Ciencias naturales y salud';
+    }
+
+    if (['matemáticas'].some((item) => normalized.includes(item))) {
+      return 'Matemáticas y análisis';
+    }
+
+    if (['ciencias sociales', 'cultura'].some((item) => normalized.includes(item))) {
+      return 'Ciencias sociales y humanidades';
+    }
+
+    return 'Otros';
+  }
+
+  get temasAgrupados(): Array<{ grupo: string; temas: TemaCatalogoBackend[] }> {
+    const prioridad = [
+      'Tecnología y computación',
+      'Educación y pedagogía',
+      'Lengua y comunicación',
+      'Ciencias naturales y salud',
+      'Matemáticas y análisis',
+      'Ciencias sociales y humanidades',
+      'Otros',
+    ];
+
+    const grupos = new Map<string, TemaCatalogoBackend[]>();
+
+    for (const tema of this.temas) {
+      const grupo = this.getGrupoTema(tema.nombre);
+      const items = grupos.get(grupo) ?? [];
+      items.push(tema);
+      grupos.set(grupo, items);
+    }
+
+    return prioridad
+      .filter((grupo) => grupos.has(grupo))
+      .map((grupo) => ({ grupo, temas: grupos.get(grupo) ?? [] }));
   }
 
   get palabrasClave(): string[] {
@@ -226,20 +322,34 @@ export class NuevoArticuloComponent implements OnInit {
   onFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.archivoError = '';
+    this.archivoTocado = true;
     const file = input.files?.[0];
-    if (!file) return;
+    if (!file) {
+      this.archivoSeleccionado = null;
+      this.archivoError = 'El archivo es requerido';
+      return;
+    }
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
     if (!['pdf', 'docx'].includes(ext)) {
       this.archivoError = 'Solo se permiten archivos .pdf o .docx';
       input.value = '';
+      this.archivoSeleccionado = null;
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
       this.archivoError = 'El archivo no debe superar 10 MB';
       input.value = '';
+      this.archivoSeleccionado = null;
       return;
     }
     this.archivoSeleccionado = file;
+  }
+
+  clearArchivo(input: HTMLInputElement): void {
+    input.value = '';
+    this.archivoSeleccionado = null;
+    this.archivoError = '';
+    this.archivoTocado = true;
   }
 
   submit(): void {
@@ -250,6 +360,7 @@ export class NuevoArticuloComponent implements OnInit {
 
     if (this.form.invalid || !this.archivoSeleccionado) {
       this.form.markAllAsTouched();
+      this.archivoTocado = true;
       if (!this.archivoSeleccionado) this.archivoError = 'El archivo es requerido';
       return;
     }
@@ -259,8 +370,42 @@ export class NuevoArticuloComponent implements OnInit {
       return;
     }
 
+    this.showConfirmationModal = true;
+  }
+
+  cancelarConfirmacion(): void {
+    if (this.enviando) {
+      return;
+    }
+
+    this.showConfirmationModal = false;
+  }
+
+  confirmarEnvio(): void {
+    if (this.enviando) {
+      return;
+    }
+
+    if (!this.envioHabilitado) {
+      this.showConfirmationModal = false;
+      this.errorEnvio = 'El envío de artículos está deshabilitado temporalmente.';
+      return;
+    }
+
+    if (this.form.invalid || !this.archivoSeleccionado || !this.usuarioActualId) {
+      this.showConfirmationModal = false;
+      this.form.markAllAsTouched();
+      this.archivoTocado = true;
+      if (!this.archivoSeleccionado) this.archivoError = 'El archivo es requerido';
+      if (!this.usuarioActualId) {
+        this.errorEnvio = 'No se pudo obtener tu ID de usuario. Intenta refrescar la página.';
+      }
+      return;
+    }
+
     this.enviando = true;
     this.errorEnvio = '';
+    this.showConfirmationModal = false;
     const v = this.form.value;
     const fd = new FormData();
     fd.append('titulo', v.titulo);
@@ -320,5 +465,24 @@ export class NuevoArticuloComponent implements OnInit {
   fieldInvalid(name: string): boolean {
     const ctrl = this.form.get(name);
     return !!(ctrl && ctrl.invalid && ctrl.touched);
+  }
+
+  get resumenEnvio(): Array<{ label: string; value: string }> {
+    const value = this.form.value;
+    const autores = [
+      this.usuarioActualId ? `Autor principal: ID ${this.usuarioActualId}` : 'Autor principal no disponible',
+      ...this.usuariosIds.controls
+        .map((control) => Number(control.get('usuario_id')?.value))
+        .filter((id) => Number.isInteger(id) && id > 0)
+        .map((id) => `Co-autor ID ${id}`),
+    ];
+
+    return [
+      { label: 'Título', value: value.titulo || 'Sin título' },
+      { label: 'Tema', value: this.temas.find((tema) => String(tema.id) === String(value.tema_id))?.nombre ?? 'Sin tema' },
+      { label: 'Palabras clave', value: this.palabrasClave.length > 0 ? this.palabrasClave.join(', ') : 'Sin palabras clave' },
+      { label: 'Archivo', value: this.archivoSeleccionado?.name ?? 'Sin archivo' },
+      { label: 'Autores', value: autores.join(' · ') },
+    ];
   }
 }

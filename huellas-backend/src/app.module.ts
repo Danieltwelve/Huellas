@@ -14,6 +14,7 @@ import { ArticulosModule } from './modules/articulos/articulos.module';
 import { ArticulosHistorialEtapasModule } from './modules/articulos-historial-etapas/articulos-historial-etapas.module';
 import { ObservacionesModule } from './modules/observaciones/observaciones.module';
 import { ObservacionesArchivosModule } from './modules/observaciones-archivos/observaciones-archivos.module';
+import { TemasModule } from './modules/temas/temas.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
@@ -51,6 +52,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ArticulosHistorialEtapasModule,
     ObservacionesModule,
     ObservacionesArchivosModule,
+    TemasModule,
   ],
   controllers: [MetricsController],
   providers: [MetricsService, { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor }],

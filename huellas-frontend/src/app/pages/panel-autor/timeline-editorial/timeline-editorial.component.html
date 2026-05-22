@@ -1,20 +1,64 @@
 <div class="timeline-container">
   <div class="selector-card">
     <label for="articuloSelector">Artículo a seguir</label>
-    <select
-      id="articuloSelector"
-      [value]="articuloSeleccionadoId ?? ''"
-      (change)="onSeleccionArticulo($event)"
+    <button
+      type="button"
+      class="selector-trigger"
+      [class.selector-trigger--open]="selectorOpen"
+      (click)="toggleSelector()"
       [disabled]="cargandoLista || articulos.length === 0"
+      aria-haspopup="listbox"
+      [attr.aria-expanded]="selectorOpen"
     >
-      @for (articulo of articulos; track articulo.id) {
-        <option [value]="articulo.id">{{ articulo.codigo }} - {{ articulo.titulo }}</option>
-      }
-    </select>
+      <span class="selector-trigger__content">
+        <span class="selector-trigger__code">{{ articuloSeleccionado?.codigo ?? 'Selecciona un artículo' }}</span>
+        <span class="selector-trigger__title">
+          {{ articuloSeleccionado?.titulo ?? 'Ver el seguimiento editorial' }}
+        </span>
+      </span>
+      <span class="selector-trigger__chevron" aria-hidden="true">⌄</span>
+    </button>
+
+    @if (selectorOpen) {
+      <div class="selector-menu" role="listbox" aria-label="Artículos del autor">
+        <input
+          type="text"
+          class="selector-search"
+          placeholder="Buscar artículo por código o título..."
+          [value]="searchTerm"
+          (input)="onSearch($event)"
+          aria-label="Buscar artículos"
+        />
+
+        @if (filteredArticulos.length === 0) {
+          <div class="selector-empty">No se encontraron artículos</div>
+        }
+
+        @for (articulo of filteredArticulos; track articulo.id) {
+          <button
+            type="button"
+            class="selector-option"
+            [class.selector-option--active]="articuloSeleccionadoId === articulo.id"
+            (click)="seleccionarArticulo(articulo)"
+            role="option"
+            [attr.aria-selected]="articuloSeleccionadoId === articulo.id"
+          >
+            <span class="selector-option__badge">{{ articulo.codigo }}</span>
+            <span class="selector-option__body">
+              <strong>{{ articulo.titulo }}</strong>
+              <small>Haz clic para abrir su timeline</small>
+            </span>
+          </button>
+        }
+      </div>
+    }
   </div>
 
   @if (cargandoLista || cargandoFlujo) {
-    <div class="demo-banner">Cargando seguimiento del artículo...</div>
+    <div class="demo-banner demo-banner--loading">
+      <span class="demo-banner__spinner" aria-hidden="true"></span>
+      <span>Cargando seguimiento del artículo...</span>
+    </div>
   }
 
   @if (error) {

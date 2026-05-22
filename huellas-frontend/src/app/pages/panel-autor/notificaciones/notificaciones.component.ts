@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   ArticulosAutorService,
   NotificacionAutorBackend,
@@ -25,6 +26,7 @@ interface Notificacion {
 })
 export class NotificacionesComponent implements OnInit {
   private readonly articulosAutorService = inject(ArticulosAutorService);
+  private readonly router = inject(Router);
 
   filtro: 'todas' | 'no-leidas' = 'todas';
   loading = true;
@@ -96,6 +98,21 @@ export class NotificacionesComponent implements OnInit {
     idsLeidas.add(notificacion.id);
     this.guardarIdsLeidas(idsLeidas);
     window.dispatchEvent(new CustomEvent('huellas-notifications-updated'));
+  }
+
+  abrirNotificacion(notificacion: Notificacion): void {
+    this.marcarLeida(notificacion);
+    const texto = `${notificacion.titulo ?? ''} ${notificacion.detalle ?? ''}`.toLowerCase();
+    const esCertificado = /certific/i.test(texto);
+
+    if (esCertificado) {
+      this.router.navigate(['/panel-autor/certificados']);
+      return;
+    }
+
+    this.router.navigate(['/panel-autor/timeline'], {
+      queryParams: { articuloId: notificacion.articuloId },
+    });
   }
 
   private obtenerIdsLeidas(): Set<string> {

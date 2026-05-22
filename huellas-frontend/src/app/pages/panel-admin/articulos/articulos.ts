@@ -13,6 +13,15 @@ import { takeUntil } from 'rxjs/operators';
 
 type EstadoEvaluacionComite = 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado';
 type EstadoFiltroComite = 'todos' | EstadoEvaluacionComite;
+type OrdenArticulos =
+  | 'llegada-reciente'
+  | 'llegada-antigua'
+  | 'fecha-desc'
+  | 'fecha-asc'
+  | 'titulo-asc'
+  | 'titulo-desc'
+  | 'codigo-asc'
+  | 'codigo-desc';
 
 interface ArticuloListado {
   id: number;
@@ -21,6 +30,8 @@ interface ArticuloListado {
   etapaActual: string;
   fechaAceptacion: string;
   tiempoProceso: string;
+  fechaReferencia: Date | null;
+  ordenLlegada: number;
   claseEtapa: string;
   estadoEvaluacion: EstadoEvaluacionComite;
   estadoEtiqueta: string;
@@ -49,6 +60,7 @@ export class Articulos implements OnInit, OnDestroy {
   loading = true;
   pageTitle = 'Artículos';
   filtroEstadoComite: EstadoFiltroComite = 'todos';
+  ordenArticulos: OrdenArticulos = 'llegada-reciente';
   estadisticasComite: ComiteEstadisticas | null = null;
   historialEvaluaciones: ComiteEvaluacionHistorial[] = [];
   mostrarHistorial = false;
@@ -90,8 +102,7 @@ export class Articulos implements OnInit, OnDestroy {
 
     source$.subscribe({
       next: (response) => {
-        this.articulos = response
-          .map((articulo) => this.mapArticulo(articulo));
+        this.articulos = response.map((articulo, index) => this.mapArticulo(articulo, index));
         this.loading = false;
         this.applySearch();
       },
@@ -134,6 +145,15 @@ export class Articulos implements OnInit, OnDestroy {
     this.applySearch();
   }
 
+  setOrdenArticulos(orden: string): void {
+    if (!this.esOrdenArticulosValido(orden)) {
+      return;
+    }
+
+    this.ordenArticulos = orden;
+    this.applySearch();
+  }
+
   toggleAccionesRapidas(): void {
     this.mostrarAccionesRapidas = !this.mostrarAccionesRapidas;
   }
@@ -147,28 +167,27 @@ export class Articulos implements OnInit, OnDestroy {
       base = base.filter((articulo) => articulo.estadoEvaluacion === this.filtroEstadoComite);
     }
 
-    if (!normalizedTerm) {
-      this.filteredArticulos = base;
-      return;
-    }
+    const filtrados = !normalizedTerm
+      ? base
+      : base.filter((articulo) => {
+          const searchableText = [
+            articulo.codigo,
+            articulo.titulo,
+            articulo.etapaActual,
+            articulo.estadoEtiqueta,
+            articulo.fechaAceptacion,
+            articulo.tiempoProceso,
+          ]
+            .join(' ')
+            .toLowerCase();
 
-    this.filteredArticulos = base.filter((articulo) => {
-      const searchableText = [
-        articulo.codigo,
-        articulo.titulo,
-        articulo.etapaActual,
-        articulo.estadoEtiqueta,
-        articulo.fechaAceptacion,
-        articulo.tiempoProceso,
-      ]
-        .join(' ')
-        .toLowerCase();
+          return searchableText.includes(normalizedTerm);
+        });
 
-      return searchableText.includes(normalizedTerm);
-    });
+    this.filteredArticulos = this.ordenarArticulos(filtrados);
   }
 
-  private mapArticulo(articulo: ArticuloResumenBackend): ArticuloListado {
+  private mapArticulo(articulo: ArticuloResumenBackend, ordenLlegada: number): ArticuloListado {
     const etapaActual = articulo.etapa_nombre?.trim() || 'Desconocida';
     const fechaReferencia = this.committeeView
       ? articulo.fecha_asignacion ?? articulo.fecha_inicio
@@ -183,6 +202,8 @@ export class Articulos implements OnInit, OnDestroy {
       etapaActual,
       fechaAceptacion: this.formatFecha(fecha),
       tiempoProceso: this.calcularTiempoProceso(fecha),
+      fechaReferencia: fecha,
+      ordenLlegada: fecha ? fecha.getTime() : ordenLlegada,
       claseEtapa: this.getClaseEtapa(etapaActual),
       estadoEvaluacion: estadoComite,
       estadoEtiqueta: this.getEstadoEtiqueta(estadoComite),
@@ -380,6 +401,63 @@ export class Articulos implements OnInit, OnDestroy {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase();
+  }
+
+  private ordenarArticulos(articulos: ArticuloListado[]): ArticuloListado[] {
+    const base = [...articulos];
+
+    base.sort((a, b) => {
+      switch (this.ordenArticulos) {
+        case 'llegada-antigua':
+          return a.ordenLlegada - b.ordenLlegada;
+        case 'fecha-desc':
+          return this.compararFechas(b.fechaReferencia, a.fechaReferencia);
+        case 'fecha-asc':
+          return this.compararFechas(a.fechaReferencia, b.fechaReferencia);
+        case 'titulo-asc':
+          return a.titulo.localeCompare(b.titulo, 'es', { sensitivity: 'base' });
+        case 'titulo-desc':
+          return b.titulo.localeCompare(a.titulo, 'es', { sensitivity: 'base' });
+        case 'codigo-asc':
+          return a.codigo.localeCompare(b.codigo, 'es', { numeric: true, sensitivity: 'base' });
+        case 'codigo-desc':
+          return b.codigo.localeCompare(a.codigo, 'es', { numeric: true, sensitivity: 'base' });
+        case 'llegada-reciente':
+        default:
+          return b.ordenLlegada - a.ordenLlegada;
+      }
+    });
+
+    return base;
+  }
+
+  private compararFechas(fechaA: Date | null, fechaB: Date | null): number {
+    if (!fechaA && !fechaB) {
+      return 0;
+    }
+
+    if (!fechaA) {
+      return 1;
+    }
+
+    if (!fechaB) {
+      return -1;
+    }
+
+    return fechaA.getTime() - fechaB.getTime();
+  }
+
+  private esOrdenArticulosValido(orden: string): orden is OrdenArticulos {
+    return [
+      'llegada-reciente',
+      'llegada-antigua',
+      'fecha-desc',
+      'fecha-asc',
+      'titulo-asc',
+      'titulo-desc',
+      'codigo-asc',
+      'codigo-desc',
+    ].includes(orden);
   }
 
   get totalPendientes(): number {

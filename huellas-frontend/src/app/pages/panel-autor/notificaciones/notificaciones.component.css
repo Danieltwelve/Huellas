@@ -69,6 +69,14 @@
   border-radius: 0.8rem;
   background: #fff;
   padding: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.notify-item:hover {
+  transform: translateY(-1px);
+  border-color: #99f6e4;
+  box-shadow: 0 10px 20px rgba(20, 184, 166, 0.12);
 }
 
 .notify-item.unread {

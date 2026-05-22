@@ -33,9 +33,8 @@ export const claimsGuard: CanActivateFn = (route) => {
           return of(router.createUrlTree(['/login']));
         }),
         catchError(() => {
-          // Si hay timeout u otro error, permitir el acceso de todas formas
-          // (el componente puede tomar la decisión)
-          return of(true);
+          // Si no se pueden resolver las claims, negar el acceso por seguridad.
+          return of(router.createUrlTree(['/login']));
         }),
       );
     }),

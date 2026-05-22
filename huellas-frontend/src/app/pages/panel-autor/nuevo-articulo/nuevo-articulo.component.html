@@ -49,12 +49,47 @@
         <!-- Tema -->
         <div class="field-group">
           <label class="field-label" for="tema">Tema <span class="req">*</span></label>
-          <select id="tema" class="field-input" [class.has-error]="fieldInvalid('tema_id')" formControlName="tema_id">
-            <option value="">— Seleccione un tema —</option>
-            @for (t of temas; track t.id) {
-              <option [value]="t.id">{{ t.nombre }}</option>
+          <div class="tema-menu-shell" [class.has-error]="fieldInvalid('tema_id')">
+            <button
+              type="button"
+              class="tema-menu-trigger"
+              (click)="abrirCerrarTemaMenu()"
+              [attr.aria-expanded]="temaMenuAbierto"
+              aria-controls="tema-menu-panel"
+            >
+              <span class="tema-menu-trigger__text">{{ temaSeleccionadoTexto }}</span>
+              <span class="tema-menu-trigger__icon">▾</span>
+            </button>
+
+            @if (temaMenuAbierto) {
+              <div id="tema-menu-panel" class="tema-menu-panel">
+                @if (!temas.length) {
+                  <div class="tema-menu-empty">Cargando temas...</div>
+                } @else {
+                  @for (grupo of temasAgrupados; track grupo.grupo) {
+                    <div class="tema-menu-group">
+                      <div class="tema-menu-group__title">{{ grupo.grupo }}</div>
+                      <div class="tema-menu-options">
+                        @for (t of grupo.temas; track t.id) {
+                          <button
+                            type="button"
+                            class="tema-menu-option"
+                            [class.is-active]="temaSeleccionado?.id === t.id"
+                            (click)="seleccionarTema(t.id)"
+                          >
+                            <span class="tema-menu-option__name">{{ t.nombre }}</span>
+                            @if (t.descripcion) {
+                              <span class="tema-menu-option__desc">{{ t.descripcion }}</span>
+                            }
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
             }
-          </select>
+          </div>
           @if (fieldInvalid('tema_id')) {
             <p class="field-error">Seleccione un tema.</p>
           }
@@ -163,11 +198,20 @@
             id="archivo"
             type="file"
             class="field-file"
+            [class.has-error]="archivoTocado && !archivoSeleccionado"
             accept=".pdf,.docx"
+            required
             (change)="onFileChange($event)"
+            #archivoInput
           />
+          <p class="field-hint">Obligatorio. Solo se permiten archivos .pdf o .docx de hasta 10 MB.</p>
           @if (archivoSeleccionado) {
-            <p class="file-selected">📄 {{ archivoSeleccionado.name }}</p>
+            <div class="file-selected-row">
+              <p class="file-selected">📄 {{ archivoSeleccionado.name }}</p>
+              <button type="button" class="file-clear-btn" (click)="clearArchivo(archivoInput)">
+                × Quitar archivo
+              </button>
+            </div>
           }
           @if (archivoError) {
             <p class="field-error">{{ archivoError }}</p>
@@ -215,6 +259,42 @@
         </div>
 
       </form>
+    </div>
+  }
+
+  @if (showConfirmationModal) {
+    <div class="modal-backdrop" (click)="cancelarConfirmacion()"></div>
+    <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmar-envio-title" (click)="$event.stopPropagation()">
+      <button type="button" class="modal-close" (click)="cancelarConfirmacion()" aria-label="Cerrar confirmación">
+        ×
+      </button>
+
+      <div class="confirm-modal__header">
+        <div class="confirm-modal__icon" aria-hidden="true">!</div>
+        <div>
+          <p class="confirm-modal__eyebrow">Confirmar envío</p>
+          <h3 id="confirmar-envio-title">¿Deseas enviar este artículo?</h3>
+          <p>Revisa el resumen antes de continuar. Una vez enviado, el artículo entrará al flujo editorial.</p>
+        </div>
+      </div>
+
+      <div class="confirm-modal__summary">
+        @for (item of resumenEnvio; track item.label) {
+          <div class="confirm-modal__row">
+            <span class="confirm-modal__label">{{ item.label }}</span>
+            <span class="confirm-modal__value">{{ item.value }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="confirm-modal__footer">
+        <button type="button" class="btn-secondary" (click)="cancelarConfirmacion()" [disabled]="enviando">
+          Regresar
+        </button>
+        <button type="button" class="btn-primary" (click)="confirmarEnvio()" [disabled]="enviando">
+          {{ enviando ? 'Enviando...' : 'Confirmar envío' }}
+        </button>
+      </div>
     </div>
   }
 </div>

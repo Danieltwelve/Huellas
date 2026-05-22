@@ -52,6 +52,56 @@
     </div>
   </div>
 
+  <div class="content-section themed-section">
+    <div class="section-heading">
+      <div>
+        <h2>Temas sugeridos en educación</h2>
+        <p>
+          Elige un eje temático para orientar tu artículo hacia investigación,
+          innovación didáctica, inclusión o transformación educativa.
+        </p>
+      </div>
+      <span class="section-pill">Nueva sección</span>
+    </div>
+
+    <div class="selector-layout">
+      <div class="selector-panel">
+        <label for="tema-educacion" class="selector-label">Tema principal del artículo</label>
+        <select id="tema-educacion" class="tema-select" [(ngModel)]="temaSeleccionado">
+          <option *ngFor="let tema of temasEducacion" [ngValue]="tema">
+            {{ tema.titulo }}
+          </option>
+        </select>
+
+        <div class="selector-help">
+          Define el enfoque más cercano a tu manuscrito. Puedes adaptar el contenido a una de estas líneas editoriales.
+        </div>
+      </div>
+
+      <article class="tema-preview-card">
+        <span class="tema-categoria">{{ temaSeleccionado.categoria }}</span>
+        <h3>{{ temaSeleccionado.titulo }}</h3>
+        <p>{{ temaSeleccionado.descripcion }}</p>
+
+        <div class="tema-tags">
+          <span *ngFor="let enfoque of temaSeleccionado.enfoques">{{ enfoque }}</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="temas-grid">
+      <article class="tema-card" *ngFor="let tema of temasEducacion">
+        <span class="tema-categoria">{{ tema.categoria }}</span>
+        <h3>{{ tema.titulo }}</h3>
+        <p>{{ tema.descripcion }}</p>
+
+        <div class="tema-tags">
+          <span *ngFor="let enfoque of tema.enfoques">{{ enfoque }}</span>
+        </div>
+      </article>
+    </div>
+  </div>
+
   <div class="contact-section">
     <h2>¿Preguntas?</h2>
     <p>Contacta a nuestra oficina editorial: <strong>envios@huellas-revista.com</strong></p>
