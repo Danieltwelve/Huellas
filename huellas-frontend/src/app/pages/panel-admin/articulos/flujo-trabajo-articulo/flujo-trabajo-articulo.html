@@ -23,38 +23,88 @@
     }
   </nav>
 
-  <section class="resumen-envio" *ngIf="articulo">
+  <section class="resumen-envio" *ngIf="articulo" [class.resumen-envio--colapsado]="!resumenEnvioExpandido">
     <div class="section-head">
       <div>
         <span class="section-kicker">Contexto editorial</span>
         <h2>Información enviada por el autor</h2>
       </div>
+      <button
+        type="button"
+        class="section-toggle"
+        [class.is-collapsed]="!resumenEnvioExpandido"
+        (click)="toggleResumenEnvio()"
+        [attr.aria-expanded]="resumenEnvioExpandido"
+        aria-label="Mostrar u ocultar contexto editorial"
+      >
+        <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
     </div>
-    <div class="resumen-grid">
-      <article class="resumen-item">
-        <h3>Autores</h3>
-        <p>{{ autoresArticulo }}</p>
-      </article>
-      <article class="resumen-item">
-        <h3>Temas</h3>
-        <p>{{ temasArticulo }}</p>
-      </article>
-      <article class="resumen-item">
-        <h3>Palabras clave</h3>
-        <p>{{ palabrasClaveArticulo }}</p>
-      </article>
-      <article class="resumen-item">
-        <h3>Fecha de envío</h3>
-        <p>{{ fechaEnvioArticulo }}</p>
+    <div class="resumen-content" *ngIf="resumenEnvioExpandido">
+      <div class="resumen-grid">
+        <article class="resumen-item">
+          <h3>Autores</h3>
+          <p>{{ autoresArticulo }}</p>
+        </article>
+        <article class="resumen-item">
+          <h3>Temas</h3>
+          <p>{{ temasArticulo }}</p>
+        </article>
+        <article class="resumen-item">
+          <h3>Palabras clave</h3>
+          <p>{{ palabrasClaveArticulo }}</p>
+        </article>
+        <article class="resumen-item">
+          <h3>Fecha de envío</h3>
+          <p>{{ fechaEnvioArticulo }}</p>
+        </article>
+      </div>
+      <article class="resumen-item resumen-item--full">
+        <h3>Resumen</h3>
+        <p>{{ resumenArticulo }}</p>
       </article>
     </div>
-    <article class="resumen-item resumen-item--full">
-      <h3>Resumen</h3>
-      <p>{{ resumenArticulo }}</p>
-    </article>
   </section>
 
   <div class="contenido-principal">
+    <section class="timeline-etapas-panel" [class.timeline-etapas-panel--colapsado]="!rutaEditorialExpandida">
+        <div class="section-head section-head--compact">
+          <div>
+            <span class="section-kicker">Ruta editorial</span>
+            <h2>Cronograma de Etapas</h2>
+          </div>
+          <button
+            type="button"
+            class="section-toggle"
+            [class.is-collapsed]="!rutaEditorialExpandida"
+            (click)="toggleRutaEditorial()"
+            [attr.aria-expanded]="rutaEditorialExpandida"
+            aria-label="Mostrar u ocultar ruta editorial"
+          >
+            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+        <div class="timeline-content" *ngIf="rutaEditorialExpandida">
+          @for (etapa of etapasTimeline; track etapa.id) {
+          <div
+            class="etapa-item"
+            [class.etapa-completada]="etapa.estado === 'completada'"
+            [class.etapa-activa]="etapa.estado === 'actual'"
+          >
+            <aside class="etapa-meta">
+              <div class="timeline-dot"></div>
+              <span class="etapa-estado">{{ etapa.titulo }}</span>
+            </aside>
+            <p class="etapa-fecha">{{ etapa.fecha }}</p>
+          </div>
+          }
+        </div>
+      </section>
+
     <section class="historial-panel">
       <div class="section-head section-head--historial">
         <div>
@@ -126,26 +176,126 @@
     </section>
 
     <aside class="acciones-laterales">
-      <section class="timeline-etapas-panel">
+
+      <section class="turnitin-panel">
         <div class="section-head section-head--compact">
           <div>
-            <span class="section-kicker">Ruta editorial</span>
-            <h2>Cronograma de Etapas</h2>
+            <span class="section-kicker">Turnitin</span>
+            <h2>Asignacion de Revisores por Pares</h2>
           </div>
+          <button type="button" class="btn-outline-teal btn-score">Generar puntaje</button>
         </div>
-        @for (etapa of etapasTimeline; track etapa.id) {
-        <div
-          class="etapa-item"
-          [class.etapa-completada]="etapa.estado === 'completada'"
-          [class.etapa-activa]="etapa.estado === 'actual'"
-        >
-          <aside class="etapa-meta">
-            <div class="timeline-dot"></div>
-            <span class="etapa-estado">{{ etapa.titulo }}</span>
-          </aside>
-          <p class="etapa-fecha">{{ etapa.fecha }}</p>
+
+        <div class="turnitin-grid">
+          <article class="turnitin-card">
+            <div class="turnitin-card-header">
+              <div>
+                <h3>Dr. Juan Perez</h3>
+                <p>juan.perez@udenar.edu.co</p>
+              </div>
+            </div>
+            <div class="turnitin-body">
+              <p>
+                Ingeniero de Sistemas con mas de 6 anos de experiencia en IA y automatizacion. Experto en
+                Python, TensorFlow y analitica predictiva.
+              </p>
+            </div>
+            <div class="turnitin-actions">
+              <span class="turnitin-load">Carga actual: 4/5 articulos</span>
+              <button type="button" class="btn-outline-teal">Asignar revisor</button>
+            </div>
+          </article>
+
+          <article class="turnitin-card">
+            <div class="turnitin-card-header">
+              <div>
+                <h3>Dra. Maria Gomez</h3>
+                <p>maria.gomez@universidad.edu.co</p>
+              </div>
+            </div>
+            <div class="turnitin-body">
+              <p>
+                Especialista en NLP, evaluacion de articulos y diseno de herramientas para revision editorial.
+              </p>
+            </div>
+            <div class="turnitin-actions">
+              <span class="turnitin-load">Carga actual: 1/5 articulos</span>
+              <button type="button" class="btn-outline-teal">Asignar revisor</button>
+            </div>
+          </article>
+
+          <article class="turnitin-card">
+            <div class="turnitin-card-header">
+              <div>
+                <h3>Prof. Carlos Ruiz</h3>
+                <p>carlos.ruiz@instituto.edu.co</p>
+              </div>
+            </div>
+            <div class="turnitin-body">
+              <p>
+                Investigador senior con enfoque en validacion de resultados y evaluacion metodologica.
+              </p>
+            </div>
+            <div class="turnitin-actions">
+              <span class="turnitin-load">Carga actual: 5/5 articulos</span>
+              <button type="button" class="btn-outline-teal" disabled>Asignar revisor</button>
+            </div>
+          </article>
+
+          <article class="turnitin-card">
+            <div class="turnitin-card-header">
+              <div>
+                <h3>Dra. Ana Lopez</h3>
+                <p>ana.lopez@udea.edu.co</p>
+              </div>
+            </div>
+            <div class="turnitin-body">
+              <p>
+                Docente investigadora enfocada en modelos generativos y evaluacion de impacto cientifico.
+              </p>
+            </div>
+            <div class="turnitin-actions">
+              <span class="turnitin-load">Carga actual: 2/5 articulos</span>
+              <button type="button" class="btn-outline-teal">Asignar revisor</button>
+            </div>
+          </article>
+
+          <article class="turnitin-card">
+            <div class="turnitin-card-header">
+              <div>
+                <h3>Dr. Luis Hernandez</h3>
+                <p>luis.hernandez@unam.mx</p>
+              </div>
+            </div>
+            <div class="turnitin-body">
+              <p>
+                Ingeniero de Sistemas con trayectoria en revision por pares y control de calidad editorial.
+              </p>
+            </div>
+            <div class="turnitin-actions">
+              <span class="turnitin-load">Carga actual: 3/5 articulos</span>
+              <button type="button" class="btn-outline-teal">Asignar revisor</button>
+            </div>
+          </article>
+
+          <article class="turnitin-card">
+            <div class="turnitin-card-header">
+              <div>
+                <h3>Dra. Sofia Martinez</h3>
+                <p>sofia.martinez@udenar.edu.co</p>
+              </div>
+            </div>
+            <div class="turnitin-body">
+              <p>
+                Lider de grupo de investigacion en IA con enfasis en analisis de textos cientificos.
+              </p>
+            </div>
+            <div class="turnitin-actions">
+              <span class="turnitin-load">Carga actual: 1/5 articulos</span>
+              <button type="button" class="btn-outline-teal">Asignar revisor</button>
+            </div>
+          </article>
         </div>
-        }
       </section>
 
       <div class="accion-group" *ngIf="puedeMostrarObservacion">
@@ -163,56 +313,6 @@
           {{ guardandoObservacion ? 'Guardando...' : 'Añadir observación' }}
         </button>
       </div>
-
-      <section class="accion-card card-turnitin" *ngIf="puedeMostrarTurnitin && !articuloYaEvaluadoPorTurnitin">
-        <span class="accion-label">Evaluación Turnitin</span>
-        <p class="asignacion-helper">Si la similitud es 65% o más, el artículo queda descartado. Si es menor, el autor podrá hacer una sola corrección.</p>
-        <p class="asignacion-helper">
-          Si el porcentaje es menor a 65%, debes registrar observación y adjuntar soporte de Turnitin (máximo 10 MB).
-        </p>
-
-        <div class="select-wrapper select-wrapper--compact">
-          <input
-            type="number"
-            class="input-control"
-            [(ngModel)]="porcentajeTurnitin"
-            (input)="onPorcentajeTurnitinInput($event)"
-            min="0"
-            max="100"
-            step="0.1"
-            placeholder="Porcentaje de similitud"
-            aria-label="Porcentaje de similitud Turnitin"
-          />
-        </div>
-
-        <textarea
-          class="input-control"
-          [(ngModel)]="observacionTurnitin"
-          rows="4"
-          [placeholder]="requiereSoporteCorreccionTurnitin ? 'Observación obligatoria para corrección' : 'Observación opcional sobre la evaluación'"
-          aria-label="Observación Turnitin"
-        ></textarea>
-
-        <label class="file-label" for="archivoTurnitin">
-          Adjuntar soporte de Turnitin {{ requiereSoporteCorreccionTurnitin ? '(obligatorio, máximo 10 MB)' : '(opcional, máximo 10 MB)' }}
-        </label>
-        <input
-          id="archivoTurnitin"
-          type="file"
-          class="file-input"
-          (change)="onArchivoTurnitinSeleccionado($event)"
-        />
-        <p class="file-name" *ngIf="nombreArchivoTurnitin">{{ nombreArchivoTurnitin }}</p>
-
-        <button
-          class="btn-outline-teal btn-full"
-          type="button"
-          (click)="abrirConfirmacionEvaluacionTurnitin()"
-          [disabled]="evaluandoTurnitin"
-        >
-          {{ evaluandoTurnitin ? 'Registrando...' : 'Registrar evaluación Turnitin' }}
-        </button>
-      </section>
 
       <section class="accion-card card-resultado-turnitin" *ngIf="puedeMostrarTurnitin && articuloYaEvaluadoPorTurnitin">
         <span class="accion-label">Evaluación Turnitin</span>

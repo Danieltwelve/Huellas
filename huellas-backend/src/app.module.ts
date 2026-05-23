@@ -11,6 +11,7 @@ import { ArticulosHistorialEtapasModule } from './modules/articulos-historial-et
 import { ObservacionesModule } from './modules/observaciones/observaciones.module';
 import { ObservacionesArchivosModule } from './modules/observaciones-archivos/observaciones-archivos.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { RevisoresModule } from './modules/revisores/revisores.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ArticulosHistorialEtapasModule,
     ObservacionesModule,
     ObservacionesArchivosModule,
+    RevisoresModule,
   ],
 })
 export class AppModule {}

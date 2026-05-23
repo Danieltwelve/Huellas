@@ -2,6 +2,7 @@ import { ArticuloHistorialEtapa } from 'src/modules/articulos-historial-etapas/e
 import { EdicionRevista } from 'src/modules/ediciones/edicion-revista.entity';
 import { EtapaArticulo } from 'src/modules/etapas-articulo/entities/etapa_articulo.entity';
 import { Observacion } from 'src/modules/observaciones/entities/observacione.entity';
+import { Revisores } from 'src/modules/revisores/entities/revisores.entity';
 import { Tema } from 'src/modules/temas/entities/tema.entity';
 import { User } from 'src/modules/users/user.entity';
 import {
@@ -50,10 +51,18 @@ export class Articulo {
   @Column({ name: 'comite_editorial_id', nullable: true })
   comiteEditorialId!: number | null;
 
-  @Column({ name: 'fecha_asignacion_comite', type: 'timestamp', nullable: true })
+  @Column({
+    name: 'fecha_asignacion_comite',
+    type: 'timestamp',
+    nullable: true,
+  })
   fechaAsignacionComite!: Date | null;
 
-  @Column({ name: 'fecha_vencimiento_comite', type: 'timestamp', nullable: true })
+  @Column({
+    name: 'fecha_vencimiento_comite',
+    type: 'timestamp',
+    nullable: true,
+  })
   fechaVencimientoComite!: Date | null;
 
   // Relaciones
@@ -102,4 +111,7 @@ export class Articulo {
 
   @OneToMany(() => Observacion, (obs) => obs.articulo)
   observaciones!: Observacion[];
+
+  @ManyToMany(() => Revisores, (revisor) => revisor.articulos)
+  revisores!: Revisores[];
 }

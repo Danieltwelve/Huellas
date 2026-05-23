@@ -114,6 +114,9 @@ export class FlujoTrabajoArticulo {
   registroCorreccionConfirmacion: RegistroFlujo | null = null;
   comentarioAceptacionCorreccion = '';
 
+  resumenEnvioExpandido = false;
+  rutaEditorialExpandida = false;
+
   tituloArticulo = 'Cargando...';
 
   private readonly ordenEtapasFlujo: number[] = [1, 6, 3, 4, 8, 9, 5];
@@ -174,6 +177,14 @@ export class FlujoTrabajoArticulo {
   volverAlListado(): void {
     // Ir al listado de artículos del panel de administración
     this.router.navigate(['/articulos']);
+  }
+
+  toggleResumenEnvio(): void {
+    this.resumenEnvioExpandido = !this.resumenEnvioExpandido;
+  }
+
+  toggleRutaEditorial(): void {
+    this.rutaEditorialExpandida = !this.rutaEditorialExpandida;
   }
 
   private iniciarAutoRefresh(): void {
