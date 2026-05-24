@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
+import { MetricsService } from './common/metrics/metrics.service';
+import { MetricsController } from './common/metrics/metrics.controller';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { RolesModule } from './modules/roles/roles.module';
@@ -10,6 +14,7 @@ import { ArticulosModule } from './modules/articulos/articulos.module';
 import { ArticulosHistorialEtapasModule } from './modules/articulos-historial-etapas/articulos-historial-etapas.module';
 import { ObservacionesModule } from './modules/observaciones/observaciones.module';
 import { ObservacionesArchivosModule } from './modules/observaciones-archivos/observaciones-archivos.module';
+import { TemasModule } from './modules/temas/temas.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RevisoresModule } from './modules/revisores/revisores.module';
 
@@ -49,6 +54,9 @@ import { RevisoresModule } from './modules/revisores/revisores.module';
     ObservacionesModule,
     ObservacionesArchivosModule,
     RevisoresModule,
+    TemasModule,
   ],
+  controllers: [MetricsController],
+  providers: [MetricsService, { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor }],
 })
 export class AppModule {}

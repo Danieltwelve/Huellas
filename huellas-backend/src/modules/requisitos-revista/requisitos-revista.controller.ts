@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { RequisitosRevistaService } from './requisitos-revista.service';
 import { CreateRequisitosRevistaDto } from './dto/create-requisitos-revista.dto';
@@ -29,8 +30,8 @@ export class RequisitosRevistaController {
   }
 
   @Get()
-  findAll() {
-    return this.requisitosRevistaService.findAll();
+  findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.requisitosRevistaService.findAll(page, limit);
   }
 
   @Get(':id')

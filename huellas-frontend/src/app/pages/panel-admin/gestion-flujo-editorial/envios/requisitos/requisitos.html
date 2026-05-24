@@ -4,17 +4,32 @@
     <button class="create-btn" (click)="crear(modalCrearRequisito)">+ Crear Requisito</button>
   </div>
 
-  <div class="requisitos-list">
-    <div class="requisito-item" *ngFor="let req of requisitos$ | async">
-      <span class="requisito-text">{{ req.requisito }}</span>
-      <button class="delete-btn" (click)="modalEliminarRequisito.openModal(req.id, req.requisito)">
-        <svg viewBox="0 0 24 24" class="btn-eliminar" aria-hidden="true" fill="#EA4335">
-          <path
-            d="M6 7h12v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm3-4h6l1 1h4v2H4V4h4l1-1zm1 6v10h2V9h-2zm4 0v10h2V9h-2z" />
-        </svg>
-      </button>
+  @if (requisitos$ | async; as page) {
+    <div class="requisitos-list">
+      @for (req of page.items; track req.id) {
+        <div class="requisito-item">
+          <span class="requisito-text">{{ req.requisito }}</span>
+          <button class="delete-btn" (click)="modalEliminarRequisito.openModal(req.id, req.requisito)">
+            <svg viewBox="0 0 24 24" class="btn-eliminar" aria-hidden="true" fill="#EA4335">
+              <path
+                d="M6 7h12v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm3-4h6l1 1h4v2H4V4h4l1-1zm1 6v10h2V9h-2zm4 0v10h2V9h-2z" />
+            </svg>
+          </button>
+        </div>
+      }
     </div>
-  </div>
+
+    @if (page.meta.totalPages > 1) {
+      <div class="pagination-bar">
+        <p class="pagination-info">Mostrando {{ page.items.length }} de {{ page.meta.total }} requisitos.</p>
+        <div class="pagination-actions">
+          <button class="pagination-btn" type="button" (click)="previousPage()" [disabled]="currentPage <= 1">Anterior</button>
+          <span class="pagination-page">Página {{ currentPage }} de {{ page.meta.totalPages }}</span>
+          <button class="pagination-btn" type="button" (click)="nextPage(page.meta.totalPages)" [disabled]="currentPage >= page.meta.totalPages">Siguiente</button>
+        </div>
+      </div>
+    }
+  }
 </div>
 
 <app-modal-eliminar-requisito #modalEliminarRequisito (requisitoEliminado)="refreshList()"></app-modal-eliminar-requisito>

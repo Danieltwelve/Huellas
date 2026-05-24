@@ -20,6 +20,23 @@ import nodemailer from 'nodemailer';
 import { Articulo } from '../articulos/entities/articulo.entity';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
 import { Observacion } from '../observaciones/entities/observacione.entity';
+import { Brackets } from 'typeorm';
+import { UsersListQueryDto } from './dto/users-list.query.dto';
+
+export interface UsersListMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  activeUsers: number;
+  pendingUsers: number;
+  roleUsersCount: number;
+}
+
+export interface UsersListResponse {
+  items: User[];
+  meta: UsersListMeta;
+}
 
 interface FirebaseAdminError {
   code?: string;
@@ -199,7 +216,7 @@ export class UsersService {
 
     // Validar que no tenga acciones pendientes
     const validationResult = await this.validateUserDeletion(id);
-    
+
     if (!validationResult.canDelete) {
       throw new ConflictException(validationResult.reason);
     }
@@ -246,14 +263,18 @@ export class UsersService {
     });
   }
 
-  private async validateUserDeletion(userId: number): Promise<{ canDelete: boolean; reason: string }> {
+  private async validateUserDeletion(
+    userId: number,
+  ): Promise<{ canDelete: boolean; reason: string }> {
     const terminalStages = UsersService.ARTICULO_ETAPAS_TERMINALES;
 
     // Validar artículos como autor en etapas no terminales
     const articulosComoAutor = await this.articuloRepository
       .createQueryBuilder('articulo')
       .innerJoin('articulo.autores', 'autor', 'autor.id = :userId', { userId })
-      .where('articulo.etapaActualId NOT IN (:...terminalStages)', { terminalStages })
+      .where('articulo.etapaActualId NOT IN (:...terminalStages)', {
+        terminalStages,
+      })
       .getCount();
 
     if (articulosComoAutor > 0) {
@@ -267,7 +288,9 @@ export class UsersService {
     const articulosComoComite = await this.articuloRepository
       .createQueryBuilder('articulo')
       .where('articulo.comiteEditorialId = :userId', { userId })
-      .andWhere('articulo.etapaActualId NOT IN (:...terminalStages)', { terminalStages })
+      .andWhere('articulo.etapaActualId NOT IN (:...terminalStages)', {
+        terminalStages,
+      })
       .getCount();
 
     if (articulosComoComite > 0) {
@@ -282,7 +305,9 @@ export class UsersService {
       .createQueryBuilder('observacion')
       .innerJoin('observacion.articulo', 'articulo')
       .where('observacion.usuarioId = :userId', { userId })
-      .andWhere('articulo.etapaActualId NOT IN (:...terminalStages)', { terminalStages })
+      .andWhere('articulo.etapaActualId NOT IN (:...terminalStages)', {
+        terminalStages,
+      })
       .getCount();
 
     if (observacionesPendientes > 0) {
@@ -297,7 +322,9 @@ export class UsersService {
       .createQueryBuilder('historial')
       .innerJoin('historial.articulo', 'articulo')
       .where('historial.usuarioId = :userId', { userId })
-      .andWhere('articulo.etapaActualId NOT IN (:...terminalStages)', { terminalStages })
+      .andWhere('articulo.etapaActualId NOT IN (:...terminalStages)', {
+        terminalStages,
+      })
       .getCount();
 
     if (historialPendiente > 0) {
@@ -503,8 +530,64 @@ export class UsersService {
     });
   }
 
-  async findAll(): Promise<User[]> {
-    return this.userRepository.find({ relations: ['roles'] });
+  async findAll(query: UsersListQueryDto): Promise<UsersListResponse> {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 12));
+    const search = (query.search ?? '').trim().toLowerCase();
+
+    const baseQuery = this.userRepository
+      .createQueryBuilder('usuario')
+      .leftJoinAndSelect('usuario.roles', 'rol')
+      .orderBy('usuario.nombre', 'ASC')
+      .addOrderBy('usuario.id', 'ASC');
+
+    if (search) {
+      baseQuery.andWhere(
+        new Brackets((qb) => {
+          qb.where('LOWER(usuario.nombre) LIKE :search', {
+            search: `%${search}%`,
+          })
+            .orWhere('LOWER(usuario.correo) LIKE :search', {
+              search: `%${search}%`,
+            })
+            .orWhere("LOWER(COALESCE(usuario.telefono, '')) LIKE :search", {
+              search: `%${search}%`,
+            })
+            .orWhere('LOWER(rol.rol) LIKE :search', { search: `%${search}%` });
+        }),
+      );
+    }
+
+    const [items, total] = await baseQuery
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const [activeUsers, pendingUsers, roleUsersCount] = await Promise.all([
+      this.userRepository.count({ where: { estado_cuenta: true } }),
+      this.userRepository.count({ where: { correo_verificado: false } }),
+      this.userRepository
+        .createQueryBuilder('usuario')
+        .distinct(true)
+        .innerJoin('usuario.roles', 'rol')
+        .where('LOWER(rol.rol) IN (:...roles)', {
+          roles: ['comite-editorial', 'admin', 'director', 'monitor'],
+        })
+        .getCount(),
+    ]);
+
+    return {
+      items,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+        activeUsers,
+        pendingUsers,
+        roleUsersCount,
+      },
+    };
   }
 
   async findById(id: number): Promise<User | null> {

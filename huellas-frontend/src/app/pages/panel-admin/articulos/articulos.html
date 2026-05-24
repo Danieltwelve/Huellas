@@ -49,6 +49,32 @@
         </svg>
       </label>
 
+      <div class="sort-panel">
+        <span class="sort-panel__label">Ordenar por</span>
+        <div class="sort-panel__control">
+          <select
+            #sortSelect
+            class="sort-panel__select"
+            [value]="ordenArticulos"
+            (change)="setOrdenArticulos(sortSelect.value)"
+            aria-label="Ordenar artículos"
+          >
+            <option value="llegada-reciente">Orden de llegada: más reciente</option>
+            <option value="llegada-antigua">Orden de llegada: más antiguo</option>
+            <option value="fecha-desc">Fecha: descendente</option>
+            <option value="fecha-asc">Fecha: ascendente</option>
+            <option value="titulo-asc">Título: A - Z</option>
+            <option value="titulo-desc">Título: Z - A</option>
+            <option value="codigo-asc">Código: ascendente</option>
+            <option value="codigo-desc">Código: descendente</option>
+          </select>
+
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="sort-panel__chevron">
+            <path d="m7 10 5 5 5-5"></path>
+          </svg>
+        </div>
+      </div>
+
       @if (committeeView) {
       <div class="toolbar-cluster">
         <div class="filters">

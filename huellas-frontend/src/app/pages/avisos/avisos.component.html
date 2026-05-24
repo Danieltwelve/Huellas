@@ -1,17 +1,44 @@
-<div class="container">
-  <div class="header">
-    <h1>Avisos de la Revista</h1>
-    <p>Información actualizada sobre HUELLAS</p>
-  </div>
+<section class="avisos-page">
+  <div class="avisos-backdrop avisos-backdrop--one"></div>
+  <div class="avisos-backdrop avisos-backdrop--two"></div>
 
-  <div class="avisos-list">
-    <div class="aviso-item" *ngFor="let aviso of avisos" [class]="'tipo-' + aviso.tipo">
-      <div class="aviso-tipo">{{ aviso.tipo | uppercase }}</div>
-      <div class="aviso-content">
-        <h3>{{ aviso.titulo }}</h3>
-        <p class="fecha">{{ aviso.fecha }}</p>
-        <p class="contenido">{{ aviso.contenido }}</p>
+  <div class="container">
+    <header class="hero-card">
+      <div class="hero-copy">
+        <span class="eyebrow">Centro de comunicación</span>
+        <h1>Avisos de la Revista</h1>
+        <p>Convocatorias, eventos y cambios relevantes para mantenerte al día con HUELLAS.</p>
       </div>
+
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-number">{{ avisos.length }}</span>
+          <span class="stat-label">avisos activos</span>
+        </div>
+        <div class="stat stat-highlight">
+          <span class="stat-number">24/7</span>
+          <span class="stat-label">información disponible</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="avisos-list">
+      <article
+        class="aviso-item"
+        *ngFor="let aviso of avisos"
+        [ngClass]="'tipo-' + aviso.tipo"
+      >
+        <div class="aviso-tipo">{{ aviso.tipo | uppercase }}</div>
+
+        <div class="aviso-content">
+          <div class="aviso-meta">
+            <span class="aviso-date">{{ aviso.fecha }}</span>
+          </div>
+
+          <h3>{{ aviso.titulo }}</h3>
+          <p class="contenido">{{ aviso.contenido }}</p>
+        </div>
+      </article>
     </div>
   </div>
-</div>
+</section>

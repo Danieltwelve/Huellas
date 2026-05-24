@@ -1,3 +1,5 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
@@ -10,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { createReadStream, existsSync, promises as fs } from 'fs';
 import { DataSource, In, IsNull, Repository } from 'typeorm';
+import { PaginationQueryDto } from 'src/common/dto/pagination.query.dto';
 import ExcelJS from 'exceljs';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
@@ -24,6 +27,7 @@ import { FerchContador } from './entities/ferch-contador.entity';
 import { User } from '../users/user.entity';
 import { Tema } from '../temas/entities/tema.entity';
 import { ArticulosConfiguracion } from './entities/articulos-configuracion.entity';
+import { ArticuloCertificado } from './entities/articulo-certificado.entity';
 
 @Injectable()
 export class ArticulosService {
@@ -39,6 +43,8 @@ export class ArticulosService {
     'Corrección enviada por autor';
   private static readonly ASUNTO_CORRECCION_ACEPTADA =
     'Corrección aceptada por equipo editorial';
+  private static readonly ASUNTO_CORRECCION_SOLICITADA =
+    'Corrección requerida por equipo editorial';
   private static readonly ASUNTO_EVALUACION_TURNITIN_CORRECCION =
     'Evaluación de Turnitin: REQUIERE CORRECCIÓN';
   private static readonly ASUNTO_EVALUACION_TURNITIN_DESCARTADO =
@@ -47,6 +53,8 @@ export class ArticulosService {
     'Evaluación de comité editorial: ACEPTADO';
   private static readonly ASUNTO_EVALUACION_COMITE_RECHAZADO =
     'Evaluación de comité editorial: RECHAZADO';
+  private static readonly ASUNTO_CERTIFICADO_EDITORIAL =
+    'Nuevo certificado editorial disponible';
 
   constructor(
     private dataSource: DataSource,
@@ -58,6 +66,8 @@ export class ArticulosService {
     private readonly ferchContadorRepository: Repository<FerchContador>,
     @InjectRepository(ArticulosConfiguracion)
     private readonly articulosConfiguracionRepository: Repository<ArticulosConfiguracion>,
+    @InjectRepository(ArticuloCertificado)
+    private readonly articuloCertificadoRepository: Repository<ArticuloCertificado>,
   ) {}
 
   private readonly configuracionEnviosKey = 'envios_articulos_habilitados';
@@ -103,7 +113,7 @@ export class ArticulosService {
   }
 
   private getSiguienteEtapaPermitida(etapaActualId: number): number | null {
-    // eslint-disable-next-line prettier/prettier
+     
     const indiceActual = ArticulosService.ETAPAS_FLUJO_ORDENADO.indexOf(
       etapaActualId,
     );
@@ -945,7 +955,7 @@ export class ArticulosService {
       order: { id: 'DESC' },
     });
 
-    return articulos
+    const mapped = articulos
       .map((articulo) => {
         const evaluacionesComite = (articulo.observaciones ?? [])
           .filter((obs) => obs.usuarioId === usuarioId)
@@ -1046,7 +1056,26 @@ export class ArticulosService {
           dias_restantes: diasRestantes ?? null,
         };
       })
-      .filter((item) => item !== null);
+      .filter((item) => item !== null) as any[];
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return mapped;
+  }
+
+  async getArticulosAsignadosComitePaged(
+    usuarioId: number,
+    query?: PaginationQueryDto,
+  ) {
+    const mapped = await this.getArticulosAsignadosComite(usuarioId);
+    const page = Number(query?.page ?? 1);
+    const limit = Number(query?.limit ?? 25);
+    const total = mapped.length;
+    const start = (page - 1) * limit;
+    const items = mapped.slice(start, start + limit);
+    return {
+      items,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async getHistorialEvaluacionesComite(usuarioId: number) {
@@ -1892,6 +1921,7 @@ export class ArticulosService {
       tipo: 'accion' | 'informacion' | 'exito';
       fecha: Date;
       origen: 'etapa' | 'observacion';
+      estadoCorreccion?: 'solicitada' | 'enviada' | 'aceptada' | null;
     }> = [];
 
     for (const articulo of articulosDelAutor) {
@@ -1924,13 +1954,8 @@ export class ArticulosService {
           continue;
         }
 
-        const texto =
-          `${obs.asunto ?? ''} ${obs.comentarios ?? ''}`.toLowerCase();
-        const tipo = /(correccion|corrección|ajuste|subsan|pendiente)/.test(
-          texto,
-        )
-          ? 'accion'
-          : 'informacion';
+        const estadoCorreccion = this.obtenerEstadoCorreccionDesdeObservacion(obs);
+        const tipo = estadoCorreccion ? 'accion' : 'informacion';
 
         notificaciones.push({
           id: `obs-${articulo.id}-${obs.id}`,
@@ -1944,6 +1969,7 @@ export class ArticulosService {
           tipo,
           fecha: obs.fechaSubida,
           origen: 'observacion',
+          estadoCorreccion,
         });
       }
     }
@@ -1954,6 +1980,33 @@ export class ArticulosService {
         ...item,
         fecha: item.fecha.toISOString(),
       }));
+  }
+
+  private obtenerEstadoCorreccionDesdeObservacion(
+    observacion: Observacion,
+  ): 'solicitada' | 'enviada' | 'aceptada' | null {
+    const texto = `${observacion.asunto ?? ''} ${observacion.comentarios ?? ''}`.toLowerCase();
+
+    if (
+      /(correccion aceptada|corrección aceptada|correccion aprobada|corrección aprobada)/.test(
+        texto,
+      )
+    ) {
+      return 'aceptada';
+    }
+
+    if (texto.includes(ArticulosService.ASUNTO_CORRECCION_AUTOR.toLowerCase())) {
+      return 'enviada';
+    }
+
+    if (
+      /(correccion|corrección|ajuste|subsan|pendiente)/.test(texto) ||
+      texto.includes(ArticulosService.ASUNTO_CORRECCION_SOLICITADA.toLowerCase())
+    ) {
+      return 'solicitada';
+    }
+
+    return null;
   }
 
   async getArticuloFileStream(
@@ -2004,6 +2057,265 @@ export class ArticulosService {
     }
 
     return createReadStream(filePath);
+  }
+
+  private usuarioPuedeGestionarCertificados(userRoles: string[]): boolean {
+    return (
+      userRoles.includes('admin') ||
+      userRoles.includes('director') ||
+      userRoles.includes('monitor')
+    );
+  }
+
+  private validarMetadatosCertificado(payload: {
+    contextoRequerimiento?: 'autor' | 'comite-editorial' | 'editorial';
+    etapaReferencia?: string;
+  }) {
+    const etapa = payload.etapaReferencia?.trim();
+
+    if (payload.contextoRequerimiento !== 'editorial' && !etapa) {
+      throw new BadRequestException(
+        'Para certificados de autor o comité editorial debes indicar etapa de referencia.',
+      );
+    }
+  }
+
+  private async validarPermisoCertificado(
+    certificadoId: number,
+    userId: number,
+    userRoles: string[],
+  ): Promise<ArticuloCertificado> {
+    const certificado = await this.articuloCertificadoRepository
+      .createQueryBuilder('cert')
+      .innerJoinAndSelect('cert.articulo', 'articulo')
+      .leftJoinAndSelect('articulo.autores', 'autores')
+      .where('cert.id = :certificadoId', { certificadoId })
+      .getOne();
+
+    if (!certificado) {
+      throw new NotFoundException('Certificado no encontrado.');
+    }
+
+    const puedeGestionar = this.usuarioPuedeGestionarCertificados(userRoles);
+    const esAutor =
+      certificado.articulo?.autores?.some((autor) => autor.id === userId) ??
+      false;
+    const esComiteAsignado =
+      userRoles.includes('comite-editorial') &&
+      certificado.articulo?.comiteEditorialId === userId;
+
+    if (!puedeGestionar && !esAutor && !esComiteAsignado) {
+      throw new ForbiddenException(
+        'No tienes permiso para acceder a este certificado.',
+      );
+    }
+
+    return certificado;
+  }
+
+  async subirCertificadoArticulo(
+    articuloId: number,
+    userId: number,
+    userRoles: string[],
+    payload: {
+      tipo: string;
+      titulo?: string;
+      contextoRequerimiento: 'autor' | 'comite-editorial' | 'editorial';
+      etapaReferencia?: string;
+    },
+    archivo: Express.Multer.File,
+  ) {
+    if (!this.usuarioPuedeGestionarCertificados(userRoles)) {
+      throw new ForbiddenException(
+        'Solo admin, director o monitor pueden subir certificados.',
+      );
+    }
+
+    this.validarMetadatosCertificado(payload);
+
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['observaciones'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado.');
+    }
+
+    if (payload.tipo === 'evaluacion') {
+      const tieneEvaluacion = (articulo.observaciones ?? []).some((obs) =>
+        [
+          ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
+          ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
+        ].includes(obs.asunto),
+      );
+
+      if (!tieneEvaluacion) {
+        throw new BadRequestException(
+          'Solo puedes subir un certificado de evaluación cuando ya exista una evaluación del comité.',
+        );
+      }
+    }
+
+    const certificado = this.articuloCertificadoRepository.create({
+      articuloId,
+      subidoPorId: userId,
+      tipo: payload.tipo,
+      titulo: payload.titulo?.trim() || `Certificado de ${payload.tipo}`,
+      contextoRequerimiento: payload.contextoRequerimiento,
+      etapaReferencia: payload.etapaReferencia?.trim() || null,
+      archivoPath: archivo.path,
+      archivoNombreOriginal: archivo.originalname,
+    });
+
+    const guardado = await this.articuloCertificadoRepository.save(certificado);
+
+    const observacionCertificado = this.dataSource
+      .getRepository(Observacion)
+      .create({
+        articuloId,
+        usuarioId: userId,
+        etapaId: articulo.etapaActualId,
+        asunto: ArticulosService.ASUNTO_CERTIFICADO_EDITORIAL,
+        comentarios: `Se cargó ${guardado.titulo} para ${payload.contextoRequerimiento}.`,
+      });
+
+    await this.dataSource.getRepository(Observacion).save(observacionCertificado);
+
+    return {
+      message: 'Certificado cargado correctamente.',
+      certificadoId: guardado.id,
+    };
+  }
+
+  async listarCertificadosUsuario(userId: number, userRoles: string[]) {
+    const qb = this.articuloCertificadoRepository
+      .createQueryBuilder('cert')
+      .innerJoinAndSelect('cert.articulo', 'articulo')
+      .leftJoinAndSelect('articulo.autores', 'autores')
+      .leftJoinAndSelect('cert.subidoPor', 'subidoPor')
+      .orderBy('cert.fechaSubida', 'DESC');
+
+    if (this.usuarioPuedeGestionarCertificados(userRoles)) {
+      // Sin filtro adicional para roles editoriales de gestión.
+    } else if (userRoles.includes('comite-editorial')) {
+      qb.andWhere('articulo.comiteEditorialId = :userId', { userId });
+    } else {
+      qb.andWhere('autores.id = :userId', { userId });
+    }
+
+    const certificados = await qb.getMany();
+
+    return certificados.map((certificado) => ({
+      id: certificado.id,
+      articuloId: certificado.articuloId,
+      codigoArticulo: certificado.articulo?.codigo,
+      tituloArticulo: certificado.articulo?.titulo,
+      tipo: certificado.tipo,
+      titulo: certificado.titulo,
+      contextoRequerimiento: certificado.contextoRequerimiento,
+      etapaReferencia: certificado.etapaReferencia,
+      archivoNombreOriginal: certificado.archivoNombreOriginal,
+      fechaSubida: certificado.fechaSubida,
+      subidoPor: certificado.subidoPor?.nombre ?? 'Equipo editorial',
+    }));
+  }
+
+  async actualizarCertificadoArticulo(
+    certificadoId: number,
+    userId: number,
+    userRoles: string[],
+    payload: {
+      tipo?: string;
+      titulo?: string;
+      contextoRequerimiento?: 'autor' | 'comite-editorial' | 'editorial';
+      etapaReferencia?: string;
+    },
+  ) {
+    if (!this.usuarioPuedeGestionarCertificados(userRoles)) {
+      throw new ForbiddenException(
+        'Solo admin, director o monitor pueden editar certificados.',
+      );
+    }
+
+    const certificado = await this.validarPermisoCertificado(
+      certificadoId,
+      userId,
+      userRoles,
+    );
+
+    this.validarMetadatosCertificado({
+      contextoRequerimiento:
+        payload.contextoRequerimiento ?? certificado.contextoRequerimiento,
+      etapaReferencia: payload.etapaReferencia ?? certificado.etapaReferencia ?? '',
+    });
+
+    if (payload.tipo) {
+      certificado.tipo = payload.tipo;
+    }
+
+    if (typeof payload.titulo === 'string') {
+      certificado.titulo = payload.titulo.trim() || certificado.titulo;
+    }
+
+    if (payload.contextoRequerimiento) {
+      certificado.contextoRequerimiento = payload.contextoRequerimiento;
+    }
+
+    if (typeof payload.etapaReferencia === 'string') {
+      certificado.etapaReferencia = payload.etapaReferencia.trim() || null;
+    }
+
+    await this.articuloCertificadoRepository.save(certificado);
+
+    return { message: 'Certificado actualizado correctamente.' };
+  }
+
+  async eliminarCertificadoArticulo(
+    certificadoId: number,
+    userId: number,
+    userRoles: string[],
+  ) {
+    if (!this.usuarioPuedeGestionarCertificados(userRoles)) {
+      throw new ForbiddenException(
+        'Solo admin, director o monitor pueden eliminar certificados.',
+      );
+    }
+
+    const certificado = await this.validarPermisoCertificado(
+      certificadoId,
+      userId,
+      userRoles,
+    );
+
+    await this.articuloCertificadoRepository.delete({ id: certificadoId });
+
+    if (certificado.archivoPath && existsSync(certificado.archivoPath)) {
+      await fs.unlink(certificado.archivoPath).catch(() => null);
+    }
+
+    return { message: 'Certificado eliminado correctamente.' };
+  }
+
+  async getCertificadoFileStream(
+    certificadoId: number,
+    userId: number,
+    userRoles: string[],
+  ): Promise<{ stream: NodeJS.ReadableStream; filename: string }> {
+    const certificado = await this.validarPermisoCertificado(
+      certificadoId,
+      userId,
+      userRoles,
+    );
+
+    if (!existsSync(certificado.archivoPath)) {
+      throw new NotFoundException('El archivo del certificado no existe.');
+    }
+
+    return {
+      stream: createReadStream(certificado.archivoPath),
+      filename: certificado.archivoNombreOriginal,
+    };
   }
 
   async eliminarArticulo(articuloId: number) {

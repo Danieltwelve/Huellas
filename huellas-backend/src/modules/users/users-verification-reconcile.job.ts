@@ -22,7 +22,9 @@ export class UsersVerificationReconcileJob {
       return;
     }
 
-    this.logger.log('Iniciando reconciliacion programada de correos verificados.');
+    this.logger.log(
+      'Iniciando reconciliacion programada de correos verificados.',
+    );
     await this.usersService.reconcileVerificationStatuses();
     this.logger.log('Reconciliacion programada finalizada.');
   }

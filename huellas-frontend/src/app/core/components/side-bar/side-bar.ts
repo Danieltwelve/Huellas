@@ -64,6 +64,12 @@ export class SideBar {
       route: '/articulos',
     },
     {
+      label: 'Certificados',
+      icon: 'certificate',
+      allowedRoles: ['admin', 'director', 'monitor'],
+      route: '/certificados-editoriales',
+    },
+    {
       label: 'Estadísticas',
       icon: 'chart',
       allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],

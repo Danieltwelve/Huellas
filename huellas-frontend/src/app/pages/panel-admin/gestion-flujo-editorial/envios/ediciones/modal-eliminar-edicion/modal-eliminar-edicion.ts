@@ -1,10 +1,11 @@
 import { Component, EventEmitter, Output, inject } from '@angular/core';
+import { ModalShellComponent } from '../../../../../../core/components/modal-shell/modal-shell.component';
 import { EdicionesRevistaService } from '../../../../../../core/ediciones-revista/ediciones.revista.service';
 
 @Component({
   selector: 'app-modal-eliminar-edicion',
   standalone: true,
-  imports: [],
+  imports: [ModalShellComponent],
   templateUrl: './modal-eliminar-edicion.html',
   styleUrl: './modal-eliminar-edicion.css',
 })

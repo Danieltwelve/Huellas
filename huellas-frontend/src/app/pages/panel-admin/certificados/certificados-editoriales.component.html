@@ -1,0 +1,237 @@
+<section class="certificados-page">
+  <header class="certificados-header">
+    <div class="certificados-header__content">
+      <div>
+        <p class="eyebrow">Gestión documental</p>
+        <h1>Certificados editoriales</h1>
+        <p>Sube certificados PDF por artículo para que autores y comité puedan descargarlos.</p>
+      </div>
+
+      <div class="header-stats">
+        <div class="stat-card">
+          <span class="stat-card__value">{{ totalCertificados }}</span>
+          <span class="stat-card__label">Certificados</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__value">{{ totalAutores }}</span>
+          <span class="stat-card__label">Autores</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__value">{{ totalComiteEditorial }}</span>
+          <span class="stat-card__label">Comité</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="alert alert--error" role="alert">
+      <div class="alert__icon">!</div>
+      <div class="alert__content">{{ error }}</div>
+      <button class="alert__close" type="button" (click)="error = null">×</button>
+    </div>
+  }
+
+  @if (success) {
+    <div class="alert alert--success" role="status" aria-live="polite">
+      <div class="alert__icon">✓</div>
+      <div class="alert__content">{{ success }}</div>
+      <button class="alert__close" type="button" (click)="clearSuccess()" aria-label="Cerrar">×</button>
+    </div>
+  }
+
+  <section class="upload-card">
+    <h2>Cargar certificado</h2>
+    <div class="upload-grid">
+      <div class="form-area">
+        <div class="form-grid">
+          <label>
+            <span>Contexto</span>
+            <select [(ngModel)]="contextoRequerimiento" (ngModelChange)="onContextoChange()">
+              <option value="autor">Autor</option>
+              <option value="comite-editorial">Comité editorial</option>
+            </select>
+          </label>
+
+          <label>
+            <span>{{ contextoLabel }}</span>
+            <select [(ngModel)]="usuarioIdSeleccionado" (ngModelChange)="onUsuarioChange()">
+              <option [ngValue]="null">
+                Selecciona {{ contextoRequerimiento === 'autor' ? 'un autor' : 'un miembro del comité' }}
+              </option>
+              @for (usuario of usuariosDisponibles; track usuario.id) {
+                <option [ngValue]="usuario.id">{{ usuario.nombre }} ({{ usuario.articulos.length }})</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Artículo</span>
+            <select [(ngModel)]="articuloIdSeleccionado" [disabled]="!usuarioSeleccionado">
+              <option [ngValue]="null">Selecciona un artículo</option>
+              @for (articulo of articulosDisponibles; track articulo.id) {
+                <option [ngValue]="articulo.id">{{ articulo.codigo }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Tipo</span>
+            <select [(ngModel)]="tipo">
+              <option value="evaluacion">Evaluación</option>
+              <option value="publicacion">Publicación</option>
+              <option value="aceptacion">Aceptación</option>
+              <option value="envio">Envío</option>
+              <option value="revision">Revisión</option>
+              <option value="otro">Otro</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Etapa de referencia</span>
+            <input
+              type="text"
+              [(ngModel)]="etapaReferencia"
+              placeholder="Ejemplo: Evaluación por comité editorial"
+            />
+          </label>
+
+          <label class="span-2">
+            <span>Título del certificado (opcional)</span>
+            <input type="text" [(ngModel)]="titulo" placeholder="Ejemplo: Certificado de evaluación técnica" />
+          </label>
+
+          <label class="span-2 file-label">
+            <span>Archivo PDF</span>
+            <div class="file-row">
+              <input #fileInput class="file-input" type="file" accept="application/pdf" (change)="onArchivoSeleccionado($event)" />
+              <div class="file-selected">{{ archivo ? archivo.name : 'Sin archivos seleccionados' }}</div>
+              <button *ngIf="archivo" type="button" class="file-clear" (click)="removeArchivo()" aria-label="Quitar archivo">×</button>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <aside class="preview-area">
+        <div class="preview-card">
+          <div class="preview-card__body">
+            <div class="preview-card__hero">
+              <span class="eyebrow eyebrow--soft">Resumen</span>
+              <h3>{{ contextoLabel }}</h3>
+              <p>Revisa el certificado antes de publicarlo.</p>
+            </div>
+
+            <div class="preview-row"><span class="muted">Contexto:</span> {{ contextoLabel }}</div>
+            <div class="preview-row"><span class="muted">Usuario:</span> {{ usuarioSeleccionadoDisplay }}</div>
+            <div class="preview-row"><span class="muted">Artículo:</span> {{ articuloSeleccionadoDisplay }}</div>
+            <div class="preview-row"><span class="muted">Tipo:</span> {{ formatearTipo(tipo) }}</div>
+            <div class="preview-row"><span class="muted">Etapa referencia:</span> {{ etapaReferencia || '-' }}</div>
+            <div class="preview-row"><span class="muted">Archivo:</span> {{ archivo ? archivo.name : '-' }}</div>
+
+            @if (usuarioSeleccionado) {
+              <div class="preview-article-list">
+                <span class="preview-article-list__title">Artículos de este usuario</span>
+                <div class="preview-article-list__items">
+                  @for (articulo of articulosDisponibles; track articulo.id) {
+                    <span class="article-chip">{{ articulo.codigo }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="preview-card__footer">
+            <div class="actions">
+              <button class="btn-primary" type="button" (click)="subirCertificado()" [disabled]="uploading">{{ uploading ? 'Subiendo...' : 'Revisar y subir' }}</button>
+            @if (certificadoEnEdicionId) {
+              <button class="btn-secondary" type="button" (click)="guardarEdicion()">Guardar edición</button>
+              <button class="btn-secondary" type="button" (click)="cancelarEdicion()">Cancelar edición</button>
+            }
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="list-card">
+    <h2>Certificados cargados</h2>
+    <p class="list-card__subtitle">Lista ordenada de certificados con acciones rápidas.</p>
+
+    @if (loading) {
+      <p>Cargando certificados...</p>
+    }
+
+    @if (!loading && certificados.length === 0) {
+      <p>No hay certificados cargados aún.</p>
+    }
+
+    @if (!loading && certificados.length > 0) {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Artículo</th>
+              <th>Tipo</th>
+              <th>Título</th>
+              <th>Contexto</th>
+              <th>Etapa ref.</th>
+              <th>Subido por</th>
+              <th>Fecha</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (certificado of certificados; track certificado.id) {
+              <tr>
+                <td>
+                  <div class="table-article">
+                    <span class="table-article__code">{{ certificado.codigoArticulo }}</span>
+                    <span class="table-article__title">{{ certificado.tituloArticulo }}</span>
+                  </div>
+                </td>
+                <td><span class="badge">{{ formatearTipo(certificado.tipo) }}</span></td>
+                <td>{{ certificado.titulo }}</td>
+                <td><span class="badge badge--soft">{{ formatearContexto(certificado.contextoRequerimiento) }}</span></td>
+                <td>{{ certificado.etapaReferencia || '-' }}</td>
+                <td>{{ certificado.subidoPor }}</td>
+                <td>{{ getFecha(certificado) | date: 'short':'America/Bogota' }}</td>
+                <td>
+                  <div class="table-actions">
+                    <button class="btn-secondary" type="button" (click)="descargar(certificado)">Descargar</button>
+                    <button class="btn-secondary btn-secondary--danger" type="button" (click)="eliminar(certificado)">Eliminar</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  @if (showUploadConfirmModal) {
+    <div class="modal-backdrop" role="presentation" (click)="cancelarConfirmacionSubida()">
+      <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-upload-title" (click)="$event.stopPropagation()">
+        <div class="confirm-modal__icon">!</div>
+        <div class="confirm-modal__content">
+          <p class="eyebrow eyebrow--soft">Confirmación</p>
+          <h3 id="confirm-upload-title">¿Subir este certificado?</h3>
+          <p>Revisa que el archivo, el artículo y el usuario sean correctos antes de continuar.</p>
+
+          <div class="confirm-modal__summary">
+            <div><span>Contexto</span><strong>{{ contextoLabel }}</strong></div>
+            <div><span>Usuario</span><strong>{{ usuarioSeleccionadoDisplay }}</strong></div>
+            <div><span>Artículo</span><strong>{{ articuloSeleccionadoDisplay }}</strong></div>
+            <div><span>Archivo</span><strong>{{ archivo?.name || '-' }}</strong></div>
+          </div>
+        </div>
+
+        <div class="confirm-modal__actions">
+          <button type="button" class="btn-secondary" (click)="cancelarConfirmacionSubida()">Cancelar</button>
+          <button type="button" class="btn-primary" (click)="confirmarSubidaCertificado()">Sí, subir certificado</button>
+        </div>
+      </div>
+    </div>
+  }
+</section>

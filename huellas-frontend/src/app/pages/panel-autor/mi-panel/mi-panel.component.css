@@ -170,7 +170,9 @@
 }
 
 .table-section {
-  background: #ffffff;
+  background:
+    radial-gradient(900px 140px at 0% -10%, rgba(0, 163, 154, 0.08) 0%, transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
   border-radius: 1rem;
   box-shadow: 0 10px 24px rgba(17, 37, 58, 0.06);
   border: 1px solid #e2e8f0;
@@ -196,6 +198,45 @@
 .table-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sort-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #d9e4ee;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
+}
+
+.sort-panel__label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1d4ed8;
+}
+
+.sort-panel__select {
+  min-width: 230px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 0.4rem 0.75rem;
+  font: inherit;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.sort-panel__select:focus {
+  border-color: #00a39a;
+  box-shadow: 0 0 0 4px rgba(0, 163, 154, 0.12);
 }
 
 .status-filters {
@@ -223,25 +264,36 @@
 
 .table-wrapper table {
   width: 100%;
+  min-width: 920px;
   border-collapse: collapse;
 }
 
 th {
   text-align: left;
   padding: 0.8rem;
-  color: #475569;
-  font-size: 0.78rem;
+  color: #526274;
+  font-size: 0.73rem;
+  font-weight: 800;
   border-bottom: 1px solid #e2e8f0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
+  background: #f3f7fb;
 }
 
 td {
   padding: 0.8rem;
-  font-size: 0.89rem;
-  color: #1e293b;
-  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+  color: #334155;
+  border-bottom: 1px solid #edf2f7;
   vertical-align: middle;
+}
+
+tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+tbody tr:hover {
+  background: #f8fafc;
 }
 
 .titulo-cell {
@@ -335,6 +387,7 @@ td {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .correccion-lock-msg {
@@ -820,8 +873,23 @@ td {
     flex-direction: column;
   }
 
+  .table-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   .status-filters {
     width: 100%;
+  }
+
+  .sort-panel {
+    width: 100%;
+    justify-content: space-between;
+    border-radius: 16px;
+  }
+
+  .sort-panel__select {
+    min-width: 100%;
   }
 
   .correccion-modal {

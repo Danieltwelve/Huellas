@@ -1,0 +1,53 @@
+<section class="panel">
+  <header class="panel__header">
+    <h1>Certificados</h1>
+    <p>Descarga los certificados cargados por el equipo editorial para tus artículos asignados.</p>
+  </header>
+
+  @if (error) {
+    <p class="status status--error">{{ error }}</p>
+  }
+
+  @if (loading) {
+    <p>Cargando certificados...</p>
+  }
+
+  @if (!loading && certificados.length === 0) {
+    <p>No hay certificados disponibles para tus artículos.</p>
+  }
+
+  @if (!loading && certificados.length > 0) {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Artículo</th>
+            <th>Tipo</th>
+            <th>Título</th>
+            <th>Contexto</th>
+            <th>Etapa ref.</th>
+            <th>Subido por</th>
+            <th>Fecha</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (certificado of certificados; track certificado.id) {
+            <tr>
+              <td>{{ certificado.codigoArticulo }} - {{ certificado.tituloArticulo }}</td>
+              <td>{{ certificado.tipo }}</td>
+              <td>{{ certificado.titulo }}</td>
+              <td>{{ certificado.contextoRequerimiento }}</td>
+              <td>{{ certificado.etapaReferencia || '-' }}</td>
+              <td>{{ certificado.subidoPor }}</td>
+              <td>{{ certificado.fechaSubida | date: 'short' }}</td>
+              <td>
+                <button class="btn" type="button" (click)="descargar(certificado)">Descargar PDF</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

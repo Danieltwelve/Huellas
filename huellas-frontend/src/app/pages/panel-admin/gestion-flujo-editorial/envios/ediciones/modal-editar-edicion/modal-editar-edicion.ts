@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ModalShellComponent } from '../../../../../../core/components/modal-shell/modal-shell.component';
 import {
   EdicionesRevistaService,
   UpdateEdicionRevistaPayload,
@@ -28,7 +29,7 @@ type ResultadoTipo = 'success' | 'error';
 @Component({
   selector: 'app-modal-editar-edicion',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ModalShellComponent],
   templateUrl: './modal-editar-edicion.html',
   styleUrl: './modal-editar-edicion.css',
 })

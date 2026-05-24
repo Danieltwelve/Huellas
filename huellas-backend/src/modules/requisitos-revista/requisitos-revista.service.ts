@@ -5,6 +5,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RequisitoRevista } from './entities/requisitos-revista.entity';
 
+export interface RequisitosPageMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface RequisitosPageResponse {
+  items: RequisitoRevista[];
+  meta: RequisitosPageMeta;
+}
+
 @Injectable()
 export class RequisitosRevistaService {
   constructor(
@@ -19,8 +31,25 @@ export class RequisitosRevistaService {
     return this.requisitoRepository.save(nuevo);
   }
 
-  async findAll(): Promise<RequisitoRevista[]> {
-    return this.requisitoRepository.find();
+  async findAll(pageValue?: string, limitValue?: string): Promise<RequisitosPageResponse> {
+    const page = Math.max(1, Number(pageValue) || 1);
+    const limit = Math.min(100, Math.max(1, Number(limitValue) || 20));
+
+    const [items, total] = await this.requisitoRepository.findAndCount({
+      order: { id: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      items,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    };
   }
 
   async findOne(id: number): Promise<RequisitoRevista> {

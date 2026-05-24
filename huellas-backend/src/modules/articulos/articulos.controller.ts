@@ -7,6 +7,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Logger,
   Patch,
   Get,
   Post,
@@ -39,11 +40,97 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { promises as fs } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import express from 'express';
 import * as mime from 'mime-types';
+import { UploadCertificadoDto } from './dto/upload-certificado.dto';
+import { UpdateCertificadoDto } from './dto/update-certificado.dto';
+
+const ARTICULO_UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
+const ARTICULO_ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
+const ARTICULO_ALLOWED_EXTENSIONS = new Set(['.pdf', '.docx']);
+const CERTIFICADO_UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
+const CERTIFICADO_ALLOWED_MIME_TYPES = new Set(['application/pdf']);
+const CERTIFICADO_ALLOWED_EXTENSIONS = new Set(['.pdf']);
+
+function buildArticuloUploadOptions() {
+  return {
+    storage: diskStorage({
+      destination: './uploads/articulos',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const ext = extname(file.originalname).toLowerCase();
+        cb(null, `${uniqueSuffix}${ext}`);
+      },
+    }),
+    limits: {
+      fileSize: ARTICULO_UPLOAD_MAX_SIZE,
+    },
+    fileFilter: (req: express.Request, file: Express.Multer.File, cb: any) => {
+      const ext = extname(file.originalname).toLowerCase();
+      const isExtensionValid = ARTICULO_ALLOWED_EXTENSIONS.has(ext);
+      const isMimeValid = ARTICULO_ALLOWED_MIME_TYPES.has(file.mimetype);
+
+      if (!isExtensionValid || !isMimeValid) {
+        return cb(
+          new BadRequestException(
+            'Solo se permiten archivos PDF o DOCX válidos.',
+          ),
+          false,
+        );
+      }
+
+      cb(null, true);
+    },
+  };
+}
+
+function buildCertificadoUploadOptions() {
+  return {
+    storage: diskStorage({
+      destination: (_req, _file, cb) => {
+        const destino = './uploads/certificados';
+        if (!existsSync(destino)) {
+          mkdirSync(destino, { recursive: true });
+        }
+
+        cb(null, destino);
+      },
+      filename: (_req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const ext = extname(file.originalname).toLowerCase();
+        cb(null, `${uniqueSuffix}${ext}`);
+      },
+    }),
+    limits: {
+      fileSize: CERTIFICADO_UPLOAD_MAX_SIZE,
+    },
+    fileFilter: (_req: express.Request, file: Express.Multer.File, cb: any) => {
+      const ext = extname(file.originalname).toLowerCase();
+      const isExtensionValid = CERTIFICADO_ALLOWED_EXTENSIONS.has(ext);
+      const isMimeValid = CERTIFICADO_ALLOWED_MIME_TYPES.has(file.mimetype);
+
+      if (!isExtensionValid || !isMimeValid) {
+        return cb(
+          new BadRequestException(
+            'Solo se permiten certificados en formato PDF.',
+          ),
+          false,
+        );
+      }
+
+      cb(null, true);
+    },
+  };
+}
 
 @Controller('articulos')
 export class ArticulosController {
+  private readonly logger = new Logger(ArticulosController.name);
+
   constructor(private readonly articulosService: ArticulosService) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -70,7 +157,14 @@ export class ArticulosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('comite-editorial')
   @Get('comite/asignados')
-  async getAsignadosComite(@Req() req: any) {
+  async getAsignadosComite(@Req() req: any, @Query() query?: any) {
+    if (query?.page || query?.limit) {
+      return await this.articulosService.getArticulosAsignadosComitePaged(
+        req.user.userId,
+        query,
+      );
+    }
+
     return await this.articulosService.getArticulosAsignadosComite(
       req.user.userId,
     );
@@ -98,6 +192,99 @@ export class ArticulosController {
   async getNotificacionesVencimientoComite(@Req() req: any) {
     return await this.articulosService.getNotificacionesVencimientoComite(
       req.user.userId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Post(':id/certificados')
+  @UseInterceptors(FileInterceptor('archivo', buildCertificadoUploadOptions()))
+  async subirCertificado(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+    @Body() body: UploadCertificadoDto,
+    @UploadedFile() archivo?: Express.Multer.File,
+  ) {
+    if (!archivo) {
+      throw new BadRequestException('Debes adjuntar un archivo PDF.');
+    }
+
+    try {
+      return await this.articulosService.subirCertificadoArticulo(
+        id,
+        req.user.userId,
+        req.user.roles ?? [],
+        body,
+        archivo,
+      );
+    } catch (error) {
+      if (archivo?.path) {
+        await fs.unlink(archivo.path).catch(() => null);
+      }
+
+      throw error;
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor', 'autor', 'comite-editorial')
+  @Get('certificados')
+  async listarCertificados(@Req() req: any) {
+    return await this.articulosService.listarCertificadosUsuario(
+      req.user.userId,
+      req.user.roles ?? [],
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor', 'autor', 'comite-editorial')
+  @Get('certificados/:certificadoId/descargar')
+  async descargarCertificado(
+    @Param('certificadoId', ParseIntPipe) certificadoId: number,
+    @Req() req: any,
+    @Res() res: express.Response,
+  ) {
+    const { stream, filename } =
+      await this.articulosService.getCertificadoFileStream(
+        certificadoId,
+        req.user.userId,
+        req.user.roles ?? [],
+      );
+
+    const mimeType = mime.lookup(filename) || 'application/pdf';
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    stream.pipe(res);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Patch('certificados/:certificadoId')
+  async actualizarCertificado(
+    @Param('certificadoId', ParseIntPipe) certificadoId: number,
+    @Req() req: any,
+    @Body() body: UpdateCertificadoDto,
+  ) {
+    return await this.articulosService.actualizarCertificadoArticulo(
+      certificadoId,
+      req.user.userId,
+      req.user.roles ?? [],
+      body,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Delete('certificados/:certificadoId')
+  async eliminarCertificado(
+    @Param('certificadoId', ParseIntPipe) certificadoId: number,
+    @Req() req: any,
+  ) {
+    return await this.articulosService.eliminarCertificadoArticulo(
+      certificadoId,
+      req.user.userId,
+      req.user.roles ?? [],
     );
   }
 
@@ -156,22 +343,11 @@ export class ArticulosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'autor')
   @Post('envio')
-  @UseInterceptors(
-    FileInterceptor('archivo', {
-      storage: diskStorage({
-        destination: './uploads/articulos',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          cb(null, `${uniqueSuffix}${ext}`);
-        },
-      }),
-    }),
-  )
+  @UseInterceptors(FileInterceptor('archivo', buildArticuloUploadOptions()))
   async crearEnvio(
     @Body() body: any,
     @UploadedFile() archivo: Express.Multer.File,
+    @Req() req: any,
   ) {
     if (!archivo) {
       throw new BadRequestException(
@@ -210,12 +386,18 @@ export class ArticulosController {
 
       const usuarioEmisorId = dto.usuarios_ids[0];
 
-      return await this.articulosService.crearEnvioArticulo(
+      const resultado = await this.articulosService.crearEnvioArticulo(
         dto,
         archivo.path,
         archivo.originalname,
         usuarioEmisorId,
       );
+
+      this.logger.log(
+        `Envio de articulo creado por usuario ${req.user.userId} con archivo ${archivo.originalname}`,
+      );
+
+      return resultado;
     } catch (error) {
       if (archivo && archivo.path) {
         await fs.unlink(archivo.path).catch(() => null);
@@ -276,19 +458,7 @@ export class ArticulosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('autor')
   @Post(':id/correccion')
-  @UseInterceptors(
-    FileInterceptor('archivo', {
-      storage: diskStorage({
-        destination: './uploads/articulos',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          cb(null, `${uniqueSuffix}${ext}`);
-        },
-      }),
-    }),
-  )
+  @UseInterceptors(FileInterceptor('archivo', buildArticuloUploadOptions()))
   async subirCorreccion(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: any,
@@ -302,12 +472,18 @@ export class ArticulosController {
     }
 
     try {
-      return await this.articulosService.subirCorreccionAutor(
+      const resultado = await this.articulosService.subirCorreccionAutor(
         id,
         req.user.userId,
         archivo,
         body.comentarios?.trim(),
       );
+
+      this.logger.log(
+        `Correccion subida por usuario ${req.user.userId} para articulo ${id}`,
+      );
+
+      return resultado;
     } catch (error) {
       if (archivo?.path) {
         await fs.unlink(archivo.path).catch(() => null);
@@ -336,19 +512,7 @@ export class ArticulosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'director', 'monitor', 'comite-editorial')
   @Post(':id/observaciones')
-  @UseInterceptors(
-    FileInterceptor('archivo', {
-      storage: diskStorage({
-        destination: './uploads/articulos',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          cb(null, `${uniqueSuffix}${ext}`);
-        },
-      }),
-    }),
-  )
+  @UseInterceptors(FileInterceptor('archivo', buildArticuloUploadOptions()))
   async agregarObservacion(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: AddObservacionDto,
@@ -365,7 +529,7 @@ export class ArticulosController {
     }
 
     try {
-      return await this.articulosService.agregarObservacion(
+      const resultado = await this.articulosService.agregarObservacion(
         id,
         {
           asunto: body.asunto.trim(),
@@ -375,6 +539,12 @@ export class ArticulosController {
         req.user.userId,
         archivo,
       );
+
+      this.logger.log(
+        `Observacion agregada por usuario ${req.user.userId} para articulo ${id}`,
+      );
+
+      return resultado;
     } catch (error) {
       if (archivo?.path) {
         await fs.unlink(archivo.path).catch(() => null);
@@ -401,19 +571,7 @@ export class ArticulosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'director', 'monitor')
   @Post(':id/turnitin/evaluacion')
-  @UseInterceptors(
-    FileInterceptor('archivo', {
-      storage: diskStorage({
-        destination: './uploads/articulos',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          cb(null, `${uniqueSuffix}${ext}`);
-        },
-      }),
-    }),
-  )
+  @UseInterceptors(FileInterceptor('archivo', buildArticuloUploadOptions()))
   async evaluarTurnitin(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: EvaluarTurnitinDto,
@@ -433,13 +591,19 @@ export class ArticulosController {
     }
 
     try {
-      return await this.articulosService.evaluarArticuloTurnitin(
+      const resultado = await this.articulosService.evaluarArticuloTurnitin(
         id,
         req.user.userId,
         porcentaje,
         body.observacion?.trim(),
         archivo,
       );
+
+      this.logger.log(
+        `Evaluacion de Turnitin registrada por usuario ${req.user.userId} para articulo ${id}`,
+      );
+
+      return resultado;
     } catch (error) {
       if (archivo?.path) {
         await fs.unlink(archivo.path).catch(() => null);
@@ -469,19 +633,7 @@ export class ArticulosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('comite-editorial')
   @Post(':id/comite/evaluacion')
-  @UseInterceptors(
-    FileInterceptor('archivo', {
-      storage: diskStorage({
-        destination: './uploads/articulos',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          cb(null, `${uniqueSuffix}${ext}`);
-        },
-      }),
-    }),
-  )
+  @UseInterceptors(FileInterceptor('archivo', buildArticuloUploadOptions()))
   async evaluarPorComite(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: EvaluarComiteDto,
@@ -499,13 +651,19 @@ export class ArticulosController {
     }
 
     try {
-      return await this.articulosService.evaluarArticuloComite(
+      const resultado = await this.articulosService.evaluarArticuloComite(
         id,
         req.user.userId,
         body.decision,
         body.observacion?.trim(),
         archivo,
       );
+
+      this.logger.log(
+        `Evaluacion de comite registrada por usuario ${req.user.userId} para articulo ${id}`,
+      );
+
+      return resultado;
     } catch (error) {
       if (archivo?.path) {
         await fs.unlink(archivo.path).catch(() => null);

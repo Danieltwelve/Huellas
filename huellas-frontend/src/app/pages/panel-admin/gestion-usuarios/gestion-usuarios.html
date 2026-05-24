@@ -9,22 +9,22 @@
   <section class="summary-grid" aria-label="Resumen de usuarios">
     <article class="summary-card">
       <span class="summary-label">Total</span>
-      <strong>{{ totalUsers }}</strong>
+      <strong>{{ totalUsersCount }}</strong>
       <p>Usuarios cargados en el panel</p>
     </article>  
     <article class="summary-card">
       <span class="summary-label">Activos</span>
-      <strong>{{ activeUsers }}</strong>
+      <strong>{{ activeUsersCount }}</strong>
       <p>Cuentas con acceso habilitado</p>
     </article>
     <article class="summary-card">
       <span class="summary-label">Pendientes</span>
-      <strong>{{ pendingUsers }}</strong>
+      <strong>{{ pendingUsersCount }}</strong>
       <p>Correos aún sin verificar</p>
     </article>
     <article class="summary-card">
       <span class="summary-label">Roles clave</span>
-      <strong>{{ roleUsersCount }}</strong>
+      <strong>{{ roleUsersCountValue }}</strong>
       <p>Usuarios con rol editorial o de administración</p>
     </article>
   </section>
@@ -119,6 +119,22 @@
       </div>
       }
     </div>
+    @if (!loading && totalPages > 1) {
+      <div class="pagination-bar">
+        <p class="pagination-info">
+          Mostrando {{ filteredUsers.length }} resultado(s) de {{ totalUsersCount }}.
+        </p>
+        <div class="pagination-actions">
+          <button type="button" class="pagination-btn" (click)="previousPage()" [disabled]="currentPage <= 1">
+            Anterior
+          </button>
+          <span class="pagination-page">Página {{ currentPage }} de {{ totalPages }}</span>
+          <button type="button" class="pagination-btn" (click)="nextPage()" [disabled]="currentPage >= totalPages">
+            Siguiente
+          </button>
+        </div>
+      </div>
+    }
     }
   </section>
 
@@ -133,38 +149,36 @@
   }
 
   @if (showDeleteConfirmModal && selectedUserToDelete) {
-  <div class="delete-modal-backdrop" (click)="cancelDeleteUser()"></div>
-  <div class="delete-modal" role="dialog" aria-modal="true" aria-label="Confirmar eliminación de usuario">
-    <button class="delete-modal-close" type="button" (click)="cancelDeleteUser()" aria-label="Cerrar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
+  <app-modal-shell
+    [title]="'Eliminar usuario'"
+    ariaLabel="Confirmar eliminación de usuario"
+    [width]="'min(460px, 92vw)'"
+    [panelClass]="'modal-card--danger'"
+    (closed)="cancelDeleteUser()"
+  >
+    <div modal-body>
+      <p>
+        Vas a eliminar a <strong>{{ selectedUserToDelete.nombre }}</strong>.
+      </p>
 
-    <h3>Eliminar usuario</h3>
-    <p>
-      Vas a eliminar a <strong>{{ selectedUserToDelete.nombre }}</strong>.
-    </p>
-
-    @if (selectedUserToDelete.estado === 'Activa') {
-    <div class="delete-modal-warning">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0l-5.708 9.8a1.13 1.13 0 0 0 .98 1.694h11.396a1.13 1.13 0 0 0 .98-1.694L8.982 1.566zM8 5a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 5zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
-      </svg>
-      <div>
-        <strong>Cuenta activa</strong>
-        <p>No se puede eliminar este usuario porque su cuenta está activa. Primero debe desactivar la cuenta.</p>
+      @if (selectedUserToDelete.estado === 'Activa') {
+      <div class="delete-modal-warning">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0l-5.708 9.8a1.13 1.13 0 0 0 .98 1.694h11.396a1.13 1.13 0 0 0 .98-1.694L8.982 1.566zM8 5a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 5zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+        </svg>
+        <div>
+          <strong>Cuenta activa</strong>
+          <p>No se puede eliminar este usuario porque su cuenta está activa. Primero debe desactivar la cuenta.</p>
+        </div>
       </div>
+      }
+
+      <p class="delete-modal-description">
+        Esta acción no se puede deshacer.
+      </p>
     </div>
-    }
 
-    <p class="delete-modal-description">
-      Esta acción no se puede deshacer.
-    </p>
-
-    <div class="delete-modal-actions">
+    <div modal-footer>
       <button class="btn-cancel-delete" type="button" (click)="cancelDeleteUser()" [disabled]="deletingUserId !== null">
         Cancelar
       </button>
@@ -172,35 +186,33 @@
         {{ deletingUserId !== null ? 'Eliminando...' : 'Eliminar usuario' }}
       </button>
     </div>
-  </div>
+  </app-modal-shell>
   }
 
   @if (showRestrictionModal) {
-  <div class="restriction-modal-backdrop" (click)="closeRestrictionModal()"></div>
-  <div class="restriction-modal" role="dialog" aria-modal="true" aria-label="No se puede eliminar el usuario">
-    <button class="restriction-modal-close" type="button" (click)="closeRestrictionModal()" aria-label="Cerrar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
+  <app-modal-shell
+    [title]="'No se puede eliminar el usuario'"
+    ariaLabel="No se puede eliminar el usuario"
+    [width]="'min(520px, 92vw)'"
+    [panelClass]="'modal-card--danger'"
+    (closed)="closeRestrictionModal()"
+  >
+    <div modal-body>
+      <div class="restriction-modal-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0l-5.708 9.8a1.13 1.13 0 0 0 .98 1.694h11.396a1.13 1.13 0 0 0 .98-1.694L8.982 1.566zM8 5a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 5zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+        </svg>
+      </div>
 
-    <div class="restriction-modal-icon" aria-hidden="true">
-      <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0l-5.708 9.8a1.13 1.13 0 0 0 .98 1.694h11.396a1.13 1.13 0 0 0 .98-1.694L8.982 1.566zM8 5a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 5zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
-      </svg>
+      <p class="restriction-modal-kicker">Acción bloqueada</p>
+      <p class="restriction-modal-message">{{ restrictionMessage }}</p>
     </div>
 
-    <p class="restriction-modal-kicker">Acción bloqueada</p>
-    <h3>No se puede eliminar el usuario</h3>
-    <p class="restriction-modal-message">{{ restrictionMessage }}</p>
-
-    <div class="restriction-modal-actions">
+    <div modal-footer>
       <button class="btn-confirm-delete" type="button" (click)="closeRestrictionModal()">
         Entendido
       </button>
     </div>
-  </div>
+  </app-modal-shell>
   }
 </section>

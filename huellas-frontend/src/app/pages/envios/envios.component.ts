@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-envios',
   templateUrl: './envios.component.html',
   styleUrls: ['./envios.component.css'],
   standalone: true,
-  imports: [CommonModule]
+  imports: [CommonModule, FormsModule]
 })
 export class EnviosComponent {
   directrices = [
@@ -49,6 +50,47 @@ export class EnviosComponent {
       ]
     }
   ];
+
+  temasEducacion = [
+    {
+      categoria: 'Innovación pedagógica',
+      titulo: 'Aulas activas y aprendizaje significativo',
+      descripcion: 'Propuestas didácticas que transforman la experiencia de clase con metodologías participativas y centradas en el estudiante.',
+      enfoques: ['ABP', 'aula invertida', 'gamificación']
+    },
+    {
+      categoria: 'Tecnología educativa',
+      titulo: 'Integración de herramientas digitales',
+      descripcion: 'Estudios sobre plataformas, analíticas de aprendizaje, recursos interactivos y uso pedagógico de la IA en contextos formativos.',
+      enfoques: ['IA educativa', 'LMS', 'recursos interactivos']
+    },
+    {
+      categoria: 'Inclusión',
+      titulo: 'Educación inclusiva y diversidad',
+      descripcion: 'Experiencias e investigaciones sobre accesibilidad, diseño universal para el aprendizaje y participación de comunidades diversas.',
+      enfoques: ['DUA', 'accesibilidad', 'equidad']
+    },
+    {
+      categoria: 'Evaluación',
+      titulo: 'Evaluación formativa y retroalimentación',
+      descripcion: 'Aportes sobre evaluación auténtica, rúbricas, seguimiento del aprendizaje y prácticas que acompañan el progreso del estudiante.',
+      enfoques: ['rúbricas', 'retroalimentación', 'evaluación auténtica']
+    },
+    {
+      categoria: 'Formación docente',
+      titulo: 'Desarrollo profesional del profesorado',
+      descripcion: 'Reflexiones y evidencias sobre actualización docente, comunidades de práctica y acompañamiento pedagógico.',
+      enfoques: ['capacitación', 'mentoría', 'comunidades de práctica']
+    },
+    {
+      categoria: 'Contexto territorial',
+      titulo: 'Escuela, comunidad y territorio',
+      descripcion: 'Investigaciones situadas en educación rural, vínculo con el territorio y soluciones que responden a realidades locales.',
+      enfoques: ['educación rural', 'territorio', 'comunidad']
+    }
+  ];
+
+  temaSeleccionado = this.temasEducacion[0];
 
   condiciones = [
     { condicion: '✓ Cumple', color: '#4CAF50' },

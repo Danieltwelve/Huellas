@@ -47,16 +47,23 @@ export class PanelAutorLayoutComponent implements OnInit {
     this.articulosAutorService.getMisNotificaciones().subscribe({
       next: (notificaciones) => {
         const idsLeidas = this.obtenerIdsLeidas();
-        this.notifications = notificaciones.map((n: any) => ({
-          id: n.id,
-          articuloId: n.articuloId,
-          codigoArticulo: n.codigoArticulo,
-          titulo: n.titulo,
-          detalle: n.detalle,
-          fecha: n.fecha,
-          enlace: `/panel-autor/detalle-articulo/${n.articuloId}`,
-          leida: idsLeidas.has(n.id),
-        })).sort((a, b) => (new Date(b.fecha)).getTime() - (new Date(a.fecha)).getTime());
+        this.notifications = notificaciones
+          .map((n: any) => {
+            const texto = `${n.titulo ?? ''} ${n.detalle ?? ''}`.toLowerCase();
+            const esCertificado = /certific/i.test(texto);
+
+            return {
+              id: n.id,
+              articuloId: n.articuloId,
+              codigoArticulo: n.codigoArticulo,
+              titulo: n.titulo,
+              detalle: n.detalle,
+              fecha: n.fecha,
+              enlace: esCertificado ? '/panel-autor/certificados' : `/panel-autor/timeline?articuloId=${n.articuloId}`,
+              leida: idsLeidas.has(n.id),
+            };
+          })
+          .sort((a, b) => (new Date(b.fecha)).getTime() - (new Date(a.fecha)).getTime());
 
         this.notificationCount = this.notifications.filter((item) => !item.leida).length;
         this.notificationLoading = false;
@@ -78,7 +85,14 @@ export class PanelAutorLayoutComponent implements OnInit {
     if (!notification) return;
     this.marcarNotificacionLeida(notification.id);
     this.notificationMenuOpen = false;
-    this.router.navigateByUrl(notification.enlace);
+
+    const enlace = typeof notification.enlace === 'string' ? notification.enlace.trim() : '';
+    if (enlace.startsWith('/')) {
+      this.router.navigateByUrl(enlace).catch(() => this.router.navigate(['/panel-autor/notificaciones']));
+      return;
+    }
+
+    this.router.navigate(['/panel-autor/notificaciones']);
   }
 
   private marcarNotificacionLeida(id: string): void {

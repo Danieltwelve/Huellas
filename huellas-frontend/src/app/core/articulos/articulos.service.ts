@@ -17,6 +17,12 @@ export interface ArticuloResumenBackend {
   dias_restantes?: number | null;
 }
 
+export interface UsuarioCertificadosBackend {
+  id: number;
+  nombre: string;
+  correo: string;
+}
+
 export interface ComiteEvaluacionHistorial {
   articuloId: number;
   codigo: string;
@@ -49,6 +55,27 @@ export interface ComiteNotificacionVencimiento {
 
 export interface EstadoEnviosArticulos {
   habilitado: boolean;
+}
+
+export interface CertificadoArticuloBackend {
+  id: number;
+  articuloId: number;
+  codigoArticulo: string;
+  tituloArticulo: string;
+  tipo: 'evaluacion' | 'publicacion' | 'aceptacion' | 'envio' | 'revision' | 'otro';
+  titulo: string;
+  contextoRequerimiento: 'autor' | 'comite-editorial' | 'editorial';
+  etapaReferencia: string | null;
+  archivoNombreOriginal: string;
+  fechaSubida: string;
+  fechaSubidaDate?: string | Date | null;
+  subidoPor: string;
+}
+
+export interface TemaCatalogoBackend {
+  id: number;
+  nombre: string;
+  descripcion: string | null;
 }
 
 export interface EstadisticasGeneralesArticulosBackend {
@@ -278,6 +305,44 @@ export class ArticulosService {
     );
   }
 
+  getAutoresCertificados(): Observable<UsuarioCertificadosBackend[]> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para consultar autores.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<UsuarioCertificadosBackend[]>(
+          `${environment.apiUrlBackend}/usuarios/autores`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  getComiteEditorialCertificados(): Observable<UsuarioCertificadosBackend[]> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para consultar comité editorial.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<UsuarioCertificadosBackend[]>(
+          `${environment.apiUrlBackend}/usuarios/comite-editorial`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
   getArticulosComiteAsignados(): Observable<ArticuloResumenBackend[]> {
     const currentUser = this.auth.currentUser;
 
@@ -287,31 +352,45 @@ export class ArticulosService {
 
     return from(currentUser.getIdToken()).pipe(
       switchMap((token) =>
-        this.http.get<ArticuloResumenBackend[]>(
-          `${environment.apiUrlBackend}/articulos/comite/asignados`,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
+        this.http.get<ArticuloResumenBackend[]>(`${environment.apiUrlBackend}/articulos/comite/asignados`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
       ),
     );
   }
 
-  getHistorialEvaluacionesComite(): Observable<ComiteEvaluacionHistorial[]> {
+  getArticulosComiteAsignadosPaged(opts?: { page?: number; limit?: number }): Observable<any> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para consultar artículos asignados.'));
+    }
+
+    const query = opts ? `?page=${opts.page ?? 1}&limit=${opts.limit ?? 25}` : '';
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get(`${environment.apiUrlBackend}/articulos/comite/asignados${query}`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
+      ),
+    );
+  }
+
+  getHistorialEvaluacionesComite(opts?: { page?: number; limit?: number }): Observable<any> {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
       return throwError(() => new Error('No hay sesión activa para consultar historial de evaluaciones.'));
     }
 
+    const query = opts ? `?page=${opts.page ?? 1}&limit=${opts.limit ?? 25}` : '';
+
     return from(currentUser.getIdToken()).pipe(
       switchMap((token) =>
-        this.http.get<ComiteEvaluacionHistorial[]>(
-          `${environment.apiUrlBackend}/articulos/comite/mis-evaluaciones`,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
+        this.http.get(`${environment.apiUrlBackend}/articulos/comite/mis-evaluaciones${query}`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
       ),
     );
   }
@@ -558,6 +637,10 @@ export class ArticulosService {
     );
   }
 
+  getTemasCatalogo(): Observable<TemaCatalogoBackend[]> {
+    return this.http.get<TemaCatalogoBackend[]>(`${environment.apiUrlBackend}/temas`);
+  }
+
   actualizarEstadoEnviosArticulos(habilitado: boolean): Observable<EstadoEnviosArticulos> {
     const currentUser = this.auth.currentUser;
 
@@ -589,6 +672,132 @@ export class ArticulosService {
       switchMap((token) =>
         this.http.get<EstadisticasGeneralesArticulosBackend>(
           `${environment.apiUrlBackend}/articulos/estadisticas`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  listarCertificados(): Observable<CertificadoArticuloBackend[]> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para consultar certificados.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<CertificadoArticuloBackend[]>(
+          `${environment.apiUrlBackend}/articulos/certificados`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  subirCertificado(
+    articuloId: number,
+    payload: {
+      tipo: 'evaluacion' | 'publicacion' | 'aceptacion' | 'envio' | 'revision' | 'otro';
+      titulo?: string;
+      contextoRequerimiento: 'autor' | 'comite-editorial' | 'editorial';
+      etapaReferencia?: string;
+      archivo: File;
+    },
+  ): Observable<{ message: string; certificadoId: number }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para subir certificados.'));
+    }
+
+    const formData = new FormData();
+    formData.append('tipo', payload.tipo);
+    if (payload.titulo?.trim()) {
+      formData.append('titulo', payload.titulo.trim());
+    }
+    formData.append('contextoRequerimiento', payload.contextoRequerimiento);
+    if (payload.etapaReferencia?.trim()) {
+      formData.append('etapaReferencia', payload.etapaReferencia.trim());
+    }
+    formData.append('archivo', payload.archivo, payload.archivo.name);
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<{ message: string; certificadoId: number }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/certificados`,
+          formData,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  descargarCertificado(certificadoId: number): Observable<Blob> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para descargar certificados.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get(
+          `${environment.apiUrlBackend}/articulos/certificados/${certificadoId}/descargar`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+            responseType: 'blob',
+          },
+        ),
+      ),
+    );
+  }
+
+  actualizarCertificado(
+    certificadoId: number,
+    payload: {
+      tipo?: 'evaluacion' | 'publicacion' | 'aceptacion' | 'envio' | 'revision' | 'otro';
+      titulo?: string;
+      contextoRequerimiento?: 'autor' | 'comite-editorial' | 'editorial';
+      etapaReferencia?: string;
+    },
+  ): Observable<{ message: string }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para editar certificados.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.patch<{ message: string }>(
+          `${environment.apiUrlBackend}/articulos/certificados/${certificadoId}`,
+          payload,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  eliminarCertificado(certificadoId: number): Observable<{ message: string }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para eliminar certificados.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.delete<{ message: string }>(
+          `${environment.apiUrlBackend}/articulos/certificados/${certificadoId}`,
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           },
