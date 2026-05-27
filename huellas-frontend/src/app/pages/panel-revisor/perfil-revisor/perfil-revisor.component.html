@@ -1,24 +1,67 @@
-<section class="head">
-  <h1>Perfil del revisor</h1>
-  <p>Actualiza tus datos de contacto y especialidad para futuras asignaciones.</p>
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">Panel de revisor</p>
+    <h1>Perfil del revisor</h1>
+    <p>Actualiza tus datos para mejorar las asignaciones editoriales.</p>
+  </div>
+  <div class="hero-card">
+    <h2>Tu información</h2>
+    <p>Estos datos se usan para contactar y asignar evaluaciones.</p>
+  </div>
 </section>
 
-<form class="profile-form" (ngSubmit)="guardarPerfil()">
-  <label for="nombre">Nombre</label>
-  <input id="nombre" name="nombre" [(ngModel)]="nombre" />
+<form class="profile-form" autocomplete="off">
+  <div class="field">
+    <label for="nombre">Nombre completo</label>
+    <input id="nombre" name="nombre" [(ngModel)]="nombre" placeholder="Nombre y apellidos" />
+  </div>
 
-  <label for="correo">Correo</label>
-  <input id="correo" name="correo" [(ngModel)]="correo" type="email" />
+  <div class="field">
+    <label for="telefono">Teléfono</label>
+    <input id="telefono" name="telefono" [(ngModel)]="telefono" placeholder="+57 000 000 0000" />
+  </div>
 
-  <label for="especialidad">Especialidad</label>
-  <input id="especialidad" name="especialidad" [(ngModel)]="especialidad" />
+  <div class="field">
+    <label for="perfilAcademico">Perfil académico</label>
+    <textarea
+      id="perfilAcademico"
+      name="perfilAcademico"
+      [(ngModel)]="perfilAcademico"
+      rows="4"
+      placeholder="Areas de investigacion, experiencia, publicaciones..."
+    ></textarea>
+  </div>
 
-  <label for="institucion">Institucion</label>
-  <input id="institucion" name="institucion" [(ngModel)]="institucion" />
+  <div class="field">
+    <label for="institucion">Institución</label>
+    <input id="institucion" name="institucion" [(ngModel)]="institucion" placeholder="Universidad" />
+  </div>
 
-  <button type="submit">Guardar perfil</button>
+  <div class="actions">
+    <button type="button" (click)="openConfirmModal()">Guardar perfil</button>
+    <span class="hint">Se actualiza tu información visible para el comite editorial.</span>
+  </div>
 
   @if (mensaje) {
     <p class="success-msg">{{ mensaje }}</p>
   }
 </form>
+
+@if (showConfirmModal) {
+  <div class="modal-backdrop" (click)="closeConfirmModal()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Confirmar cambios">
+    <button class="modal-close" type="button" (click)="closeConfirmModal()" aria-label="Cerrar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <h3>Confirmar cambios</h3>
+    <p>¿Deseas guardar la informacion actualizada del perfil?</p>
+    <div class="modal-actions">
+      <button class="btn-primary" type="button" (click)="confirmSave()">Guardar</button>
+      <button class="btn-ghost" type="button" (click)="closeConfirmModal()">Cancelar</button>
+    </div>
+  </div>
+}

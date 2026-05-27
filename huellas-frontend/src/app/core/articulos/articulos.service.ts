@@ -123,6 +123,13 @@ export interface ArticuloFlujo {
     nombre: string;
     email: string;
   } | null;
+  revisor?: {
+    id: number;
+    nombre: string | null;
+    correo: string | null;
+    perfil: string;
+    cargaActual: number;
+  } | null;
   historialEtapas: Array<{
     id: number;
     etapaId: number;

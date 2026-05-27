@@ -631,6 +631,27 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Post(':id/asignar-revisor')
+  async asignarRevisor(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { revisorId: number },
+  ) {
+    if (!body.revisorId) {
+      throw new BadRequestException('Debes seleccionar un revisor.');
+    }
+
+    return await this.articulosService.asignarRevisor(id, body.revisorId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Delete(':id/asignar-revisor')
+  async revocarRevisor(@Param('id', ParseIntPipe) id: number) {
+    return await this.articulosService.revocarRevisor(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('comite-editorial')
   @Post(':id/comite/evaluacion')
   @UseInterceptors(FileInterceptor('archivo', buildArticuloUploadOptions()))

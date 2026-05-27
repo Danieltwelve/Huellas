@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { User } from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, In, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create.users.dto';
 import { Role } from '../roles/roles.entity';
 import { AdminCreateUserDto } from './dto/admin.create.users.dto';
@@ -20,8 +20,8 @@ import nodemailer from 'nodemailer';
 import { Articulo } from '../articulos/entities/articulo.entity';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
 import { Observacion } from '../observaciones/entities/observacione.entity';
-import { Brackets } from 'typeorm';
 import { UsersListQueryDto } from './dto/users-list.query.dto';
+import { Revisores } from '../revisores/entities/revisores.entity';
 
 export interface UsersListMeta {
   page: number;
@@ -68,6 +68,8 @@ export class UsersService {
     private readonly observacionRepository: Repository<Observacion>,
     @InjectRepository(ArticuloHistorialEtapa)
     private readonly historialEtapaRepository: Repository<ArticuloHistorialEtapa>,
+    @InjectRepository(Revisores)
+    private readonly revisoresRepository: Repository<Revisores>,
     @Inject(FIREBASE_AUTH) private readonly firebaseAuth: Auth,
     private readonly configService: ConfigService,
   ) {}
@@ -603,6 +605,45 @@ export class UsersService {
     return user;
   }
 
+  async findPerfilByUsuarioId(usuarioId: number) {
+    const user = await this.userRepository.findOne({ where: { id: usuarioId } });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    return {
+      nombre: user.nombre ?? '',
+      telefono: user.telefono ?? '',
+    };
+  }
+
+  async updatePerfilByUsuarioId(
+    usuarioId: number,
+    data: { nombre?: string; telefono?: string },
+  ) {
+    const user = await this.userRepository.findOne({ where: { id: usuarioId } });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (typeof data.nombre === 'string') {
+      user.nombre = data.nombre;
+    }
+
+    if (typeof data.telefono === 'string') {
+      user.telefono = data.telefono;
+    }
+
+    await this.userRepository.save(user);
+
+    return {
+      nombre: user.nombre ?? '',
+      telefono: user.telefono ?? '',
+    };
+  }
+
   async findAvailableRoles(): Promise<Role[]> {
     return this.rolesRepository.find({ order: { id: 'ASC' } });
   }
@@ -633,11 +674,20 @@ export class UsersService {
   }
 
   async update(id: number, data: Partial<User>): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['roles'],
+    });
 
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
+
+    const hadRevisorRole = this.hasRoleName(user.roles, 'revisor');
+    const nextRoles = Array.isArray(data.roles)
+      ? data.roles
+      : (user.roles ?? []);
+    const hasRevisorRole = await this.rolesContain(nextRoles, 'revisor');
 
     const correoActual = user.correo.trim().toLowerCase();
     const correoNuevo =
@@ -688,7 +738,75 @@ export class UsersService {
     }
 
     Object.assign(user, data);
-    return await this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+
+    if (!hadRevisorRole && hasRevisorRole) {
+      await this.ensureRevisorExists(savedUser.id);
+    }
+
+    return savedUser;
+  }
+
+  private hasRoleName(roles: Role[] | undefined, roleName: string): boolean {
+    const normalized = roleName.trim().toLowerCase();
+    return (roles ?? []).some(
+      (role) => (role?.rol ?? '').trim().toLowerCase() === normalized,
+    );
+  }
+
+  private async rolesContain(
+    roles: Array<Partial<Role>>,
+    roleName: string,
+  ): Promise<boolean> {
+    const normalized = roleName.trim().toLowerCase();
+    const names = await this.resolveRoleNames(roles);
+    return names.includes(normalized);
+  }
+
+  private async resolveRoleNames(
+    roles: Array<Partial<Role>>,
+  ): Promise<string[]> {
+    const normalized = roles
+      .map((role) => (role?.rol ?? '').trim().toLowerCase())
+      .filter((name) => name.length > 0);
+
+    const missingIds = roles
+      .filter((role) => !role?.rol && typeof role?.id === 'number')
+      .map((role) => role.id as number);
+
+    if (missingIds.length) {
+      const fetched = await this.rolesRepository.find({
+        where: { id: In(missingIds) },
+      });
+
+      for (const role of fetched) {
+        const name = (role?.rol ?? '').trim().toLowerCase();
+        if (name) {
+          normalized.push(name);
+        }
+      }
+    }
+
+    return normalized;
+  }
+
+  private async ensureRevisorExists(userId: number): Promise<void> {
+    const existing = await this.revisoresRepository.findOne({
+      where: { usuarioId: userId },
+    });
+
+    if (existing) {
+      return;
+    }
+
+    const newRevisor = this.revisoresRepository.create({
+      usuarioId: userId,
+      perfil: '',
+      cargaActual: 0,
+      institucion: '',
+    });
+
+    await this.revisoresRepository.save(newRevisor);
   }
 
   private async syncFirebaseAccountStatus(

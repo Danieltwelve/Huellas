@@ -11,6 +11,7 @@ import { UsersVerificationReconcileJob } from './users-verification-reconcile.jo
 import { Articulo } from '../articulos/entities/articulo.entity';
 import { Observacion } from '../observaciones/entities/observacione.entity';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
+import { Revisores } from '../revisores/entities/revisores.entity';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/a
       Articulo,
       Observacion,
       ArticuloHistorialEtapa,
+      Revisores,
     ]),
     FirebaseAdminModule,
   ],

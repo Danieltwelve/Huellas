@@ -91,7 +91,7 @@ export class SideBar {
   );
 
   bottomItems: MenuItem[] = [
-    { label: 'Configuración', icon: 'settings', route: '/configuracion' },
+    { label: 'Perfil', icon: 'settings', route: '/perfil' },
     { label: 'Cerrar sesión', icon: 'logout', action: 'logout' },
   ];
 

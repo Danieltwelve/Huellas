@@ -11,6 +11,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { normalizarNombreArchivo } from '../../../../core/utils/filename.utils';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { UsersService, UsuarioBackend } from '../../../../core/users/users.service';
+import { RevisionPares } from './revision-pares/revision-pares';
 
 interface EtapaFlujo {
   id: number;
@@ -49,7 +50,7 @@ interface EtapaTimeline {
 
 @Component({
   selector: 'app-flujo-trabajo-articulo',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RevisionPares],
   templateUrl: './flujo-trabajo-articulo.html',
   styleUrl: './flujo-trabajo-articulo.css',
   standalone: true,
@@ -63,7 +64,7 @@ export class FlujoTrabajoArticulo {
   private readonly usersService = inject(UsersService);
   private readonly router = inject(Router);
   private readonly autoRefreshMs = 12000;
-  private articuloIdActual: number | null = null;
+  articuloIdActual: number | null = null;
   private autoRefreshSubscription: Subscription | null = null;
   private modalExitoMoverTimeoutId: ReturnType<typeof setTimeout> | null = null;
 

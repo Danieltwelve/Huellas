@@ -70,18 +70,26 @@ export class AppComponent {
       ),
     );
 
+    const isPerfilSection$ = this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map(() => this.router.url.startsWith('/perfil')),
+      startWith(window.location.pathname.startsWith('/perfil')),
+    );
+
     this.showGlobalSidebar$ = combineLatest([
       this.user$,
       this.claims$,
       isAdminSection$,
+      isPerfilSection$,
     ]).pipe(
-      map(([user, claims, isAdminSection]) => {
+      map(([user, claims, isAdminSection, isPerfilSection]) => {
         const roles = Array.isArray(claims?.roles) ? claims.roles : [];
         const canAccessEditorialPanel =
           roles.some((role) => ['admin', 'director', 'monitor', 'comite-editorial'].includes(role)) ||
           Boolean(claims?.canManageUsers || claims?.canManageArticulos || claims?.canManageFlujoEditorial);
 
-        return Boolean(user) && canAccessEditorialPanel && isAdminSection;
+        const canShowAdminSidebar = canAccessEditorialPanel && isAdminSection;
+        return Boolean(user) && (canShowAdminSidebar || isPerfilSection);
       }),
     );
   }

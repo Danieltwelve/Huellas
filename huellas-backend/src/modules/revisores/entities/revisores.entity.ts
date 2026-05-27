@@ -4,9 +4,8 @@ import {
   Column,
   Entity,
   JoinColumn,
-  JoinTable,
-  ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -24,21 +23,13 @@ export class Revisores {
   @Column({ name: 'carga_actual', type: 'int' })
   cargaActual!: number;
 
+  @Column({ name: 'institucion', type: 'varchar' })
+  institucion!: string;
+
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'usuario_id' })
   usuario!: User;
 
-  @ManyToMany(() => Articulo, (articulo) => articulo.revisores)
-  @JoinTable({
-    name: 'articulos_revisores', // Nombre de la tabla intermedia
-    joinColumn: {
-      name: 'revisor_id',
-      referencedColumnName: 'id',
-    },
-    inverseJoinColumn: {
-      name: 'articulo_id',
-      referencedColumnName: 'id',
-    },
-  })
+  @OneToMany(() => Articulo, (articulo) => articulo.revisor)
   articulos!: Articulo[];
 }

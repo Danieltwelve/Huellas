@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Auth } from '@angular/fire/auth';
-import { from, Observable, switchMap } from 'rxjs';
+import { from, Observable, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environments';
 
 export interface UsuarioBackend {
@@ -40,6 +40,16 @@ export interface AdminCreateUserPayload {
 export interface RolBackend {
   id: number;
   rol: string;
+}
+
+export interface PerfilUsuarioResponse {
+  nombre: string;
+  telefono: string;
+}
+
+export interface PerfilUsuarioUpdatePayload {
+  nombre: string;
+  telefono: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -166,6 +176,47 @@ export class UsersService {
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           },
+        ),
+      ),
+    );
+  }
+
+  getPerfilUsuario(): Observable<PerfilUsuarioResponse> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(
+        () => new Error('No hay sesión activa para obtener el perfil.'),
+      );
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<PerfilUsuarioResponse>(
+          `${environment.apiUrlBackend}/usuarios/perfil`,
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
+        ),
+      ),
+    );
+  }
+
+  updatePerfilUsuario(
+    payload: PerfilUsuarioUpdatePayload,
+  ): Observable<PerfilUsuarioResponse> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(
+        () => new Error('No hay sesión activa para actualizar el perfil.'),
+      );
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.put<PerfilUsuarioResponse>(
+          `${environment.apiUrlBackend}/usuarios/perfil`,
+          payload,
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
         ),
       ),
     );

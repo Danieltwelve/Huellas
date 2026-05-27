@@ -24,26 +24,54 @@ import { RevisoresModule } from './modules/revisores/revisores.module';
       isGlobal: true,
       envFilePath: ['.env'],
     }),
-    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        // host: configService.get<string>('DATABASE_HOST'),
-        // port: Number(configService.get<string>('DATABASE_PORT', '5432')),
-        // username: configService.get<string>('DATABASE_USER'),
-        // password: configService.get<string>('DATABASE_PASSWORD'),
-        // database: configService.get<string>('DATABASE_NAME'),
-        host: 'localhost',
-        port: 5432,
-        username: 'huellas_user',
-        password: 'huellas_password',
-        database: 'huellas_db',
-        autoLoadEntities: true,
-        synchronize:
-          configService.get<string>('DATABASE_SYNCHRONIZE', 'true') === 'true', //solo para desarrollo, false en producción
-      }),
+      useFactory: (configService: ConfigService) => {
+        const host =
+          configService.get<string>('DB_HOST') ??
+          configService.get<string>('DATABASE_HOST') ??
+          'localhost';
+        const port = Number(
+          configService.get<string>('DB_PORT') ??
+            configService.get<string>('DATABASE_PORT') ??
+            5432,
+        );
+        const username =
+          configService.get<string>('DB_USERNAME') ??
+          configService.get<string>('DATABASE_USER') ??
+          'huellas_user';
+        const password =
+          configService.get<string>('DB_PASSWORD') ??
+          configService.get<string>('DATABASE_PASSWORD') ??
+          'huellas_password';
+        const database =
+          configService.get<string>('DB_DATABASE') ??
+          configService.get<string>('DATABASE_NAME') ??
+          'huellas_db';
+        const synchronize =
+          (configService.get<string>('DB_SYNC') ?? 'false') === 'true' ||
+          (configService.get<string>('DATABASE_SYNCHRONIZE') ?? 'true') ===
+            'true';
+        const ssl =
+          configService.get<string>('DB_SSL') === 'true'
+            ? { rejectUnauthorized: false }
+            : false;
+
+        return {
+          type: 'postgres',
+          host,
+          port,
+          username,
+          password,
+          database,
+          autoLoadEntities: true,
+          synchronize,
+          ssl,
+        };
+      },
     }),
+    ScheduleModule.forRoot(),
     UsersModule,
     AuthModule,
     RolesModule,
@@ -53,10 +81,16 @@ import { RevisoresModule } from './modules/revisores/revisores.module';
     ArticulosHistorialEtapasModule,
     ObservacionesModule,
     ObservacionesArchivosModule,
-    RevisoresModule,
     TemasModule,
+    RevisoresModule,
   ],
   controllers: [MetricsController],
-  providers: [MetricsService, { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor }],
+  providers: [
+    MetricsService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MetricsInterceptor,
+    },
+  ],
 })
 export class AppModule {}

@@ -8,7 +8,6 @@ import { PlazoRevisionComponent } from './plazo-revision/plazo-revision.componen
 import { NotificacionesRevisorComponent } from './notificaciones-revisor/notificaciones-revisor.component';
 import { GuiasRevisionComponent } from './guias-revision/guias-revision.component';
 import { PerfilRevisorComponent } from './perfil-revisor/perfil-revisor.component';
-import { ConfiguracionRevisorComponent } from './configuracion/configuracion.component';
 
 export const PANEL_REVISOR_ROUTES: Routes = [
   {
@@ -24,7 +23,6 @@ export const PANEL_REVISOR_ROUTES: Routes = [
       { path: 'notificaciones', component: NotificacionesRevisorComponent },
       { path: 'guias', component: GuiasRevisionComponent },
       { path: 'perfil', component: PerfilRevisorComponent },
-      { path: 'configuracion', component: ConfiguracionRevisorComponent },
     ],
   },
 ];

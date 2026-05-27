@@ -112,6 +112,12 @@ export class Articulo {
   @OneToMany(() => Observacion, (obs) => obs.articulo)
   observaciones!: Observacion[];
 
-  @ManyToMany(() => Revisores, (revisor) => revisor.articulos)
-  revisores!: Revisores[];
+  @Column({ name: 'revisor_id', nullable: true })
+  revisorId!: number | null;
+
+  @ManyToOne(() => Revisores, (revisor) => revisor.articulos, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'revisor_id' })
+  revisor!: Revisores | null;
 }

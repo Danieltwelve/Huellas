@@ -28,6 +28,7 @@ import { User } from '../users/user.entity';
 import { Tema } from '../temas/entities/tema.entity';
 import { ArticulosConfiguracion } from './entities/articulos-configuracion.entity';
 import { ArticuloCertificado } from './entities/articulo-certificado.entity';
+import { Revisores } from '../revisores/entities/revisores.entity';
 
 @Injectable()
 export class ArticulosService {
@@ -68,6 +69,8 @@ export class ArticulosService {
     private readonly articulosConfiguracionRepository: Repository<ArticulosConfiguracion>,
     @InjectRepository(ArticuloCertificado)
     private readonly articuloCertificadoRepository: Repository<ArticuloCertificado>,
+    @InjectRepository(Revisores)
+    private readonly revisoresRepository: Repository<Revisores>,
   ) {}
 
   private readonly configuracionEnviosKey = 'envios_articulos_habilitados';
@@ -312,6 +315,8 @@ export class ArticulosService {
         'temas',
         'etapaActual',
         'comiteEditorial',
+        'revisor',
+        'revisor.usuario',
         'historialEtapas',
         'historialEtapas.etapa',
         'observaciones',
@@ -370,6 +375,15 @@ export class ArticulosService {
             id: articulo.comiteEditorial.id,
             nombre: articulo.comiteEditorial.nombre,
             email: articulo.comiteEditorial.correo,
+          }
+        : null,
+      revisor: articulo.revisor
+        ? {
+            id: articulo.revisor.id,
+            nombre: articulo.revisor.usuario?.nombre ?? null,
+            correo: articulo.revisor.usuario?.correo ?? null,
+            perfil: articulo.revisor.perfil,
+            cargaActual: articulo.revisor.cargaActual,
           }
         : null,
       historialEtapas: (articulo.historialEtapas ?? [])
@@ -946,6 +960,91 @@ export class ArticulosService {
         nombre: comiteMember.nombre,
         correo: comiteMember.correo,
       },
+    };
+  }
+
+  async asignarRevisor(articuloId: number, revisorId: number) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['revisor'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    this.ensureArticuloNoDescartado(articulo);
+
+    const revisor = await this.revisoresRepository.findOne({
+      where: { id: revisorId },
+    });
+
+    if (!revisor) {
+      throw new NotFoundException('Revisor no encontrado');
+    }
+
+    articulo.revisorId = revisorId;
+    articulo.revisor = revisor;
+
+    // Incrementar la cargaActual del revisor asignado
+    try {
+      revisor.cargaActual = Number(revisor.cargaActual ?? 0) + 1;
+      await this.revisoresRepository.save(revisor);
+    } catch (err) {
+      // Si falla al guardar la carga, revertir asignación en artículo para mantener consistencia
+      articulo.revisorId = null;
+      articulo.revisor = null;
+      await this.articuloRepository.save(articulo).catch(() => null);
+      throw new InternalServerErrorException('Error al actualizar la carga del revisor');
+    }
+
+    await this.articuloRepository.save(articulo);
+
+    return {
+      message: 'Revisor asignado correctamente.',
+      articuloId: articulo.id,
+      revisorId: revisor.id,
+    };
+  }
+
+  async revocarRevisor(articuloId: number) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['revisor'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    this.ensureArticuloNoDescartado(articulo);
+
+    if (!articulo.revisorId) {
+      throw new BadRequestException('El artículo no tiene revisor asignado.');
+    }
+
+
+    // Decrementar cargaActual del revisor previo si aplica
+    if (articulo.revisorId) {
+      try {
+        const revisor = await this.revisoresRepository.findOne({ where: { id: articulo.revisorId } });
+        if (revisor) {
+          revisor.cargaActual = Math.max(0, Number(revisor.cargaActual ?? 0) - 1);
+          await this.revisoresRepository.save(revisor);
+        }
+      } catch (err) {
+        // Loguear pero continuar con la revocación del artículo
+      }
+    }
+
+    articulo.revisorId = null;
+    articulo.revisor = null;
+
+    await this.articuloRepository.save(articulo);
+
+    return {
+      message: 'Asignación de revisor revocada correctamente.',
+      articuloId: articulo.id,
     };
   }
 

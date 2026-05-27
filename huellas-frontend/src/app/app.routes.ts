@@ -133,6 +133,11 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: { requiredClaim: 'roles', allowedRoles: ['revisor', 'admin'] },
   },
+  {
+    path: 'perfil',
+    loadComponent: () => import('./core/components/perfil/perfil').then(m => m.Perfil),
+    canActivate: [claimsGuard],
+  },
   { path: 'avisos', loadComponent: () => import('./pages/avisos/avisos.component').then(m => m.AvisosComponent) },
   {
     path: 'equipo-editorial',

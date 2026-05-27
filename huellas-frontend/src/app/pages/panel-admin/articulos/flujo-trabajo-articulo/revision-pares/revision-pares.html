@@ -1,0 +1,124 @@
+<section class="turnitin-panel">
+	<div *ngIf="generandoPuntajes" class="turnitin-overlay" aria-live="polite">
+		<div class="turnitin-overlay-card" role="status">
+			<span class="turnitin-spinner" aria-hidden="true"></span>
+			<p>Generando evaluación, por favor espera...</p>
+		</div>
+	</div>
+	<div class="section-head section-head--compact turnitin-head">
+		<div>
+				<h2>Asignación de Revisores por Pares</h2>
+				<span class="section-kicker">Turnitin</span>
+			</div>
+	</div>
+
+	<div class="turnitin-filters" *ngIf="!tieneRevisorAsignado">
+		<label class="input-control--icon" aria-label="Buscar revisor">
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<circle cx="11" cy="11" r="7"></circle>
+				<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+			</svg>
+			<input
+				type="text"
+				placeholder="Buscar revisor..."
+				(input)="onSearch($any($event.target).value)"
+			/>
+		</label>
+		<div class="turnitin-filters-actions">
+			<button
+				type="button"
+				class="btn-outline-teal btn-score"
+				(click)="onGenerarPuntaje()"
+				[disabled]="generandoPuntajes || !articuloId"
+			>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-inline">
+					<path d="M4 15l4-4 4 4 8-8"></path>
+					<path d="M20 6v6h-6"></path>
+				</svg>
+				{{ generandoPuntajes ? 'Generando...' : 'Generar Relevancia' }}
+			</button>
+		</div>
+	</div>
+
+	<div class="turnitin-grid" [class.turnitin-grid--single]="tieneRevisorAsignado">
+		<ng-container *ngFor="let revisor of revisores; trackBy: trackById">
+			<article class="turnitin-card" [class.turnitin-card--recomendada]="revisor.destacado">
+				<span *ngIf="revisor.recomendacion" class="turnitin-badge">{{ revisor.recomendacion }}</span>
+
+			<div class="turnitin-card-header">
+				<div class="turnitin-identity">
+					<span class="turnitin-avatar">{{ revisor.iniciales }}</span>
+					<div>
+						<h3>{{ revisor.nombre }}</h3>
+						<p>{{ revisor.correo }}</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="turnitin-score" *ngIf="!tieneRevisorAsignado && relevanciasGeneradas">
+				<span>Relevancia</span>
+				<strong [ngClass]="getRelevanciaClase(revisor.relevancia)">
+					{{ getRelevanciaLabel(revisor.relevancia) }}
+				</strong>
+			</div>
+
+			<div class="turnitin-body">
+				<p class="turnitin-label">Perfil / Descripción</p>
+				<p>{{ revisor.descripcion }}</p>
+			</div>
+
+			<div class="turnitin-actions">
+				<span class="turnitin-load">Carga actual: {{ revisor.cargaActual }} artículos</span>
+					<button
+						type="button"
+						class="btn-outline-teal"
+						*ngIf="!tieneRevisorAsignado"
+						[disabled]="revisor.deshabilitado"
+						(click)="abrirModal(revisor)"
+					>
+						Asignar revisor
+					</button>
+					<button
+						type="button"
+						class="btn-outline-danger"
+						*ngIf="tieneRevisorAsignado"
+						[disabled]="revocandoAsignacion"
+						(click)="abrirModalRevocar()"
+					>
+						{{ revocandoAsignacion ? 'Revocando...' : 'Revocar asignación' }}
+					</button>
+			</div>
+		</article>
+	</ng-container>
+	</div>
+
+	<div *ngIf="mostrandoModal" class="turnitin-overlay" aria-live="polite">
+		<div class="turnitin-modal" role="dialog" aria-modal="true">
+			<h3>Confirmar asignación</h3>
+			<p>
+				Desea asignar como revisor a
+				<strong>{{ revisorSeleccionado?.nombre }}</strong>?
+			</p>
+			<div class="turnitin-modal-actions">
+				<button type="button" class="btn-outline-teal" (click)="cerrarModal()">Cancelar</button>
+				<button type="button" class="btn-solid-teal" (click)="confirmarAsignacion()">Asignar</button>
+			</div>
+		</div>
+	</div>
+
+	<div *ngIf="mostrandoModalRevocar" class="turnitin-overlay" aria-live="polite">
+		<div class="turnitin-modal" role="dialog" aria-modal="true">
+			<h3>Confirmar revocación</h3>
+			<p>
+				Desea revocar la asignación de
+				<strong>{{ revisorAsignadoNombre }}</strong>?
+			</p>
+			<div class="turnitin-modal-actions">
+				<button type="button" class="btn-outline-teal" (click)="cerrarModalRevocar()">Cancelar</button>
+				<button type="button" class="btn-outline-danger" (click)="confirmarRevocacion()">
+					{{ revocandoAsignacion ? 'Revocando...' : 'Revocar' }}
+				</button>
+			</div>
+		</div>
+	</div>
+</section>

@@ -1,3 +1,6 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import {
   Body,
   Controller,
@@ -28,6 +31,11 @@ type RequestWithUser = {
   };
 };
 
+type PerfilUsuarioUpdateBody = {
+  nombre?: string;
+  telefono?: string;
+};
+
 @Controller('usuarios')
 export class UsersController {
   private readonly logger = new Logger(UsersController.name);
@@ -56,6 +64,20 @@ export class UsersController {
   @Get('roles')
   async findAvailableRoles(): Promise<Role[]> {
     return this.usersService.findAvailableRoles();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('perfil')
+  getPerfil(@Req() req: RequestWithUser) {
+    const userId = Number(req.user?.userId);
+    return this.usersService.findPerfilByUsuarioId(userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('perfil')
+  updatePerfil(@Req() req: RequestWithUser, @Body() body: PerfilUsuarioUpdateBody) {
+    const userId = Number(req.user?.userId);
+    return this.usersService.updatePerfilByUsuarioId(userId, body);
   }
 
   @Get(':id')
