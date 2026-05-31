@@ -628,13 +628,6 @@
   box-shadow: 0 20px 34px -28px rgba(20, 184, 166, 0.42);
 }
 
-.card-asignacion {
-  border-color: rgba(20, 184, 166, 0.24);
-  background:
-    radial-gradient(700px 90px at 8% -24%, rgba(20, 184, 166, 0.12) 0%, transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
-}
-
 .card-turnitin {
   border-color: rgba(180, 83, 9, 0.2);
   background:
@@ -642,18 +635,47 @@
     linear-gradient(180deg, #ffffff 0%, #fffaf3 100%);
 }
 
-.card-resultado-comite {
-  border-color: rgba(16, 185, 129, 0.28);
-  background:
-    radial-gradient(700px 90px at 8% -24%, rgba(16, 185, 129, 0.12) 0%, transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f6fffb 100%);
+.turnitin-inputs {
+  display: grid;
+  gap: 0.6rem;
 }
 
-.card-resultado-turnitin {
-  border-color: rgba(20, 184, 166, 0.3);
-  background:
-    radial-gradient(700px 90px at 8% -24%, rgba(20, 184, 166, 0.12) 0%, transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f4fffd 100%);
+.turnitin-decision {
+  margin-top: 0.5rem;
+}
+
+.decision-options {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+
+.decision-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #d1e7e1;
+  background: #ffffff;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.decision-pill input[type='radio'] {
+  accent-color: #0f766e;
+}
+
+.decision-pill.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.turnitin-decision .asignacion-helper {
+  margin-top: 0.4rem;
 }
 
 .asignacion-helper {
@@ -854,6 +876,30 @@
     linear-gradient(180deg, #ffffff 0%, #f6fffd 100%);
   box-shadow: 0 30px 54px -30px rgba(20, 184, 166, 0.52);
   padding-top: 0.9rem;
+}
+
+.modal-confirmacion--turnitin-error {
+  width: min(480px, 100%);
+  border-color: rgba(220, 38, 38, 0.2);
+  background:
+    radial-gradient(700px 90px at 14% -28%, rgba(254, 226, 226, 0.16) 0%, transparent 56%),
+    linear-gradient(180deg, #ffffff 0%, #fff6f6 100%);
+  box-shadow: 0 30px 54px -30px rgba(220, 38, 38, 0.18);
+  padding-top: 0.9rem;
+}
+
+.modal-error-badge {
+  justify-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  border-radius: 999px;
+  padding: 0.28rem 0.6rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #b91c1c;
+  background: rgba(255, 243, 244, 0.98);
 }
 
 .modal-confirmacion--mover-exito {

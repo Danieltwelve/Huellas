@@ -1,40 +1,149 @@
 <section class="review-head">
-  <h1>Realizar revision</h1>
-  <p>Selecciona un articulo asignado y registra tu concepto editorial.</p>
+  <button type="button" class="btn-back btn-back--primary" (click)="volverAtras()" aria-label="Volver a artículos asignados">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M9 12L5 8L9 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    <span>Volver al listado</span>
+  </button>
+
+  <div class="review-head-main">
+    <h1>Realizar revision</h1>
+    <p>Registra tu concepto editorial dentro de tus 30 dias de plazo.</p>
+  </div>
 </section>
 
 <div class="review-form">
-  <label for="articulo">Articulo a revisar</label>
-  <select id="articulo" [(ngModel)]="articuloSeleccionadoId" name="articulo">
-    @for (articulo of articulos; track articulo.id) {
-      <option [ngValue]="articulo.id">{{ articulo.codigo }} - {{ articulo.titulo }}</option>
+  <section class="paper-context paper-context--selected" *ngIf="articuloSeleccionado">
+    <p class="paper-context__label">Artículo seleccionado</p>
+    <p class="paper-context__code">{{ articuloSeleccionado.codigo }}</p>
+    <h2>{{ articuloSeleccionado.titulo }}</h2>
+    <p>{{ articuloSeleccionado.resumen }}</p>
+  </section>
+
+ 
+
+    
+  <section clac:\Users\juani\AppData\Local\Packages\MicrosoftWindows.Client.Core_cw5n1h2txyewy\TempState\ScreenClip\{560B8F26-58A4-427C-AA4E-046B40B02C1E}.pngss="rubric-section" *ngIf="rubrica.length && !isRevisionEnviada">
+    <div class="rubric-header">
+      <h2>Rúbrica de evaluación</h2>
+      <p>Marca Sí / No en cada criterio. No puedes cerrar la revisión sin completar toda la rúbrica.</p>
+    </div>
+
+    @for (seccion of rubrica; track seccion.numero) {
+      <article class="rubric-block">
+        <div class="rubric-section__title" role="button" (click)="toggleSeccion(seccion.numero)">
+          <span>Sección {{ seccion.numero }}</span>
+          <h3>{{ seccion.titulo }}</h3>
+          <div class="rubric-section__toggle">{{ estaSeccionAbierta(seccion.numero) ? 'Ocultar' : 'Abrir' }}</div>
+        </div>
+
+        @if (estaSeccionAbierta(seccion.numero)) {
+          <div class="rubric-table-wrapper">
+            <table class="rubric-table">
+              <thead>
+                <tr>
+                  <th>Criterio</th>
+                  <th>Sí</th>
+                  <th>No</th>
+                  <th>Sugerencias</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (criterio of seccion.criterios; track criterio.texto) {
+                  <tr [class.rubric-row--pending]="criterio.respuesta === null">
+                    <td class="rubric-criterion">
+                      <div class="rubric-criterion__text">{{ criterio.texto }}</div>
+                    </td>
+                    <td class="rubric-option">
+                      <button type="button" class="rubric-choice" [class.rubric-choice--selected]="criterio.respuesta === 'si'" [class.rubric-choice--yes]="criterio.respuesta === 'si'" (click)="establecerRespuesta(criterio, 'si')" [attr.aria-pressed]="criterio.respuesta === 'si'">
+                        <span>Sí</span>
+                      </button>
+                    </td>
+                    <td class="rubric-option">
+                      <button type="button" class="rubric-choice" [class.rubric-choice--selected]="criterio.respuesta === 'no'" [class.rubric-choice--no]="criterio.respuesta === 'no'" (click)="establecerRespuesta(criterio, 'no')" [attr.aria-pressed]="criterio.respuesta === 'no'">
+                        <span>No</span>
+                      </button>
+                    </td>
+                    <td>
+                      <textarea rows="2" [(ngModel)]="criterio.sugerencias" placeholder="Sugerencias (opcional)"></textarea>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </article>
     }
-  </select>
 
-  @if (articuloSeleccionado) {
-    <article class="paper-context">
-      <h2>{{ articuloSeleccionado.titulo }}</h2>
-      <p>{{ articuloSeleccionado.resumen }}</p>
-    </article>
-  }
+    <div class="rubric-final">
+      <div class="rubric-final__title-block">
+        <p class="rubric-final__eyebrow">Decisión final</p>
+        <h3>Se aprueba para publicación</h3>
+        <p class="rubric-final__hint">Selecciona Sí o No para cerrar el concepto editorial.</p>
+      </div>
 
-  <label for="calificacion">Calificacion (1 a 5)</label>
-  <input id="calificacion" type="range" min="1" max="5" [(ngModel)]="calificacion" name="calificacion" />
-  <small>Valor seleccionado: {{ calificacion }}</small>
+      <div class="rubric-final__options">
+        <label class="rubric-final__choice" [class.rubric-final__choice--selected]="apruebaPublicacion === 'si'">
+          <input type="radio" name="apruebaPublicacion" [value]="'si'" [(ngModel)]="apruebaPublicacion" />
+          <span>Sí</span>
+        </label>
 
-  <label for="recomendacion">Recomendacion</label>
-  <select id="recomendacion" [(ngModel)]="recomendacion" name="recomendacion">
-    <option value="aceptar">Aceptar</option>
-    <option value="ajustes">Solicitar ajustes</option>
-    <option value="rechazar">Rechazar</option>
-  </select>
+        <label class="rubric-final__choice" [class.rubric-final__choice--selected]="apruebaPublicacion === 'no'">
+          <input type="radio" name="apruebaPublicacion" [value]="'no'" [(ngModel)]="apruebaPublicacion" />
+          <span>No</span>
+        </label>
+      </div>
+    </div>
 
-  <label for="comentarios">Comentarios de revision</label>
-  <textarea id="comentarios" rows="6" [(ngModel)]="comentarios" name="comentarios" placeholder="Describe fortalezas, hallazgos y recomendaciones concretas."></textarea>
+  </section>
 
-  <button type="button" (click)="enviarRevision()">Enviar revision</button>
+  <section class="rubric-section" *ngIf="isRevisionEnviada">
+    <div class="rubric-header">
+      <h2>Revisión registrada</h2>
+      <p>La revisión para este artículo ya fue registrada y no puede volver a evaluarse.</p>
+    </div>
+    <div class="rubric-final">
+      <p class="summary-actions__note">Estado: revisión enviada. Consulta el historial si necesitas más detalles.</p>
+    </div>
+  </section>
 
-  @if (mensaje) {
-    <p class="success-msg">{{ mensaje }}</p>
+  <div class="review-submit">
+    <p class="summary-actions__note" *ngIf="!rubricaCompleta">Debes marcar todos los criterios antes de enviar.</p>
+    <p class="summary-actions__note" *ngIf="rubricaCompleta && apruebaPublicacion === null">Debes indicar si se aprueba para publicación (Sí / No) antes de enviar.</p>
+
+    @if (errorRevision) {
+      <p class="error-msg">{{ errorRevision }}</p>
+    }
+
+    <button type="button" class="btn-primary btn-primary--compact" (click)="enviarRevision()" [disabled]="guardandoRevision || !articuloSeleccionado || !rubricaCompleta || apruebaPublicacion === null">
+      {{ guardandoRevision ? 'Enviando revision...' : 'Enviar revision' }}
+    </button>
+
+    @if (mensaje) {
+      <p class="success-msg">{{ mensaje }}</p>
+    }
+  </div>
+
+  @if (mostrandoConfirmacion) {
+    <div class="modal-backdrop" (click)="cerrarConfirmacion()">
+      <section class="modal" role="dialog" aria-modal="true" aria-label="Confirmar envío de revisión" (click)="$event.stopPropagation()">
+        <button type="button" class="modal-close" (click)="cerrarConfirmacion()" aria-label="Cerrar">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+
+        <h3>Confirmar envío</h3>
+        <p>¿Deseas enviar esta revisión ahora? Una vez enviada, quedará registrada para el artículo seleccionado.</p>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" (click)="cerrarConfirmacion()">Cancelar</button>
+          <button type="button" class="btn-primary btn-primary--compact" (click)="confirmarEnvio()" [disabled]="guardandoRevision">
+            {{ guardandoRevision ? 'Enviando...' : 'Sí, enviar' }}
+          </button>
+        </div>
+      </section>
+    </div>
   }
 </div>

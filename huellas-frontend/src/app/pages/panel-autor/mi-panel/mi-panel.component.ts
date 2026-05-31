@@ -74,8 +74,8 @@ export class MiPanelComponent implements OnInit {
   get publicados() { return this.articulos.filter(a => this.getEstadoArticulo(a) === 'publicado').length; }
   get proximoVencimiento() {
     const pendientes = this.articulos
-      .filter((articulo) => articulo.correccion_pendiente && articulo.fecha_inicio)
-      .map((articulo) => new Date(articulo.fecha_inicio as string))
+      .filter((articulo) => articulo.fecha_vencimiento_correccion)
+      .map((articulo) => new Date(articulo.fecha_vencimiento_correccion as string))
       .filter((fecha) => !isNaN(fecha.getTime()))
       .sort((a, b) => a.getTime() - b.getTime());
 
@@ -116,6 +116,7 @@ export class MiPanelComponent implements OnInit {
       next: (data) => {
         this.articulos = data.map((articulo, index) => this.normalizarArticulo(articulo, index));
         this.loading = false;
+        this.actualizarAvisoCorreccion();
         this.cargarNotificacionesCorreccion();
       },
       error: (err) => {
@@ -142,7 +143,38 @@ export class MiPanelComponent implements OnInit {
           ...articulo,
           correccion_pendiente: this.puedeEnviarCorreccion(articulo),
         }));
+
+        this.actualizarAvisoCorreccion();
       });
+  }
+
+  private actualizarAvisoCorreccion(): void {
+    const pendientes = this.articulos
+      .filter((articulo) => articulo.fecha_vencimiento_correccion)
+      .map((articulo) => ({
+        articulo,
+        fechaVencimiento: new Date(articulo.fecha_vencimiento_correccion as string),
+      }))
+      .filter(({ fechaVencimiento }) => !isNaN(fechaVencimiento.getTime()))
+      .sort((a, b) => a.fechaVencimiento.getTime() - b.fechaVencimiento.getTime());
+
+    if (!pendientes.length) {
+      this.mensajeCorreccion = null;
+      return;
+    }
+
+    const primero = pendientes[0];
+    const ahora = new Date();
+    const diasRestantes = Math.ceil(
+      (primero.fechaVencimiento.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (diasRestantes >= 0) {
+      this.mensajeCorreccion = `Tienes ${diasRestantes} ${diasRestantes === 1 ? 'día' : 'días'} para completar la corrección del artículo ${primero.articulo.codigo}.`;
+      return;
+    }
+
+    this.mensajeCorreccion = `La fecha para enviar la corrección del artículo ${primero.articulo.codigo} ha vencido.`;
   }
 
   setFiltro(filtro: 'todos' | 'revision' | 'correccion' | 'publicado') {
@@ -158,7 +190,7 @@ export class MiPanelComponent implements OnInit {
   }
 
   getEstadoArticulo(articulo: ArticuloAutor): 'revision' | 'correccion' | 'publicado' {
-    if (articulo.correccion_pendiente) {
+    if (articulo.correccion_pendiente || articulo.correccion_vencida || articulo.solicitud_prorroga_correccion_pendiente) {
       return 'correccion';
     }
 
@@ -170,6 +202,7 @@ export class MiPanelComponent implements OnInit {
   getEstadoLabel(articulo: ArticuloAutor): string {
     const estado = this.getEstadoArticulo(articulo);
     if (estado === 'publicado') return 'Publicado';
+    if (articulo.correccion_vencida) return 'Plazo vencido';
     if (estado === 'correccion') return 'Correccion Pendiente';
     return 'En Revision';
   }
@@ -569,8 +602,9 @@ export class MiPanelComponent implements OnInit {
 
   abrirModalCorreccion(articulo: ArticuloAutor): void {
     if (!this.puedeEnviarCorreccion(articulo) || this.isSubiendoCorreccion(articulo.id)) {
-      this.errorCorreccion =
-        'La corrección ya fue enviada y está en revisión. No puedes volver a enviarla.';
+      this.errorCorreccion = articulo.correccion_vencida
+        ? 'El plazo para enviar la corrección venció. Solicita una prórroga para continuar.'
+        : 'La corrección ya fue enviada y está en revisión. No puedes volver a enviarla.';
       return;
     }
 
@@ -651,8 +685,9 @@ export class MiPanelComponent implements OnInit {
     }
 
     if (!this.puedeEnviarCorreccion(this.articuloCorreccionActivo)) {
-      this.errorModalCorreccion =
-        'La corrección ya fue enviada y está en revisión. No puedes volver a enviarla.';
+      this.errorModalCorreccion = this.articuloCorreccionActivo.correccion_vencida
+        ? 'El plazo para enviar la corrección venció. Solicita una prórroga para continuar.'
+        : 'La corrección ya fue enviada y está en revisión. No puedes volver a enviarla.';
       return;
     }
 
@@ -700,12 +735,19 @@ export class MiPanelComponent implements OnInit {
   }
 
   puedeEnviarCorreccion(articulo: ArticuloAutor): boolean {
-    if (!articulo.correccion_pendiente) {
+    if (!articulo.correccion_pendiente || articulo.correccion_vencida) {
       return false;
     }
 
     const estadoNotificacion = this.obtenerEstadoCorreccionDesdeNotificaciones(articulo.id);
     return estadoNotificacion !== 'enviada';
+  }
+
+  puedeSolicitarProrroga(articulo: ArticuloAutor): boolean {
+    return (
+      (articulo.correccion_vencida ?? false) &&
+      !(articulo.solicitud_prorroga_correccion_pendiente ?? false)
+    );
   }
 
   private marcarCorreccionComoEnviada(articuloId: number): void {
@@ -729,6 +771,26 @@ export class MiPanelComponent implements OnInit {
       },
       ...notificaciones,
     ]);
+  }
+
+  solicitarProrrogaCorreccion(articulo: ArticuloAutor): void {
+    if (!this.puedeSolicitarProrroga(articulo)) {
+      return;
+    }
+
+    this.subiendoCorreccionIds.add(articulo.id);
+
+    this.articulosService.solicitarProrrogaCorreccion(articulo.id).subscribe({
+      next: () => {
+        this.subiendoCorreccionIds.delete(articulo.id);
+        this.mensajeCorreccion = `Solicitud de prórroga enviada para el artículo ${articulo.codigo}.`;
+        this.cargarArticulos();
+      },
+      error: (err) => {
+        this.subiendoCorreccionIds.delete(articulo.id);
+        this.errorCorreccion = err?.error?.message ?? 'No fue posible solicitar la prórroga.';
+      },
+    });
   }
 
   private obtenerEstadoCorreccionDesdeNotificaciones(

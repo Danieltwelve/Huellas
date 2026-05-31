@@ -203,6 +203,13 @@
 	letter-spacing: 0.02em;
 }
 
+.turnitin-badge--assigned {
+	border-color: rgba(15, 118, 110, 0.35);
+	background: rgba(236, 253, 245, 0.95);
+	color: #0f766e;
+	margin-left: 0.35rem;
+}
+
 .turnitin-card-header {
 	display: flex;
 	justify-content: space-between;
@@ -292,6 +299,13 @@
 	justify-content: space-between;
 	gap: 0.6rem;
 	flex-wrap: wrap;
+
+.turnitin-lock-note {
+	font-size: 0.78rem;
+	color: #64748b;
+	text-align: right;
+	line-height: 1.3;
+}
 }
 
 .turnitin-load {

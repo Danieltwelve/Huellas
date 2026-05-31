@@ -322,7 +322,13 @@ export class RevisionPares implements OnInit {
       cargaActual: this.revisorAsignadoInput.cargaActual ?? base.cargaActual,
     };
 
-    this.revisores = [this.revisorAsignadoLocal];
+    this.revisores = this.allRevisores.map((revisor) =>
+      revisor.id === this.revisorAsignadoLocal?.id ? this.revisorAsignadoLocal! : revisor,
+    );
+  }
+
+  esRevisorAsignado(revisor: RevisorPares): boolean {
+    return this.revisorAsignadoLocal?.id === revisor.id;
   }
 
   private mapearRevisorDto(revisor: RevisorDto): RevisorPares {

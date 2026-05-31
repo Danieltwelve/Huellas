@@ -34,6 +34,8 @@ type RequestWithUser = {
 type PerfilUsuarioUpdateBody = {
   nombre?: string;
   telefono?: string;
+  perfilAcademico?: string;
+  institucion?: string;
 };
 
 @Controller('usuarios')

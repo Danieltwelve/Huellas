@@ -606,7 +606,12 @@ export class UsersService {
   }
 
   async findPerfilByUsuarioId(usuarioId: number) {
-    const user = await this.userRepository.findOne({ where: { id: usuarioId } });
+    const [user, revisor] = await Promise.all([
+      this.userRepository.findOne({ where: { id: usuarioId } }),
+      this.revisoresRepository.findOne({
+        where: { usuarioId },
+      }),
+    ]);
 
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
@@ -615,14 +620,26 @@ export class UsersService {
     return {
       nombre: user.nombre ?? '',
       telefono: user.telefono ?? '',
+      perfilAcademico: revisor?.perfil ?? '',
+      institucion: revisor?.institucion ?? '',
     };
   }
 
   async updatePerfilByUsuarioId(
     usuarioId: number,
-    data: { nombre?: string; telefono?: string },
+    data: {
+      nombre?: string;
+      telefono?: string;
+      perfilAcademico?: string;
+      institucion?: string;
+    },
   ) {
-    const user = await this.userRepository.findOne({ where: { id: usuarioId } });
+    const [user, revisor] = await Promise.all([
+      this.userRepository.findOne({ where: { id: usuarioId }, relations: ['roles'] }),
+      this.revisoresRepository.findOne({
+        where: { usuarioId },
+      }),
+    ]);
 
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
@@ -636,11 +653,41 @@ export class UsersService {
       user.telefono = data.telefono;
     }
 
+    const esRevisor = this.hasRoleName(user.roles, 'revisor');
+    const tieneCamposRevisor =
+      typeof data.perfilAcademico === 'string' ||
+      typeof data.institucion === 'string';
+
+    if (esRevisor && tieneCamposRevisor) {
+      const revisorActual = revisor ?? this.revisoresRepository.create({
+        usuarioId,
+        perfil: '',
+        cargaActual: 0,
+        institucion: '',
+      });
+
+      if (typeof data.perfilAcademico === 'string') {
+        revisorActual.perfil = data.perfilAcademico;
+      }
+
+      if (typeof data.institucion === 'string') {
+        revisorActual.institucion = data.institucion;
+      }
+
+      await this.revisoresRepository.save(revisorActual);
+    }
+
     await this.userRepository.save(user);
+
+    const perfilRevisor = await this.revisoresRepository.findOne({
+      where: { usuarioId },
+    });
 
     return {
       nombre: user.nombre ?? '',
       telefono: user.telefono ?? '',
+      perfilAcademico: perfilRevisor?.perfil ?? '',
+      institucion: perfilRevisor?.institucion ?? '',
     };
   }
 

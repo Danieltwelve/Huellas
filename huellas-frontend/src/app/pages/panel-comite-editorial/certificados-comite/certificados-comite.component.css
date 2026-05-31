@@ -63,3 +63,18 @@ th {
   font-weight: 700;
   cursor: pointer;
 }
+
+@media (max-width: 960px) {
+  .panel {
+    padding: 0.9rem;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 760px;
+  }
+}

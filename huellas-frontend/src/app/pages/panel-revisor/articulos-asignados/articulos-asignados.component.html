@@ -3,21 +3,76 @@
   <p>Lista de manuscritos asignados para evaluación en esta ronda editorial.</p>
 </section>
 
-<div class="cards-grid">
-  @for (articulo of articulos; track articulo.id) {
-    <article class="paper-card">
-      <header>
-        <span class="code">{{ articulo.codigo }}</span>
-        <span class="badge" [class.high]="articulo.prioridad === 'alta'" [class.mid]="articulo.prioridad === 'media'">
-          Prioridad {{ articulo.prioridad }}
-        </span>
-      </header>
-      <h2>{{ articulo.titulo }}</h2>
-      <p>{{ articulo.resumen }}</p>
-      <footer>
-        <span>{{ getEtiquetaEstado(articulo.estado) }}</span>
-        <span>Ronda {{ articulo.ronda }}</span>
-      </footer>
-    </article>
-  }
-</div>
+<section class="tabla-shell">
+  <div class="toolbar-row">
+    <span class="toolbar-tag">ORDENAR POR</span>
+    <label class="toolbar-select-wrap" aria-label="Ordenar artículos">
+      <select class="toolbar-select" [value]="ordenActual" (change)="onOrdenChange($any($event.target).value)">
+        @for (opcion of opcionesOrden; track opcion.valor) {
+          <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Título</th>
+          <th>Estado</th>
+          <th>Prioridad</th>
+          <th>Fechas</th>
+          <th>Ver</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (articulo of articulos; track articulo.id) {
+          <tr>
+            <td class="codigo">{{ articulo.codigo }}</td>
+            <td class="titulo">
+              <strong>{{ articulo.titulo }}</strong>
+              <p>{{ articulo.resumen }}</p>
+            </td>
+            <td>
+              <span class="estado-pill" [class.estado-enviado]="articulo.estado === 'enviado'">
+                {{ getEtiquetaEstado(articulo.estado) }}
+              </span>
+            </td>
+            <td>
+              <span class="prioridad-pill" [class.prioridad-alta]="articulo.prioridad === 'alta'" [class.prioridad-media]="articulo.prioridad === 'media'">
+                {{ getEtiquetaPrioridad(articulo.prioridad) }}
+              </span>
+            </td>
+            <td class="fechas-cell">
+              <div class="fecha-item">
+                <span class="fecha-label">Llegó</span>
+                <span class="fecha-valor">{{ formatearFecha(articulo.fechaAsignacion) }}</span>
+              </div>
+              <div class="fecha-item fecha-item-vence">
+                <span class="fecha-label">Vence</span>
+                <span
+                  class="fecha-valor"
+                  [class.fecha-valor-vencido]="esVencido(articulo.fechaLimite)"
+                  [class.fecha-valor-proximo]="!esVencido(articulo.fechaLimite) && estaPorVencer(articulo.fechaLimite)">
+                  {{ formatearFecha(articulo.fechaLimite) }}
+                </span>
+              </div>
+            </td>
+            <td>
+              <button type="button" class="btn-ver" (click)="irARevision(articulo.id)" aria-label="Abrir artículo para revisión">
+                Ver
+              </button>
+            </td>
+          </tr>
+        }
+        @if (!articulos.length) {
+          <tr>
+            <td colspan="6" class="empty-row">No tienes artículos asignados en este momento.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

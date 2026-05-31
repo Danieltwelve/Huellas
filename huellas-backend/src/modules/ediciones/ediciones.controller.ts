@@ -17,6 +17,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UpdateEdicionRevistaDto } from './dtos/update-edicion-revista.dto';
+import { PublicarEdicionRevistaDto } from './dtos/publicar-edicion-revista.dto';
 
 @Controller('ediciones')
 export class EdicionesController {
@@ -32,6 +33,17 @@ export class EdicionesController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Get('publicadas')
+  async findPublicadas() {
+    const ediciones = await this.edicionService.findPublicadas();
+    return {
+      message: 'Listado de ediciones publicadas obtenido exitosamente',
+      data: ediciones,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'director', 'monitor', 'comite-editorial')
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -42,6 +54,14 @@ export class EdicionesController {
       message: 'Edición creada exitosamente',
       data: nuevaEdicion,
     };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Post('publicar')
+  @HttpCode(HttpStatus.CREATED)
+  async publicar(@Body() body: PublicarEdicionRevistaDto) {
+    return await this.edicionService.publicarEdicion(body);
   }
 
   @Delete(':id/with-message')

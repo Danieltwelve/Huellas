@@ -75,6 +75,12 @@ export class SideBar {
       allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
       route: '/estadisticas',
     },
+    {
+      label: 'Publicación',
+      icon: 'newspaper',
+      allowedRoles: ['admin', 'director', 'monitor'],
+      route: '/publicacion',
+    },
   ];
 
   visibleMainItems$ = this.authService.claims$.pipe(

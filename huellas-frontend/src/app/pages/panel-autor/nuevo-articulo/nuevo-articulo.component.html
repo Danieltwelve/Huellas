@@ -199,12 +199,12 @@
             type="file"
             class="field-file"
             [class.has-error]="archivoTocado && !archivoSeleccionado"
-            accept=".pdf,.docx"
+            accept=".pdf,.doc,.docx"
             required
             (change)="onFileChange($event)"
             #archivoInput
           />
-          <p class="field-hint">Obligatorio. Solo se permiten archivos .pdf o .docx de hasta 10 MB.</p>
+          <p class="field-hint">Obligatorio. Solo se permiten archivos .pdf, .doc o .docx de hasta 10 MB.</p>
           @if (archivoSeleccionado) {
             <div class="file-selected-row">
               <p class="file-selected">📄 {{ archivoSeleccionado.name }}</p>

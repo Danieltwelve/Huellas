@@ -36,6 +36,8 @@ busqueda = '';
 anioFiltro = '';
 edicionSeleccionada: Edicion | null = null;
 articulosDeEdicion: Articulo[] = [];
+loading = false;
+error: string | null = null;
 readonly portadaFallback = '/equipo/portada.jpg';
 readonly enlaceRevistaGeneral = '/acerca-de';
 
@@ -51,7 +53,8 @@ anio:'2025',
 descripcion:'Investigaciones recientes en inteligencia artificial y ciencia de datos',
 autores:12,
 articulos:14,
-pdf:'assets/pdfs/vol22.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -62,7 +65,8 @@ anio:'2025',
 descripcion:'Artículos sobre innovación tecnológica y desarrollo sostenible',
 autores:10,
 articulos:12,
-pdf:'assets/pdfs/vol21.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -73,7 +77,8 @@ anio:'2024',
 descripcion:'Estudios interdisciplinarios en ciencias sociales',
 autores:9,
 articulos:11,
-pdf:'assets/pdfs/vol20.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -84,7 +89,8 @@ anio:'2024',
 descripcion:'Investigaciones sobre transformación digital',
 autores:11,
 articulos:13,
-pdf:'assets/pdfs/vol19.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -95,7 +101,8 @@ anio:'2023',
 descripcion:'Estudios en educación y tecnología',
 autores:8,
 articulos:10,
-pdf:'assets/pdfs/vol18.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -106,7 +113,8 @@ anio:'2023',
 descripcion:'Investigaciones en ingeniería y computación',
 autores:7,
 articulos:9,
-pdf:'assets/pdfs/vol17.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -117,7 +125,8 @@ anio:'2022',
 descripcion:'Artículos sobre desarrollo sostenible',
 autores:9,
 articulos:11,
-pdf:'assets/pdfs/vol16.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -128,7 +137,8 @@ anio:'2022',
 descripcion:'Investigaciones interdisciplinarias',
 autores:10,
 articulos:12,
-pdf:'assets/pdfs/vol15.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -139,7 +149,8 @@ anio:'2021',
 descripcion:'Ciencia aplicada y tecnología',
 autores:8,
 articulos:10,
-pdf:'assets/pdfs/vol14.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -150,7 +161,8 @@ anio:'2021',
 descripcion:'Estudios en ciencias sociales',
 autores:7,
 articulos:9,
-pdf:'assets/pdfs/vol13.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -161,7 +173,8 @@ anio:'2020',
 descripcion:'Investigaciones académicas multidisciplinarias',
 autores:9,
 articulos:11,
-pdf:'assets/pdfs/vol12.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -172,7 +185,8 @@ anio:'2019',
 descripcion:'Publicaciones en innovación científica',
 autores:8,
 articulos:9,
-pdf:'assets/pdfs/vol11.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -183,7 +197,8 @@ anio:'2018',
 descripcion:'Investigaciones tecnológicas',
 autores:7,
 articulos:8,
-pdf:'assets/pdfs/vol10.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -194,7 +209,8 @@ anio:'2018',
 descripcion:'Estudios interdisciplinarios',
 autores:6,
 articulos:7,
-pdf:'assets/pdfs/vol9.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -205,7 +221,8 @@ anio:'2017',
 descripcion:'Investigaciones académicas',
 autores:5,
 articulos:6,
-pdf:'assets/pdfs/vol8.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -216,7 +233,8 @@ anio:'2017',
 descripcion:'Investigaciones científicas',
 autores:6,
 articulos:7,
-pdf:'assets/pdfs/vol7.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -227,7 +245,8 @@ anio:'2016',
 descripcion:'Publicaciones tecnológicas',
 autores:5,
 articulos:6,
-pdf:'assets/pdfs/vol6.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -238,7 +257,8 @@ anio:'2016',
 descripcion:'Ciencia y desarrollo',
 autores:5,
 articulos:6,
-pdf:'assets/pdfs/vol5.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -249,7 +269,8 @@ anio:'2015',
 descripcion:'Investigaciones interdisciplinarias',
 autores:4,
 articulos:5,
-pdf:'assets/pdfs/vol4.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -260,7 +281,8 @@ anio:'2015',
 descripcion:'Artículos académicos',
 autores:4,
 articulos:5,
-pdf:'assets/pdfs/vol3.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -271,7 +293,8 @@ anio:'2014',
 descripcion:'Publicaciones científicas',
 autores:3,
 articulos:4,
-pdf:'assets/pdfs/vol2.pdf'
+pdf: '',
+portada: undefined
 },
 
 {
@@ -282,14 +305,16 @@ anio:'2014',
 descripcion:'Primera edición de la revista HUELLAS',
 autores:3,
 articulos:4,
-pdf:'assets/pdfs/vol1.pdf'
+pdf: '',
+portada: '/portadas/Vol1Num12014.pdf'
 }
 
 ].sort((a,b)=>b.id-a.id)
  .map(edicion => ({
    ...edicion,
    articulos: 10,
-   enlacePublicacion: edicion.pdf,
+   portada: edicion.portada ?? undefined,
+   enlacePublicacion: undefined,
    enlaceRevista: '/acerca-de',
  }));
 

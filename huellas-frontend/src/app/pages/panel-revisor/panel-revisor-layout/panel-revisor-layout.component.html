@@ -1,4 +1,8 @@
-<div class="layout-container" [class.collapsed]="collapsed">
+<div class="layout-container" [class.collapsed]="collapsed" [class.mobile-sidebar-open]="mobileSidebarOpen">
+  @if (mobileSidebarOpen) {
+    <div class="sidebar-backdrop" (click)="closeMobileSidebar()"></div>
+  }
+
   <aside class="sidebar">
     <div class="sidebar-header">
       <button class="menu-toggle" (click)="toggleSidebar()" title="Minimizar menú">
@@ -14,7 +18,7 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a routerLink="/panel-revisor/resumen" routerLinkActive="active" class="nav-item" title="Resumen">
+      <a routerLink="/panel-revisor/resumen" routerLinkActive="active" class="nav-item" title="Resumen" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-vcard"
           viewBox="0 0 16 16">
           <path
@@ -37,19 +41,7 @@
         <span class="nav-label">Artículos Asignados</span>
       </a>
 
-      <a routerLink="/panel-revisor/realizar-revision" routerLinkActive="active" class="nav-item"
-        title="Realizar Revisión">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-          class="bi bi-clipboard2-check" viewBox="0 0 16 16">
-          <path
-            d="M9.5 0a.5.5 0 0 1 .5.5-.5h1A1.5 1.5 0 0 1 12 2v12a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 0 14V2A1.5 1.5 0 0 1 1.5 .5h1a.5.5 0 0 1 .5-.5zm0 1h-1v1h1V1zm2 3V2h-8v2h8zm0 3v-2h-8v2h8zm0 3v-2h-8v2h8zm0 3v-2h-8v2h8z" />
-          <path
-            d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0z" />
-        </svg>
-        <span class="nav-label">Realizar Revisión</span>
-      </a>
-
-      <a routerLink="/panel-revisor/historial" routerLinkActive="active" class="nav-item" title="Historial">
+      <a routerLink="/panel-revisor/historial" routerLinkActive="active" class="nav-item" title="Historial" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock-history"
           viewBox="0 0 16 16">
           <path
@@ -59,7 +51,7 @@
         <span class="nav-label">Historial</span>
       </a>
 
-      <a routerLink="/panel-revisor/plazo" routerLinkActive="active" class="nav-item" title="Plazo">
+      <a routerLink="/panel-revisor/plazo" routerLinkActive="active" class="nav-item" title="Plazo" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-hourglass-top"
           viewBox="0 0 16 16">
           <path
@@ -70,7 +62,7 @@
         <span class="nav-label">Plazo</span>
       </a>
 
-      <a routerLink="/panel-revisor/notificaciones" routerLinkActive="active" class="nav-item" title="Notificaciones">
+      <a routerLink="/panel-revisor/notificaciones" routerLinkActive="active" class="nav-item" title="Notificaciones" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bell"
           viewBox="0 0 16 16">
           <path
@@ -79,7 +71,7 @@
         <span class="nav-label">Notificaciones</span>
       </a>
 
-      <a routerLink="/panel-revisor/guias" routerLinkActive="active" class="nav-item" title="Guías de Revisión">
+      <a routerLink="/panel-revisor/guias" routerLinkActive="active" class="nav-item" title="Guías de Revisión" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-journal-text"
           viewBox="0 0 16 16">
           <path
@@ -94,7 +86,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      <a routerLink="/panel-revisor/perfil" routerLinkActive="active" class="nav-item" title="perfil">
+      <a routerLink="/panel-revisor/perfil" routerLinkActive="active" class="nav-item" title="perfil" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear"
           viewBox="0 0 16 16">
           <path
@@ -105,7 +97,7 @@
         <span class="nav-label">Perfil</span>
       </a>
 
-      <button class="nav-item logout-btn" (click)="logout()" title="Cerrar sesión">
+      <button class="nav-item logout-btn" (click)="closeMobileSidebar(); logout()" title="Cerrar sesión">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-right"
           viewBox="0 0 16 16">
           <path fill-rule="evenodd"
@@ -120,6 +112,14 @@
 
   <div class="main-wrapper">
     <header class="top-header">
+      <button type="button" class="mobile-menu-btn" (click)="toggleSidebar()" aria-label="Abrir menú">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-list"
+          viewBox="0 0 16 16">
+          <path fill-rule="evenodd"
+            d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5" />
+        </svg>
+      </button>
+
       <div class="top-header-spacer"></div>
       <div class="user-actions">
         <app-notification-dropdown [items]="notifications" [loading]="notificationLoading" [error]="notificationError"

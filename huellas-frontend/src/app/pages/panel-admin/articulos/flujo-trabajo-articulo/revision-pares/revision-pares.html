@@ -12,7 +12,7 @@
 			</div>
 	</div>
 
-	<div class="turnitin-filters" *ngIf="!tieneRevisorAsignado">
+	<div class="turnitin-filters">
 		<label class="input-control--icon" aria-label="Buscar revisor">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 				<circle cx="11" cy="11" r="7"></circle>
@@ -40,10 +40,11 @@
 		</div>
 	</div>
 
-	<div class="turnitin-grid" [class.turnitin-grid--single]="tieneRevisorAsignado">
+	<div class="turnitin-grid">
 		<ng-container *ngFor="let revisor of revisores; trackBy: trackById">
 			<article class="turnitin-card" [class.turnitin-card--recomendada]="revisor.destacado">
 				<span *ngIf="revisor.recomendacion" class="turnitin-badge">{{ revisor.recomendacion }}</span>
+				<span *ngIf="esRevisorAsignado(revisor)" class="turnitin-badge turnitin-badge--assigned">Asignado</span>
 
 			<div class="turnitin-card-header">
 				<div class="turnitin-identity">
@@ -55,7 +56,7 @@
 				</div>
 			</div>
 
-			<div class="turnitin-score" *ngIf="!tieneRevisorAsignado && relevanciasGeneradas">
+			<div class="turnitin-score" *ngIf="relevanciasGeneradas">
 				<span>Relevancia</span>
 				<strong [ngClass]="getRelevanciaClase(revisor.relevancia)">
 					{{ getRelevanciaLabel(revisor.relevancia) }}
@@ -72,8 +73,8 @@
 					<button
 						type="button"
 						class="btn-outline-teal"
-						*ngIf="!tieneRevisorAsignado"
-						[disabled]="revisor.deshabilitado"
+						*ngIf="!tieneRevisorAsignado || !esRevisorAsignado(revisor)"
+						[disabled]="revisor.deshabilitado || tieneRevisorAsignado"
 						(click)="abrirModal(revisor)"
 					>
 						Asignar revisor
@@ -81,12 +82,15 @@
 					<button
 						type="button"
 						class="btn-outline-danger"
-						*ngIf="tieneRevisorAsignado"
+						*ngIf="esRevisorAsignado(revisor)"
 						[disabled]="revocandoAsignacion"
 						(click)="abrirModalRevocar()"
 					>
 						{{ revocandoAsignacion ? 'Revocando...' : 'Revocar asignación' }}
 					</button>
+					<span *ngIf="tieneRevisorAsignado && !esRevisorAsignado(revisor)" class="turnitin-lock-note">
+						Revoca la asignación actual para cambiar de revisor.
+					</span>
 			</div>
 		</article>
 	</ng-container>

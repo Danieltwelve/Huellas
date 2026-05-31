@@ -20,6 +20,7 @@ export class PanelComiteEditorialLayoutComponent {
   private destroy$ = new Subject<void>();
 
   collapsed = false;
+  mobileSidebarOpen = false;
   totalNotificaciones = 0;
   mostrarAlertaNotificaciones = false;
   mensajeAlertaNotificaciones = '';
@@ -191,6 +192,7 @@ export class PanelComiteEditorialLayoutComponent {
   }
 
   goToNotificationCenter(): void {
+    this.mobileSidebarOpen = false;
     this.router.navigate(['/panel-comite-editorial/notificaciones']);
   }
 
@@ -206,7 +208,16 @@ export class PanelComiteEditorialLayoutComponent {
   }
 
   toggleSidebar(): void {
+    if (window.matchMedia('(max-width: 960px)').matches) {
+      this.mobileSidebarOpen = !this.mobileSidebarOpen;
+      return;
+    }
+
     this.collapsed = !this.collapsed;
+  }
+
+  closeMobileSidebar(): void {
+    this.mobileSidebarOpen = false;
   }
 
   async logout(): Promise<void> {

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import {
   ArticuloFlujo,
@@ -35,7 +35,7 @@ interface EscenarioAutor {
 @Component({
   selector: 'app-detalle-articulo',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './detalle-articulo.component.html',
   styleUrls: ['./detalle-articulo.component.css'],
 })
@@ -60,6 +60,7 @@ export class DetalleArticuloComponent implements OnInit {
   mensajeCorreccion: string | null = null;
   errorCorreccion: string | null = null;
   mostrarModalConfirmacionCorreccion = false;
+  resumenEnvioExpandido = true;
 
   private readonly etapasBase: Array<{ id: number; titulo: string; descripcion: string }> = [
     { id: 1, titulo: 'Revisión preliminar', descripcion: 'Validación editorial inicial del envío' },
@@ -127,9 +128,12 @@ export class DetalleArticuloComponent implements OnInit {
 
     return new Intl.DateTimeFormat('es-CO', {
       dateStyle: 'medium',
-      timeStyle: 'short',
       timeZone: 'America/Bogota',
     }).format(fecha);
+  }
+
+  toggleResumenEnvio(): void {
+    this.resumenEnvioExpandido = !this.resumenEnvioExpandido;
   }
 
   get etapas(): EtapaVista[] {
@@ -202,9 +206,9 @@ export class DetalleArticuloComponent implements OnInit {
         tipo: 'accion',
         titulo: 'Corrección requerida del autor',
         detalle:
-          'Debes enviar una nueva versión del manuscrito para continuar el flujo editorial.',
+          'Debes enviar una nueva versión del artículo para continuar el flujo editorial.',
         acciones: [
-          'Actualizar el manuscrito según observaciones.',
+          'Actualizar el artículo según observaciones.',
           'Subir el archivo corregido desde esta página.',
           'Agregar un comentario breve sobre los cambios.',
         ],

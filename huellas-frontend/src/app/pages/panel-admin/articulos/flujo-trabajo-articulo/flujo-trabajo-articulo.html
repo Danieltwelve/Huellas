@@ -178,11 +178,12 @@
     <aside class="acciones-laterales">
 
       <app-revision-pares
+        *ngIf="puedeMostrarRevisionPares && !estaEnCertificacion"
         [articuloId]="articuloIdActual"
         [revisorAsignado]="articulo?.revisor ?? null"
       ></app-revision-pares>
 
-      <div class="accion-group" *ngIf="puedeMostrarObservacion">
+      <div class="accion-group" *ngIf="puedeMostrarObservacion && !estaEnCertificacion">
         <span class="accion-label">Añadir corrección u observación</span>
         <input type="text" class="input-control" [(ngModel)]="asuntoObservacion" placeholder="Asunto"
           aria-label="Asunto de observación" />
@@ -198,12 +199,97 @@
         </button>
       </div>
 
-      <section class="accion-card card-resultado-turnitin" *ngIf="puedeMostrarTurnitin && articuloYaEvaluadoPorTurnitin">
+      <section class="accion-card card-resultado-turnitin" *ngIf="puedeMostrarTurnitin && !estaEnCertificacion && articuloYaEvaluadoPorTurnitin">
         <span class="accion-label">Evaluación Turnitin</span>
         <p class="asignacion-helper">Este artículo ya tiene una evaluación de Turnitin registrada y no admite una nueva evaluación.</p>
       </section>
 
-      <section class="accion-group" *ngIf="esComiteEditorial">
+      <section class="accion-card card-turnitin" *ngIf="puedeMostrarTurnitin && !estaEnCertificacion && solicitudProrrogaCorreccionPendiente">
+        <span class="accion-label">Solicitud de prórroga de corrección</span>
+        <p class="asignacion-helper">El autor pidió 1 día adicional para subir la corrección.</p>
+        <p class="file-name" *ngIf="fechaVencimientoCorreccion">Vence el {{ formatearFechaVencimientoCorreccion(fechaVencimientoCorreccion) }}</p>
+        <div class="decision-options">
+          <button
+            class="btn-outline-teal btn-full"
+            type="button"
+            (click)="resolverProrrogaCorreccion('rechazar')"
+            [disabled]="evaluandoTurnitin"
+          >
+            Rechazar solicitud
+          </button>
+          <button
+            class="btn-outline-teal btn-full"
+            type="button"
+            (click)="resolverProrrogaCorreccion('aceptar')"
+            [disabled]="evaluandoTurnitin"
+          >
+            Aceptar solicitud
+          </button>
+        </div>
+      </section>
+
+      <section class="accion-card card-turnitin" *ngIf="puedeMostrarTurnitin && !estaEnCertificacion && !articuloYaEvaluadoPorTurnitin">
+        <span class="accion-label">Evaluación Turnitin</span>
+        <p class="asignacion-helper">Registra la similitud (%) y adjunta el reporte (soporte obligatorio).</p>
+
+        <div class="turnitin-inputs">
+          <label for="porcentajeTurnitin">Similitud (%)</label>
+          <input
+            id="porcentajeTurnitin"
+            type="number"
+            class="input-control"
+            min="0"
+            max="100"
+            [value]="porcentajeTurnitin ?? ''"
+            (input)="onPorcentajeTurnitinInput($event)"
+            aria-label="Porcentaje de similitud"
+          />
+
+          <textarea
+            class="input-control"
+            [(ngModel)]="observacionTurnitin"
+            rows="3"
+            placeholder="Observación (puedes indicar la decisión aquí)"
+            aria-label="Observación de Turnitin"
+          ></textarea>
+
+          <label class="file-label" for="archivoTurnitin">Adjuntar soporte Turnitin (obligatorio)</label>
+          <input id="archivoTurnitin" type="file" accept=".pdf,.doc,.docx" (change)="onArchivoTurnitinSeleccionado($event)" class="file-input" />
+          <p class="file-name" *ngIf="nombreArchivoTurnitin">{{ nombreArchivoTurnitin }}</p>
+
+          <div class="turnitin-decision" *ngIf="porcentajeTurnitin !== null && porcentajeTurnitin < 65">
+            <label class="accion-label">Decisión</label>
+            <div class="decision-options">
+              <label class="decision-pill">
+                <input type="radio" name="decisionTurnitin" [(ngModel)]="decisionTurnitin" [value]="'aceptado'" />
+                <span>Aceptado sin cambios</span>
+              </label>
+              <label class="decision-pill">
+                <input type="radio" name="decisionTurnitin" [(ngModel)]="decisionTurnitin" [value]="'rechazado_similitud'" />
+                <span>Rechazado por similitud</span>
+              </label>
+              <label class="decision-pill" [class.disabled]="articuloYaSolicitadoCambiosTurnitin">
+                <input type="radio" name="decisionTurnitin" [(ngModel)]="decisionTurnitin" [value]="'solicitar_cambios'" [disabled]="articuloYaSolicitadoCambiosTurnitin" />
+                <span>Solicitar cambios</span>
+              </label>
+            </div>
+            <p class="asignacion-helper" *ngIf="articuloYaSolicitadoCambiosTurnitin">Ya existe una solicitud de cambios registrada para este artículo.</p>
+          </div>
+
+          <p class="asignacion-helper">Selecciona la decisión y pulsa registrar evaluación.</p>
+
+          <button
+            class="btn-outline-teal btn-full"
+            type="button"
+            (click)="abrirConfirmacionEvaluacionTurnitin()"
+            [disabled]="evaluandoTurnitin"
+          >
+            {{ evaluandoTurnitin ? 'Registrando...' : 'Registrar evaluación' }}
+          </button>
+        </div>
+      </section>
+
+      <section class="accion-group" *ngIf="esComiteEditorial && !estaEnCertificacion">
         <span class="accion-label">Rúbrica de evaluación</span>
         <ul class="rubrica-lista">
           <li *ngFor="let item of rubricaItems">{{ item }}</li>
@@ -232,7 +318,7 @@
         </ng-template>
       </section>
 
-      <section class="accion-card card-evaluacion" *ngIf="puedeMostrarEvaluacionComite">
+      <section class="accion-card card-evaluacion" *ngIf="puedeMostrarEvaluacionComite && !estaEnCertificacion">
         <span class="accion-label">Evaluar artículo (Comité Editorial)</span>
         <span class="tag-mandatory" *ngIf="estaEnEtapaComite">En etapa de comité</span>
 
@@ -271,12 +357,12 @@
         </button>
       </section>
 
-      <section class="accion-card" *ngIf="esComiteEditorial && articuloYaEvaluadoPorComite">
+      <section class="accion-card" *ngIf="esComiteEditorial && !estaEnCertificacion && articuloYaEvaluadoPorComite">
         <span class="accion-label">Evaluación de Comité Editorial</span>
         <p class="asignacion-helper">Este artículo ya fue evaluado por el Comité Editorial y no admite una nueva evaluación.</p>
       </section>
 
-      <section class="accion-card card-resultado-comite" *ngIf="resultadoEvaluacionComite as resultado">
+      <section class="accion-card card-resultado-comite" *ngIf="!estaEnCertificacion && resultadoEvaluacionComite as resultado">
         <span class="accion-label">Resultado del Comité Editorial</span>
         <span class="tag-flow-rule" [class.tag-flow-rule--rechazado]="resultado === 'rechazado'">
           {{ resultado === 'aceptado' ? 'Aceptado por comité' : 'Rechazado por comité' }}
@@ -286,7 +372,7 @@
         </p>
       </section>
 
-      <section class="accion-card card-asignacion" *ngIf="puedeMostrarAsignacionComite">
+      <section class="accion-card card-asignacion" *ngIf="puedeMostrarAsignacionComite && !estaEnCertificacion">
         <span class="accion-label">Asignar miembro del Comité Editorial</span>
         <p class="asignacion-helper">Selecciona el integrante responsable de evaluar este artículo.</p>
 
@@ -327,7 +413,31 @@
         </button>
       </section>
 
-      <section class="accion-card card-mover" [class.card-mover--foco]="soloPuedeMoverAComiteEnPreliminar">
+      <section class="accion-card card-certificacion" *ngIf="puedeMostrarCertificacion">
+        <span class="accion-label">Certificación</span>
+        <p class="asignacion-helper">Sube el certificado de publicación en PDF para cerrar esta etapa editorial.</p>
+
+        <label class="file-label" for="archivoCertificacion">Adjuntar certificado de publicación</label>
+        <input
+          id="archivoCertificacion"
+          type="file"
+          accept=".pdf"
+          (change)="onArchivoCertificacionSeleccionado($event)"
+          class="file-input"
+        />
+        <p class="file-name" *ngIf="nombreArchivoCertificacion">{{ nombreArchivoCertificacion }}</p>
+
+        <button
+          class="btn-outline-teal btn-full"
+          type="button"
+          (click)="subirCertificadoPublicacion()"
+          [disabled]="subiendoCertificacion || !archivoCertificacion"
+        >
+          {{ subiendoCertificacion ? 'Subiendo...' : 'Subir certificado de publicación' }}
+        </button>
+      </section>
+
+      <section class="accion-card card-mover" *ngIf="!estaEnCertificacion || etapaActualTerminada" [class.card-mover--foco]="soloPuedeMoverAComiteEnPreliminar">
         <span class="accion-label">Mover artículo</span>
         <span class="tag-flow-rule">Avance en orden</span>
         <p class="asignacion-helper">{{ mensajeReglaMovimiento }}</p>
@@ -343,7 +453,7 @@
           class="btn-outline-teal btn-full"
           type="button"
           (click)="abrirConfirmacionMoverArticulo()"
-          [disabled]="moviendoEtapa || !etapaSiguientePermitida"
+          [disabled]="moviendoEtapa || !etapaSiguientePermitida || bloqueaAvancePorFaltaCriterioRevisor || !puedeMoverPorTerminacion"
         >
           {{ moviendoEtapa ? 'Moviendo...' : 'Mover Registro' }}
         </button>
@@ -374,7 +484,12 @@
       </p>
       <div class="modal-acciones">
         <button type="button" class="btn-secundario" (click)="cancelarConfirmacionMoverArticulo()">Cancelar</button>
-        <button type="button" class="btn-primario" (click)="moverArticulo()" [disabled]="moviendoEtapa">
+        <button
+          type="button"
+          class="btn-primario"
+          (click)="moverArticulo()"
+          [disabled]="moviendoEtapa || bloqueaAvancePorFaltaCriterioRevisor || !puedeMoverPorTerminacion"
+        >
           {{ moviendoEtapa ? 'Moviendo...' : 'Sí, cambiar etapa' }}
         </button>
       </div>
@@ -429,6 +544,17 @@
       <p>{{ mensajeExitoTurnitin }}</p>
       <div class="modal-acciones">
         <button type="button" class="btn-primario" (click)="cerrarModalExitoTurnitin()">Entendido</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalErrorTurnitin" (click)="cerrarModalErrorTurnitin()">
+    <section class="modal-confirmacion modal-confirmacion--turnitin-error" role="dialog" aria-modal="true" aria-label="Error en evaluación Turnitin" (click)="$event.stopPropagation()">
+      <span class="modal-error-badge">Error</span>
+      <h3>Validación requerida</h3>
+      <p>{{ mensajeErrorTurnitin }}</p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" (click)="cerrarModalErrorTurnitin()">Cerrar</button>
       </div>
     </section>
   </div>

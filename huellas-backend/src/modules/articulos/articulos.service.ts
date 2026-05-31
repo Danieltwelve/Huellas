@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
@@ -11,7 +12,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createReadStream, existsSync, promises as fs } from 'fs';
-import { DataSource, In, IsNull, Repository } from 'typeorm';
+import { DataSource, In, IsNull, MoreThanOrEqual, Repository } from 'typeorm';
 import { PaginationQueryDto } from 'src/common/dto/pagination.query.dto';
 import ExcelJS from 'exceljs';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
@@ -35,7 +36,10 @@ export class ArticulosService {
   private readonly logger = new Logger(ArticulosService.name);
 
   private static readonly ETAPA_REVISION_PRELIMINAR = 1;
+  private static readonly ETAPA_PUBLICACION = 5;
+  private static readonly ETAPA_CERTIFICACION = 8;
   private static readonly ETAPA_TURNITIN = 3;
+  private static readonly ETAPA_REVISION_PARES = 4;
   private static readonly ETAPA_COMITE_EDITORIAL = 6;
   private static readonly ETAPAS_FLUJO_ORDENADO = [1, 6, 3, 4, 8, 9, 5];
   private static readonly ETAPA_DESCARTADO = 7;
@@ -54,6 +58,12 @@ export class ArticulosService {
     'Evaluación de comité editorial: ACEPTADO';
   private static readonly ASUNTO_EVALUACION_COMITE_RECHAZADO =
     'Evaluación de comité editorial: RECHAZADO';
+  private static readonly ASUNTO_CORRECCION_PRORROGA_SOLICITADA =
+    'Solicitud de plazo adicional para corrección de Turnitin';
+  private static readonly ASUNTO_CORRECCION_PRORROGA_ACEPTADA =
+    'Prórroga de corrección de Turnitin aceptada';
+  private static readonly ASUNTO_CORRECCION_PRORROGA_RECHAZADA =
+    'Prórroga de corrección de Turnitin rechazada';
   private static readonly ASUNTO_CERTIFICADO_EDITORIAL =
     'Nuevo certificado editorial disponible';
 
@@ -352,6 +362,9 @@ export class ArticulosService {
       evaluacionComiteRealizada,
       fechaAsignacionComite: articulo.fechaAsignacionComite ?? null,
       fechaVencimientoComite: articulo.fechaVencimientoComite ?? null,
+      fechaVencimientoCorreccion: articulo.fechaVencimientoCorreccion ?? null,
+      solicitudProrrogaCorreccionPendiente:
+        articulo.solicitudProrrogaCorreccionPendiente ?? false,
       resumen: articulo.resumen,
       palabrasClave: articulo.palabrasClave
         .split(',')
@@ -380,6 +393,7 @@ export class ArticulosService {
       revisor: articulo.revisor
         ? {
             id: articulo.revisor.id,
+            usuarioId: articulo.revisor.usuarioId,
             nombre: articulo.revisor.usuario?.nombre ?? null,
             correo: articulo.revisor.usuario?.correo ?? null,
             perfil: articulo.revisor.perfil,
@@ -575,6 +589,89 @@ export class ArticulosService {
         }
       }
 
+      if (
+        articulo.etapaActualId === ArticulosService.ETAPA_REVISION_PARES &&
+        nuevaEtapaId === this.getSiguienteEtapaPermitida(ArticulosService.ETAPA_REVISION_PARES)
+      ) {
+        if (!articulo.revisorId) {
+          throw new BadRequestException(
+            'Para avanzar desde Revisión por pares, primero debes asignar un revisor.',
+          );
+        }
+
+        const revisorAsignado = await queryRunner.manager.findOne(Revisores, {
+          where: { id: articulo.revisorId },
+          select: ['id', 'usuarioId'],
+        });
+
+        if (!revisorAsignado?.usuarioId) {
+          throw new BadRequestException(
+            'No se encontró el revisor asignado para validar su criterio.',
+          );
+        }
+
+        const historialRevisionParesActual = await queryRunner.manager.findOne(
+          ArticuloHistorialEtapa,
+          {
+            where: {
+              articuloId,
+              etapaId: ArticulosService.ETAPA_REVISION_PARES,
+              fechaFin: IsNull(),
+            },
+            order: { fechaInicio: 'DESC' },
+            select: ['id', 'fechaInicio'],
+          },
+        );
+
+        if (!historialRevisionParesActual) {
+          throw new BadRequestException(
+            'No se pudo validar la etapa actual de Revisión por pares para este artículo.',
+          );
+        }
+
+        const criterioRevisor = await queryRunner.manager.findOne(Observacion, {
+          where: {
+            articuloId,
+            etapaId: ArticulosService.ETAPA_REVISION_PARES,
+            usuarioId: revisorAsignado.usuarioId,
+            fechaSubida: MoreThanOrEqual(historialRevisionParesActual.fechaInicio),
+          },
+          order: { fechaSubida: 'DESC' },
+          select: ['id', 'asunto', 'fechaSubida'],
+        });
+
+        if (!criterioRevisor) {
+          throw new BadRequestException(
+            'No puedes avanzar a la siguiente etapa hasta que el revisor asignado emita su criterio.',
+          );
+        }
+
+        if (!this.esAsuntoRevisionPares(criterioRevisor.asunto)) {
+          throw new BadRequestException(
+            'El criterio del revisor asignado no es válido para cerrar la etapa de Revisión por pares.',
+          );
+        }
+      }
+
+      if (
+        articulo.etapaActualId === ArticulosService.ETAPA_CERTIFICACION &&
+        nuevaEtapaId === this.getSiguienteEtapaPermitida(ArticulosService.ETAPA_CERTIFICACION)
+      ) {
+        const certificadoPublicacion = await queryRunner.manager.findOne(ArticuloCertificado, {
+          where: {
+            articuloId,
+            tipo: 'publicacion',
+          },
+          select: ['id'],
+        });
+
+        if (!certificadoPublicacion) {
+          throw new BadRequestException(
+            'Debes subir el certificado de publicación antes de avanzar a Revisión final.',
+          );
+        }
+      }
+
       const etapaDestino = await queryRunner.manager.findOne(EtapaArticulo, {
         where: { id: nuevaEtapaId },
       });
@@ -695,7 +792,17 @@ export class ArticulosService {
       }
 
       articulo.comiteEditorialId = null;
+      articulo.solicitudProrrogaCorreccionPendiente = false;
       await queryRunner.manager.save(articulo);
+
+      if (!evaluacionDescarta) {
+        const fechaVencimientoCorreccion = new Date();
+        fechaVencimientoCorreccion.setDate(
+          fechaVencimientoCorreccion.getDate() + 5,
+        );
+        articulo.fechaVencimientoCorreccion = fechaVencimientoCorreccion;
+        await queryRunner.manager.save(articulo);
+      }
 
       if (evaluacionDescarta) {
         const historialAbierto = await queryRunner.manager.findOne(
@@ -717,6 +824,7 @@ export class ArticulosService {
         }
 
         articulo.etapaActualId = ArticulosService.ETAPA_DESCARTADO;
+        articulo.fechaVencimientoCorreccion = null;
         await queryRunner.manager.save(articulo);
 
         const historialDescartado = queryRunner.manager.create(
@@ -975,6 +1083,12 @@ export class ArticulosService {
 
     this.ensureArticuloNoDescartado(articulo);
 
+    if (articulo.etapaActualId !== ArticulosService.ETAPA_REVISION_PARES) {
+      throw new BadRequestException(
+        'La asignación de revisores solo está disponible en la etapa de Revisión por pares.',
+      );
+    }
+
     const revisor = await this.revisoresRepository.findOne({
       where: { id: revisorId },
     });
@@ -1018,6 +1132,12 @@ export class ArticulosService {
     }
 
     this.ensureArticuloNoDescartado(articulo);
+
+    if (articulo.etapaActualId !== ArticulosService.ETAPA_REVISION_PARES) {
+      throw new BadRequestException(
+        'La revocación de revisores solo está disponible en la etapa de Revisión por pares.',
+      );
+    }
 
     if (!articulo.revisorId) {
       throw new BadRequestException('El artículo no tiene revisor asignado.');
@@ -1572,6 +1692,34 @@ export class ArticulosService {
     }));
   }
 
+  async getArticulosEnPublicacion() {
+    const articulos = await this.articuloRepository
+      .createQueryBuilder('articulo')
+      .select(['articulo.id', 'articulo.codigo', 'articulo.titulo'])
+      .innerJoin('articulo.etapaActual', 'etapa')
+      .addSelect(['etapa.nombre'])
+      .innerJoin(
+        'articulo.historialEtapas',
+        'historial',
+        'historial.etapaId = :etapaBuscada',
+        { etapaBuscada: ArticulosService.ETAPA_PUBLICACION },
+      )
+      .addSelect(['historial.fechaInicio'])
+      .where('articulo.etapaActualId = :etapaId', {
+        etapaId: ArticulosService.ETAPA_PUBLICACION,
+      })
+      .orderBy('historial.fechaInicio', 'DESC')
+      .getMany();
+
+    return articulos.map((articulo) => ({
+        id: articulo.id,
+        codigo: articulo.codigo,
+        titulo: articulo.titulo,
+        etapa_nombre: articulo.etapaActual?.nombre || 'PUBLICACIÓN',
+        fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
+      }));
+  }
+
   async getEstadisticasGenerales() {
     const articulos = await this.articuloRepository.find({
       relations: [
@@ -1700,8 +1848,14 @@ export class ArticulosService {
       codigo: articulo.codigo,
       titulo: articulo.titulo,
       etapa_nombre: articulo.etapaActual?.nombre || 'Desconocida',
-      fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
+      fecha_inicio: this.obtenerFechaEnvioArticulo(articulo),
       correccion_pendiente: this.tieneCorreccionPendiente(articulo, userId),
+      fecha_vencimiento_correccion: articulo.fechaVencimientoCorreccion
+        ? articulo.fechaVencimientoCorreccion.toISOString()
+        : null,
+      solicitud_prorroga_correccion_pendiente:
+        articulo.solicitudProrrogaCorreccionPendiente ?? false,
+      correccion_vencida: this.correccionEstaVencida(articulo, userId),
     }));
   }
 
@@ -1725,6 +1879,18 @@ export class ArticulosService {
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private correccionEstaVencida(articulo: Articulo, userId: number): boolean {
+    if (!this.tieneCorreccionPendiente(articulo, userId)) {
+      return false;
+    }
+
+    if (!articulo.fechaVencimientoCorreccion) {
+      return false;
+    }
+
+    return new Date(articulo.fechaVencimientoCorreccion).getTime() < Date.now();
   }
 
   async subirCorreccionAutor(
@@ -1764,6 +1930,19 @@ export class ArticulosService {
       );
     }
 
+    const fechaVencimientoCorreccion = articulo.fechaVencimientoCorreccion
+      ? new Date(articulo.fechaVencimientoCorreccion)
+      : null;
+
+    if (
+      fechaVencimientoCorreccion &&
+      fechaVencimientoCorreccion.getTime() < Date.now()
+    ) {
+      throw new BadRequestException(
+        'El plazo para enviar la corrección ya venció. Solicita una prórroga para continuar.',
+      );
+    }
+
     const observacion = this.dataSource.getRepository(Observacion).create({
       articuloId,
       usuarioId: userId,
@@ -1790,9 +1969,151 @@ export class ArticulosService {
       .getRepository(ObservacionArchivo)
       .save(observacionArchivo);
 
+    articulo.solicitudProrrogaCorreccionPendiente = false;
+    await this.articuloRepository.save(articulo);
+
     return {
       message: 'Corrección cargada correctamente',
       observacionId: observacionGuardada.id,
+    };
+  }
+
+  async solicitarProrrogaCorreccionAutor(
+    articuloId: number,
+    userId: number,
+    comentarios?: string,
+  ) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['autores', 'observaciones', 'observaciones.usuario'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    this.ensureArticuloNoDescartado(articulo);
+
+    const esAutorDelArticulo =
+      articulo.autores?.some((autor) => autor.id === userId) ?? false;
+
+    if (!esAutorDelArticulo) {
+      throw new ForbiddenException(
+        'No tienes permiso para solicitar una prórroga en este artículo',
+      );
+    }
+
+    if (articulo.etapaActualId !== ArticulosService.ETAPA_TURNITIN) {
+      throw new BadRequestException(
+        'Solo puedes solicitar prórroga cuando el artículo está en Turnitin.',
+      );
+    }
+
+    if (!this.tieneCorreccionPendiente(articulo, userId)) {
+      throw new BadRequestException(
+        'No existe una corrección activa para solicitar prórroga.',
+      );
+    }
+
+    if (articulo.solicitudProrrogaCorreccionPendiente) {
+      throw new BadRequestException(
+        'Ya existe una solicitud de prórroga pendiente de revisión.',
+      );
+    }
+
+    articulo.solicitudProrrogaCorreccionPendiente = true;
+    await this.articuloRepository.save(articulo);
+
+    const observacion = this.dataSource.getRepository(Observacion).create({
+      articuloId,
+      usuarioId: userId,
+      etapaId: ArticulosService.ETAPA_TURNITIN,
+      asunto: ArticulosService.ASUNTO_CORRECCION_PRORROGA_SOLICITADA,
+      comentarios:
+        comentarios?.trim() ||
+        'El autor solicita un día adicional para subir la corrección.',
+    });
+
+    const guardada = await this.dataSource
+      .getRepository(Observacion)
+      .save(observacion);
+
+    return {
+      message: 'Solicitud de prórroga enviada correctamente.',
+      observacionId: guardada.id,
+    };
+  }
+
+  async resolverSolicitudProrrogaCorreccion(
+    articuloId: number,
+    usuarioId: number,
+    decision: 'aceptar' | 'rechazar',
+    comentarios?: string,
+  ) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['observaciones', 'observaciones.usuario'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    this.ensureArticuloNoDescartado(articulo);
+
+    if (articulo.etapaActualId !== ArticulosService.ETAPA_TURNITIN) {
+      throw new BadRequestException(
+        'La solicitud de prórroga solo puede resolverse en la etapa de Turnitin.',
+      );
+    }
+
+    if (!articulo.solicitudProrrogaCorreccionPendiente) {
+      throw new BadRequestException(
+        'No hay ninguna solicitud de prórroga pendiente.',
+      );
+    }
+
+    const asunto =
+      decision === 'aceptar'
+        ? ArticulosService.ASUNTO_CORRECCION_PRORROGA_ACEPTADA
+        : ArticulosService.ASUNTO_CORRECCION_PRORROGA_RECHAZADA;
+
+    const observacion = this.dataSource.getRepository(Observacion).create({
+      articuloId,
+      usuarioId,
+      etapaId: ArticulosService.ETAPA_TURNITIN,
+      asunto,
+      comentarios:
+        comentarios?.trim() ||
+        (decision === 'aceptar'
+          ? 'Se aprueba un día adicional para cargar la corrección.'
+          : 'Se rechaza la solicitud de un día adicional para cargar la corrección.'),
+    });
+
+    await this.dataSource.getRepository(Observacion).save(observacion);
+
+    if (decision === 'aceptar') {
+      const fechaBase = articulo.fechaVencimientoCorreccion
+        ? new Date(articulo.fechaVencimientoCorreccion)
+        : new Date();
+
+      if (fechaBase.getTime() < Date.now()) {
+        fechaBase.setTime(Date.now());
+      }
+
+      fechaBase.setDate(fechaBase.getDate() + 1);
+      articulo.fechaVencimientoCorreccion = fechaBase;
+    }
+
+    articulo.solicitudProrrogaCorreccionPendiente = false;
+    await this.articuloRepository.save(articulo);
+
+    return {
+      message:
+        decision === 'aceptar'
+          ? 'Prórroga de corrección aprobada.'
+          : 'Prórroga de corrección rechazada.',
+      fechaVencimientoCorreccion: articulo.fechaVencimientoCorreccion ?? null,
     };
   }
 
@@ -2021,6 +2342,7 @@ export class ArticulosService {
       fecha: Date;
       origen: 'etapa' | 'observacion';
       estadoCorreccion?: 'solicitada' | 'enviada' | 'aceptada' | null;
+      fechaVencimientoCorreccion?: Date | null;
     }> = [];
 
     for (const articulo of articulosDelAutor) {
@@ -2056,7 +2378,8 @@ export class ArticulosService {
         const estadoCorreccion = this.obtenerEstadoCorreccionDesdeObservacion(obs);
         const tipo = estadoCorreccion ? 'accion' : 'informacion';
 
-        notificaciones.push({
+        const fechaObs = obs.fechaSubida;
+        const notificacionBase: any = {
           id: `obs-${articulo.id}-${obs.id}`,
           articuloId: articulo.id,
           codigoArticulo: articulo.codigo,
@@ -2069,7 +2392,17 @@ export class ArticulosService {
           fecha: obs.fechaSubida,
           origen: 'observacion',
           estadoCorreccion,
-        });
+        };
+
+        // Si la observación solicita corrección, añadimos fecha de vencimiento (5 días)
+        if (estadoCorreccion === 'solicitada') {
+          const fechaVenc = new Date(fechaObs);
+          fechaVenc.setDate(fechaVenc.getDate() + 5);
+          notificacionBase.fechaVencimientoCorreccion = fechaVenc;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        notificaciones.push(notificacionBase);
       }
     }
 
@@ -2078,6 +2411,9 @@ export class ArticulosService {
       .map((item) => ({
         ...item,
         fecha: item.fecha.toISOString(),
+        fechaVencimientoCorreccion: item.fechaVencimientoCorreccion
+          ? item.fechaVencimientoCorreccion.toISOString()
+          : undefined,
       }));
   }
 
@@ -2106,6 +2442,11 @@ export class ArticulosService {
     }
 
     return null;
+  }
+
+  private esAsuntoRevisionPares(asunto?: string | null): boolean {
+    const texto = (asunto ?? '').toLowerCase().trim();
+    return /^revisi[oó]n por pares:\s*(aceptar|ajustes|rechazar)/.test(texto);
   }
 
   async getArticuloFileStream(
@@ -2230,48 +2571,88 @@ export class ArticulosService {
       );
     }
 
-    this.validarMetadatosCertificado(payload);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const articulo = await this.articuloRepository.findOne({
-      where: { id: articuloId },
-      relations: ['observaciones'],
-    });
+    try {
+      this.validarMetadatosCertificado(payload);
 
-    if (!articulo) {
-      throw new NotFoundException('Artículo no encontrado.');
-    }
+      const articulo = await queryRunner.manager.findOne(Articulo, {
+        where: { id: articuloId },
+        relations: ['observaciones', 'historialEtapas'],
+      });
 
-    if (payload.tipo === 'evaluacion') {
-      const tieneEvaluacion = (articulo.observaciones ?? []).some((obs) =>
-        [
-          ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
-          ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
-        ].includes(obs.asunto),
-      );
-
-      if (!tieneEvaluacion) {
-        throw new BadRequestException(
-          'Solo puedes subir un certificado de evaluación cuando ya exista una evaluación del comité.',
-        );
+      if (!articulo) {
+        throw new NotFoundException('Artículo no encontrado.');
       }
-    }
 
-    const certificado = this.articuloCertificadoRepository.create({
-      articuloId,
-      subidoPorId: userId,
-      tipo: payload.tipo,
-      titulo: payload.titulo?.trim() || `Certificado de ${payload.tipo}`,
-      contextoRequerimiento: payload.contextoRequerimiento,
-      etapaReferencia: payload.etapaReferencia?.trim() || null,
-      archivoPath: archivo.path,
-      archivoNombreOriginal: archivo.originalname,
-    });
+      if (payload.tipo === 'evaluacion') {
+        const tieneEvaluacion = (articulo.observaciones ?? []).some((obs) =>
+          [
+            ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
+            ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
+          ].includes(obs.asunto),
+        );
 
-    const guardado = await this.articuloCertificadoRepository.save(certificado);
+        if (!tieneEvaluacion) {
+          throw new BadRequestException(
+            'Solo puedes subir un certificado de evaluación cuando ya exista una evaluación del comité.',
+          );
+        }
+      }
 
-    const observacionCertificado = this.dataSource
-      .getRepository(Observacion)
-      .create({
+      if (payload.tipo === 'publicacion') {
+        if (articulo.etapaActualId !== ArticulosService.ETAPA_CERTIFICACION) {
+          throw new BadRequestException(
+            'Solo puedes subir el certificado de publicación cuando el artículo está en Certificación.',
+          );
+        }
+
+        const certificadoExistente = await queryRunner.manager.findOne(ArticuloCertificado, {
+          where: {
+            articuloId,
+            tipo: 'publicacion',
+          },
+          select: ['id'],
+        });
+
+        if (certificadoExistente) {
+          throw new ConflictException(
+            'Este artículo ya tiene un certificado de publicación registrado.',
+          );
+        }
+
+        const historialCertificacionAbierto = (articulo.historialEtapas ?? []).find(
+          (historial) =>
+            historial.etapaId === ArticulosService.ETAPA_CERTIFICACION &&
+            !historial.fechaFin,
+        );
+
+        if (!historialCertificacionAbierto) {
+          throw new BadRequestException(
+            'No se pudo validar la etapa de Certificación para este artículo.',
+          );
+        }
+
+        historialCertificacionAbierto.fechaFin = new Date();
+        await queryRunner.manager.save(historialCertificacionAbierto);
+      }
+
+      const certificado = queryRunner.manager.create(ArticuloCertificado, {
+        articuloId,
+        subidoPorId: userId,
+        tipo: payload.tipo,
+        titulo: payload.titulo?.trim() || `Certificado de ${payload.tipo}`,
+        contextoRequerimiento: payload.contextoRequerimiento,
+        etapaReferencia: payload.etapaReferencia?.trim() || null,
+        archivoPath: archivo.path,
+        archivoNombreOriginal: archivo.originalname,
+      });
+
+      const guardado = await queryRunner.manager.save(certificado);
+
+      const observacionCertificado = queryRunner.manager.create(Observacion, {
         articuloId,
         usuarioId: userId,
         etapaId: articulo.etapaActualId,
@@ -2279,12 +2660,19 @@ export class ArticulosService {
         comentarios: `Se cargó ${guardado.titulo} para ${payload.contextoRequerimiento}.`,
       });
 
-    await this.dataSource.getRepository(Observacion).save(observacionCertificado);
+      await queryRunner.manager.save(observacionCertificado);
+      await queryRunner.commitTransaction();
 
-    return {
-      message: 'Certificado cargado correctamente.',
-      certificadoId: guardado.id,
-    };
+      return {
+        message: 'Certificado cargado correctamente.',
+        certificadoId: guardado.id,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async listarCertificadosUsuario(userId: number, userRoles: string[]) {

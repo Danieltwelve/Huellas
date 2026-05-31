@@ -12,6 +12,9 @@ export interface ArticuloAutor {
   etapa_nombre: string;
   fecha_inicio: string | null;
   correccion_pendiente: boolean;
+  correccion_vencida?: boolean;
+  fecha_vencimiento_correccion?: string | null;
+  solicitud_prorroga_correccion_pendiente?: boolean;
 }
 
 export interface NotificacionAutorBackend {
@@ -25,6 +28,7 @@ export interface NotificacionAutorBackend {
   fecha: string;
   origen: 'etapa' | 'observacion';
   estadoCorreccion?: CorrectionState;
+  fechaVencimientoCorreccion?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -89,6 +93,23 @@ export class ArticulosAutorService {
         this.http.post<{ message: string; observacionId: number }>(
           `${environment.apiUrlBackend}/articulos/${articuloId}/correccion`,
           formData,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  solicitarProrrogaCorreccion(
+    articuloId: number,
+    comentarios?: string,
+  ): Observable<{ message: string; observacionId: number }> {
+    return from(this.auth.currentUser!.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<{ message: string; observacionId: number }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/correccion/prorroga`,
+          { comentarios: comentarios?.trim() || undefined },
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           },

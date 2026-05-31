@@ -9,10 +9,11 @@ import { FirebaseAdminModule } from 'src/common/firebase/firebase-admin.module';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { UsersModule } from '../users/users.module';
+import { Articulo } from '../articulos/entities/articulo.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EdicionRevista, EstadoEdicionRevista]),
+    TypeOrmModule.forFeature([EdicionRevista, EstadoEdicionRevista, Articulo]),
     EstadosModule,
     FirebaseAdminModule,
     UsersModule,

@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 @Injectable()
 export class GeminiService {
-  private genAI: GoogleGenerativeAI;
+  private apiKey: string;
   private modelName: string;
 
   constructor(private configService: ConfigService) {
@@ -19,10 +18,38 @@ export class GeminiService {
     this.modelName =
       this.configService.get<string>('GEMINI_MODEL') ?? 'gemini-2.5-flash-lite';
 
-    this.genAI = new GoogleGenerativeAI(apiKey);
+    this.apiKey = apiKey;
   }
 
-  getGenerativeModel() {
-    return this.genAI.getGenerativeModel({ model: this.modelName });
+  async getGenerativeModel(): Promise<{
+    generateContent(prompt: string): Promise<{
+      response:
+        | { text(): Promise<string> }
+        | Promise<{ text(): Promise<string> }>;
+    }>;
+  }> {
+    try {
+      // Import dinámico para que la dependencia sea opcional en tiempo de compilación
+      type GoogleMod = {
+        GoogleGenerativeAI: new (apiKey?: string | { apiKey?: string }) => {
+          getGenerativeModel(opts: { model: string }): {
+            generateContent(prompt: string): Promise<{
+              response:
+                | { text(): Promise<string> }
+                | Promise<{ text(): Promise<string> }>;
+            }>;
+          };
+        };
+      };
+
+      const mod = (await import('@google/generative-ai')) as GoogleMod;
+      const GoogleGenerativeAI = mod.GoogleGenerativeAI;
+      const client = new GoogleGenerativeAI(this.apiKey);
+      return client.getGenerativeModel({ model: this.modelName });
+    } catch {
+      throw new Error(
+        'No se pudo inicializar el cliente de Google Generative AI. Instala @google/generative-ai y revisa GOOGLE_API_KEY',
+      );
+    }
   }
 }

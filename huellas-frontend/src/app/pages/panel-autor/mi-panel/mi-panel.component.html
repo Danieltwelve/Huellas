@@ -107,6 +107,7 @@
               <th>Etapa</th>
               <th>Estado</th>
               <th>Fecha envio</th>
+              <th>Vencimiento</th>
               <th>Tiempo en proceso</th>
               <th>Acciones</th>
             </tr>
@@ -136,6 +137,15 @@
                   </span>
                 </td>
                 <td>{{ formatFecha(articulo.fecha_inicio) }}</td>
+                <td>
+                  @if (articulo.fecha_vencimiento_correccion) {
+                    <span class="state-pill" [class.state-pending]="!articulo.correccion_vencida" [class.state-review]="articulo.correccion_vencida">
+                      {{ articulo.correccion_vencida ? 'Vencido' : 'Vence ' + formatFecha(articulo.fecha_vencimiento_correccion) }}
+                    </span>
+                  } @else {
+                    <span class="state-pill state-review">Sin plazo</span>
+                  }
+                </td>
                 <td>{{ articulo.tiempoProceso }}</td>
                 <td class="actions-cell">
                   <button class="btn-outline-sm" type="button" (click)="verSeguimientoArticulo(articulo.id)">
@@ -145,25 +155,32 @@
                     </svg>
                     Ver
                   </button>
-                  @if (puedeEnviarCorreccion(articulo)) {
+                  
+                  @if (puedeSolicitarProrroga(articulo)) {
                     <button
                       class="btn-outline-sm btn-correction"
                       type="button"
-                      (click)="abrirModalCorreccion(articulo)"
+                      (click)="solicitarProrrogaCorreccion(articulo)"
                       [disabled]="isSubiendoCorreccion(articulo.id)"
                     >
-                      {{ isSubiendoCorreccion(articulo.id) ? 'Enviando...' : 'Añadir corrección' }}
+                      Solicitar plazo de 1 día adicional
                     </button>
                   }
                   @if (correccionEnRevision(articulo)) {
                     <p class="correccion-lock-msg">Corrección ya enviada, en revisión editorial.</p>
+                  }
+                  @if (articulo.fecha_vencimiento_correccion) {
+                    <p class="correccion-lock-msg">
+                      {{ articulo.correccion_vencida ? 'Plazo vencido:' : 'Vence el:' }}
+                      {{ formatFecha(articulo.fecha_vencimiento_correccion) }}
+                    </p>
                   }
                 </td>
               </tr>
             }
             @if (articulosFiltrados.length === 0) {
               <tr>
-                <td colspan="6" class="text-center empty-state">
+                <td colspan="7" class="text-center empty-state">
                   <strong>Sin resultados para este filtro.</strong>
                   <span>Ajusta los estados o envía tu primer artículo desde Nuevo Artículo.</span>
                 </td>
@@ -187,6 +204,12 @@
               <h3>{{ articulo.titulo }}</h3>
               <p class="article-meta">{{ formatFecha(articulo.fecha_inicio) }}</p>
               <p class="article-meta">Tiempo en proceso: {{ articulo.tiempoProceso }}</p>
+              @if (articulo.fecha_vencimiento_correccion) {
+                <p class="article-meta">
+                  {{ articulo.correccion_vencida ? 'Plazo vencido:' : 'Vence el:' }}
+                  {{ formatFecha(articulo.fecha_vencimiento_correccion) }}
+                </p>
+              }
               <span
                 class="badge"
                 [class.badge-yellow]="getEtapaClass(articulo.etapa_nombre) === 'badge-yellow'"
@@ -198,18 +221,25 @@
                 <button class="btn-outline-sm" type="button" (click)="verSeguimientoArticulo(articulo.id)">
                   Ver acciones
                 </button>
-                @if (puedeEnviarCorreccion(articulo)) {
+                
+                @if (puedeSolicitarProrroga(articulo)) {
                   <button
                     class="btn-outline-sm btn-correction"
                     type="button"
-                    (click)="abrirModalCorreccion(articulo)"
+                    (click)="solicitarProrrogaCorreccion(articulo)"
                     [disabled]="isSubiendoCorreccion(articulo.id)"
                   >
-                    {{ isSubiendoCorreccion(articulo.id) ? 'Enviando...' : 'Añadir corrección' }}
+                    Solicitar plazo de 1 día adicional
                   </button>
                 }
                 @if (correccionEnRevision(articulo)) {
                   <p class="correccion-lock-msg">Corrección ya enviada, en revisión editorial.</p>
+                }
+                @if (articulo.fecha_vencimiento_correccion) {
+                  <p class="correccion-lock-msg">
+                    {{ articulo.correccion_vencida ? 'Plazo vencido:' : 'Vence el:' }}
+                    {{ formatFecha(articulo.fecha_vencimiento_correccion) }}
+                  </p>
                 }
               </div>
             </article>

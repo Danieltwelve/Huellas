@@ -28,13 +28,27 @@
       </button>
     </nav>
 
-    <section class="info-section">
-      <div class="section-head">
-        <span>Contexto editorial</span>
-        <h2>Información enviada por el autor</h2>
+    <section class="info-section" [class.info-section--collapsed]="!resumenEnvioExpandido">
+      <div class="section-head section-head--toggle">
+        <div>
+          <span>Contexto editorial</span>
+          <h2>Información enviada por el autor</h2>
+        </div>
+        <button
+          type="button"
+          class="section-toggle"
+          [class.is-collapsed]="!resumenEnvioExpandido"
+          (click)="toggleResumenEnvio()"
+          [attr.aria-expanded]="resumenEnvioExpandido"
+          aria-label="Mostrar u ocultar información del autor"
+        >
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
       </div>
 
-      <div class="info-grid">
+      <div class="info-grid" *ngIf="resumenEnvioExpandido">
         <article class="info-card">
           <h3>Autores</h3>
           <p>{{ autoresTexto }}</p>
@@ -53,7 +67,7 @@
         </article>
       </div>
 
-      <article class="info-card info-card--full">
+      <article class="info-card info-card--full" *ngIf="resumenEnvioExpandido">
         <h3>Resumen</h3>
         <p>{{ articulo.resumen }}</p>
       </article>
@@ -66,40 +80,40 @@
           <h2>Historial de observaciones</h2>
         </div>
 
-        <article class="historial-item" *ngFor="let obs of historial">
-          <header>
-            <div class="historial-titulo-wrap">
-              <h3>{{ obs.asunto || 'Observación editorial' }}</h3>
-              <span
-                class="turnitin-badge"
-                *ngIf="esObservacionTurnitin(obs)"
-              >
-                Similitud: {{ textoSimilitudTurnitin(obs) }}
-              </span>
+        <div class="seguimiento-summary">
+          @if (historial.length > 0) {
+            <div class="summary-item">
+              <div class="summary-meta">
+                <strong class="summary-title">{{ historial[0].asunto || 'Última observación' }}</strong>
+                <small class="summary-date">{{ formatearFechaHistorial(historial[0].fechaSubida) }}</small>
+              </div>
+              @if (esObservacionTurnitin(historial[0])) {
+                <span class="turnitin-badge">Similitud: {{ textoSimilitudTurnitin(historial[0]) }}</span>
+              }
+              <p class="meta">{{ historial[0].usuario?.nombre || 'Equipo editorial' }} <span *ngIf="historial[0].etapa?.nombre"> - {{ historial[0].etapa?.nombre }}</span></p>
+              <p class="comentario" *ngIf="historial[0].comentarios">{{ historial[0].comentarios }}</p>
+              @if (historial[0].archivos.length > 0) {
+                <div class="archivos">
+                  @for (archivo of historial[0].archivos; track archivo.archivoPath) {
+                    <button type="button" class="archivo-btn" (click)="descargarArchivo(archivo.archivoPath, archivo.archivoNombreOriginal)">
+                      {{ archivo.archivoNombreOriginal }}
+                    </button>
+                  }
+                </div>
+              }
             </div>
-            <small class="historial-fecha">{{ formatearFechaHistorial(obs.fechaSubida) }}</small>
-          </header>
-          <p class="meta">
-            {{ obs.usuario?.nombre || 'Equipo editorial' }}
-            <span *ngIf="obs.etapa?.nombre"> - {{ obs.etapa?.nombre }}</span>
-          </p>
-          <p class="comentario" *ngIf="obs.comentarios">{{ obs.comentarios }}</p>
-
-          <div class="archivos" *ngIf="obs.archivos.length > 0">
-            <button
-              type="button"
-              class="archivo-btn"
-              *ngFor="let archivo of obs.archivos"
-              (click)="descargarArchivo(archivo.archivoPath, archivo.archivoNombreOriginal)"
-            >
-              {{ archivo.archivoNombreOriginal }}
-            </button>
-          </div>
-        </article>
-
-        <article class="historial-empty" *ngIf="historial.length === 0">
-          Aún no hay observaciones registradas para este artículo.
-        </article>
+            <div class="summary-actions">
+              <a [routerLink]="['/panel-autor/timeline']" [queryParams]="{ articuloId: articulo.id }" class="timeline-link">Ver timeline detallado</a>
+            </div>
+          } @else {
+            <div class="historial-empty">
+              Aún no hay observaciones registradas para este artículo.
+            </div>
+            <div class="summary-actions">
+              <a [routerLink]="['/panel-autor/timeline']" class="timeline-link">Ver timeline</a>
+            </div>
+          }
+        </div>
       </section>
 
       <aside class="panel-right">

@@ -12,7 +12,13 @@
       </div>
       <h2>{{ item.tituloArticulo }}</h2>
       <p>{{ item.observacion }}</p>
-      <small>Enviado el {{ item.fechaEnvio }}</small>
+      <div class="event-meta">
+        <small>Enviado el {{ formatoFecha(item.fechaEnvio) }}</small>
+        @if (item.tieneAdjunto) {
+          <span class="attachment-pill">Con adjunto</span>
+        }
+        <a class="open-link" [href]="item.enlace || '/panel-revisor/realizar-revision'">Abrir artículo</a>
+      </div>
     </article>
   }
 </div>

@@ -110,6 +110,13 @@
 
 @media (max-width: 960px) {
   .sidebar {
-    min-height: 100%;
+    min-height: auto;
+    height: auto;
+    position: relative;
+    width: 100%;
+  }
+
+  .sidebar.collapsed {
+    width: 100%;
   }
 }

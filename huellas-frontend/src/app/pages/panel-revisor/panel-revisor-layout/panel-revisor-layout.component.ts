@@ -1,7 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { NotificationDropdownComponent, NotificationDropdownItem } from '../../../core/components/notification-dropdown/notification-dropdown.component';
+import { firstValueFrom } from 'rxjs';
+import { RevisoresService } from '../../../core/revisores/revisores.service';
 import { NOTIFICACIONES_REVISOR_MOCK } from '../panel-revisor.data';
 
 @Component({
@@ -11,26 +13,63 @@ import { NOTIFICACIONES_REVISOR_MOCK } from '../panel-revisor.data';
   templateUrl: './panel-revisor-layout.component.html',
   styleUrls: ['./panel-revisor-layout.component.css'],
 })
-export class PanelRevisorLayoutComponent {
+export class PanelRevisorLayoutComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly revisoresService = inject(RevisoresService);
 
   collapsed = false;
+  mobileSidebarOpen = false;
   notificationLoading = false;
   notificationError: string | null = null;
   notifications: NotificationDropdownItem[] = this.buildNotifications();
 
+  async ngOnInit(): Promise<void> {
+    try {
+      const idsLeidos = this.obtenerIdsLeidos();
+      const data = await firstValueFrom(this.revisoresService.getNotificacionesRevisor());
+      this.notifications = data
+        .map((item) => ({
+          id: item.id,
+          articuloId: item.articuloId ?? 0,
+          codigoArticulo: item.codigoArticulo ?? 'REV',
+          titulo: item.titulo,
+          detalle: item.detalle,
+          fecha: new Date(item.fecha),
+          enlace: item.enlace ?? '/panel-revisor/notificaciones',
+          leida: idsLeidos.has(item.id),
+        }))
+        .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+      this.notificationError = null;
+    } catch (error) {
+      this.notifications = this.buildNotifications();
+      this.notificationError = 'No se pudieron cargar las notificaciones del revisor.';
+      console.error('Error cargando notificaciones del revisor', error);
+    }
+  }
+
   toggleSidebar(): void {
+    if (window.matchMedia('(max-width: 960px)').matches) {
+      this.mobileSidebarOpen = !this.mobileSidebarOpen;
+      return;
+    }
+
     this.collapsed = !this.collapsed;
   }
 
   navigateToNotification(notification: NotificationDropdownItem): void {
     this.marcarNotificacionLeida(notification.id);
+    this.mobileSidebarOpen = false;
     this.router.navigateByUrl(notification.enlace);
   }
 
   goToNotificationCenter(): void {
+    this.mobileSidebarOpen = false;
     this.router.navigate(['/panel-revisor/notificaciones']);
+  }
+
+  closeMobileSidebar(): void {
+    this.mobileSidebarOpen = false;
   }
 
   private buildNotifications(): NotificationDropdownItem[] {

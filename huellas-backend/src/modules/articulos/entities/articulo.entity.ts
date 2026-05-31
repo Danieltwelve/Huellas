@@ -65,6 +65,20 @@ export class Articulo {
   })
   fechaVencimientoComite!: Date | null;
 
+  @Column({
+    name: 'fecha_vencimiento_correccion',
+    type: 'timestamp',
+    nullable: true,
+  })
+  fechaVencimientoCorreccion!: Date | null;
+
+  @Column({
+    name: 'solicitud_prorroga_correccion_pendiente',
+    type: 'boolean',
+    default: false,
+  })
+  solicitudProrrogaCorreccionPendiente!: boolean;
+
   // Relaciones
   @ManyToOne(() => EtapaArticulo, (etapa) => etapa.articulos)
   @JoinColumn({ name: 'etapa_actual_id' })

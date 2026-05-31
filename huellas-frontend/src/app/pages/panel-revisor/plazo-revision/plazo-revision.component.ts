@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { ARTICULOS_ASIGNADOS_MOCK } from '../panel-revisor.data';
+import { ArticuloRevisorDto, RevisoresService } from '../../../core/revisores/revisores.service';
 
 type OrdenArticulos =
   | 'llegada-reciente'
@@ -33,7 +35,9 @@ interface EstadoProrroga {
   templateUrl: './plazo-revision.component.html',
   styleUrls: ['./plazo-revision.component.css'],
 })
-export class PlazoRevisionComponent {
+export class PlazoRevisionComponent implements OnInit {
+  private readonly revisoresService = inject(RevisoresService);
+
   articulos: ArticuloRevisorListado[] = ARTICULOS_ASIGNADOS_MOCK.map((articulo, index) => ({
     ...articulo,
     ordenLlegada: ((): number => {
@@ -44,6 +48,36 @@ export class PlazoRevisionComponent {
   prorrogasSolicitadas: EstadoProrroga = {};
   mensaje = '';
   ordenArticulos: OrdenArticulos = 'llegada-reciente';
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const data = await firstValueFrom(this.revisoresService.getArticulosAsignadosRevisor());
+      this.articulos = data.map((articulo, index) => ({
+        id: articulo.id,
+        codigo: articulo.codigo,
+        titulo: articulo.titulo,
+        resumen: articulo.resumen,
+        tema: articulo.tema,
+        fechaAsignacion: articulo.fechaAsignacion ?? new Date().toISOString(),
+        fechaLimite: articulo.fechaLimite ?? new Date().toISOString(),
+        estado: articulo.estado,
+        prioridad: articulo.prioridad,
+        ronda: articulo.ronda,
+        ordenLlegada: ((): number => {
+          const ts = new Date(articulo.fechaAsignacion ?? '').getTime();
+          return Number.isNaN(ts) ? index : ts;
+        })(),
+      }));
+    } catch {
+      this.articulos = ARTICULOS_ASIGNADOS_MOCK.map((articulo, index) => ({
+        ...articulo,
+        ordenLlegada: ((): number => {
+          const ts = new Date(articulo.fechaAsignacion).getTime();
+          return Number.isNaN(ts) ? index : ts;
+        })(),
+      }));
+    }
+  }
 
   get articulosOrdenados(): ArticuloRevisorListado[] {
     const base = [...this.articulos];

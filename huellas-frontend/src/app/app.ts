@@ -53,6 +53,7 @@ export class AppComponent {
         const url = this.router.url;
         return (
           url.startsWith('/gestion-flujo-editorial') ||
+          url.startsWith('/publicacion') ||
           url.startsWith('/gestion-usuarios') ||
           url.startsWith('/articulos') ||
           url.startsWith('/certificados-editoriales') ||
@@ -62,6 +63,7 @@ export class AppComponent {
       }),
       startWith(
         window.location.pathname.startsWith('/gestion-flujo-editorial') ||
+          window.location.pathname.startsWith('/publicacion') ||
           window.location.pathname.startsWith('/gestion-usuarios') ||
           window.location.pathname.startsWith('/articulos') ||
           window.location.pathname.startsWith('/certificados-editoriales') ||

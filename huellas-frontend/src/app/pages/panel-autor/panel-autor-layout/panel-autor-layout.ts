@@ -21,6 +21,7 @@ export class PanelAutorLayoutComponent implements OnInit {
   @ViewChild(NotificationDropdownComponent) notificationDropdown?: NotificationDropdownComponent;
 
   collapsed = false;
+  mobileSidebarOpen = false;
   userMenuOpen = false;
   notificationCount = 0;
   notificationMenuOpen = false;
@@ -85,6 +86,7 @@ export class PanelAutorLayoutComponent implements OnInit {
     if (!notification) return;
     this.marcarNotificacionLeida(notification.id);
     this.notificationMenuOpen = false;
+    this.mobileSidebarOpen = false;
 
     const enlace = typeof notification.enlace === 'string' ? notification.enlace.trim() : '';
     if (enlace.startsWith('/')) {
@@ -124,7 +126,16 @@ export class PanelAutorLayoutComponent implements OnInit {
   user$ = this.authService.user$;
 
   toggleSidebar(): void {
+    if (window.matchMedia('(max-width: 960px)').matches) {
+      this.mobileSidebarOpen = !this.mobileSidebarOpen;
+      return;
+    }
+
     this.collapsed = !this.collapsed;
+  }
+
+  closeMobileSidebar(): void {
+    this.mobileSidebarOpen = false;
   }
 
   toggleUserMenu(): void {
@@ -162,6 +173,7 @@ export class PanelAutorLayoutComponent implements OnInit {
 
   goToNotificationCenter(): void {
     this.notificationDropdown?.close();
+    this.mobileSidebarOpen = false;
     this.router.navigate(['/panel-autor/notificaciones']);
   }
 

@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, HostListener, ViewChild, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   ArticuloFlujo,
@@ -16,6 +16,10 @@ interface EtapaEditorial {
   nombre: string;
   fecha: string;
   descripcion: string;
+  detalle: string;
+  objetivos: string[];
+  puntosClave: string[];
+  resultadoEsperado: string;
   estado: 'completada' | 'actual' | 'pendiente';
 }
 
@@ -37,15 +41,19 @@ export class TimelineEditorialComponent implements OnInit {
   private readonly articulosService = inject(ArticulosService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   articulos: ArticuloAutor[] = [];
   articuloSeleccionadoId: number | null = null;
   selectorOpen = false;
   searchTerm = '';
+  historialFiltro: 'todos' | 'observaciones' | 'certificados' | 'turnitin' = 'todos';
   flujo: ArticuloFlujo | null = null;
   cargandoLista = true;
   cargandoFlujo = false;
   error: string | null = null;
+  etapaDetalleModal: EtapaEditorial | null = null;
+  @ViewChild('stageDialog') stageDialog?: ElementRef<HTMLDialogElement>;
 
   private readonly ordenEtapas: number[] = [1, 6, 3, 4, 8, 9, 5];
 
@@ -53,41 +61,101 @@ export class TimelineEditorialComponent implements OnInit {
     id: number;
     nombre: string;
     descripcion: string;
+    detalle: string;
+    objetivos: string[];
+    puntosClave: string[];
+    resultadoEsperado: string;
   }> = [
     {
       id: 1,
       nombre: 'Revision preliminar',
       descripcion: 'Validacion editorial inicial del envio',
+      detalle:
+        'El equipo editorial revisa que el artículo cumpla con los requisitos minimos de forma, alcance y documentación antes de continuar con el flujo.',
+      objetivos: [
+        'Verificar que el envio corresponda a la convocatoria y categoria correcta.',
+        'Confirmar que el archivo y los metadatos esten completos.',
+      ],
+      puntosClave: ['Formato general', 'Datos del autor', 'Cumplimiento de normas básicas'],
+      resultadoEsperado: 'Aceptación inicial del articulo para continuar al comite editorial.',
     },
     {
       id: 6,
       nombre: 'Comité editorial',
       descripcion: 'Evaluación y decision del comite editorial',
+      detalle:
+        'El comité define si el artículo avanza, requiere ajustes o se descarta, tomando en cuenta pertinencia, alcance tematico y valor editorial.',
+      objetivos: [
+        'Evaluar la pertinencia editorial del articulo.',
+        'Definir la ruta siguiente dentro del proceso.',
+      ],
+      puntosClave: ['Pertinencia temática', 'Coherencia editorial', 'Decisión de avance'],
+      resultadoEsperado: 'Una decisión formal del comité con ruta de seguimiento.',
     },
     {
       id: 3,
       nombre: 'Turnitin',
       descripcion: 'Validación de originalidad y similitud',
+      detalle:
+        'Se ejecuta la verificación de similitud para identificar coincidencias, citas mal configuradas y posibles alertas de originalidad.',
+      objetivos: [
+        'Validar el porcentaje de similitud del artículo.',
+        'Registrar observaciones si el informe requiere correcciones.',
+      ],
+      puntosClave: ['Similitud total', 'Citas y referencias', 'Soporte de informe'],
+      resultadoEsperado: 'Un reporte de originalidad asociado al articulo.',
     },
     {
       id: 4,
       nombre: 'Revisión por pares',
       descripcion: 'Evaluación por revisores académicos',
+      detalle:
+        'El artículo pasa a revisión experta para valorar rigor metodologico, aporte academico, claridad argumentativa y calidad de resultados.',
+      objetivos: [
+        'Obtener concepto de revisores especializados.',
+        'Identificar ajustes de fondo y forma antes de la decisión final.',
+      ],
+      puntosClave: ['Rigor metodologico', 'Aporte académico', 'Observaciones de pares'],
+      resultadoEsperado: 'Conceptos de revision que orientan la siguiente decisión editorial.',
     },
     {
       id: 8,
       nombre: 'Certificación',
       descripcion: 'Verificación documental y editorial antes del cierre',
+      detalle:
+        'Se revisan soportes, versiones finales, autorizaciones y requisitos editoriales para dejar el expediente listo antes del cierre.',
+      objetivos: [
+        'Confirmar documentos obligatorios y autorizaciones.',
+        'Dejar el proceso listo para el cierre documental.',
+      ],
+      puntosClave: ['Soportes firmados', 'Version final', 'Checklist editorial'],
+      resultadoEsperado: 'Expediente certificado para pasar al cierre del flujo.',
     },
     {
       id: 9,
       nombre: 'Revisión final',
       descripcion: 'Revisión integral previa a la publicación',
+      detalle:
+        'Antes de publicar, se hace una ultima lectura integral para detectar detalles pendientes de estilo, consistencia o formato.',
+      objetivos: [
+        'Verificar que no existan pendientes editoriales.',
+        'Asegurar consistencia final antes de la salida.',
+      ],
+      puntosClave: ['Edición final', 'Uniformidad de estilo', 'Ajustes de cierre'],
+      resultadoEsperado: 'Aprobación final previa a la publicación.',
     },
     {
       id: 5,
       nombre: 'Publicación',
       descripcion: 'Preparación y salida en volumen activo',
+      detalle:
+        'La versión final se prepara para su publicación oficial en el volumen activo y queda disponible para consulta pública.',
+      objetivos: [
+        'Liberar la versión aprobada al volumen activo.',
+        'Dejar trazabilidad del cierre editorial.',
+      ],
+      puntosClave: ['Maquetación final', 'Publicación en volumen', 'Disponibilidad pública'],
+      resultadoEsperado: 'Articulo publicado y visible en la plataforma.',
     },
   ];
 
@@ -124,6 +192,7 @@ export class TimelineEditorialComponent implements OnInit {
       next: (articulos) => {
         this.articulos = articulos;
         this.cargandoLista = false;
+        this.cdr.detectChanges();
 
         if (this.articulos.length === 0) {
           this.flujo = null;
@@ -143,6 +212,7 @@ export class TimelineEditorialComponent implements OnInit {
         console.error('Error cargando artículos del autor:', err);
         this.error = 'No fue posible cargar tus artículos.';
         this.cargandoLista = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -198,16 +268,19 @@ export class TimelineEditorialComponent implements OnInit {
   private cargarFlujo(articuloId: number): void {
     this.cargandoFlujo = true;
     this.error = null;
+    this.cdr.detectChanges();
 
     this.articulosService.getArticuloFlujo(articuloId).subscribe({
       next: (flujo) => {
         this.flujo = flujo;
         this.cargandoFlujo = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error al cargar timeline del artículo:', err);
         this.error = 'No fue posible cargar el seguimiento del artículo.';
         this.cargandoFlujo = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -254,10 +327,47 @@ export class TimelineEditorialComponent implements OnInit {
         id: etapa.id,
         nombre: etapa.nombre,
         descripcion: etapa.descripcion,
+        detalle: etapa.detalle,
+        objetivos: etapa.objetivos,
+        puntosClave: etapa.puntosClave,
+        resultadoEsperado: etapa.resultadoEsperado,
         estado,
         fecha: fechaRegistrada ? this.formatearFechaCorta(fechaRegistrada) : 'Por definir',
       };
     });
+  }
+
+  abrirDetalleEtapa(etapa: EtapaEditorial): void {
+    if (etapa.estado === 'pendiente') {
+      return;
+    }
+
+    this.etapaDetalleModal = etapa;
+    queueMicrotask(() => {
+      const dialog = this.stageDialog?.nativeElement;
+      if (dialog && !dialog.open) {
+        dialog.showModal();
+      }
+    });
+  }
+
+  cerrarDetalleEtapa(): void {
+    this.etapaDetalleModal = null;
+    const dialog = this.stageDialog?.nativeElement;
+    if (dialog?.open) {
+      dialog.close();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.etapaDetalleModal) {
+      this.cerrarDetalleEtapa();
+    }
+  }
+
+  setHistorialFiltro(filtro: 'todos' | 'observaciones' | 'certificados' | 'turnitin'): void {
+    this.historialFiltro = filtro;
   }
 
   get historial(): EventoTimeline[] {
@@ -276,6 +386,16 @@ export class TimelineEditorialComponent implements OnInit {
           path: archivo.archivoPath,
         })),
       }));
+  }
+
+  get historialFiltrado(): EventoTimeline[] {
+    const historial = this.historial;
+
+    if (this.historialFiltro === 'todos') {
+      return historial;
+    }
+
+    return historial.filter((evento) => this.obtenerCategoriaHistorial(evento) === this.historialFiltro);
   }
 
   get progreso(): number {
@@ -335,43 +455,41 @@ export class TimelineEditorialComponent implements OnInit {
       return 'Sin fecha';
     }
 
-    const sinZonaHoraria = !/(z|[+-]\d{2}:\d{2})$/i.test(valor);
-
-    if (sinZonaHoraria) {
-      const match = valor.match(
-        /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::\d{2}(?:\.\d{1,3})?)?$/,
-      );
-
-      if (match) {
-        const year = Number(match[1]);
-        const month = Number(match[2]);
-        const day = Number(match[3]);
-        const hour24 = Number(match[4]);
-        const minute = Number(match[5]);
-        const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
-        const periodo = hour24 >= 12 ? 'p. m.' : 'a. m.';
-        const dia = String(day).padStart(2, '0');
-        const hora = String(hour12).padStart(2, '0');
-        const minutos = String(minute).padStart(2, '0');
-        const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-
-        return `${dia} ${meses[Math.max(0, month - 1)]} ${year}, ${hora}:${minutos} ${periodo}`;
-      }
-    }
-
     const fecha = new Date(valor);
     if (isNaN(fecha.getTime())) {
       return 'Sin fecha';
     }
 
-    return new Intl.DateTimeFormat('es-CO', {
+    return fecha.toLocaleDateString('es-CO', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'America/Bogota',
-    }).format(fecha);
+    });
+  }
+
+  private normalizarBusqueda(texto: string): string {
+    return (texto ?? '')
+      .toString()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  private obtenerCategoriaHistorial(evento: EventoTimeline): 'observaciones' | 'certificados' | 'turnitin' {
+    const texto = this.normalizarBusqueda(
+      [evento.titulo, evento.descripcion, ...evento.archivos.map((archivo) => archivo.nombre)].join(' '),
+    );
+
+    if (texto.includes('turnitin') || texto.includes('similitud')) {
+      return 'turnitin';
+    }
+
+    if (texto.includes('certificado') || texto.includes('certificacion')) {
+      return 'certificados';
+    }
+
+    return 'observaciones';
   }
 }
+

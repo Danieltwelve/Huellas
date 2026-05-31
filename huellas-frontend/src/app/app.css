@@ -50,7 +50,25 @@ app-navbar {
 }
 
 @media (max-width: 960px) {
-  :host {
-    --sidebar-width: 76px;
+  .app-layout {
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  app-side-bar {
+    width: 100%;
+    flex: 0 0 auto;
+    position: relative;
+    top: auto;
+    height: auto;
+    align-self: stretch;
+  }
+
+  .content-layout {
+    width: 100%;
+  }
+
+  .page-content {
+    padding: 0.75rem;
   }
 }

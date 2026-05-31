@@ -17,6 +17,8 @@ export interface ArticuloResumenBackend {
   dias_restantes?: number | null;
 }
 
+export interface ArticuloPublicacionBackend extends ArticuloResumenBackend {}
+
 export interface UsuarioCertificadosBackend {
   id: number;
   nombre: string;
@@ -105,6 +107,8 @@ export interface ArticuloFlujo {
   evaluacionComiteRealizada?: boolean;
   fechaAsignacionComite?: string | null;
   fechaVencimientoComite?: string | null;
+  fechaVencimientoCorreccion?: string | null;
+  solicitudProrrogaCorreccionPendiente?: boolean;
   resumen: string;
   palabrasClave: string[];
   temas: string[];
@@ -125,6 +129,7 @@ export interface ArticuloFlujo {
   } | null;
   revisor?: {
     id: number;
+    usuarioId: number;
     nombre: string | null;
     correo: string | null;
     perfil: string;
@@ -296,6 +301,30 @@ export class ArticulosService {
     );
   }
 
+  resolverProrrogaCorreccion(
+    articuloId: number,
+    decision: 'aceptar' | 'rechazar',
+    comentarios?: string,
+  ): Observable<{ message: string; fechaVencimientoCorreccion?: string | null }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para resolver la prórroga.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.patch<{ message: string; fechaVencimientoCorreccion?: string | null }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/correccion/prorroga`,
+          { decision, comentarios: comentarios?.trim() || undefined },
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
   getResumenArticulos(): Observable<ArticuloResumenBackend[]> {
     const currentUser = this.auth.currentUser;
 
@@ -308,6 +337,25 @@ export class ArticulosService {
         this.http.get<ArticuloResumenBackend[]>(`${environment.apiUrlBackend}/articulos/resumen`, {
           headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
         }),
+      ),
+    );
+  }
+
+  getArticulosEnPublicacion(): Observable<ArticuloPublicacionBackend[]> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para consultar artículos de publicación.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<ArticuloPublicacionBackend[]>(
+          `${environment.apiUrlBackend}/articulos/publicacion/candidatos`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
       ),
     );
   }

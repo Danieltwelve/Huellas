@@ -330,8 +330,8 @@ export class NuevoArticuloComponent implements OnInit {
       return;
     }
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-    if (!['pdf', 'docx'].includes(ext)) {
-      this.archivoError = 'Solo se permiten archivos .pdf o .docx';
+    if (!['pdf', 'docx', 'doc'].includes(ext)) {
+      this.archivoError = 'Solo se permiten archivos .pdf, .doc o .docx';
       input.value = '';
       this.archivoSeleccionado = null;
       return;

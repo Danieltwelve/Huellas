@@ -27,6 +27,26 @@ export interface EdicionRevistaBackend {
   estado_id: EstadoEdicionBackend;
 }
 
+export interface EdicionPublicadaBackend {
+  id: number;
+  titulo: string;
+  volumen: number;
+  numero: number;
+  anio: number;
+  fecha_estado: string;
+  numeroArticulos: number;
+  articulos: Array<{ id: number; codigo: string; titulo: string }>;
+}
+
+export interface PublicarEdicionRevistaPayload {
+  titulo: string;
+  volumen: number;
+  numero: number;
+  anio: number;
+  fechaEstado?: string;
+  articuloIds: number[];
+}
+
 export interface UpdateEdicionRevistaPayload {
   titulo: string;
   volumen: number;
@@ -52,6 +72,20 @@ interface DeleteEdicionRevistaResponse {
 interface UpdateEdicionRevistaResponse {
   message: string;
   data: unknown;
+}
+
+interface PublicarEdicionRevistaResponse {
+  message: string;
+  data: {
+    id: number;
+    titulo: string;
+    volumen: number;
+    numero: number;
+    anio: number;
+    fecha_estado: string;
+    numeroArticulos: number;
+    articuloIds: number[];
+  };
 }
 
 interface GetConteoArticulosResponse {
@@ -162,5 +196,46 @@ export class EdicionesRevistaService {
     } else {
       return this.http.get<GetConteoArticulosResponse>(`${environment.apiUrlBackend}/ediciones/${id}/conteo-articulos`);
     }
+  }
+
+  getEdicionesPublicadas(): Observable<{ message: string; data: EdicionPublicadaBackend[] }> {
+    const currentUser = this.auth.currentUser;
+
+    if (currentUser) {
+      return from(currentUser.getIdToken()).pipe(
+        switchMap((token) =>
+          this.http.get<{ message: string; data: EdicionPublicadaBackend[] }>(
+            `${environment.apiUrlBackend}/ediciones/publicadas`,
+            {
+              headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+            },
+          ),
+        ),
+      );
+    }
+
+    return this.http.get<{ message: string; data: EdicionPublicadaBackend[] }>(
+      `${environment.apiUrlBackend}/ediciones/publicadas`,
+    );
+  }
+
+  publicarEdicion(payload: PublicarEdicionRevistaPayload): Observable<PublicarEdicionRevistaResponse> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para publicar una edición.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<PublicarEdicionRevistaResponse>(
+          `${environment.apiUrlBackend}/ediciones/publicar`,
+          payload,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
   }
 }

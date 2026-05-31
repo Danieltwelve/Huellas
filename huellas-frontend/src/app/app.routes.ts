@@ -84,6 +84,19 @@ export const routes: Routes = [
   },
 
   {
+    path: 'publicacion',
+    loadComponent: () =>
+      import('./pages/panel-admin/gestion-flujo-editorial/publicacion/publicacion.component').then(
+        m => m.PublicacionEditorial,
+      ),
+    canActivate: [claimsGuard],
+    data: {
+      requiredClaim: 'canManageArticulos',
+      allowedRoles: ['admin', 'director', 'monitor'],
+    },
+  },
+
+  {
     path: 'certificados-editoriales',
     loadComponent: () =>
       import('./pages/panel-admin/certificados/certificados-editoriales.component').then(

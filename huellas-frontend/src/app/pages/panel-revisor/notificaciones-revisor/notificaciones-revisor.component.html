@@ -16,9 +16,12 @@
         <p>{{ item.detalle }}</p>
         <small>{{ item.fecha }}</small>
       </div>
-      <button type="button" (click)="marcarLeida(item.id)" [disabled]="item.leida">
-        {{ item.leida ? 'Leida' : 'Marcar leida' }}
-      </button>
+      <div class="notify-actions">
+        <button type="button" (click)="abrirNotificacion(item)">Abrir</button>
+        <button type="button" (click)="marcarLeida(item.id)" [disabled]="item.leida">
+          {{ item.leida ? 'Leida' : 'Marcar leida' }}
+        </button>
+      </div>
     </article>
   }
 

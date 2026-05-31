@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { ARTICULOS_ASIGNADOS_MOCK } from '../panel-revisor.data';
+import { ArticuloRevisorDto, RevisoresService } from '../../../core/revisores/revisores.service';
 
 @Component({
   selector: 'app-resumen-revisor',
@@ -7,8 +9,18 @@ import { ARTICULOS_ASIGNADOS_MOCK } from '../panel-revisor.data';
   templateUrl: './resumen-revisor.component.html',
   styleUrls: ['./resumen-revisor.component.css'],
 })
-export class ResumenRevisorComponent {
-  articulos = ARTICULOS_ASIGNADOS_MOCK;
+export class ResumenRevisorComponent implements OnInit {
+  private readonly revisoresService = inject(RevisoresService);
+
+  articulos: ArticuloRevisorDto[] = ARTICULOS_ASIGNADOS_MOCK;
+
+  async ngOnInit(): Promise<void> {
+    try {
+      this.articulos = await firstValueFrom(this.revisoresService.getArticulosAsignadosRevisor());
+    } catch {
+      this.articulos = ARTICULOS_ASIGNADOS_MOCK;
+    }
+  }
 
   get totalAsignados(): number {
     return this.articulos.length;
@@ -28,7 +40,8 @@ export class ResumenRevisorComponent {
 
   get proximoVencimiento(): string {
     const proximos = this.articulos
-      .map((item) => new Date(item.fechaLimite))
+      .map((item) => (item.fechaLimite ? new Date(item.fechaLimite) : null))
+      .filter((date): date is Date => Boolean(date))
       .filter((date) => !isNaN(date.getTime()))
       .sort((a, b) => a.getTime() - b.getTime());
 
@@ -39,7 +52,11 @@ export class ResumenRevisorComponent {
     return this.formatFecha(proximos[0]);
   }
 
-  formatFecha(fecha: Date | string): string {
+  formatFecha(fecha: Date | string | null): string {
+    if (!fecha) {
+      return 'Sin fecha';
+    }
+
     const valor = fecha instanceof Date ? fecha : new Date(fecha);
     if (isNaN(valor.getTime())) {
       return 'Sin fecha';

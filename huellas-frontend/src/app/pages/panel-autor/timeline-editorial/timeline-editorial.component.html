@@ -70,94 +70,194 @@
   }
 
   @if (flujo) {
-
-  <div class="header-card">
-    <div class="header-info">
-      <p class="eyebrow">Proceso editorial</p>
-      <h1>Timeline del artículo</h1>
-      <p>{{ titulo }}</p>
-    </div>
-    <div class="progress-section">
-      <div class="progress-labels">
-        <span class="progress-text">PROGRESO GENERAL</span>
-        <span class="progress-percentage">{{ progreso }}%</span>
+    <div class="header-card">
+      <div class="header-info">
+        <p class="eyebrow">Proceso editorial</p>
+        <h1>Timeline del artículo</h1>
+        <p>{{ titulo }}</p>
       </div>
-      <div class="progress-bar-bg" aria-label="Progreso editorial">
-        <div class="progress-bar-fill" [style.width.%]="progreso"></div>
+      <div class="progress-section">
+        <div class="progress-labels">
+          <span class="progress-text">PROGRESO GENERAL</span>
+          <span class="progress-percentage">{{ progreso }}%</span>
+        </div>
+        <div class="progress-bar-bg" aria-label="Progreso editorial">
+          <div class="progress-bar-fill" [style.width.%]="progreso"></div>
+        </div>
+        @if (siguientePaso; as paso) {
+          <p class="next-step">
+            Siguiente paso recomendado: <strong>{{ paso.nombre }}</strong>
+          </p>
+        }
       </div>
-      @if (siguientePaso; as paso) {
-        <p class="next-step">
-          Siguiente paso recomendado: <strong>{{ paso.nombre }}</strong>
-        </p>
-      }
     </div>
-  </div>
 
-  <div class="content-card">
-    <h2 class="card-title">Etapas del proceso</h2>
+    <div class="content-card">
+      <h2 class="card-title">Etapas del proceso</h2>
 
-    <div class="timeline-track">
-      <div class="connecting-line"></div>
-      @for (etapa of etapas; track etapa.nombre) {
-        <article
-          class="timeline-step"
-          [class.step-completed]="etapa.estado === 'completada'"
-          [class.step-active]="etapa.estado === 'actual'"
-          [class.step-pending]="etapa.estado === 'pendiente'"
-        >
-          <div class="step-icon">
-            @if (etapa.estado === 'completada') {
-              <span>✓</span>
-            }
-            @if (etapa.estado === 'actual') {
-              <span>•</span>
-            }
-            @if (etapa.estado === 'pendiente') {
-              <span>○</span>
-            }
-          </div>
-          <div class="step-content">
-            <h3>{{ etapa.nombre }}</h3>
-            <p class="desc">{{ etapa.descripcion }}</p>
-            <p class="date">{{ etapa.fecha }}</p>
-          </div>
-        </article>
-      }
+      <div class="timeline-track">
+        <div class="connecting-line"></div>
+        @for (etapa of etapas; track etapa.nombre) {
+          <article
+            class="timeline-step"
+            [class.step-completed]="etapa.estado === 'completada'"
+            [class.step-active]="etapa.estado === 'actual'"
+            [class.step-pending]="etapa.estado === 'pendiente'"
+          >
+            <div class="step-icon">
+              @if (etapa.estado === 'completada') {
+                <span>✓</span>
+              }
+              @if (etapa.estado === 'actual') {
+                <span>•</span>
+              }
+              @if (etapa.estado === 'pendiente') {
+                <span>○</span>
+              }
+            </div>
+            <div class="step-content">
+              <h3>{{ etapa.nombre }}</h3>
+              <p class="desc">{{ etapa.descripcion }}</p>
+              <p class="date">{{ etapa.fecha }}</p>
+              <button
+                type="button"
+                class="step-detail-btn"
+                (click)="abrirDetalleEtapa(etapa)"
+                [disabled]="etapa.estado === 'pendiente'"
+                [attr.aria-disabled]="etapa.estado === 'pendiente'"
+              >
+                Ver proceso
+              </button>
+            </div>
+          </article>
+        }
+      </div>
     </div>
-  </div>
 
-  <div class="content-card">
-    <h2 class="card-title">Historial detallado</h2>
-    <div class="history-list">
-      @if (historial.length === 0) {
-        <article class="history-item">
-          <div class="history-date">Sin movimientos</div>
-          <div class="history-details">
-            <strong>No hay observaciones registradas</strong>
-            <p>Cuando el equipo editorial publique observaciones o cambios, apareceran aqui.</p>
-          </div>
-        </article>
-      }
+    <div class="content-card">
+      <h2 class="card-title">Historial detallado</h2>
+      <div class="history-toolbar">
+        <div class="history-toolbar__copy">
+          <p class="history-toolbar__eyebrow">Filtro rápido</p>
+          <p class="history-toolbar__hint">Muestra solo observaciones, certificados o Turnitin.</p>
+        </div>
 
-      @for (evento of historial; track evento.fecha + evento.titulo) {
-        <article class="history-item">
-          <div class="history-date">{{ evento.fecha }}</div>
-          <div class="history-details">
-            <strong>{{ evento.titulo }}</strong>
-            <p>{{ evento.descripcion }}</p>
-            @if (evento.archivos.length > 0) {
-              <div class="history-files">
-                @for (archivo of evento.archivos; track archivo.path) {
-                  <button type="button" class="file-download-btn" (click)="descargarArchivo(archivo.path, archivo.nombre)">
-                    Descargar {{ archivo.nombre }}
-                  </button>
-                }
-              </div>
-            }
-          </div>
-        </article>
-      }
+        <div class="history-filters" role="group" aria-label="Filtros del historial">
+          <button type="button" class="history-filter-btn" [class.history-filter-btn--active]="historialFiltro === 'todos'" (click)="setHistorialFiltro('todos')">Todos</button>
+          <button type="button" class="history-filter-btn" [class.history-filter-btn--active]="historialFiltro === 'observaciones'" (click)="setHistorialFiltro('observaciones')">Solo observaciones</button>
+          <button type="button" class="history-filter-btn" [class.history-filter-btn--active]="historialFiltro === 'certificados'" (click)="setHistorialFiltro('certificados')">Solo certificados</button>
+          <button type="button" class="history-filter-btn" [class.history-filter-btn--active]="historialFiltro === 'turnitin'" (click)="setHistorialFiltro('turnitin')">Solo Turnitin</button>
+        </div>
+      </div>
+
+      <div class="history-list">
+        @if (historial.length === 0) {
+          <article class="history-item">
+            <div class="history-date">Sin movimientos</div>
+            <div class="history-details">
+              <strong>No hay observaciones registradas</strong>
+              <p>Cuando el equipo editorial publique observaciones o cambios, apareceran aqui.</p>
+            </div>
+          </article>
+        }
+
+        @if (historial.length > 0 && historialFiltrado.length === 0) {
+          <article class="history-item history-item--empty">
+            <div class="history-date">Sin coincidencias</div>
+            <div class="history-details">
+              <strong>No encontramos resultados</strong>
+              <p>Prueba con otra palabra clave, una fecha o el nombre del evento.</p>
+            </div>
+          </article>
+        }
+
+        @for (evento of historialFiltrado; track evento.fecha + evento.titulo) {
+          <article class="history-item">
+            <div class="history-date">{{ evento.fecha }}</div>
+            <div class="history-details">
+              <strong>{{ evento.titulo }}</strong>
+              <p>{{ evento.descripcion }}</p>
+              @if (evento.archivos.length > 0) {
+                <div class="history-files">
+                  @for (archivo of evento.archivos; track archivo.path) {
+                    <button type="button" class="file-download-btn" (click)="descargarArchivo(archivo.path, archivo.nombre)">
+                      Descargar {{ archivo.nombre }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </article>
+        }
+      </div>
     </div>
-  </div>
   }
+
+  <dialog
+    #stageDialog
+    class="stage-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'stage-modal-title'"
+    (click)="cerrarDetalleEtapa()"
+  >
+    @if (etapaDetalleModal) {
+      <div class="stage-modal__content" (click)="$event.stopPropagation()">
+        <button type="button" class="stage-modal__close" (click)="cerrarDetalleEtapa()" aria-label="Cerrar detalle">
+          ×
+        </button>
+
+        <div class="stage-modal__accent"></div>
+
+        <div class="stage-modal__header">
+          <p class="stage-modal__eyebrow">Detalle de etapa</p>
+          <h3 id="stage-modal-title">{{ etapaDetalleModal.nombre }}</h3>
+          <p class="stage-modal__subtitle">{{ etapaDetalleModal.descripcion }}</p>
+        </div>
+
+        <div class="stage-modal__meta">
+          <div
+            class="stage-modal__status"
+            [class.stage-modal__status--completed]="etapaDetalleModal.estado === 'completada'"
+            [class.stage-modal__status--active]="etapaDetalleModal.estado === 'actual'"
+            [class.stage-modal__status--pending]="etapaDetalleModal.estado === 'pendiente'"
+          >
+            Estado: {{ etapaDetalleModal.estado === 'completada' ? 'Completada' : etapaDetalleModal.estado === 'actual' ? 'En curso' : 'Pendiente' }}
+          </div>
+          <div class="stage-modal__date-pill">Fecha registrada: {{ etapaDetalleModal.fecha }}</div>
+        </div>
+
+        <p class="stage-modal__body">{{ etapaDetalleModal.detalle }}</p>
+
+        <div class="stage-modal__grid">
+          <section class="stage-modal__panel">
+            <h4>Objetivos</h4>
+            <ul>
+              @for (objetivo of etapaDetalleModal.objetivos; track objetivo) {
+                <li>{{ objetivo }}</li>
+              }
+            </ul>
+          </section>
+
+          <section class="stage-modal__panel">
+            <h4>Puntos clave</h4>
+            <ul>
+              @for (punto of etapaDetalleModal.puntosClave; track punto) {
+                <li>{{ punto }}</li>
+              }
+            </ul>
+          </section>
+        </div>
+
+        <section class="stage-modal__result">
+          <h4>Resultado esperado</h4>
+          <p>{{ etapaDetalleModal.resultadoEsperado }}</p>
+        </section>
+
+        <div class="stage-modal__footer">
+          <button type="button" class="stage-modal__action" (click)="cerrarDetalleEtapa()">Cerrar</button>
+        </div>
+      </div>
+    }
+  </dialog>
 </div>

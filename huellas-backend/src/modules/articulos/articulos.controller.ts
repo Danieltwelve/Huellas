@@ -50,8 +50,9 @@ const ARTICULO_UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
 const ARTICULO_ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
 ]);
-const ARTICULO_ALLOWED_EXTENSIONS = new Set(['.pdf', '.docx']);
+const ARTICULO_ALLOWED_EXTENSIONS = new Set(['.pdf', '.docx', '.doc']);
 const CERTIFICADO_UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
 const CERTIFICADO_ALLOWED_MIME_TYPES = new Set(['application/pdf']);
 const CERTIFICADO_ALLOWED_EXTENSIONS = new Set(['.pdf']);
@@ -77,7 +78,7 @@ function buildArticuloUploadOptions() {
       if (!isExtensionValid || !isMimeValid) {
         return cb(
           new BadRequestException(
-            'Solo se permiten archivos PDF o DOCX válidos.',
+            'Solo se permiten archivos PDF, DOC o DOCX válidos.',
           ),
           false,
         );
@@ -145,6 +146,13 @@ export class ArticulosController {
   @Get('resumen')
   async getResumenArticulos() {
     return await this.articulosService.getResumenArticulos();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Get('publicacion/candidatos')
+  async getArticulosEnPublicacion() {
+    return await this.articulosService.getArticulosEnPublicacion();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -692,6 +700,41 @@ export class ArticulosController {
 
       throw error;
     }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('autor')
+  @Post(':id/correccion/prorroga')
+  async solicitarProrrogaCorreccion(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+    @Body() body: { comentarios?: string },
+  ) {
+    return await this.articulosService.solicitarProrrogaCorreccionAutor(
+      id,
+      req.user.userId,
+      body?.comentarios?.trim(),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Patch(':id/correccion/prorroga')
+  async resolverProrrogaCorreccion(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+    @Body() body: { decision: 'aceptar' | 'rechazar'; comentarios?: string },
+  ) {
+    if (!body?.decision || !['aceptar', 'rechazar'].includes(body.decision)) {
+      throw new BadRequestException('Debes indicar una decisión válida.');
+    }
+
+    return await this.articulosService.resolverSolicitudProrrogaCorreccion(
+      id,
+      req.user.userId,
+      body.decision,
+      body?.comentarios?.trim(),
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
