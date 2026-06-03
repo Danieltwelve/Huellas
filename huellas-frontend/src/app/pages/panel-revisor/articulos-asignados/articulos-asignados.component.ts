@@ -51,8 +51,8 @@ export class ArticulosAsignadosComponent implements OnInit {
     if (estado === 'en-proceso') {
       return 'En revisión';
     }
-    if (estado === 'enviado') {
-      return 'Enviado';
+    if (estado === 'evaluado') {
+      return 'Evaluado';
     }
     return 'Pendiente';
   }

@@ -20,10 +20,24 @@
     <p>{{ articuloSeleccionado.resumen }}</p>
   </section>
 
- 
+  <section class="rubric-section rubric-section--loading" *ngIf="cargandoRevision">
+    <div class="rubric-header">
+      <h2>Verificando estado</h2>
+      <p>Cargando información de la revisión para determinar si el artículo ya fue evaluado.</p>
+    </div>
+  </section>
 
-    
-  <section clac:\Users\juani\AppData\Local\Packages\MicrosoftWindows.Client.Core_cw5n1h2txyewy\TempState\ScreenClip\{560B8F26-58A4-427C-AA4E-046B40B02C1E}.pngss="rubric-section" *ngIf="rubrica.length && !isRevisionEnviada">
+  <section class="rubric-section" *ngIf="!cargandoRevision && isRevisionEnviada">
+    <div class="rubric-header">
+      <h2>Revisión registrada</h2>
+      <p>La revisión para este artículo ya fue registrada y no puede volver a evaluarse.</p>
+    </div>
+    <div class="rubric-final">
+      <p class="summary-actions__note">Estado: revisión evaluada. Consulta el historial si necesitas más detalles.</p>
+    </div>
+  </section>
+
+  <section class="rubric-section" *ngIf="!cargandoRevision && rubrica.length && !isRevisionEnviada">
     <div class="rubric-header">
       <h2>Rúbrica de evaluación</h2>
       <p>Marca Sí / No en cada criterio. No puedes cerrar la revisión sin completar toda la rúbrica.</p>
@@ -98,17 +112,7 @@
 
   </section>
 
-  <section class="rubric-section" *ngIf="isRevisionEnviada">
-    <div class="rubric-header">
-      <h2>Revisión registrada</h2>
-      <p>La revisión para este artículo ya fue registrada y no puede volver a evaluarse.</p>
-    </div>
-    <div class="rubric-final">
-      <p class="summary-actions__note">Estado: revisión enviada. Consulta el historial si necesitas más detalles.</p>
-    </div>
-  </section>
-
-  <div class="review-submit">
+  <div class="review-submit" *ngIf="!cargandoRevision && !isRevisionEnviada">
     <p class="summary-actions__note" *ngIf="!rubricaCompleta">Debes marcar todos los criterios antes de enviar.</p>
     <p class="summary-actions__note" *ngIf="rubricaCompleta && apruebaPublicacion === null">Debes indicar si se aprueba para publicación (Sí / No) antes de enviar.</p>
 

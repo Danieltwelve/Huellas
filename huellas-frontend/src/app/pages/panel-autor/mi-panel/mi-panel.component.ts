@@ -557,11 +557,11 @@ export class MiPanelComponent implements OnInit {
         tipo: 'informacion',
         titulo: 'Revision por pares academicos',
         descripcion:
-          'El manuscrito esta en evaluacion por pares. En esta etapa pueden generarse recomendaciones para ajustes.',
+          'El manuscrito esta en evaluacion por pares. En esta etapa se emite una decision editorial de aceptacion o rechazo.',
         acciones: [
           'Esperar resultado de evaluacion de pares.',
           'Consultar notificaciones cuando el equipo editorial registre novedades.',
-          'Preparar respuesta si se solicitan correcciones.',
+          'Revisar las observaciones solo si el dictamen lo indica.',
         ],
       };
     }

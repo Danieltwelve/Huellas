@@ -19,7 +19,7 @@ interface ArticuloRevisorListado {
   tema: string;
   fechaAsignacion: string;
   fechaLimite: string;
-  estado: 'pendiente' | 'en-proceso' | 'enviado';
+  estado: 'pendiente' | 'en-proceso' | 'evaluado';
   prioridad: 'alta' | 'media' | 'baja';
   ronda: number;
   ordenLlegada: number;

@@ -118,11 +118,23 @@ export class RevisoresService {
       order: { id: 'DESC' },
     });
 
-    // Obtener las observaciones de revisión existentes para este revisor, para marcar estado 'enviado'
+    // Obtener las observaciones de revisión existentes para este revisor, para marcar estado 'evaluado'
     const observacionesRepo = this.dataSource.getRepository(Observacion);
-    const observacionesRevisor = await observacionesRepo.find({
-      where: { usuarioId, etapaId: RevisoresService.ETAPA_REVISION_PARES },
-    });
+    const observacionesRevisor = await observacionesRepo
+      .createQueryBuilder('observacion')
+      .where('observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId', {
+        usuarioId,
+        etapaId: RevisoresService.ETAPA_REVISION_PARES,
+      })
+      .andWhere(
+        '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
+        {
+          aprobado: RevisoresService.ASUNTO_REVISION_PARES_APROBADO,
+          rechazado: RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO,
+          ajustes: RevisoresService.ASUNTO_REVISION_PARES_AJUSTES,
+        },
+      )
+      .getMany();
     const articulosConRevision = new Set(observacionesRevisor.map((o) => o.articuloId));
 
     return articulos
@@ -151,7 +163,7 @@ export class RevisoresService {
             'Sin tema',
           fechaAsignacion: fechaAsignacion?.toISOString() ?? null,
           fechaLimite: fechaLimite?.toISOString() ?? null,
-          estado: articulosConRevision.has(articulo.id) ? 'enviado' : 'en-proceso',
+          estado: articulosConRevision.has(articulo.id) ? 'evaluado' : 'en-proceso',
           prioridad:
             diasRestantes !== null && diasRestantes <= 5
               ? 'alta'
@@ -194,7 +206,7 @@ export class RevisoresService {
     usuarioId: number,
     articuloId: number,
     data: {
-      recomendacion: 'aceptar' | 'ajustes' | 'rechazar';
+      recomendacion: 'aceptar' | 'rechazar';
       calificacion: number;
       comentarios?: string;
     },
@@ -231,13 +243,22 @@ export class RevisoresService {
     }
 
     const observacionesRepo = this.dataSource.getRepository(Observacion);
-    const revisionExistente = await observacionesRepo.findOne({
-      where: {
+    const revisionExistente = await observacionesRepo
+      .createQueryBuilder('observacion')
+      .where('observacion.articuloId = :articuloId AND observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId', {
         articuloId,
         usuarioId,
         etapaId: RevisoresService.ETAPA_REVISION_PARES,
-      },
-    });
+      })
+      .andWhere(
+        '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
+        {
+          aprobado: RevisoresService.ASUNTO_REVISION_PARES_APROBADO,
+          rechazado: RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO,
+          ajustes: RevisoresService.ASUNTO_REVISION_PARES_AJUSTES,
+        },
+      )
+      .getOne();
 
     if (revisionExistente) {
       throw new ConflictException(
@@ -254,13 +275,11 @@ export class RevisoresService {
     const asunto =
       recomendacion === 'aceptar'
         ? RevisoresService.ASUNTO_REVISION_PARES_APROBADO
-        : recomendacion === 'rechazar'
-          ? RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO
-          : RevisoresService.ASUNTO_REVISION_PARES_AJUSTES;
+        : RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO;
 
     const observacionBase = [
       `Calificación: ${calificacion}/5`,
-      `Recomendación: ${recomendacion.toUpperCase()}`,
+      `Decisión: ${recomendacion.toUpperCase()}`,
       data.comentarios?.trim() ? `Comentarios:\n${data.comentarios.trim()}` : '',
     ]
       .filter(Boolean)
@@ -287,6 +306,28 @@ export class RevisoresService {
       await archivoRepo.save(registroArchivo);
     }
 
+    // Crear observaciones notificación para autores
+    const articuloConAutores = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['autores'],
+    });
+    const autorIds = articuloConAutores?.autores?.map((a) => a.id) ?? [];
+    const resumenDecision =
+      recomendacion === 'aceptar'
+        ? 'El artículo fue aprobado en la revisión por pares.'
+        : 'El artículo fue rechazado en la revisión por pares.';
+
+    for (const autorId of autorIds) {
+      const notificacionAutor = observacionesRepo.create({
+        articuloId,
+        usuarioId: autorId,
+        etapaId: RevisoresService.ETAPA_REVISION_PARES,
+        asunto: `Revisión por pares completada: ${recomendacion === 'aceptar' ? 'APROBADO' : 'RECHAZADO'}`,
+        comentarios: `${resumenDecision} Calificación: ${calificacion}/5.`,
+      });
+      await observacionesRepo.save(notificacionAutor);
+    }
+
     return {
       message: 'Revisión registrada correctamente.',
       articuloId,
@@ -297,22 +338,31 @@ export class RevisoresService {
   }
 
   async getHistorialRevisionRevisor(usuarioId: number) {
-    const observaciones = await this.dataSource.getRepository(Observacion).find({
-      where: {
+    const observaciones = await this.dataSource
+      .getRepository(Observacion)
+      .createQueryBuilder('observacion')
+      .leftJoinAndSelect('observacion.articulo', 'articulo')
+      .leftJoinAndSelect('observacion.archivos', 'archivos')
+      .where('observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId', {
         usuarioId,
         etapaId: RevisoresService.ETAPA_REVISION_PARES,
-      },
-      relations: ['articulo', 'archivos'],
-      order: { fechaSubida: 'DESC' },
-    });
+      })
+      .andWhere(
+        '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
+        {
+          aprobado: RevisoresService.ASUNTO_REVISION_PARES_APROBADO,
+          rechazado: RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO,
+          ajustes: RevisoresService.ASUNTO_REVISION_PARES_AJUSTES,
+        },
+      )
+      .orderBy('observacion.fechaSubida', 'DESC')
+      .getMany();
 
     return observaciones.map((observacion) => {
       const asunto = (observacion.asunto ?? '').toLowerCase();
       const decision = asunto.includes('rechaz')
         ? 'rechazar'
-        : asunto.includes('ajust')
-          ? 'ajustes'
-          : 'aceptar';
+        : 'aceptar';
       const archivoPrincipal = observacion.archivos?.[0] ?? null;
 
       return {

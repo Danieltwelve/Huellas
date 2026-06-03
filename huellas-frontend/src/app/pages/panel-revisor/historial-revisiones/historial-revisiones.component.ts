@@ -44,8 +44,7 @@ export class HistorialRevisionesComponent implements OnInit {
 
   decisionLabel(decision: string): string {
     if (decision === 'aceptar') return 'Aceptar';
-    if (decision === 'rechazar') return 'Rechazar';
-    return 'Solicitar ajustes';
+    return 'Rechazar';
   }
 
   formatoFecha(fecha: string): string {

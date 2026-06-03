@@ -34,8 +34,8 @@ export class ResumenRevisorComponent implements OnInit {
     return this.articulos.filter((a) => a.estado === 'en-proceso').length;
   }
 
-  get enviados(): number {
-    return this.articulos.filter((a) => a.estado === 'enviado').length;
+  get evaluados(): number {
+    return this.articulos.filter((a) => a.estado === 'evaluado').length;
   }
 
   get proximoVencimiento(): string {

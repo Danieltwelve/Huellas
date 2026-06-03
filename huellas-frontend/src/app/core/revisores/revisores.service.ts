@@ -36,7 +36,7 @@ export interface ArticuloRevisorDto {
 	tema: string;
 	fechaAsignacion: string | null;
 	fechaLimite: string | null;
-	estado: 'pendiente' | 'en-proceso' | 'enviado';
+	estado: 'pendiente' | 'en-proceso' | 'evaluado';
 	prioridad: 'alta' | 'media' | 'baja';
 	ronda: number;
 	enlace?: string;
@@ -53,7 +53,7 @@ export interface NotificacionRevisorDto {
 }
 
 export interface RevisionRevisorPayload {
-	recomendacion: 'aceptar' | 'ajustes' | 'rechazar';
+	recomendacion: 'aceptar' | 'rechazar';
 	calificacion: number;
 	comentarios?: string;
 	archivo?: File | null;
@@ -63,7 +63,7 @@ export interface RevisionRevisorResponse {
 	message: string;
 	articuloId: number;
 	observacionId: number;
-	recomendacion: 'aceptar' | 'ajustes' | 'rechazar';
+	recomendacion: 'aceptar' | 'rechazar';
 	calificacion: number;
 }
 
@@ -72,7 +72,7 @@ export interface HistorialRevisionRevisorDto {
 	articuloId: number;
 	codigoArticulo: string;
 	tituloArticulo: string;
-	decision: 'aceptar' | 'ajustes' | 'rechazar';
+	decision: 'aceptar' | 'rechazar';
 	fechaEnvio: string;
 	observacion: string;
 	tieneAdjunto: boolean;
@@ -264,7 +264,7 @@ export class RevisoresService {
 			);
 		}
 
-		private buildRevisionFormData(payload: RevisionRevisorPayload): FormData {
+	private buildRevisionFormData(payload: RevisionRevisorPayload): FormData {
 			const formData = new FormData();
 			formData.append('recomendacion', payload.recomendacion);
 			formData.append('calificacion', String(payload.calificacion));

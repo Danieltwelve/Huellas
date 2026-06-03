@@ -277,11 +277,13 @@ export class RealizarRevisionComponent implements OnInit {
     {},
   );
   articulos: ArticuloRevisorDto[] = ARTICULOS_ASIGNADOS_MOCK;
+  revisionRegistradaIds = new Set<number>();
   articuloSeleccionadoId: number | null = null;
+  cargandoRevision = true;
   juradoEvaluador = '';
   apruebaPublicacion: 'si' | 'no' | null = null;
   calificacion = 1;
-  recomendacion: 'aceptar' | 'ajustes' | 'rechazar' = 'ajustes';
+  recomendacion: 'aceptar' | 'rechazar' = 'rechazar';
   comentarios = '';
   archivoRevision: File | null = null;
   nombreArchivoRevision = '';
@@ -292,16 +294,23 @@ export class RealizarRevisionComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     try {
-      const perfil = await firstValueFrom(this.revisoresService.getPerfilRevisor());
-      this.juradoEvaluador = perfil.nombre || '';
+      const [perfil, data, historial] = await Promise.all([
+        firstValueFrom(this.revisoresService.getPerfilRevisor()),
+        firstValueFrom(this.revisoresService.getArticulosAsignadosRevisor()),
+        firstValueFrom(this.revisoresService.getHistorialRevisionRevisor()),
+      ]);
 
-      const data = await firstValueFrom(this.revisoresService.getArticulosAsignadosRevisor());
+      this.juradoEvaluador = perfil.nombre || '';
       this.articulos = data;
+      this.revisionRegistradaIds = new Set(historial.map((item) => item.articuloId));
+
       const queryId = Number(this.route.snapshot.queryParamMap.get('articuloId'));
       this.articuloSeleccionadoId = data.find((item) => item.id === queryId)?.id ?? data[0]?.id ?? null;
     } catch {
       this.articulos = ARTICULOS_ASIGNADOS_MOCK;
       this.articuloSeleccionadoId = this.articulos[0]?.id ?? null;
+    } finally {
+      this.cargandoRevision = false;
     }
   }
 
@@ -310,7 +319,12 @@ export class RealizarRevisionComponent implements OnInit {
   }
 
   get isRevisionEnviada(): boolean {
-    return this.articuloSeleccionado?.estado === 'enviado';
+    const articulo = this.articuloSeleccionado;
+    if (!articulo) {
+      return false;
+    }
+
+    return articulo.estado === 'evaluado' || this.revisionRegistradaIds.has(articulo.id);
   }
 
   get rubricaCompleta(): boolean {
@@ -350,32 +364,25 @@ export class RealizarRevisionComponent implements OnInit {
     return Math.max(1, Math.min(5, Math.round((respuestasSi / total) * 5)));
   }
 
-  get recomendacionRubrica(): 'aceptar' | 'ajustes' | 'rechazar' {
-    return this.recomendacion;
+  get recomendacionRubrica(): 'aceptar' | 'rechazar' {
+    return this.apruebaPublicacion === 'si' ? 'aceptar' : 'rechazar';
   }
 
   get resumenRubrica(): string {
+    const criterios = this.obtenerCriteriosRubrica();
+    const aprobados = criterios.filter((criterio) => criterio.respuesta === 'si').length;
+    const rechazados = criterios.filter((criterio) => criterio.respuesta === 'no').length;
+
     const lineas: string[] = [];
 
     lineas.push(`Jurado evaluador: ${this.juradoEvaluador || 'Sin registrar'}`);
     if (this.articuloSeleccionado) {
       lineas.push(`Artículo: ${this.articuloSeleccionado.codigo} - ${this.articuloSeleccionado.titulo}`);
     }
-    lineas.push(`Recomendación seleccionada: ${this.recomendacion}`);
-    lineas.push(`Se aprueba para publicación: ${this.apruebaPublicacion === 'si' ? 'Sí' : this.apruebaPublicacion === 'no' ? 'No' : 'Sin definir'}`);
-
-    for (const seccion of this.rubrica) {
-      lineas.push(`${seccion.numero}. ${seccion.titulo}`);
-
-      for (const criterio of seccion.criterios) {
-        lineas.push(`- ${criterio.texto}`);
-        lineas.push(`  Respuesta: ${criterio.respuesta === 'si' ? 'Sí' : criterio.respuesta === 'no' ? 'No' : 'Sin definir'}`);
-
-        if (criterio.sugerencias.trim()) {
-          lineas.push(`  Sugerencias: ${criterio.sugerencias.trim()}`);
-        }
-      }
-    }
+    lineas.push(`Criterios aprobados: ${aprobados}/${criterios.length}`);
+    lineas.push(`Criterios rechazados: ${rechazados}/${criterios.length}`);
+    lineas.push(`Decisión final: ${this.recomendacionRubrica.toUpperCase()}`);
+    lineas.push(`Se aprueba para publicación: ${this.apruebaPublicacion === 'si' ? 'Sí' : 'No'}`);
 
     return lineas.join('\n');
   }
@@ -423,6 +430,7 @@ export class RealizarRevisionComponent implements OnInit {
     try {
       // La decisión final sólo puede ser aceptar o rechazar, derivada de apruebaPublicacion
       const recomendacionToSend: 'aceptar' | 'rechazar' = this.apruebaPublicacion === 'si' ? 'aceptar' : 'rechazar';
+      this.recomendacion = recomendacionToSend;
 
       const resultado = await firstValueFrom(
         this.revisoresService.enviarRevisionRevisor(this.articuloSeleccionado.id, {
@@ -464,16 +472,16 @@ export class RealizarRevisionComponent implements OnInit {
         });
       });
       this.calificacion = 1;
-      this.recomendacion = 'aceptar';
+      this.recomendacion = 'rechazar';
       this.apruebaPublicacion = null;
       this.comentarios = '';
       this.archivoRevision = null;
       this.nombreArchivoRevision = '';
 
-      // Marcar localmente el artículo como enviado para bloquear re-evaluación en todos los paneles
+      // Marcar localmente el artículo como evaluado para bloquear re-evaluación en todos los paneles
       if (this.articuloSeleccionado) {
         const id = this.articuloSeleccionado.id;
-        this.articulos = this.articulos.map((a) => (a.id === id ? { ...a, estado: 'enviado' } : a));
+        this.articulos = this.articulos.map((a) => (a.id === id ? { ...a, estado: 'evaluado' } : a));
       }
       // Navegar al listado para forzar recarga del panel y reflejar el estado actualizado
       try {

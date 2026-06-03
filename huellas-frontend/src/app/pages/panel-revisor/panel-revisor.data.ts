@@ -1,4 +1,4 @@
-export type EstadoRevision = 'pendiente' | 'en-proceso' | 'enviado';
+export type EstadoRevision = 'pendiente' | 'en-proceso' | 'evaluado';
 
 export interface ArticuloRevisor {
   id: number;
@@ -17,7 +17,7 @@ export interface RegistroHistorialRevision {
   id: string;
   codigoArticulo: string;
   tituloArticulo: string;
-  decision: 'aceptar' | 'ajustes' | 'rechazar';
+  decision: 'aceptar' | 'rechazar';
   fechaEnvio: string;
   observacion: string;
 }
@@ -92,7 +92,7 @@ export const HISTORIAL_REVISIONES_MOCK: RegistroHistorialRevision[] = [
     id: 'H-002',
     codigoArticulo: 'REV-2026-005',
     tituloArticulo: 'Diseno universal para el aprendizaje en entornos hibridos',
-    decision: 'ajustes',
+    decision: 'rechazar',
     fechaEnvio: '2026-03-12',
     observacion: 'Solicita mayor evidencia en resultados y precision en el marco teorico.',
   },
