@@ -176,7 +176,7 @@
             <div class="history-date">{{ evento.fecha }}</div>
             <div class="history-details">
               <strong>{{ evento.titulo }}</strong>
-              <p>{{ evento.descripcion }}</p>
+              <p style="white-space: pre-line;">{{ evento.descripcion }}</p>
               @if (evento.archivos.length > 0) {
                 <div class="history-files">
                   @for (archivo of evento.archivos; track archivo.path) {

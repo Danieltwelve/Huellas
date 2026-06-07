@@ -93,19 +93,19 @@
     <div class="rubric-final">
       <div class="rubric-final__title-block">
         <p class="rubric-final__eyebrow">Decisión final</p>
-        <h3>Se aprueba para publicación</h3>
-        <p class="rubric-final__hint">Selecciona Sí o No para cerrar el concepto editorial.</p>
+        <h3>Resultado de la evaluación</h3>
+        <p class="rubric-final__hint">Selecciona Aceptar o Rechazar para cerrar el concepto editorial.</p>
       </div>
 
       <div class="rubric-final__options">
         <label class="rubric-final__choice" [class.rubric-final__choice--selected]="apruebaPublicacion === 'si'">
           <input type="radio" name="apruebaPublicacion" [value]="'si'" [(ngModel)]="apruebaPublicacion" />
-          <span>Sí</span>
+          <span>Aceptar</span>
         </label>
 
         <label class="rubric-final__choice" [class.rubric-final__choice--selected]="apruebaPublicacion === 'no'">
           <input type="radio" name="apruebaPublicacion" [value]="'no'" [(ngModel)]="apruebaPublicacion" />
-          <span>No</span>
+          <span>Rechazar</span>
         </label>
       </div>
     </div>
@@ -114,7 +114,7 @@
 
   <div class="review-submit" *ngIf="!cargandoRevision && !isRevisionEnviada">
     <p class="summary-actions__note" *ngIf="!rubricaCompleta">Debes marcar todos los criterios antes de enviar.</p>
-    <p class="summary-actions__note" *ngIf="rubricaCompleta && apruebaPublicacion === null">Debes indicar si se aprueba para publicación (Sí / No) antes de enviar.</p>
+    <p class="summary-actions__note" *ngIf="rubricaCompleta && apruebaPublicacion === null">Debes indicar la decisión final antes de enviar.</p>
 
     @if (errorRevision) {
       <p class="error-msg">{{ errorRevision }}</p>

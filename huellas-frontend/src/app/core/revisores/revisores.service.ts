@@ -53,7 +53,7 @@ export interface NotificacionRevisorDto {
 }
 
 export interface RevisionRevisorPayload {
-	recomendacion: 'aceptar' | 'rechazar';
+	recomendacion: 'aceptar' | 'ajustes' | 'rechazar';
 	calificacion: number;
 	comentarios?: string;
 	archivo?: File | null;
@@ -63,7 +63,7 @@ export interface RevisionRevisorResponse {
 	message: string;
 	articuloId: number;
 	observacionId: number;
-	recomendacion: 'aceptar' | 'rechazar';
+	recomendacion: 'aceptar' | 'ajustes' | 'rechazar';
 	calificacion: number;
 }
 
@@ -72,7 +72,7 @@ export interface HistorialRevisionRevisorDto {
 	articuloId: number;
 	codigoArticulo: string;
 	tituloArticulo: string;
-	decision: 'aceptar' | 'rechazar';
+	decision: 'aceptar' | 'ajustes' | 'rechazar';
 	fechaEnvio: string;
 	observacion: string;
 	tieneAdjunto: boolean;

@@ -1143,6 +1143,27 @@ export class ArticulosService {
       throw new BadRequestException('El artículo no tiene revisor asignado.');
     }
 
+    const revisor = await this.revisoresRepository.findOne({
+      where: { id: articulo.revisorId },
+    });
+
+    if (revisor) {
+      const observacionesRepo = this.dataSource.getRepository(Observacion);
+      const evaluacionExistente = await observacionesRepo.findOne({
+        where: {
+          articuloId,
+          usuarioId: revisor.usuarioId,
+          etapaId: ArticulosService.ETAPA_REVISION_PARES,
+        },
+      });
+
+      if (evaluacionExistente) {
+        throw new BadRequestException(
+          'No se puede revocar la asignación porque el revisor ya ha enviado una evaluación para este artículo.',
+        );
+      }
+    }
+
 
     // Decrementar cargaActual del revisor previo si aplica
     if (articulo.revisorId) {
@@ -1856,6 +1877,7 @@ export class ArticulosService {
       solicitud_prorroga_correccion_pendiente:
         articulo.solicitudProrrogaCorreccionPendiente ?? false,
       correccion_vencida: this.correccionEstaVencida(articulo, userId),
+      evaluado_pares: this.estaEvaluadoPorPares(articulo),
     }));
   }
 
@@ -1891,6 +1913,22 @@ export class ArticulosService {
     }
 
     return new Date(articulo.fechaVencimientoCorreccion).getTime() < Date.now();
+  }
+
+  private estaEvaluadoPorPares(articulo: Articulo): boolean {
+    const observaciones = articulo.observaciones ?? [];
+    return observaciones.some((obs) => {
+      if (obs.etapaId !== ArticulosService.ETAPA_REVISION_PARES) {
+        return false;
+      }
+      const asunto = (obs.asunto ?? '').toLowerCase();
+      return (
+        asunto.includes('revisión por pares completada') ||
+        asunto.includes('revision por pares completada') ||
+        asunto.includes('revisión por pares:') ||
+        asunto.includes('revision por pares:')
+      );
+    });
   }
 
   async subirCorreccionAutor(
@@ -2233,6 +2271,13 @@ export class ArticulosService {
     articulo: Articulo,
     userId: number,
   ): boolean {
+    if (
+      articulo.etapaActualId !== 1 &&
+      articulo.etapaActualId !== ArticulosService.ETAPA_TURNITIN
+    ) {
+      return false;
+    }
+
     const autoresIds = new Set(
       (articulo.autores ?? []).map((autor) => autor.id),
     );
@@ -2372,6 +2417,11 @@ export class ArticulosService {
       for (const obs of articulo.observaciones ?? []) {
         // Evita notificar al autor por observaciones creadas por si mismo.
         if (obs.usuarioId && obs.usuarioId === userId) {
+          continue;
+        }
+
+        // Evita notificar la observación detallada de la rúbrica del revisor (muy extensa)
+        if (this.esAsuntoRevisionPares(obs.asunto)) {
           continue;
         }
 
@@ -2637,6 +2687,23 @@ export class ArticulosService {
 
         historialCertificacionAbierto.fechaFin = new Date();
         await queryRunner.manager.save(historialCertificacionAbierto);
+
+        // Crear observación de forma automática para notificar al autor
+        const observacion = queryRunner.manager.create(Observacion, {
+          articuloId,
+          usuarioId: userId,
+          etapaId: ArticulosService.ETAPA_CERTIFICACION,
+          asunto: 'Certificado de publicación registrado',
+          comentarios: 'Se ha registrado y cargado el certificado de publicación para el artículo.',
+        });
+        const observacionGuardada = await queryRunner.manager.save(observacion);
+
+        const registroArchivo = queryRunner.manager.create(ObservacionArchivo, {
+          observacionesId: observacionGuardada.id,
+          archivoPath: archivo.path,
+          archivoNombreOriginal: archivo.originalname,
+        });
+        await queryRunner.manager.save(registroArchivo);
       }
 
       const certificado = queryRunner.manager.create(ArticuloCertificado, {

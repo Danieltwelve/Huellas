@@ -169,9 +169,17 @@ export class DetalleArticuloComponent implements OnInit {
   }
 
   get historial(): ObservacionBackend[] {
-    return [...(this.articulo?.observaciones ?? [])].sort(
+    const list = [...(this.articulo?.observaciones ?? [])].sort(
       (a, b) => new Date(b.fechaSubida).getTime() - new Date(a.fechaSubida).getTime(),
     );
+    return list.map((obs) => ({
+      ...obs,
+      asunto: obs.asunto
+        ? obs.asunto
+            .replace(/revisi[oó]n por pares:\s*ajustes/gi, 'Revisión por pares: ACEPTAR')
+            .replace(/revisi[oó]n por pares completada:\s*ajustes/gi, 'Revisión por pares completada: APROBADO')
+        : obs.asunto,
+    }));
   }
 
   get escenarioActual(): EscenarioAutor {
@@ -198,7 +206,9 @@ export class DetalleArticuloComponent implements OnInit {
       };
     }
 
-    const correccionPendiente = this.resumenAutor?.correccion_pendiente === true;
+    const valor = etapa.toLowerCase();
+    const esEtapaConCorreccion = valor.includes('preliminar') || valor.includes('turnitin');
+    const correccionPendiente = esEtapaConCorreccion && this.resumenAutor?.correccion_pendiente === true;
     const estadoCorreccion = this.obtenerEstadoCorreccionDesdeNotificaciones();
 
     if (correccionPendiente && estadoCorreccion !== 'enviada') {
@@ -282,7 +292,10 @@ export class DetalleArticuloComponent implements OnInit {
   }
 
   get mostrarFormularioCorreccion(): boolean {
-    const correccionPendiente = this.resumenAutor?.correccion_pendiente === true;
+    const etapa = this.normalizar(this.articulo?.etapaActual?.nombre ?? '');
+    const valor = etapa.toLowerCase();
+    const esEtapaConCorreccion = valor.includes('preliminar') || valor.includes('turnitin');
+    const correccionPendiente = esEtapaConCorreccion && this.resumenAutor?.correccion_pendiente === true;
     return correccionPendiente && this.obtenerEstadoCorreccionDesdeNotificaciones() !== 'enviada';
   }
 
@@ -419,6 +432,46 @@ export class DetalleArticuloComponent implements OnInit {
     }
 
     return 'escenario-info';
+  }
+
+  formatearComentario(comentario?: string | null): string {
+    if (!comentario) {
+      return '';
+    }
+
+    // Cortar el comentario si contiene la sección de la rúbrica detallada (1. Sobre...)
+    let resumen = comentario;
+    const indexSobre = comentario.search(/(?:\r?\n)?\d+\.\s+Sobre/i);
+    if (indexSobre !== -1) {
+      resumen = comentario.substring(0, indexSobre);
+    } else {
+      const indexSobreSinNumero = comentario.search(/(?:\r?\n)?Sobre la redacción/i);
+      if (indexSobreSinNumero !== -1) {
+        resumen = comentario.substring(0, indexSobreSinNumero);
+      }
+    }
+
+    // Formatear líneas introduciendo saltos de línea antes de campos clave si vienen pegados
+    resumen = resumen
+      .replace(/\s*(Calificación:)/gi, '\n$1')
+      .replace(/\s*(Recomendación:)/gi, '\n$1')
+      .replace(/\s*(Comentarios:)/gi, '\n$1')
+      .replace(/\s*(Jurado evaluador:)/gi, '\n$1')
+      .replace(/\s*(Artículo:)/gi, '\n$1')
+      .replace(/\s*(Recomendación seleccionada:)/gi, '\n$1')
+      .replace(/\s*(Se aprueba para publicación:)/gi, '\n$1')
+      .replace(/\s*(Criterios aprobados:)/gi, '\n$1')
+      .replace(/\s*(Criterios rechazados:)/gi, '\n$1')
+      .trim();
+
+    // Mapear Ajustes -> Aceptar/Aprobado para visualización consistente
+    resumen = resumen
+      .replace(/Recomendación:\s*AJUSTES/gi, 'Recomendación: ACEPTAR')
+      .replace(/Recomendación seleccionada:\s*ajustes/gi, 'Recomendación seleccionada: ACEPTAR')
+      .replace(/Decisión:\s*AJUSTES/gi, 'Decisión: ACEPTAR')
+      .replace(/Decisión final:\s*AJUSTES/gi, 'Decisión final: ACEPTAR');
+
+    return resumen;
   }
 
   formatearFechaHistorial(fechaIso: string): string {

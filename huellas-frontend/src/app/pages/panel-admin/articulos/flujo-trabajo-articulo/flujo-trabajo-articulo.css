@@ -519,6 +519,7 @@
   font-size: 0.94rem;
   color: #475569;
   line-height: 1.6;
+  white-space: pre-line;
 }
 
 .correccion-admin-actions {

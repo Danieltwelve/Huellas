@@ -206,7 +206,7 @@ export class RevisoresService {
     usuarioId: number,
     articuloId: number,
     data: {
-      recomendacion: 'aceptar' | 'rechazar';
+      recomendacion: 'aceptar' | 'ajustes' | 'rechazar';
       calificacion: number;
       comentarios?: string;
     },
@@ -275,7 +275,9 @@ export class RevisoresService {
     const asunto =
       recomendacion === 'aceptar'
         ? RevisoresService.ASUNTO_REVISION_PARES_APROBADO
-        : RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO;
+        : recomendacion === 'ajustes'
+          ? RevisoresService.ASUNTO_REVISION_PARES_AJUSTES
+          : RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO;
 
     const observacionBase = [
       `Calificación: ${calificacion}/5`,
@@ -315,14 +317,22 @@ export class RevisoresService {
     const resumenDecision =
       recomendacion === 'aceptar'
         ? 'El artículo fue aprobado en la revisión por pares.'
-        : 'El artículo fue rechazado en la revisión por pares.';
+        : recomendacion === 'ajustes'
+          ? 'El artículo requiere realizar correcciones (ajustes) en la revisión por pares.'
+          : 'El artículo fue rechazado en la revisión por pares.';
 
     for (const autorId of autorIds) {
       const notificacionAutor = observacionesRepo.create({
         articuloId,
-        usuarioId: autorId,
+        usuarioId: usuarioId, // Revisor's user ID so that it is not skipped for the author
         etapaId: RevisoresService.ETAPA_REVISION_PARES,
-        asunto: `Revisión por pares completada: ${recomendacion === 'aceptar' ? 'APROBADO' : 'RECHAZADO'}`,
+        asunto: `Revisión por pares completada: ${
+          recomendacion === 'aceptar'
+            ? 'APROBADO'
+            : recomendacion === 'ajustes'
+              ? 'AJUSTES'
+              : 'RECHAZADO'
+        }`,
         comentarios: `${resumenDecision} Calificación: ${calificacion}/5.`,
       });
       await observacionesRepo.save(notificacionAutor);

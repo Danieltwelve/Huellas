@@ -18,6 +18,7 @@ interface RevisorPares {
   destacado?: boolean;
   recomendacion?: string;
   deshabilitado?: boolean;
+  expandido?: boolean;
 }
 
 @Component({
@@ -36,6 +37,7 @@ export class RevisionPares implements OnInit {
     this.revisorAsignadoInput = value;
     this.sincronizarRevisorAsignado();
   }
+  @Input() yaEvaluado = false;
   generandoPuntajes = false;
   relevanciasGeneradas = false;
   mostrandoModal = false;
@@ -59,6 +61,7 @@ export class RevisionPares implements OnInit {
         relevancia: 'BAJA',
         cargaActual: r.cargaActual ?? 0,
         descripcion: r.perfil ?? '',
+        expandido: false,
       }));
       this.allRevisores = [...this.revisores];
       this.sincronizarRevisorAsignado();
@@ -180,6 +183,10 @@ export class RevisionPares implements OnInit {
 
   trackById(index: number, item: RevisorPares): number {
     return item.id;
+  }
+
+  toggleDescripcion(revisor: RevisorPares): void {
+    revisor.expandido = !revisor.expandido;
   }
 
   get tieneRevisorAsignado(): boolean {
@@ -320,6 +327,7 @@ export class RevisionPares implements OnInit {
       correo: this.revisorAsignadoInput.correo ?? base.correo,
       descripcion: this.revisorAsignadoInput.perfil ?? base.descripcion,
       cargaActual: this.revisorAsignadoInput.cargaActual ?? base.cargaActual,
+      expandido: base.expandido ?? false,
     };
 
     this.revisores = this.allRevisores.map((revisor) =>
@@ -340,6 +348,7 @@ export class RevisionPares implements OnInit {
       relevancia: 'BAJA',
       cargaActual: revisor.cargaActual ?? 0,
       descripcion: revisor.perfil ?? '',
+      expandido: false,
     };
   }
 }

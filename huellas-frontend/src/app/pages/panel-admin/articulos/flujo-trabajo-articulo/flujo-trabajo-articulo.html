@@ -15,8 +15,7 @@
 
   <nav class="etapas-navbar" aria-label="Etapas del articulo">
     @for (etapa of etapas; track etapa.id) {
-    <button class="etapa-boton" type="button" [class.etapa-boton--activa]="etapa.activa"
-      (click)="seleccionarEtapa(etapa.id)">
+    <button class="etapa-boton" type="button" [class.etapa-boton--activa]="etapa.activa" style="cursor: default;">
       <span class="etapa-numero">{{ getNumeroEtapa(etapa.id) }}.</span>
       <span class="etapa-texto">{{ etapa.titulo }}</span>
     </button>
@@ -150,7 +149,7 @@
                     </button>
                   </div>
                 </div>
-                <p *ngIf="registro.comentario" class="historial-comentario">{{ registro.comentario }}</p>
+                <p *ngIf="registro.comentario" class="historial-comentario">{{ formatearComentario(registro.comentario) }}</p>
 
                 <div class="correccion-admin-actions" *ngIf="registro.esCorreccionAutor">
                   <span class="tag-correccion-ok" *ngIf="registro.correccionAceptada">Corrección aceptada</span>
@@ -181,6 +180,7 @@
         *ngIf="puedeMostrarRevisionPares && !estaEnCertificacion"
         [articuloId]="articuloIdActual"
         [revisorAsignado]="articulo?.revisor ?? null"
+        [yaEvaluado]="revisorAsignadoEmitioCriterioActual"
       ></app-revision-pares>
 
       <div class="accion-group" *ngIf="puedeMostrarObservacion && !estaEnCertificacion">
@@ -415,26 +415,54 @@
 
       <section class="accion-card card-certificacion" *ngIf="puedeMostrarCertificacion">
         <span class="accion-label">Certificación</span>
-        <p class="asignacion-helper">Sube el certificado de publicación en PDF para cerrar esta etapa editorial.</p>
 
-        <label class="file-label" for="archivoCertificacion">Adjuntar certificado de publicación</label>
-        <input
-          id="archivoCertificacion"
-          type="file"
-          accept=".pdf"
-          (change)="onArchivoCertificacionSeleccionado($event)"
-          class="file-input"
-        />
-        <p class="file-name" *ngIf="nombreArchivoCertificacion">{{ nombreArchivoCertificacion }}</p>
+        <!-- Case 1: Certificate already uploaded -->
+        <ng-container *ngIf="certificadoPublicacionCargado; else noCargado">
+          <p class="asignacion-helper text-success" style="color: #2e7d32; font-weight: 500;">
+            El certificado de publicación ha sido registrado con éxito.
+          </p>
+          <div class="certificado-info-box" style="margin-top: 12px; padding: 12px; background: rgba(46, 125, 50, 0.05); border: 1px solid rgba(46, 125, 50, 0.2); border-radius: 6px;">
+            <p class="file-name" style="margin-bottom: 12px; font-size: 0.9rem; word-break: break-all;">
+              <strong>Archivo:</strong> {{ certificadoPublicacionCargado.archivoNombreOriginal }}
+            </p>
+            <button
+              type="button"
+              class="btn-outline-teal btn-full btn-download-cert"
+              (click)="descargarCertificado(certificadoPublicacionCargado.id)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-inline" style="width:16px;height:16px;margin-right:8px;vertical-align:middle;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Descargar certificado
+            </button>
+          </div>
+        </ng-container>
 
-        <button
-          class="btn-outline-teal btn-full"
-          type="button"
-          (click)="subirCertificadoPublicacion()"
-          [disabled]="subiendoCertificacion || !archivoCertificacion"
-        >
-          {{ subiendoCertificacion ? 'Subiendo...' : 'Subir certificado de publicación' }}
-        </button>
+        <!-- Case 2: Certificate not uploaded yet -->
+        <ng-template #noCargado>
+          <p class="asignacion-helper">Sube el certificado de publicación en PDF para cerrar esta etapa editorial.</p>
+
+          <label class="file-label" for="archivoCertificacion">Adjuntar certificado de publicación</label>
+          <input
+            id="archivoCertificacion"
+            type="file"
+            accept=".pdf"
+            (change)="onArchivoCertificacionSeleccionado($event)"
+            class="file-input"
+          />
+          <p class="file-name" *ngIf="nombreArchivoCertificacion">{{ nombreArchivoCertificacion }}</p>
+
+          <button
+            class="btn-outline-teal btn-full"
+            type="button"
+            (click)="subirCertificadoPublicacion()"
+            [disabled]="subiendoCertificacion || !archivoCertificacion"
+          >
+            {{ subiendoCertificacion ? 'Subiendo...' : 'Subir certificado de publicación' }}
+          </button>
+        </ng-template>
       </section>
 
       <section class="accion-card card-mover" *ngIf="!estaEnCertificacion || etapaActualTerminada" [class.card-mover--foco]="soloPuedeMoverAComiteEnPreliminar">
