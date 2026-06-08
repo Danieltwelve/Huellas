@@ -56,6 +56,7 @@ export class AppComponent {
           url.startsWith('/publicacion') ||
           url.startsWith('/gestion-usuarios') ||
           url.startsWith('/articulos') ||
+          url.startsWith('/seguimiento') ||
           url.startsWith('/certificados-editoriales') ||
           url.startsWith('/flujo-trabajo-articulo') ||
           url.startsWith('/estadisticas')
@@ -66,6 +67,7 @@ export class AppComponent {
           window.location.pathname.startsWith('/publicacion') ||
           window.location.pathname.startsWith('/gestion-usuarios') ||
           window.location.pathname.startsWith('/articulos') ||
+          window.location.pathname.startsWith('/seguimiento') ||
           window.location.pathname.startsWith('/certificados-editoriales') ||
           window.location.pathname.startsWith('/flujo-trabajo-articulo') ||
           window.location.pathname.startsWith('/estadisticas'),

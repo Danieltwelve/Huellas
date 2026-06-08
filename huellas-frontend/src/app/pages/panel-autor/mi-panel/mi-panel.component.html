@@ -120,10 +120,7 @@
                 <td>
                   <span
                     class="badge"
-                    [class.badge-yellow]="getEtapaClass(articulo.etapa_nombre) === 'badge-yellow'"
-                    [class.badge-orange]="getEtapaClass(articulo.etapa_nombre) === 'badge-orange'"
-                    [class.badge-green]="getEtapaClass(articulo.etapa_nombre) === 'badge-green'"
-                    [class.badge-blue]="getEtapaClass(articulo.etapa_nombre) === 'badge-blue'"
+                    [ngClass]="getEtapaClass(articulo.etapa_nombre)"
                   >{{ etapaEnMayusculas(articulo.etapa_nombre) }}</span>
                 </td>
                 <td>
@@ -212,10 +209,7 @@
               }
               <span
                 class="badge"
-                [class.badge-yellow]="getEtapaClass(articulo.etapa_nombre) === 'badge-yellow'"
-                [class.badge-orange]="getEtapaClass(articulo.etapa_nombre) === 'badge-orange'"
-                [class.badge-green]="getEtapaClass(articulo.etapa_nombre) === 'badge-green'"
-                [class.badge-blue]="getEtapaClass(articulo.etapa_nombre) === 'badge-blue'"
+                [ngClass]="getEtapaClass(articulo.etapa_nombre)"
               >{{ articulo.etapa_nombre }}</span>
               <div class="actions-cell">
                 <button class="btn-outline-sm" type="button" (click)="verSeguimientoArticulo(articulo.id)">

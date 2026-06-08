@@ -13,6 +13,7 @@ import { normalizarNombreArchivo } from '../../../../core/utils/filename.utils';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { UsersService, UsuarioBackend } from '../../../../core/users/users.service';
 import { RevisionPares } from './revision-pares/revision-pares';
+import { EdicionesRevistaService, EdicionRevistaBackend } from '../../../../core/ediciones-revista/ediciones.revista.service';
 
 interface EtapaFlujo {
   id: number;
@@ -65,10 +66,28 @@ export class FlujoTrabajoArticulo {
   private readonly authService = inject(AuthService);
   private readonly usersService = inject(UsersService);
   private readonly router = inject(Router);
+  private readonly edicionesService = inject(EdicionesRevistaService);
   private readonly autoRefreshMs = 12000;
   articuloIdActual: number | null = null;
   private autoRefreshSubscription: Subscription | null = null;
   private modalExitoMoverTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  checklistRevisionFinal = {
+    ajustesRevisores: false,
+    normasFormato: false,
+    referenciasBibliograficas: false,
+    redaccionOrtografia: false,
+    metadatosInglesEspanol: false,
+  };
+  guardandoChecklist = false;
+
+  edicionesList: EdicionRevistaBackend[] = [];
+  edicionSeleccionadaId: number | null = null;
+  doiPublicacion = '';
+  issnPublicacion = '';
+  paginasPublicacion = '';
+  guardandoMetadata = false;
+  publicandoArticulo = false;
 
   private static readonly ETAPA_REVISION_PRELIMINAR = 1;
   private static readonly ETAPA_COMITE_EDITORIAL = 6;
@@ -122,6 +141,7 @@ export class FlujoTrabajoArticulo {
   mostrarModalErrorTurnitin = false;
   mensajeErrorTurnitin: string | null = null;
   mostrarModalConfirmacionCorreccion = false;
+  mostrarModalConfirmacionCertificado = false;
   registroCorreccionConfirmacion: RegistroFlujo | null = null;
   comentarioAceptacionCorreccion = '';
 
@@ -178,6 +198,7 @@ export class FlujoTrabajoArticulo {
     });
 
     this.loadCommitteeMembers();
+    this.cargarEdiciones();
   }
 
   ngOnDestroy(): void {
@@ -224,6 +245,7 @@ export class FlujoTrabajoArticulo {
         this.etapaMoverSeleccionadaId = this.etapaSiguientePermitida?.id ?? null;
         this.committeeMemberSeleccionadoId = data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
         this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
+        this.mapearChecklistYMetadata(data);
         this.cargarCertificadoPublicacion(data.id);
       },
       error: () => {
@@ -266,9 +288,11 @@ export class FlujoTrabajoArticulo {
         this.miembroComiteConfirmacion = null;
         this.mostrarModalConfirmacionTurnitin = false;
         this.mostrarModalExitoTurnitin = false;
+        this.mostrarModalConfirmacionCertificado = false;
         this.mensajeExitoTurnitin = '';
         this.committeeMemberSeleccionadoId = data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
         this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
+        this.mapearChecklistYMetadata(data);
         this.loading = false;
         this.cargarCertificadoPublicacion(data.id);
         alCompletar?.();
@@ -279,6 +303,43 @@ export class FlujoTrabajoArticulo {
         this.loading = false;
       },
     });
+  }
+
+  cargarEdiciones(): void {
+    this.edicionesService.getEdiciones().subscribe({
+      next: (res) => {
+        this.edicionesList = res.data ?? [];
+      },
+      error: (err) => {
+        console.error('Error al cargar ediciones:', err);
+      },
+    });
+  }
+
+  private mapearChecklistYMetadata(data: ArticuloFlujo): void {
+    if (data.revisionFinalChecklist) {
+      try {
+        this.checklistRevisionFinal = {
+          ...this.checklistRevisionFinal,
+          ...JSON.parse(data.revisionFinalChecklist),
+        };
+      } catch (e) {
+        console.error('Error parsing checklist JSON', e);
+      }
+    } else {
+      this.checklistRevisionFinal = {
+        ajustesRevisores: false,
+        normasFormato: false,
+        referenciasBibliograficas: false,
+        redaccionOrtografia: false,
+        metadatosInglesEspanol: false,
+      };
+    }
+
+    this.edicionSeleccionadaId = data.edicionId ?? null;
+    this.doiPublicacion = data.doi ?? '';
+    this.issnPublicacion = data.issn ?? '';
+    this.paginasPublicacion = data.paginas ?? '';
   }
 
   private actualizarEtapaActual(etapaActualId: number): void {
@@ -824,8 +885,19 @@ export class FlujoTrabajoArticulo {
       return;
     }
 
+    if (file && file.size > 10 * 1024 * 1024) {
+      this.archivoCertificacion = null;
+      this.nombreArchivoCertificacion = '';
+      input.value = '';
+      this.accionError = 'El archivo de certificación no puede superar los 10 MB.';
+      this.accionExitosa = null;
+      return;
+    }
+
     this.archivoCertificacion = file;
     this.nombreArchivoCertificacion = file?.name ?? '';
+    this.accionError = null;
+    this.accionExitosa = null;
   }
 
   onPorcentajeTurnitinInput(event: Event): void {
@@ -856,6 +928,18 @@ export class FlujoTrabajoArticulo {
     return file.size <= FlujoTrabajoArticulo.MAX_TURNITIN_FILE_SIZE_BYTES;
   }
 
+  abrirConfirmacionCertificado(): void {
+    if (!this.archivoCertificacion) {
+      this.accionError = 'Debes seleccionar un archivo de certificado válido.';
+      return;
+    }
+    this.mostrarModalConfirmacionCertificado = true;
+  }
+
+  cancelarConfirmacionCertificado(): void {
+    this.mostrarModalConfirmacionCertificado = false;
+  }
+
   subirCertificadoPublicacion(): void {
     if (!this.articulo || !this.puedeMostrarCertificacion || this.subiendoCertificacion) {
       return;
@@ -867,6 +951,7 @@ export class FlujoTrabajoArticulo {
       return;
     }
 
+    this.cancelarConfirmacionCertificado();
     this.subiendoCertificacion = true;
     this.accionError = null;
     this.accionExitosa = null;
@@ -1466,9 +1551,16 @@ export class FlujoTrabajoArticulo {
       return this.etapaActualTerminada;
     }
 
-    // Revisión final (9): se puede mover libremente a Publicación
+    // Revisión final (9): se puede mover si toda la checklist está marcada como verdadera
     if (etapaId === 9) {
-      return true;
+      const checklist = this.checklistRevisionFinal;
+      return !!(
+        checklist.ajustesRevisores &&
+        checklist.normasFormato &&
+        checklist.referenciasBibliograficas &&
+        checklist.redaccionOrtografia &&
+        checklist.metadatosInglesEspanol
+      );
     }
 
     // Lógica por defecto para otros estados
@@ -1541,6 +1633,9 @@ export class FlujoTrabajoArticulo {
     }
 
     if (!this.puedeMoverPorTerminacion) {
+      if (this.articulo?.etapaActual?.id === 9) {
+        return 'Completa todos los ítems de la lista de revisión final antes de avanzar a la etapa de Publicación.';
+      }
       if (this.articulo?.etapaActual?.id === FlujoTrabajoArticulo.ETAPA_REVISION_PARES) {
         if (this.resultadoRevisionParesActual === 'rechazar') {
           return 'El artículo fue rechazado en la revisión por pares y queda descartado.';
@@ -1589,11 +1684,15 @@ export class FlujoTrabajoArticulo {
       this.evaluandoTurnitin ||
       this.evaluandoComite ||
       this.asignandoComite ||
+      this.guardandoChecklist ||
+      this.guardandoMetadata ||
+      this.publicandoArticulo ||
       this.mostrarModalConfirmacionMover ||
       this.mostrarModalConfirmacionAsignacion ||
       this.mostrarModalExitoAsignacion ||
       this.mostrarModalConfirmacionTurnitin ||
       this.mostrarModalExitoTurnitin ||
+      this.mostrarModalConfirmacionCertificado ||
       !!this.archivoObservacion ||
       !!this.archivoTurnitin ||
       !!this.archivoCertificacion ||
@@ -1788,5 +1887,82 @@ export class FlujoTrabajoArticulo {
     this.archivoTurnitin = null;
     this.nombreArchivoTurnitin = '';
     this.decisionTurnitin = null;
+  }
+
+  get estaEnRevisionFinal(): boolean {
+    return this.articulo?.etapaActual?.id === 9;
+  }
+
+  get estaEnPublicacion(): boolean {
+    return this.articulo?.etapaActual?.id === 5;
+  }
+
+  get puedeMostrarRevisionFinal(): boolean {
+    const etapaActualId = this.articulo?.etapaActual?.id ?? null;
+    return etapaActualId === 9 && this.esAdminEditorial;
+  }
+
+  get puedeMostrarPublicacion(): boolean {
+    const etapaActualId = this.articulo?.etapaActual?.id ?? null;
+    return etapaActualId === 5 && this.esAdminEditorial;
+  }
+
+  guardarChecklistFinal(): void {
+    if (!this.articuloIdActual) return;
+    this.guardandoChecklist = true;
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService
+      .guardarChecklistRevisionFinal(this.articuloIdActual, this.checklistRevisionFinal)
+      .subscribe({
+        next: (res) => {
+          this.guardandoChecklist = false;
+          this.accionExitosa = res.message || 'Lista de chequeo guardada exitosamente.';
+          this.cargarArticulo(this.articuloIdActual!);
+        },
+        error: (err) => {
+          this.guardandoChecklist = false;
+          this.accionError = err?.error?.message || 'Error al guardar la lista de chequeo.';
+        },
+      });
+  }
+
+  guardarMetadatosPublicacion(publicar: boolean = false): void {
+    if (!this.articuloIdActual) return;
+    if (!this.edicionSeleccionadaId) {
+      this.accionError = 'Debes seleccionar una edición para el artículo.';
+      return;
+    }
+
+    if (publicar) {
+      this.publicandoArticulo = true;
+    } else {
+      this.guardandoMetadata = true;
+    }
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService
+      .guardarMetadataPublicacion(this.articuloIdActual, {
+        edicionId: this.edicionSeleccionadaId,
+        doi: this.doiPublicacion.trim() || undefined,
+        issn: this.issnPublicacion.trim() || undefined,
+        paginas: this.paginasPublicacion.trim() || undefined,
+        publicar,
+      })
+      .subscribe({
+        next: (res) => {
+          this.guardandoMetadata = false;
+          this.publicandoArticulo = false;
+          this.accionExitosa = res.message || 'Metadatos procesados correctamente.';
+          this.cargarArticulo(this.articuloIdActual!);
+        },
+        error: (err) => {
+          this.guardandoMetadata = false;
+          this.publicandoArticulo = false;
+          this.accionError = err?.error?.message || 'Error al procesar metadatos.';
+        },
+      });
   }
 }

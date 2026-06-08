@@ -104,6 +104,11 @@ export interface ArticuloFlujo {
   id: number;
   codigo: string;
   titulo: string;
+  doi?: string | null;
+  issn?: string | null;
+  edicionId?: number | null;
+  paginas?: string | null;
+  revisionFinalChecklist?: string | null;
   evaluacionComiteRealizada?: boolean;
   fechaAsignacionComite?: string | null;
   fechaVencimientoComite?: string | null;
@@ -853,6 +858,58 @@ export class ArticulosService {
       switchMap((token) =>
         this.http.delete<{ message: string }>(
           `${environment.apiUrlBackend}/articulos/certificados/${certificadoId}`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  guardarChecklistRevisionFinal(
+    articuloId: number,
+    checklist: Record<string, boolean>,
+  ): Observable<{ message: string }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.patch<{ message: string }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/revision-final-checklist`,
+          { checklist },
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  guardarMetadataPublicacion(
+    articuloId: number,
+    payload: {
+      edicionId: number;
+      doi?: string;
+      issn?: string;
+      paginas?: string;
+      publicar?: boolean;
+    },
+  ): Observable<{ message: string }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.patch<{ message: string }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/publicar-metadata`,
+          payload,
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           },

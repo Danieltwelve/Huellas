@@ -68,111 +68,7 @@
   </section>
 
   <div class="contenido-principal">
-    <section class="timeline-etapas-panel" [class.timeline-etapas-panel--colapsado]="!rutaEditorialExpandida">
-        <div class="section-head section-head--compact">
-          <div>
-            <span class="section-kicker">Ruta editorial</span>
-            <h2>Cronograma de Etapas</h2>
-          </div>
-          <button
-            type="button"
-            class="section-toggle"
-            [class.is-collapsed]="!rutaEditorialExpandida"
-            (click)="toggleRutaEditorial()"
-            [attr.aria-expanded]="rutaEditorialExpandida"
-            aria-label="Mostrar u ocultar ruta editorial"
-          >
-            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-        </div>
-        <div class="timeline-content" *ngIf="rutaEditorialExpandida">
-          @for (etapa of etapasTimeline; track etapa.id) {
-          <div
-            class="etapa-item"
-            [class.etapa-completada]="etapa.estado === 'completada'"
-            [class.etapa-activa]="etapa.estado === 'actual'"
-          >
-            <aside class="etapa-meta">
-              <div class="timeline-dot"></div>
-              <span class="etapa-estado">{{ etapa.titulo }}</span>
-            </aside>
-            <p class="etapa-fecha">{{ etapa.fecha }}</p>
-          </div>
-          }
-        </div>
-      </section>
 
-    <section class="historial-panel">
-      <div class="section-head section-head--historial">
-        <div>
-          <span class="section-kicker">Seguimiento</span>
-          <h2>Historial del Flujo de Trabajo</h2>
-        </div>
-      </div>
-
-      <ng-container *ngIf="historialVisible.length > 0; else historialVacio">
-        <div class="historial-lista">
-          <article *ngFor="let registro of historialVisible" class="historial-item">
-
-            <aside class="historial-meta">
-              <div class="timeline-dot"></div>
-              <p class="historial-fecha">{{ registro.fecha }}</p>
-              <p class="historial-autor">{{ registro.autor }} - {{ registro.rol }}</p>
-            </aside>
-
-            <div class="historial-card" [class.is-expanded]="registro.expandido">
-              <header class="historial-card-header" (click)="toggleRegistro(registro)">
-                <div class="historial-title-wrap">
-                  <h3>{{ registro.asunto }}</h3>
-                  <span class="tag-correccion-autor" *ngIf="registro.esCorreccionAutor">Corrección del autor</span>
-                </div>
-                <svg class="chevron-icon" [class.rotated]="registro.expandido" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </header>
-
-              <div class="historial-card-body" *ngIf="registro.expandido">
-                <div *ngIf="registro.archivos?.length" class="bloque-archivo">
-                  <div class="archivo-row" *ngFor="let archivo of registro.archivos">
-                    <button type="button" class="archivo-descarga-btn"
-                      (click)="descargarArchivo(archivo.path, archivo.nombre)" title="Descargar {{ archivo.nombre }}">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        class="icon-download">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                      </svg>
-                      <span class="archivo-nombre">{{ archivo.nombre }}</span>
-                    </button>
-                  </div>
-                </div>
-                <p *ngIf="registro.comentario" class="historial-comentario">{{ formatearComentario(registro.comentario) }}</p>
-
-                <div class="correccion-admin-actions" *ngIf="registro.esCorreccionAutor">
-                  <span class="tag-correccion-ok" *ngIf="registro.correccionAceptada">Corrección aceptada</span>
-                  <button
-                    type="button"
-                    class="btn-outline-teal"
-                    *ngIf="registro.puedeAceptarCorreccion"
-                    (click)="confirmarAceptacionCorreccion(registro)"
-                    [disabled]="isAceptandoCorreccion(registro.id)"
-                  >
-                    {{ isAceptandoCorreccion(registro.id) ? 'Aceptando...' : 'Aceptar corrección' }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </article>
-        </div>
-      </ng-container>
-
-      <ng-template #historialVacio>
-        <div class="historial-vacio" aria-label="Sin observaciones para este artículo"></div>
-      </ng-template>
-    </section>
 
     <aside class="acciones-laterales">
 
@@ -289,7 +185,7 @@
         </div>
       </section>
 
-      <section class="accion-group" *ngIf="esComiteEditorial && !estaEnCertificacion">
+      <section class="accion-group" *ngIf="esComiteEditorial && estaEnEtapaComite">
         <span class="accion-label">Rúbrica de evaluación</span>
         <ul class="rubrica-lista">
           <li *ngFor="let item of rubricaItems">{{ item }}</li>
@@ -357,12 +253,12 @@
         </button>
       </section>
 
-      <section class="accion-card" *ngIf="esComiteEditorial && !estaEnCertificacion && articuloYaEvaluadoPorComite">
+      <section class="accion-card" *ngIf="esComiteEditorial && estaEnEtapaComite && articuloYaEvaluadoPorComite">
         <span class="accion-label">Evaluación de Comité Editorial</span>
         <p class="asignacion-helper">Este artículo ya fue evaluado por el Comité Editorial y no admite una nueva evaluación.</p>
       </section>
 
-      <section class="accion-card card-resultado-comite" *ngIf="!estaEnCertificacion && resultadoEvaluacionComite as resultado">
+      <section class="accion-card card-resultado-comite" *ngIf="estaEnEtapaComite && resultadoEvaluacionComite as resultado">
         <span class="accion-label">Resultado del Comité Editorial</span>
         <span class="tag-flow-rule" [class.tag-flow-rule--rechazado]="resultado === 'rechazado'">
           {{ resultado === 'aceptado' ? 'Aceptado por comité' : 'Rechazado por comité' }}
@@ -421,8 +317,8 @@
           <p class="asignacion-helper text-success" style="color: #2e7d32; font-weight: 500;">
             El certificado de publicación ha sido registrado con éxito.
           </p>
-          <div class="certificado-info-box" style="margin-top: 12px; padding: 12px; background: rgba(46, 125, 50, 0.05); border: 1px solid rgba(46, 125, 50, 0.2); border-radius: 6px;">
-            <p class="file-name" style="margin-bottom: 12px; font-size: 0.9rem; word-break: break-all;">
+          <div class="certificado-info-box">
+            <p class="file-name">
               <strong>Archivo:</strong> {{ certificadoPublicacionCargado.archivoNombreOriginal }}
             </p>
             <button
@@ -430,7 +326,7 @@
               class="btn-outline-teal btn-full btn-download-cert"
               (click)="descargarCertificado(certificadoPublicacionCargado.id)"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-inline" style="width:16px;height:16px;margin-right:8px;vertical-align:middle;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-inline">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -444,24 +340,156 @@
         <ng-template #noCargado>
           <p class="asignacion-helper">Sube el certificado de publicación en PDF para cerrar esta etapa editorial.</p>
 
-          <label class="file-label" for="archivoCertificacion">Adjuntar certificado de publicación</label>
-          <input
-            id="archivoCertificacion"
-            type="file"
-            accept=".pdf"
-            (change)="onArchivoCertificacionSeleccionado($event)"
-            class="file-input"
-          />
-          <p class="file-name" *ngIf="nombreArchivoCertificacion">{{ nombreArchivoCertificacion }}</p>
+          <div class="custom-upload-zone">
+            <label for="archivoCertificacion" class="upload-area">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span class="upload-title">
+                {{ nombreArchivoCertificacion ? 'Cambiar archivo' : 'Adjuntar certificado de publicación' }}
+              </span>
+              <span class="upload-subtitle">
+                Solo formato PDF (Máx. 10MB)
+              </span>
+            </label>
+            <input
+              id="archivoCertificacion"
+              type="file"
+              accept=".pdf"
+              (change)="onArchivoCertificacionSeleccionado($event)"
+              style="display: none;"
+            />
+          </div>
+
+          <!-- File info card when selected -->
+          <div class="selected-file-box" *ngIf="nombreArchivoCertificacion">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <span class="file-name">
+              {{ nombreArchivoCertificacion }}
+            </span>
+          </div>
 
           <button
             class="btn-outline-teal btn-full"
             type="button"
-            (click)="subirCertificadoPublicacion()"
+            (click)="abrirConfirmacionCertificado()"
             [disabled]="subiendoCertificacion || !archivoCertificacion"
           >
-            {{ subiendoCertificacion ? 'Subiendo...' : 'Subir certificado de publicación' }}
+            Subir certificado de publicación
           </button>
+        </ng-template>
+      </section>
+
+      <!-- Stage 9: Revisión final checklist -->
+      <section class="accion-card card-revision-final" *ngIf="puedeMostrarRevisionFinal">
+        <span class="accion-label">Revisión Final</span>
+        <p class="asignacion-helper">Verifica que el autor haya cumplido con todos los ajustes solicitados por los revisores.</p>
+
+        <div class="checklist-container">
+          <label class="checklist-item">
+            <input type="checkbox" [(ngModel)]="checklistRevisionFinal.ajustesRevisores" />
+            <span>Incorporación de observaciones de revisión por pares</span>
+          </label>
+          <label class="checklist-item">
+            <input type="checkbox" [(ngModel)]="checklistRevisionFinal.normasFormato" />
+            <span>Formato cumple con normas de publicación</span>
+          </label>
+          <label class="checklist-item">
+            <input type="checkbox" [(ngModel)]="checklistRevisionFinal.referenciasBibliograficas" />
+            <span>Referencias bibliográficas según normas editoriales</span>
+          </label>
+          <label class="checklist-item">
+            <input type="checkbox" [(ngModel)]="checklistRevisionFinal.redaccionOrtografia" />
+            <span>Redacción y ortografía correctas</span>
+          </label>
+          <label class="checklist-item">
+            <input type="checkbox" [(ngModel)]="checklistRevisionFinal.metadatosInglesEspanol" />
+            <span>Metadatos en inglés y español válidos</span>
+          </label>
+        </div>
+
+        <button
+          class="btn-outline-teal btn-full"
+          type="button"
+          (click)="guardarChecklistFinal()"
+          [disabled]="guardandoChecklist"
+        >
+          {{ guardandoChecklist ? 'Guardando...' : 'Guardar lista de chequeo' }}
+        </button>
+      </section>
+
+      <!-- Stage 5: Publicación form -->
+      <section class="accion-card card-publicacion" *ngIf="puedeMostrarPublicacion">
+        <span class="accion-label">Publicación del Artículo</span>
+        
+        <ng-container *ngIf="etapaActualTerminada; else formularioPublicar">
+          <p class="asignacion-helper text-success" style="color: #2e7d32; font-weight: 500; margin-bottom: 8px;">
+            El artículo ha sido publicado formalmente.
+          </p>
+          <div class="publicado-info-box" style="margin-top: 12px; padding: 12px; background: rgba(46, 125, 50, 0.05); border: 1px solid rgba(46, 125, 50, 0.2); border-radius: 6px; font-size: 0.9rem;">
+            <p style="margin-bottom: 6px;"><strong>DOI:</strong> {{ doiPublicacion || 'No registrado' }}</p>
+            <p style="margin-bottom: 6px;"><strong>ISSN:</strong> {{ issnPublicacion || 'No registrado' }}</p>
+            <p style="margin-bottom: 6px;"><strong>Páginas:</strong> {{ paginasPublicacion || 'No registrado' }}</p>
+          </div>
+        </ng-container>
+
+        <ng-template #formularioPublicar>
+          <p class="asignacion-helper">Completa los metadatos de publicación y elige la edición de la revista.</p>
+
+          <div class="publicacion-inputs" style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+            <div>
+              <label for="edicionSelect">Edición de la Revista</label>
+              <div class="select-wrapper">
+                <select id="edicionSelect" [(ngModel)]="edicionSeleccionadaId" aria-label="Seleccionar edición">
+                  <option [ngValue]="null" disabled>Selecciona una edición</option>
+                  <option *ngFor="let edicion of edicionesList" [ngValue]="edicion.id">
+                    {{ edicion.titulo }} (Vol. {{ edicion.volumen }}, Nº {{ edicion.numero }})
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label for="doiInput">DOI</label>
+              <input id="doiInput" type="text" class="input-control" [(ngModel)]="doiPublicacion" placeholder="e.g. 10.12345/huellas.v1i1.100" />
+            </div>
+
+            <div>
+              <label for="issnInput">ISSN</label>
+              <input id="issnInput" type="text" class="input-control" [(ngModel)]="issnPublicacion" placeholder="e.g. 2448-6515" />
+            </div>
+
+            <div>
+              <label for="paginasInput">Rango de Páginas</label>
+              <input id="paginasInput" type="text" class="input-control" [(ngModel)]="paginasPublicacion" placeholder="e.g. 12-25" />
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <button
+                class="btn-outline-teal"
+                style="flex: 1;"
+                type="button"
+                (click)="guardarMetadatosPublicacion(false)"
+                [disabled]="guardandoMetadata || publicandoArticulo"
+              >
+                {{ guardandoMetadata ? 'Guardando...' : 'Guardar borrador' }}
+              </button>
+              <button
+                class="btn-primario"
+                style="flex: 1.2; padding: 10px 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s;"
+                type="button"
+                (click)="guardarMetadatosPublicacion(true)"
+                [disabled]="guardandoMetadata || publicandoArticulo"
+              >
+                {{ publicandoArticulo ? 'Publicando...' : 'Publicar artículo' }}
+              </button>
+            </div>
+          </div>
         </ng-template>
       </section>
 
@@ -605,6 +633,29 @@
         <button type="button" class="btn-secundario" (click)="cancelarConfirmacionAceptacionCorreccion()">Cancelar</button>
         <button type="button" class="btn-primario" (click)="confirmarAceptacionCorreccionModal()">
           Sí, aceptar corrección
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionCertificado" (click)="cancelarConfirmacionCertificado()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar subida de certificado" (click)="$event.stopPropagation()">
+      <h3>Confirmar registro de certificado</h3>
+      <p *ngIf="articulo && nombreArchivoCertificacion">
+        ¿Estás seguro de registrar el archivo <strong>{{ nombreArchivoCertificacion }}</strong> como el certificado oficial de publicación para este artículo?
+      </p>
+      <p style="font-size: 0.85rem; color: #64748b; margin-top: 8px; background: rgba(245, 158, 11, 0.05); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.2);">
+        ⚠️ Una vez registrado el certificado de publicación, la etapa de Certificación se considerará cerrada y no se podrá modificar.
+      </p>
+      <div class="modal-acciones" style="margin-top: 20px;">
+        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionCertificado()">Cancelar</button>
+        <button
+          type="button"
+          class="btn-primario"
+          (click)="subirCertificadoPublicacion()"
+          [disabled]="subiendoCertificacion"
+        >
+          {{ subiendoCertificacion ? 'Subiendo...' : 'Sí, subir certificado' }}
         </button>
       </div>
     </section>

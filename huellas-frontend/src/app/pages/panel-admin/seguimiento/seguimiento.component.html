@@ -1,0 +1,337 @@
+<div class="timeline-container">
+  <div class="selector-card">
+    <label for="articuloSelector">Artículo a seguir (Seguimiento uno a uno)</label>
+    <button
+      type="button"
+      class="selector-trigger"
+      [class.selector-trigger--open]="selectorOpen"
+      (click)="toggleSelector()"
+      [disabled]="cargandoLista || articulos.length === 0"
+      aria-haspopup="listbox"
+      [attr.aria-expanded]="selectorOpen"
+    >
+      <span class="selector-trigger__content">
+        <span class="selector-trigger__code">{{ articuloSeleccionado?.codigo ?? 'Selecciona un artículo' }}</span>
+        <span class="selector-trigger__title">
+          {{ articuloSeleccionado?.titulo ?? 'Ver el seguimiento editorial' }}
+        </span>
+      </span>
+      <span class="selector-trigger__chevron" aria-hidden="true">⌄</span>
+    </button>
+
+    @if (selectorOpen) {
+      <div class="selector-menu" role="listbox" aria-label="Artículos registrados">
+        <input
+          type="text"
+          class="selector-search"
+          placeholder="Buscar artículo por código o título..."
+          [value]="searchTerm"
+          (input)="onSearch($event)"
+          aria-label="Buscar artículos"
+        />
+
+        @if (filteredArticulos.length === 0) {
+          <div class="selector-empty">No se encontraron artículos</div>
+        }
+
+        @for (articulo of filteredArticulos; track articulo.id) {
+          <button
+            type="button"
+            class="selector-option"
+            [class.selector-option--active]="articuloSeleccionadoId === articulo.id"
+            (click)="seleccionarArticulo(articulo)"
+            role="option"
+            [attr.aria-selected]="articuloSeleccionadoId === articulo.id"
+          >
+            <span class="selector-option__badge">{{ articulo.codigo }}</span>
+            <span class="selector-option__body">
+              <strong>{{ articulo.titulo }}</strong>
+              <small>Estado actual: {{ articulo.etapa_nombre }}</small>
+            </span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  @if (cargandoLista || cargandoFlujo) {
+    <div class="demo-banner demo-banner--loading">
+      <span class="demo-banner__spinner" aria-hidden="true"></span>
+      <span>Cargando seguimiento del artículo...</span>
+    </div>
+  }
+
+  @if (error) {
+    <div class="demo-banner demo-banner--error">{{ error }}</div>
+  }
+
+  @if (!cargandoLista && articulos.length === 0) {
+    <div class="demo-banner">No hay artículos registrados en el sistema para realizar seguimiento.</div>
+  }
+
+  @if (flujo) {
+    <div class="header-card">
+      <div class="header-info">
+        <p class="eyebrow">Vista de seguimiento (Solo lectura)</p>
+        <h1>Seguimiento del artículo</h1>
+        <p class="title-details">{{ titulo }}</p>
+      </div>
+      <div class="progress-section">
+        <div class="progress-labels">
+          <span class="progress-text">PROGRESO GENERAL</span>
+          <span class="progress-percentage">{{ progreso }}%</span>
+        </div>
+        <div class="progress-bar-bg" aria-label="Progreso editorial">
+          <div class="progress-bar-fill" [style.width.%]="progreso"></div>
+        </div>
+        @if (siguientePaso; as paso) {
+          <p class="next-step">
+            Etapa actual del flujo: <strong>{{ paso.nombre }}</strong>
+          </p>
+        }
+      </div>
+    </div>
+
+    <!-- Contexto Editorial Section -->
+    <section class="resumen-envio" [class.resumen-envio--colapsado]="!resumenEnvioExpandido">
+      <div class="section-head">
+        <div>
+          <span class="section-kicker">Contexto editorial</span>
+          <h2>Información enviada por el autor</h2>
+        </div>
+        <button
+          type="button"
+          class="section-toggle"
+          [class.is-collapsed]="!resumenEnvioExpandido"
+          (click)="resumenEnvioExpandido = !resumenEnvioExpandido"
+          [attr.aria-expanded]="resumenEnvioExpandido"
+          aria-label="Mostrar u ocultar contexto editorial"
+        >
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+      <div class="resumen-content" *ngIf="resumenEnvioExpandido">
+        <div class="resumen-grid">
+          <article class="resumen-item">
+            <h3>Autores</h3>
+            <p>{{ autoresArticulo }}</p>
+          </article>
+          <article class="resumen-item">
+            <h3>Temas</h3>
+            <p>{{ temasArticulo }}</p>
+          </article>
+          <article class="resumen-item">
+            <h3>Palabras clave</h3>
+            <p>{{ palabrasClaveArticulo }}</p>
+          </article>
+          <article class="resumen-item">
+            <h3>Fecha de envío</h3>
+            <p>{{ fechaEnvioArticulo }}</p>
+          </article>
+        </div>
+        <article class="resumen-item resumen-item--full">
+          <h3>Resumen</h3>
+          <p>{{ resumenArticulo }}</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Ruta Editorial Timeline Section -->
+    <section class="content-card timeline-etapas-panel" [class.timeline-etapas-panel--colapsado]="!rutaEditorialExpandida">
+      <div class="section-head section-head--compact">
+        <div>
+          <span class="section-kicker">Ruta editorial</span>
+          <h2>Cronograma de Etapas</h2>
+        </div>
+        <button
+          type="button"
+          class="section-toggle"
+          [class.is-collapsed]="!rutaEditorialExpandida"
+          (click)="rutaEditorialExpandida = !rutaEditorialExpandida"
+          [attr.aria-expanded]="rutaEditorialExpandida"
+          aria-label="Mostrar u ocultar ruta editorial"
+        >
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+      <div class="timeline-content timeline-track" *ngIf="rutaEditorialExpandida">
+        <div class="connecting-line"></div>
+        @for (etapa of etapas; track etapa.nombre) {
+          <article
+            class="timeline-step"
+            [class.step-completed]="etapa.estado === 'completada'"
+            [class.step-active]="etapa.estado === 'actual'"
+            [class.step-pending]="etapa.estado === 'pendiente'"
+          >
+            <div class="step-icon">
+              @if (etapa.estado === 'completada') {
+                <span>✓</span>
+              }
+              @if (etapa.estado === 'actual') {
+                <span>•</span>
+              }
+              @if (etapa.estado === 'pendiente') {
+                <span>○</span>
+              }
+            </div>
+            <div class="step-content">
+              <h3>{{ etapa.nombre }}</h3>
+              <p class="desc">{{ etapa.descripcion }}</p>
+              <p class="date">{{ etapa.fecha }}</p>
+              <button
+                type="button"
+                class="step-detail-btn"
+                (click)="abrirDetalleEtapa(etapa)"
+                [disabled]="etapa.estado === 'pendiente'"
+                [attr.aria-disabled]="etapa.estado === 'pendiente'"
+              >
+                Ver proceso
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+
+    <!-- History / Flow observations Section -->
+    <div class="content-card">
+      <h2 class="card-title">Seguimiento e Historial Detallado</h2>
+      <div class="history-toolbar">
+        <div class="history-toolbar__copy">
+          <p class="history-toolbar__eyebrow">Filtro rápido</p>
+          <p class="history-toolbar__hint">Muestra solo observaciones, certificados o Turnitin del artículo.</p>
+        </div>
+
+        <div class="history-filters" role="group" aria-label="Filtros del historial">
+          <button type="button" class="history-filter-btn" [class.history-filter-btn--active]="historialFiltro === 'todos'" (click)="setHistorialFiltro('todos')">Todos</button>
+          <button type="button" class="history-filter-btn" [class.history-filter-btn--active]="historialFiltro === 'observaciones'" (click)="setHistorialFiltro('observaciones')">Solo observaciones</button>
+          <button type="button" class="history-filter-btn" [class.history-filter-btn--active]="historialFiltro === 'certificados'" (click)="setHistorialFiltro('certificados')">Solo certificados</button>
+          <button type="button" class="history-filter-btn" [class.history-filter-btn--active]="historialFiltro === 'turnitin'" (click)="setHistorialFiltro('turnitin')">Solo Turnitin</button>
+        </div>
+      </div>
+
+      <div class="history-list">
+        @if (historial.length === 0) {
+          <article class="history-item">
+            <div class="history-date">Sin movimientos</div>
+            <div class="history-details">
+              <strong>No hay observaciones ni registros de flujo</strong>
+              <p>Este artículo aún no presenta registros de seguimiento.</p>
+            </div>
+          </article>
+        }
+
+        @if (historial.length > 0 && historialFiltrado.length === 0) {
+          <article class="history-item history-item--empty">
+            <div class="history-date">Sin coincidencias</div>
+            <div class="history-details">
+              <strong>No se encontraron registros para este filtro</strong>
+              <p>Prueba seleccionando otra opción de filtrado rápido.</p>
+            </div>
+          </article>
+        }
+
+        @for (evento of historialFiltrado; track evento.fecha + evento.titulo) {
+          <article class="history-item">
+            <div class="history-meta">
+              <span class="history-date">{{ evento.fecha }}</span>
+              <span class="history-autor">{{ evento.autor }}</span>
+              <span class="history-rol">{{ evento.rol }}</span>
+            </div>
+            <div class="history-details">
+              <strong>{{ evento.titulo }}</strong>
+              <p class="history-desc" style="white-space: pre-line;">{{ evento.descripcion }}</p>
+              @if (evento.archivos.length > 0) {
+                <div class="history-files">
+                  @for (archivo of evento.archivos; track archivo.path) {
+                    <button type="button" class="file-download-btn" (click)="descargarArchivo(archivo.path, archivo.nombre)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-download">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      {{ archivo.nombre }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Stage Detail dialog modal -->
+  <dialog
+    #stageDialog
+    class="stage-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'stage-modal-title'"
+    (click)="cerrarDetalleEtapa()"
+  >
+    @if (etapaDetalleModal) {
+      <div class="stage-modal__content" (click)="$event.stopPropagation()">
+        <button type="button" class="stage-modal__close" (click)="cerrarDetalleEtapa()" aria-label="Cerrar detalle">
+          ×
+        </button>
+
+        <div class="stage-modal__accent"></div>
+
+        <div class="stage-modal__header">
+          <p class="stage-modal__eyebrow">Detalle de etapa</p>
+          <h3 id="stage-modal-title">{{ etapaDetalleModal.nombre }}</h3>
+          <p class="stage-modal__subtitle">{{ etapaDetalleModal.descripcion }}</p>
+        </div>
+
+        <div class="stage-modal__meta">
+          <div
+            class="stage-modal__status"
+            [class.stage-modal__status--completed]="etapaDetalleModal.estado === 'completada'"
+            [class.stage-modal__status--active]="etapaDetalleModal.estado === 'actual'"
+            [class.stage-modal__status--pending]="etapaDetalleModal.estado === 'pendiente'"
+          >
+            Estado: {{ etapaDetalleModal.estado === 'completada' ? 'Completada' : etapaDetalleModal.estado === 'actual' ? 'En curso' : 'Pendiente' }}
+          </div>
+          <div class="stage-modal__date-pill">Fecha registrada: {{ etapaDetalleModal.fecha }}</div>
+        </div>
+
+        <p class="stage-modal__body">{{ etapaDetalleModal.detalle }}</p>
+
+        <div class="stage-modal__grid">
+          <section class="stage-modal__panel">
+            <h4>Objetivos</h4>
+            <ul>
+              @for (objetivo of etapaDetalleModal.objetivos; track objetivo) {
+                <li>{{ objetivo }}</li>
+              }
+            </ul>
+          </section>
+
+          <section class="stage-modal__panel">
+            <h4>Puntos clave</h4>
+            <ul>
+              @for (punto of etapaDetalleModal.puntosClave; track punto) {
+                <li>{{ punto }}</li>
+              }
+            </ul>
+          </section>
+        </div>
+
+        <section class="stage-modal__result">
+          <h4>Resultado esperado</h4>
+          <p>{{ etapaDetalleModal.resultadoEsperado }}</p>
+        </section>
+
+        <div class="stage-modal__footer">
+          <button type="button" class="stage-modal__action" (click)="cerrarDetalleEtapa()">Cerrar</button>
+        </div>
+      </div>
+    }
+  </dialog>
+</div>

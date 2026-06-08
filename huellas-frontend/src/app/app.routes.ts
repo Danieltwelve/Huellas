@@ -108,6 +108,19 @@ export const routes: Routes = [
       allowedRoles: ['admin', 'director', 'monitor'],
     },
   },
+  {
+    path: 'seguimiento',
+    loadComponent: () =>
+      // lazy loaded tracking component
+      import('./pages/panel-admin/seguimiento/seguimiento.component').then(
+        m => m.SeguimientoComponent,
+      ),
+    canActivate: [claimsGuard],
+    data: {
+      requiredClaim: 'canManageArticulos',
+      allowedRoles: ['admin', 'director', 'monitor'],
+    },
+  },
 
   {
     path: 'flujo-trabajo-articulo/:id',

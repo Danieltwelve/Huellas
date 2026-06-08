@@ -359,6 +359,11 @@ export class ArticulosService {
       id: articulo.id,
       codigo: articulo.codigo,
       titulo: articulo.titulo,
+      doi: articulo.doi ?? null,
+      issn: articulo.issn ?? null,
+      edicionId: articulo.edicionId ?? null,
+      paginas: articulo.paginas ?? null,
+      revisionFinalChecklist: articulo.revisionFinalChecklist ?? null,
       evaluacionComiteRealizada,
       fechaAsignacionComite: articulo.fechaAsignacionComite ?? null,
       fechaVencimientoComite: articulo.fechaVencimientoComite ?? null,
@@ -668,6 +673,44 @@ export class ArticulosService {
         if (!certificadoPublicacion) {
           throw new BadRequestException(
             'Debes subir el certificado de publicación antes de avanzar a Revisión final.',
+          );
+        }
+      }
+
+      if (
+        articulo.etapaActualId === 9 &&
+        nuevaEtapaId === 5
+      ) {
+        if (!articulo.revisionFinalChecklist) {
+          throw new BadRequestException(
+            'Debes completar y guardar la lista de chequeo de la Revisión final antes de avanzar a la etapa de Publicación.',
+          );
+        }
+
+        try {
+          const checklist = JSON.parse(articulo.revisionFinalChecklist);
+          const itemsRequeridos = [
+            'ajustesRevisores',
+            'normasFormato',
+            'referenciasBibliograficas',
+            'redaccionOrtografia',
+            'metadatosInglesEspanol',
+          ];
+          const todosCumplidos = itemsRequeridos.every(
+            (item) => checklist && checklist[item] === true,
+          );
+
+          if (!todosCumplidos) {
+            throw new BadRequestException(
+              'Todos los ítems de la lista de chequeo de la Revisión final deben estar marcados como cumplidos.',
+            );
+          }
+        } catch (e) {
+          if (e instanceof BadRequestException) {
+            throw e;
+          }
+          throw new BadRequestException(
+            'Error al validar la lista de chequeo de la Revisión final.',
           );
         }
       }
@@ -2870,6 +2913,123 @@ export class ArticulosService {
       stream: createReadStream(certificado.archivoPath),
       filename: certificado.archivoNombreOriginal,
     };
+  }
+
+  async guardarChecklistRevisionFinal(
+    articuloId: number,
+    checklist: Record<string, boolean>,
+    usuarioId: number,
+  ) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    this.ensureArticuloNoDescartado(articulo);
+
+    if (articulo.etapaActualId !== 9) {
+      throw new BadRequestException(
+        'El artículo no se encuentra en la etapa de Revisión final.',
+      );
+    }
+
+    articulo.revisionFinalChecklist = JSON.stringify(checklist);
+    await this.articuloRepository.save(articulo);
+
+    return {
+      message: 'Lista de chequeo de revisión final guardada exitosamente.',
+    };
+  }
+
+  async guardarMetadataPublicacion(
+    articuloId: number,
+    dto: any,
+    usuarioId: number,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const articulo = await queryRunner.manager.findOne(Articulo, {
+        where: { id: articuloId },
+        relations: ['historialEtapas', 'etapaActual'],
+      });
+
+      if (!articulo) {
+        throw new NotFoundException('Artículo no encontrado');
+      }
+
+      this.ensureArticuloNoDescartado(articulo);
+
+      if (articulo.etapaActualId !== ArticulosService.ETAPA_PUBLICACION) {
+        throw new BadRequestException(
+          'El artículo no se encuentra en la etapa de Publicación.',
+        );
+      }
+
+      const edicion = await queryRunner.manager.findOne(EdicionRevista, {
+        where: { id: dto.edicionId },
+      });
+
+      if (!edicion) {
+        throw new BadRequestException('La edición seleccionada no existe.');
+      }
+
+      articulo.edicionId = dto.edicionId;
+      if (dto.doi !== undefined) {
+        articulo.doi = dto.doi;
+      }
+      if (dto.issn !== undefined) {
+        articulo.issn = dto.issn;
+      }
+      if (dto.paginas !== undefined) {
+        articulo.paginas = dto.paginas;
+      }
+
+      await queryRunner.manager.save(articulo);
+
+      if (dto.publicar) {
+        const historialPublicacionAbierto = (articulo.historialEtapas ?? []).find(
+          (historial) =>
+            historial.etapaId === ArticulosService.ETAPA_PUBLICACION &&
+            !historial.fechaFin,
+        );
+
+        if (historialPublicacionAbierto) {
+          historialPublicacionAbierto.fechaFin = new Date();
+          await queryRunner.manager.save(historialPublicacionAbierto);
+        }
+
+        const infoEdicion = `${edicion.titulo} (Vol. ${edicion.volumen}, Nº ${edicion.numero}, ${edicion.anio})`;
+        const comentarioPublicacion = `El artículo ha sido publicado formalmente.\n\nEdición: ${infoEdicion}\nPáginas: ${dto.paginas || 'N/D'}\nDOI: ${dto.doi || 'N/D'}\nISSN: ${dto.issn || 'N/D'}`;
+
+        const observacion = queryRunner.manager.create(Observacion, {
+          articuloId,
+          usuarioId,
+          etapaId: ArticulosService.ETAPA_PUBLICACION,
+          asunto: 'Artículo publicado en volumen activo',
+          comentarios: comentarioPublicacion,
+        });
+        await queryRunner.manager.save(observacion);
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        message: dto.publicar
+          ? 'Artículo publicado exitosamente.'
+          : 'Metadatos de publicación guardados como borrador.',
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async eliminarArticulo(articuloId: number) {

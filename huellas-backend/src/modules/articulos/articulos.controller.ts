@@ -45,6 +45,8 @@ import express from 'express';
 import * as mime from 'mime-types';
 import { UploadCertificadoDto } from './dto/upload-certificado.dto';
 import { UpdateCertificadoDto } from './dto/update-certificado.dto';
+import { GuardarChecklistDto } from './dto/guardar-checklist.dto';
+import { PublicarMetadataDto } from './dto/publicar-metadata.dto';
 
 const ARTICULO_UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
 const ARTICULO_ALLOWED_MIME_TYPES = new Set([
@@ -572,6 +574,36 @@ export class ArticulosController {
     return await this.articulosService.cambiarEtapaArticulo(
       id,
       body.etapaId,
+      req.user.userId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Patch(':id/revision-final-checklist')
+  async guardarChecklist(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: GuardarChecklistDto,
+    @Req() req: any,
+  ) {
+    return await this.articulosService.guardarChecklistRevisionFinal(
+      id,
+      body.checklist,
+      req.user.userId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Patch(':id/publicar-metadata')
+  async guardarMetadata(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: PublicarMetadataDto,
+    @Req() req: any,
+  ) {
+    return await this.articulosService.guardarMetadataPublicacion(
+      id,
+      body,
       req.user.userId,
     );
   }
