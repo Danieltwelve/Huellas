@@ -1,10 +1,14 @@
 <div class="app-layout" [class.sidebar-collapsed]="sidebarCollapsed">
   @if (showGlobalSidebar$ | async) {
-  <app-side-bar (collapsedChange)="onSidebarCollapsed($event)"></app-side-bar>
+  <app-side-bar [(collapsed)]="sidebarCollapsed"></app-side-bar>
   }
 
   <div class="content-layout">
-    <app-navbar [compactMode]="(isPanelLayout$ | async) ?? false"></app-navbar>
+    <app-navbar
+      [compactMode]="(isPanelLayout$ | async) ?? false"
+      [showSidebar]="(showGlobalSidebar$ | async) ?? false"
+      (toggleSidebar)="toggleSidebar()"
+    ></app-navbar>
 
     <main class="page-content">
       <router-outlet></router-outlet>

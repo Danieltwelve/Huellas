@@ -930,20 +930,6 @@ tbody tr:hover {
 }
 
 @media (max-width: 860px) {
-
-@media (max-width: 640px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .hero {
-    padding: 1rem;
-  }
-
-  .stat-card {
-    padding: 1rem;
-  }
-}
   .table-wrapper table {
     display: none;
   }
@@ -956,6 +942,14 @@ tbody tr:hover {
 @media (max-width: 640px) {
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .hero {
+    padding: 1rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
   }
 
   .table-header {

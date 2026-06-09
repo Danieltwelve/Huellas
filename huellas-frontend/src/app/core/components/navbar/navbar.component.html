@@ -1,6 +1,14 @@
 <nav class="navbar" [class.hide-navbar]="hideNavbar" [class.scrolled]="scrolled" [class.navbar--compact]="compactMode">
   <div class="navbar-container">
 
+    @if (showSidebar) {
+      <button type="button" class="mobile-sidebar-toggle-btn" (click)="onToggleSidebarClick()" aria-label="Abrir menú" title="Abrir menú">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
+        </svg>
+      </button>
+    }
+
     @if (!compactMode) {
     <div class="logo" routerLink="/" (click)="closeMenu()">
       <img src="Huellaslogo.png" class="logo-img" alt="Huellas">
@@ -49,6 +57,9 @@
           <li><a routerLink="/indexacion" (click)="closeMenu()">Indización</a></li>
           <li><a routerLink="/acerca-de" (click)="closeMenu()">Acerca de</a></li>
         </ul>
+      </li>
+      <li class="mobile-only-auth">
+        <a routerLink="/login" (click)="closeMenu()" class="btn-outline mobile-auth-btn">Iniciar sesión</a>
       </li>
     </ul>
     }

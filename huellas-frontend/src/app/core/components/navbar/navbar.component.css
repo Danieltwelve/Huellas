@@ -150,6 +150,10 @@
   gap: 10px;
 }
 
+.mobile-only-auth {
+  display: none;
+}
+
 .btn-outline {
   border: 2px solid #00a99d;
   color: #00a99d;
@@ -451,6 +455,10 @@
   color: #00a99d;
 }
 
+.mobile-sidebar-toggle-btn {
+  display: none;
+}
+
 /* MENU HAMBURGUESA */
 
 .menu-toggle {
@@ -485,14 +493,40 @@
 
 /* RESPONSIVE */
 
-@media (max-width: 900px) {
+@media (max-width: 960px) {
+  .logo-img {
+    height: 50px;
+  }
+
+  .logo {
+    margin-left: 44px;
+  }
+
+  .mobile-sidebar-toggle-btn {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 118, 110, 0.08);
+    border: 1px solid rgba(15, 118, 110, 0.18);
+    color: #0f766e;
+    width: 38px;
+    height: 38px;
+    border-radius: 0.65rem;
+    cursor: pointer;
+    z-index: 1000;
+  }
+
   .menu-toggle {
     display: flex;
   }
 
   .links {
     position: absolute;
-    top: 70px;
+    top: 100%;
     left: 0;
     width: 100%;
     background: #ffffff;
@@ -516,13 +550,25 @@
   }
 
   .auth {
+    display: none !important;
+  }
+
+  .mobile-only-auth {
+    display: block;
     width: 100%;
     margin-top: 10px;
   }
 
-  .btn-outline {
+  .mobile-auth-btn {
+    display: block;
     width: 100%;
     text-align: center;
+    border: 2px solid #00a99d;
+    color: #00a99d;
+    padding: 10px 16px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
   }
 
   .icon-btn {

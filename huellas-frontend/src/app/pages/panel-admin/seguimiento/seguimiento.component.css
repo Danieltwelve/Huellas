@@ -1010,6 +1010,12 @@
   box-shadow: 0 12px 22px rgba(20, 184, 166, 0.12);
 }
 
+@media (max-width: 990px) {
+  .connecting-line {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .stage-modal__grid {
     grid-template-columns: 1fr;

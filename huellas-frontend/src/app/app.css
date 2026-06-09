@@ -56,12 +56,10 @@ app-navbar {
   }
 
   app-side-bar {
-    width: 100%;
-    flex: 0 0 auto;
-    position: relative;
-    top: auto;
-    height: auto;
-    align-self: stretch;
+    width: 0;
+    flex: 0 0 0;
+    height: 0;
+    position: absolute;
   }
 
   .content-layout {

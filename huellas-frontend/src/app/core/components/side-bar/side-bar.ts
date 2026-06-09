@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, EventEmitter, Output, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { map } from 'rxjs/operators';
 import { AuthService } from '../../auth/auth.service';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
@@ -23,7 +23,7 @@ export class SideBar {
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
-  collapsed = false;
+  @Input() collapsed = typeof window !== 'undefined' ? window.innerWidth <= 960 : false;
 
   @Output() collapsedChange = new EventEmitter<boolean>();
 
@@ -36,6 +36,13 @@ export class SideBar {
   toggleSidebar(): void {
     this.collapsed = !this.collapsed;
     this.collapsedChange.emit(this.collapsed);
+  }
+
+  onItemClick(): void {
+    if (window.innerWidth <= 960) {
+      this.collapsed = true;
+      this.collapsedChange.emit(this.collapsed);
+    }
   }
 
   mainItems: MenuItem[] = [

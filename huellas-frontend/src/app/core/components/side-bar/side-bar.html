@@ -9,7 +9,7 @@
   </div>
 
   <nav class="sidebar-nav">
-    <a class="nav-item" *ngFor="let item of (visibleMainItems$ | async) ?? []" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">
+    <a class="nav-item" *ngFor="let item of (visibleMainItems$ | async) ?? []" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" (click)="onItemClick()">
       <span class="icon">
 
         <svg *ngIf="item.icon === 'list-check'" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
@@ -83,7 +83,7 @@
         <span class="nav-label">{{ item.label }}</span>
       </button>
 
-      <a *ngIf="item.action !== 'logout'" class="nav-item" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" [title]="item.label">
+      <a *ngIf="item.action !== 'logout'" class="nav-item" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" [title]="item.label" (click)="onItemClick()">
         <span class="icon">
           <svg *ngIf="item.icon === 'settings'" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
             fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16">

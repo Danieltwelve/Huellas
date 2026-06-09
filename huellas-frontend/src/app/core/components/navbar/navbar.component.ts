@@ -1,4 +1,4 @@
-import { Component, HostListener, Input, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, HostListener, Input, OnDestroy, OnInit, ViewChild, inject, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { NotificationDropdownComponent } from '../notification-dropdown/notification-dropdown.component';
@@ -38,6 +38,12 @@ interface NavbarNotificacionVista extends NavbarNotificacion {
 })
 export class NavbarComponent implements OnInit {
   @Input() compactMode = false;
+  @Input() showSidebar = false;
+  @Output() toggleSidebar = new EventEmitter<void>();
+
+  onToggleSidebarClick(): void {
+    this.toggleSidebar.emit();
+  }
 
   private authService = inject(AuthService);
   private router = inject(Router);

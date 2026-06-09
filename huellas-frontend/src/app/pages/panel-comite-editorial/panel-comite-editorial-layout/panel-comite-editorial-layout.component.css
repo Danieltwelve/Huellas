@@ -66,6 +66,10 @@
   border-radius: 0.65rem;
 }
 
+.mobile-menu-btn {
+  display: none;
+}
+
 .sidebar-nav {
   flex-grow: 1;
   padding: 12px 8px 10px;
@@ -233,6 +237,20 @@
 }
 
 @media (max-width: 960px) {
+  .mobile-menu-btn {
+    display: flex;
+    background: rgba(15, 118, 110, 0.08);
+    border: 1px solid rgba(15, 118, 110, 0.18);
+    color: #0f766e;
+    cursor: pointer;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 0.65rem;
+  }
+
   .top-header {
     padding: 0 14px;
   }

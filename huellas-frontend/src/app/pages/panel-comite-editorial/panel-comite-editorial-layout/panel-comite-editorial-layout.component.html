@@ -16,7 +16,7 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a routerLink="/panel-comite-editorial/dashboard" routerLinkActive="active" class="nav-item" title="Dashboard">
+      <a routerLink="/panel-comite-editorial/dashboard" routerLinkActive="active" class="nav-item" title="Dashboard" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid-1x2"
           viewBox="0 0 16 16">
           <path d="M6 1H1v6h5zm1 0h8v6H7zM6 8H1v7h5zm1 0h8v7H7z" />
@@ -25,7 +25,7 @@
       </a>
       <hr class="nav-divider" />
       <a routerLink="/panel-comite-editorial/articulos" routerLinkActive="active" class="nav-item"
-        title="Artículos asignados">
+        title="Artículos asignados" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
           class="bi bi-file-earmark-text" viewBox="0 0 16 16">
           <path
@@ -35,7 +35,7 @@
         </svg>
         <span class="nav-label">Artículos asignados</span>
       </a>
-      <a routerLink="/panel-comite-editorial/rubricas" routerLinkActive="active" class="nav-item" title="Rúbricas">
+      <a routerLink="/panel-comite-editorial/rubricas" routerLinkActive="active" class="nav-item" title="Rúbricas" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-ui-checks-grid"
           viewBox="0 0 16 16">
           <path
@@ -46,7 +46,7 @@
         <span class="nav-label">Rúbrica</span>
       </a>
       <a routerLink="/panel-comite-editorial/notificaciones" routerLinkActive="active" class="nav-item"
-        title="Centro de Notificaciones">
+        title="Centro de Notificaciones" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bell"
           viewBox="0 0 16 16">
           <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2" />
@@ -62,7 +62,7 @@
       </a>
 
       <a routerLink="/panel-comite-editorial/certificados" routerLinkActive="active" class="nav-item"
-        title="Certificados">
+        title="Certificados" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
           class="bi bi-file-earmark-medical" viewBox="0 0 16 16">
           <path
@@ -75,7 +75,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      <a routerLink="/perfil" routerLinkActive="active" class="nav-item" title="Perfil">
+      <a routerLink="/perfil" routerLinkActive="active" class="nav-item" title="Perfil" (click)="closeMobileSidebar()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
           class="bi bi-gear-fill" viewBox="0 0 16 16">
           <path
@@ -107,6 +107,11 @@
     </section>
     }
     <header class="top-header">
+      <button class="mobile-menu-btn" type="button" (click)="toggleSidebar()" title="Abrir menú">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
+        </svg>
+      </button>
       <div class="top-header-spacer"></div>
       <div class="user-actions">
         <app-notification-dropdown [items]="notifications" [loading]="notificationLoading" [error]="notificationError"

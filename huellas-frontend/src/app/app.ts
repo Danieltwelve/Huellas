@@ -98,6 +98,10 @@ export class AppComponent {
     );
   }
 
+  toggleSidebar(): void {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
+  }
+
   onSidebarCollapsed(collapsed: boolean): void {
     this.sidebarCollapsed = collapsed;
   }
