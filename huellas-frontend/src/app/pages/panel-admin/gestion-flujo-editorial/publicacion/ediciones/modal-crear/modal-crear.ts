@@ -15,13 +15,13 @@ interface CrearEdicionForm {
 }
 
 @Component({
-  selector: 'app-crear-edicion',
+  selector: 'app-modal-crear',
   standalone: true,
   imports: [DatePipe, FormsModule, ModalShellComponent],
-  templateUrl: './crear-edicion.html',
-  styleUrl: './crear-edicion.css',
+  templateUrl: './modal-crear.html',
+  styleUrl: './modal-crear.css',
 })
-export class CrearEdicion {
+export class ModalCrear {
   private readonly edicionesRevistaService = inject(EdicionesRevistaService);
 
   @Output() creada = new EventEmitter<void>();
@@ -31,6 +31,8 @@ export class CrearEdicion {
   creatingEdicion = false;
   requestError = '';
   currentDate = new Date();
+
+  portadaFile: File | null = null;
 
   createForm: CrearEdicionForm = {
     titulo: '',
@@ -48,10 +50,18 @@ export class CrearEdicion {
     if (this.creatingEdicion) {
       return;
     }
-
     this.resetForm();
     this.requestError = '';
     this.isOpen = false;
+  }
+
+  onPortadaSeleccionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.portadaFile = input.files[0];
+    } else {
+      this.portadaFile = null;
+    }
   }
 
   onGuardarClick(): void {
@@ -62,14 +72,18 @@ export class CrearEdicion {
     this.creatingEdicion = true;
     this.requestError = '';
 
-    const payload: CreateEdicionRevistaPayload = {
-      titulo: this.createForm.titulo.trim(),
-      volumen: Number(this.createForm.volumen),
-      numero: Number(this.createForm.numero),
-      anio: Number(this.createForm.anio),
-    };
+    // Crear FormData
+    const formData = new FormData();
+    formData.append('titulo', this.createForm.titulo.trim());
+    formData.append('volumen', String(this.createForm.volumen));
+    formData.append('numero', String(this.createForm.numero));
+    formData.append('anio', String(this.createForm.anio));
 
-    this.edicionesRevistaService.createEdicion(payload).subscribe({
+    if (this.portadaFile) {
+      formData.append('portada', this.portadaFile, this.portadaFile.name);
+    }
+
+    this.edicionesRevistaService.createEdicionConPortada(formData).subscribe({
       next: () => {
         this.creatingEdicion = false;
         this.isOpen = false;
@@ -78,14 +92,11 @@ export class CrearEdicion {
       },
       error: (error) => {
         this.creatingEdicion = false;
-
         const backendMessage = Array.isArray(error?.error?.message)
           ? error.error.message.join(', ')
           : error?.error?.message;
-
         this.requestError =
-          backendMessage ||
-          'No se pudo crear la edicion. Verifica los datos e intenta de nuevo.';
+          backendMessage || 'No se pudo crear la edición. Verifica los datos e intenta de nuevo.';
       },
     });
   }
@@ -104,20 +115,11 @@ export class CrearEdicion {
       Number.isInteger(this.createForm.anio) &&
       this.createForm.anio >= 1900 &&
       this.createForm.anio <= 2100;
-
     return tituloValido && volumenValido && numeroValido && anioValido;
   }
 
   private isValidPositiveInteger(value: number | null): boolean {
     return value !== null && Number.isInteger(value) && value > 0;
-  }
-
-  private formatDateForApi(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
   }
 
   private resetForm(): void {
@@ -127,5 +129,12 @@ export class CrearEdicion {
       numero: null,
       anio: null,
     };
+    this.portadaFile = null;
+  }
+
+  removerPortada(): void {
+    this.portadaFile = null;
+    const fileInput = document.getElementById('portada-input') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
   }
 }

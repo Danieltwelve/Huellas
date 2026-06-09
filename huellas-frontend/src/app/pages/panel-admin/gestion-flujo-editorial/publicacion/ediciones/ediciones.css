@@ -1,0 +1,313 @@
+.published-section {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.search-container {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0.6rem 0 0;
+}
+
+.search-input {
+  flex: 1 1 auto;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.03);
+}
+
+/* TABLA */
+.tabla-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.ediciones-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+.ediciones-tabla th,
+.ediciones-tabla td {
+  padding: 0.8rem 1rem;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ediciones-tabla thead th {
+  font-weight: 600;
+  color: #475569;
+  background-color: #f8fafc;
+  white-space: nowrap;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.ediciones-tabla tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.ediciones-tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ediciones-tabla td:first-child {
+  font-weight: 500;
+  color: #0f172a;
+  width: 35%;
+}
+
+/* EDICIÓN INFO */
+.edicion-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.edicion-vol-num {
+  color: #0f172a;
+}
+
+.edicion-titulo {
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+/* CHIPS DE ESTADO */
+.estado-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.estado-chip.abierta {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+.estado-chip.publicada {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.estado-chip.revision {
+  background: #fefce8;
+  color: #ca8a04;
+  border-color: #fef08a;
+}
+
+/* BOTONES DE ACCIÓN */
+.acciones-celda {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.action-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: #64748b;
+  transition: fill 0.2s ease;
+}
+
+.action-btn.editar:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.action-btn.editar:hover svg {
+  fill: #0f172a;
+}
+
+.action-btn.eliminar:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.action-btn.eliminar:hover svg {
+  fill: #dc2626;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+  background: #fff;
+}
+
+.btn-primary {
+  border-radius: 10px;
+  padding: 0.6rem 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  background: #44b2a9;
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px -20px rgba(15, 23, 42, 0.6);
+}
+
+/* Modal de confiramción */
+
+/* ===== MODAL DE CONFIRMACIÓN MEJORADO ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-container {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 0;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: slideUp 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-container h3 {
+  margin: 0;
+  padding: 1.25rem 1.5rem 0.75rem 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  border-bottom: 1px solid #eef2f6;
+  background: #fafcff;
+}
+
+.modal-container p {
+  margin: 0;
+  padding: 1.25rem 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.modal-container strong {
+  color: #0f172a;
+  font-weight: 700;
+  display: inline-block;
+  background: #f0fdf4;
+  padding: 0.1rem 0.3rem;
+  border-radius: 6px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  background: #ffffff;
+  border-top: 1px solid #f0f4f9;
+}
+
+.btn-cancelar,
+.btn-aceptar {
+  padding: 0.6rem 1.2rem;
+  border-radius: 40px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cancelar {
+  background: transparent;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-cancelar:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.btn-aceptar {
+  background: #44b2a9;
+  color: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-aceptar:hover {
+  background: #0f766e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(68, 178, 169, 0.2);
+}

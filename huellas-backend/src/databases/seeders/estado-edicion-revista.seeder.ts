@@ -13,8 +13,7 @@ export class EstadoEdicionRevistaSeeder implements OnModuleInit {
   async onModuleInit() {
     const estadosIniciales = [
       { id: 1, estado: 'ABIERTA' },
-      { id: 2, estado: 'EN REVISION' },
-      { id: 3, estado: 'PUBLICADA' },
+      { id: 2, estado: 'PUBLICADA' },
     ];
 
     for (const estadoData of estadosIniciales) {

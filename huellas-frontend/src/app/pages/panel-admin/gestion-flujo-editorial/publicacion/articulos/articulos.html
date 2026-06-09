@@ -1,0 +1,40 @@
+<div class="single-selection-container">
+  <div class="selection-header">
+    <div>
+      <h3>Selecciona los 10 artículos</h3>
+      <p class="subtitle">Solo aparecen artículos que ya llegaron a la etapa PUBLICACIÓN.</p>
+    </div>
+    <span class="counter-pill">
+      {{ totalSeleccionados }}/{{ MAX_SELECCION }} seleccionados
+    </span>
+  </div>
+
+  @if (loading) {
+  <p class="loading-state">Cargando artículos...</p>
+  } @else if (error) {
+  <p class="error-state">{{ error }}</p>
+  } @else {
+  <div class="articles-list">
+    @for (articulo of articulos; track trackArticulo($index, articulo)) {
+    <div class="article-item" [class.article-item--selected]="isSeleccionado(articulo.id)">
+      <label class="article-checkbox">
+        <input type="checkbox" [checked]="isSeleccionado(articulo.id)" (change)="toggleArticulo(articulo.id)"
+          [disabled]="!isSeleccionado(articulo.id) && totalSeleccionados >= MAX_SELECCION" />
+        <span class="checkmark"></span>
+      </label>
+      <div class="article-info">
+        <strong class="article-title">{{ articulo.titulo }}</strong>
+        <span class="article-code">{{ articulo.codigo }}</span>
+      </div>
+    </div>
+    } @empty {
+    <p class="empty-state">No hay artículos en etapa de publicación.</p>
+    }
+  </div>
+  }
+
+  <!-- Footer donde se proyecta el formulario de edición (select + botón) -->
+  <div class="selection-footer">
+    <ng-content select="[formulario-edicion]"></ng-content>
+  </div>
+</div>

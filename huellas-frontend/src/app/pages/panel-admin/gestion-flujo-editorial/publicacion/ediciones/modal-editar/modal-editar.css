@@ -1,0 +1,273 @@
+/* modal-editar.css - versión corregida */
+.modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #0f766e;
+  margin-bottom: 0;
+}
+
+.form-group input {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0 1rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #44b2a9;
+  box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.15);
+}
+
+.detalle-fieldset {
+  margin: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.25rem 1rem;
+  background: #fafcff;
+}
+
+.detalle-fieldset legend {
+  padding: 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0f766e;
+  background: #ffffff;
+  border-radius: 20px;
+}
+
+.detalle-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.detalle-grid .form-group {
+  margin: 0;
+}
+
+/* Botones del footer (el modal-shell ya tiene su propio footer, pero estos estilos se aplican a los botones dentro de él) */
+.modal-btn-cancelar,
+.modal-btn-guardar {
+  border-radius: 40px;
+  min-width: 110px;
+  height: 40px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0 1rem;
+}
+
+.modal-btn-cancelar {
+  border: 1px solid #cbd5e1;
+  background: transparent;
+  color: #475569;
+  margin-right: 1rem;
+}
+
+.modal-btn-cancelar:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.modal-btn-guardar {
+  border: none;
+  background: #44b2a9;
+  color: white;
+  box-shadow: 0 2px 4px rgba(68, 178, 169, 0.2);
+}
+
+.modal-btn-guardar:hover:not(:disabled) {
+  background: #0f766e;
+  transform: translateY(-1px);
+}
+
+.modal-btn-guardar:disabled {
+  background: #cbd5e1;
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Confirmación y resultado */
+.confirm-content,
+.result-content {
+  text-align: center;
+  padding: 1rem 1rem 1.5rem;
+}
+
+.warning-icon,
+.result-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.warning-icon {
+  background: #fffbeb;
+  color: #d97706;
+  border: 2px solid #fef3c7;
+}
+
+.result-icon.success {
+  background: #ecfdf5;
+  color: #10b981;
+  border: 2px solid #d1fae5;
+}
+
+.result-icon.error {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 2px solid #fee2e2;
+}
+
+.confirm-content p,
+.result-content p {
+  margin: 0.5rem 0;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.confirm-content strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* Portada section */
+.portada-section {
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.portada-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #0f766e;
+  margin-bottom: 0.75rem;
+  margin-bottom: 0.6;
+}
+
+.portada-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.portada-img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  object-fit: contain;
+  background: #f8fafc;
+}
+
+.btn-remover-portada {
+  background: transparent;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-remover-portada:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.btn-remover-portada:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.portada-upload {
+  margin-bottom: 0.5rem;
+}
+
+.portada-upload input[type="file"] {
+  display: none;
+}
+
+.btn-seleccionar {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-seleccionar:hover {
+  background: #e2e8f0;
+}
+
+.portada-help {
+  font-size: 0.7rem;
+  color: #64748b;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .modal-body {
+    padding: 1.25rem;
+  }
+
+  .detalle-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .detalle-fieldset {
+    padding: 1rem;
+  }
+}

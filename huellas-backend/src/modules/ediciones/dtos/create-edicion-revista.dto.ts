@@ -5,6 +5,7 @@ import {
   Max,
   IsDateString,
   IsNotEmpty,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateEdicionRevistaDto {
@@ -32,5 +33,7 @@ export class CreateEdicionRevistaDto {
         'La fecha de estado debe tener un formato ISO válido (YYYY-MM-DD)',
     },
   )
-  fechaEstado?: string;
+  @IsOptional()
+  @IsString()
+  portada?: string;
 }

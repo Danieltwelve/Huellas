@@ -37,7 +37,12 @@ export class Observacion {
   @Column({ type: 'text', nullable: true })
   comentarios!: string;
 
-  @Column({ name: 'estado_correccion', type: 'varchar', length: 32, nullable: true })
+  @Column({
+    name: 'estado_correccion',
+    type: 'varchar',
+    length: 32,
+    nullable: true,
+  })
   estadoCorreccion?: 'solicitada' | 'enviada' | 'aceptada' | null;
 
   // Relaciones

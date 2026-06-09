@@ -1,0 +1,19 @@
+<div class="articulos-grid">
+  <article class="articulo-card" *ngFor="let articulo of articulos">
+    <h3>{{ articulo.titulo }}</h3>
+    <div *ngIf="articulo.autores.length > 0" class="autores">
+      <strong>Autores:</strong>
+      <span *ngFor="let autor of articulo.autores; let last = last">
+        {{ autor.nombre }}<span *ngIf="!last">, </span>
+      </span>
+    </div>
+    <div *ngIf="!articulo.autores.length" class="sin-autores">
+      Sin autores registrados
+    </div>
+
+    <div class="articulo-actions">
+      <a class="btn-primary" [href]="'#'" target="_blank" rel="noopener">Visualizar</a>
+      <a class="btn-secondary" [href]="'#'" download>Descargar</a>
+    </div>
+  </article>
+</div>

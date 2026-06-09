@@ -62,7 +62,8 @@ export class EtapaArticuloSeeder implements OnModuleInit {
       {
         id: 7,
         nombre: 'DESCARTADO',
-        descripcion: 'Artículo rechazado de forma definitiva en el flujo editorial',
+        descripcion:
+          'Artículo rechazado de forma definitiva en el flujo editorial',
       },
     ];
 

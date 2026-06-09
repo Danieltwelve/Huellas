@@ -1,165 +1,81 @@
 <div class="container">
 
+  <!-- Cabecera según modo listado/detalle -->
   <div class="header" *ngIf="!edicionSeleccionada">
     <h1>Archivo de Ediciones</h1>
     <p>Consulta todas las publicaciones de la revista HUELLAS</p>
   </div>
 
   <div class="header" *ngIf="edicionSeleccionada">
-    <h1>{{ edicionSeleccionada.titulo }}</h1>
-    <p>{{ edicionSeleccionada.fecha }} - 10 artículos disponibles</p>
+    <h1>{{ edicionSeleccionada.tituloCompleto }}</h1>
+    <p>{{ edicionSeleccionada.fecha }} - {{ edicionSeleccionada.articulosCount }} artículos disponibles</p>
   </div>
 
-  <!-- FILTROS -->
-
+  <!-- FILTROS (solo en modo listado) -->
   <div class="filtros-panel" *ngIf="!edicionSeleccionada">
     <div class="filtros-top">
       <p>Encuentra una edición por nombre o por año</p>
-      <span class="resultados">{{ edicionesFiltradas().length }} resultados</span>
+      <span class="resultados">{{ edicionesFiltradas.length }} resultados</span>
     </div>
 
     <div class="filtros">
-
       <label class="campo-filtro">
         <span>Buscar edición</span>
-        <input 
-          type="text" 
-          placeholder="Ejemplo: Revista Huellas No. 21"
-          [(ngModel)]="busqueda"
-          class="buscador"
-        >
+        <input type="text" placeholder="Ejemplo: Vol. 11 Núm. 2 (2025)" [(ngModel)]="busqueda" class="buscador">
       </label>
 
       <label class="campo-filtro">
         <span>Filtrar por año</span>
         <select [(ngModel)]="anioFiltro" class="selector-anio">
           <option value="">Todos los años</option>
-          <option *ngFor="let anio of anios">{{anio}}</option>
+          <option *ngFor="let anio of aniosDisponibles" [value]="anio">{{ anio }}</option>
         </select>
       </label>
 
-      <button class="btn-limpiar" (click)="limpiarFiltros()" type="button">
-        Limpiar filtros
-      </button>
-
+      <button class="btn-limpiar" (click)="limpiarFiltros()" type="button">Limpiar filtros</button>
     </div>
-
   </div>
 
-  <p class="sin-resultados" *ngIf="!edicionSeleccionada && !edicionesFiltradas().length">
+  <!-- Mensaje sin resultados -->
+  <p class="sin-resultados" *ngIf="!edicionSeleccionada && edicionesFiltradas.length === 0 && !loading">
     No se encontraron ediciones con los filtros aplicados.
   </p>
 
-  <div class="ediciones-grid" *ngIf="!edicionSeleccionada && edicionesFiltradas().length">
-
-    <div 
-      class="edicion-card"
-      *ngFor="let edicion of edicionesFiltradas()"
-    >
-
-      <a
-        class="card-cover"
-        [href]="edicion.enlacePublicacion || edicion.pdf"
-        target="_blank"
-        rel="noopener"
-        [attr.aria-label]="'Abrir publicación de ' + edicion.titulo"
-      >
-        <img
-          class="card-cover-image"
-          [src]="edicion.portada || portadaFallback"
-          [alt]="'Portada de ' + edicion.titulo"
-          loading="lazy"
-        >
+  <!-- LISTADO DE EDICIONES -->
+  <div class="ediciones-grid" *ngIf="!edicionSeleccionada && edicionesFiltradas.length > 0">
+    <div class="edicion-card" *ngFor="let edicion of edicionesFiltradas">
+      <a class="card-cover" [href]="edicion.portada" target="_blank" rel="noopener"
+        [attr.aria-label]="'Ver portada de ' + edicion.tituloCompleto">
+        <img class="card-cover-image" [src]="edicion.portada" [alt]="'Portada de ' + edicion.tituloCompleto"
+          loading="lazy">
         <span class="cover-year">{{ edicion.anio }}</span>
         <span class="cover-badge">Ver portada</span>
       </a>
 
       <div class="card-header">
-        <h2>{{ edicion.titulo }}</h2>
-        <div class="card-meta">
-          <span class="fecha">{{ edicion.fecha }}</span>
-          <span class="meta-separator">•</span>
-          <span class="meta-text">Edición disponible</span>
-        </div>
+        <h2>{{ edicion.tituloCompleto }}</h2>
       </div>
 
       <div class="card-content">
-
-        <p class="descripcion">
-          {{ edicion.descripcion }}
-        </p>
-
+        <p class="titulo-original" *ngIf="edicion.tituloOriginal">{{ edicion.tituloOriginal }}</p>
         <div class="stats-row">
-
-          <div class="stat-pill">
-            <span class="stat-label">Autores</span>
-            <span class="stat-value">{{ edicion.autores }}</span>
-          </div>
-
           <div class="stat-pill">
             <span class="stat-label">Artículos</span>
-            <span class="stat-value">{{ edicion.articulos }}</span>
+            <span class="stat-value">{{ edicion.articulosCount }}</span>
           </div>
-
         </div>
-
-        <div class="link-panel">
-          <span class="link-panel-label">Enlace de publicación</span>
-          <a
-            class="link-panel-value"
-            [href]="edicion.enlacePublicacion || edicion.pdf"
-            target="_blank"
-            rel="noopener"
-          >
-            Abrir la edición publicada
-          </a>
-        </div>
-
-        <p class="card-caption">
-          Portada destacada y acceso directo al contenido publicado.
-        </p>
-
       </div>
 
       <div class="card-actions">
-
-        <button class="btn-primary" (click)="verEdicion(edicion)">
-          Ver artículos
-        </button>
-
-        <a
-          class="btn-secondary"
-          [href]="edicion.enlaceRevista || enlaceRevistaGeneral"
-          target="_blank"
-          rel="noopener"
-        >
-          Revista general
-        </a>
-
+        <button class="btn-primary" (click)="verEdicion(edicion)">Ver artículos</button>
       </div>
-
     </div>
-
   </div>
 
+  <!-- VISTA DETALLE DE UNA EDICIÓN -->
   <div class="edicion-detalle" *ngIf="edicionSeleccionada">
     <button class="btn-outline-teal btn-back" (click)="volverAListado()">Volver al listado</button>
-
-    <div class="articulos-grid">
-      <article class="articulo-card" *ngFor="let articulo of articulosDeEdicion">
-        <h3>{{ articulo.titulo }}</h3>
-        <p>{{ articulo.resumen }}</p>
-
-        <div class="articulo-actions">
-          <a class="btn-primary" [href]="articulo.archivo" target="_blank" rel="noopener">
-            Visualizar
-          </a>
-          <a class="btn-secondary" [href]="articulo.archivo" download>
-            Descargar
-          </a>
-        </div>
-      </article>
-    </div>
+    <app-articulos [articulos]="edicionSeleccionada.articulos"></app-articulos>
   </div>
 
 </div>

@@ -3,8 +3,11 @@ import { EdicionRevista } from '../edicion-revista.entity';
 
 @Entity('estados_edicion_revista')
 export class EstadoEdicionRevista {
-  @PrimaryGeneratedColumn()
-  id?: number;
+  @PrimaryGeneratedColumn({
+    type: 'int',
+    name: 'id',
+  })
+  id!: number;
 
   @Column({ type: 'varchar', length: 100 })
   estado?: string;

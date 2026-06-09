@@ -1,0 +1,241 @@
+/* articulos.css - versión unificada (single column) */
+.single-selection-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #e2e8f0;
+  padding: 1.5rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.02);
+}
+
+.selection-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.selection-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.subtitle {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.counter-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.articles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 0.3rem;
+}
+
+.article-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  background: #fff;
+  transition: all 0.15s ease;
+}
+
+.article-item:hover {
+  border-color: #cbd5e1;
+  background: #fafcff;
+}
+
+.article-item--selected {
+  border-color: #0f766e;
+  background: linear-gradient(180deg, #ecfdf5 0%, #f0fdfa 100%);
+}
+
+/* Checkbox personalizado */
+.article-checkbox {
+  position: relative;
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.article-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 22px;
+  width: 22px;
+  background-color: #fff;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  transition: all 0.1s;
+}
+
+.article-checkbox:hover input~.checkmark {
+  border-color: #0f766e;
+}
+
+.article-checkbox input:checked~.checkmark {
+  background-color: #0f766e;
+  border-color: #0f766e;
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.article-checkbox input:checked~.checkmark:after {
+  display: block;
+}
+
+.article-checkbox .checkmark:after {
+  left: 7px;
+  top: 3px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.article-checkbox input:disabled~.checkmark {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.article-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.article-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.4;
+}
+
+.article-code {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* Footer con el formulario proyectado */
+.selection-footer {
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid #f1f5f9;
+}
+
+/* Estilos para el contenido proyectado (formulario de edición) */
+.selection-footer .form-group {
+  margin-bottom: 1rem;
+}
+
+.selection-footer .form-label {
+  display: block;
+  width: 100%;
+}
+
+.selection-footer .label-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0f766e;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+.selection-footer .custom-select {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: 0.9rem;
+}
+
+.selection-footer .panel-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.8rem;
+}
+
+.selection-footer .btn-primary {
+  background: #44b2a9;
+  color: white;
+  border: none;
+  padding: 0.7rem 1.2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.15s ease;
+}
+
+.selection-footer .btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #0f766e;
+}
+
+.selection-footer .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Estados de carga y vacío */
+.loading-state,
+.error-state {
+  text-align: center;
+  padding: 2rem;
+  background: #f8fafc;
+  border-radius: 14px;
+  color: #475569;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  background: #f8fafc;
+  border-radius: 14px;
+}

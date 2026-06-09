@@ -32,4 +32,8 @@ export class UpdateEdicionRevistaDto {
   @IsPositive()
   @IsOptional()
   estado_id?: number;
+
+  @IsOptional()
+  @IsString()
+  portada?: string;
 }

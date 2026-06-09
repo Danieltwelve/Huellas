@@ -29,6 +29,9 @@ export class EdicionRevista {
   @Column({ name: 'fecha_estado', type: 'date' })
   fecha_estado?: Date;
 
+  @Column({ name: 'portada', type: 'varchar', length: 255, nullable: true })
+  portada?: string;
+
   @OneToMany(() => Articulo, (articulo) => articulo.edicion)
   articulos!: Articulo[];
 

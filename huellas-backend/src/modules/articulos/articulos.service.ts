@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -126,10 +125,8 @@ export class ArticulosService {
   }
 
   private getSiguienteEtapaPermitida(etapaActualId: number): number | null {
-     
-    const indiceActual = ArticulosService.ETAPAS_FLUJO_ORDENADO.indexOf(
-      etapaActualId,
-    );
+    const indiceActual =
+      ArticulosService.ETAPAS_FLUJO_ORDENADO.indexOf(etapaActualId);
 
     if (indiceActual === -1) {
       return null;
@@ -179,16 +176,6 @@ export class ArticulosService {
         { ultimoNumero: siguienteNumero },
       );
 
-      const edicionActiva = await queryRunner.manager.findOne(EdicionRevista, {
-        where: { estado_id: { id: 1 } } as any,
-        order: { fecha_estado: 'ASC' },
-      });
-      if (!edicionActiva) {
-        throw new BadRequestException(
-          'No hay ninguna edición ABIERTA en este momento.',
-        );
-      }
-
       // --- PASO 2: Crear Artículo ---
       const palabrasClaveString = dto.palabras_clave!.join(', ');
 
@@ -199,7 +186,6 @@ export class ArticulosService {
         resumen: dto.resumen,
         palabrasClave: palabrasClaveString,
         etapaActualId: ArticulosService.ETAPA_REVISION_PRELIMINAR,
-        edicionId: edicionActiva.id,
       });
       const articuloGuardado = await queryRunner.manager.save(nuevoArticulo);
 
@@ -591,7 +577,8 @@ export class ArticulosService {
 
       if (
         articulo.etapaActualId === ArticulosService.ETAPA_REVISION_PARES &&
-        nuevaEtapaId === this.getSiguienteEtapaPermitida(ArticulosService.ETAPA_REVISION_PARES)
+        nuevaEtapaId ===
+          this.getSiguienteEtapaPermitida(ArticulosService.ETAPA_REVISION_PARES)
       ) {
         if (!articulo.revisorId) {
           throw new BadRequestException(
@@ -634,7 +621,9 @@ export class ArticulosService {
             articuloId,
             etapaId: ArticulosService.ETAPA_REVISION_PARES,
             usuarioId: revisorAsignado.usuarioId,
-            fechaSubida: MoreThanOrEqual(historialRevisionParesActual.fechaInicio),
+            fechaSubida: MoreThanOrEqual(
+              historialRevisionParesActual.fechaInicio,
+            ),
           },
           order: { fechaSubida: 'DESC' },
           select: ['id', 'asunto', 'fechaSubida'],
@@ -655,15 +644,19 @@ export class ArticulosService {
 
       if (
         articulo.etapaActualId === ArticulosService.ETAPA_CERTIFICACION &&
-        nuevaEtapaId === this.getSiguienteEtapaPermitida(ArticulosService.ETAPA_CERTIFICACION)
+        nuevaEtapaId ===
+          this.getSiguienteEtapaPermitida(ArticulosService.ETAPA_CERTIFICACION)
       ) {
-        const certificadoPublicacion = await queryRunner.manager.findOne(ArticuloCertificado, {
-          where: {
-            articuloId,
-            tipo: 'publicacion',
+        const certificadoPublicacion = await queryRunner.manager.findOne(
+          ArticuloCertificado,
+          {
+            where: {
+              articuloId,
+              tipo: 'publicacion',
+            },
+            select: ['id'],
           },
-          select: ['id'],
-        });
+        );
 
         if (!certificadoPublicacion) {
           throw new BadRequestException(
@@ -1109,7 +1102,9 @@ export class ArticulosService {
       articulo.revisorId = null;
       articulo.revisor = null;
       await this.articuloRepository.save(articulo).catch(() => null);
-      throw new InternalServerErrorException('Error al actualizar la carga del revisor');
+      throw new InternalServerErrorException(
+        'Error al actualizar la carga del revisor',
+      );
     }
 
     await this.articuloRepository.save(articulo);
@@ -1143,13 +1138,17 @@ export class ArticulosService {
       throw new BadRequestException('El artículo no tiene revisor asignado.');
     }
 
-
     // Decrementar cargaActual del revisor previo si aplica
     if (articulo.revisorId) {
       try {
-        const revisor = await this.revisoresRepository.findOne({ where: { id: articulo.revisorId } });
+        const revisor = await this.revisoresRepository.findOne({
+          where: { id: articulo.revisorId },
+        });
         if (revisor) {
-          revisor.cargaActual = Math.max(0, Number(revisor.cargaActual ?? 0) - 1);
+          revisor.cargaActual = Math.max(
+            0,
+            Number(revisor.cargaActual ?? 0) - 1,
+          );
           await this.revisoresRepository.save(revisor);
         }
       } catch (err) {
@@ -1693,31 +1692,14 @@ export class ArticulosService {
   }
 
   async getArticulosEnPublicacion() {
-    const articulos = await this.articuloRepository
-      .createQueryBuilder('articulo')
-      .select(['articulo.id', 'articulo.codigo', 'articulo.titulo'])
-      .innerJoin('articulo.etapaActual', 'etapa')
-      .addSelect(['etapa.nombre'])
-      .innerJoin(
-        'articulo.historialEtapas',
-        'historial',
-        'historial.etapaId = :etapaBuscada',
-        { etapaBuscada: ArticulosService.ETAPA_PUBLICACION },
-      )
-      .addSelect(['historial.fechaInicio'])
-      .where('articulo.etapaActualId = :etapaId', {
-        etapaId: ArticulosService.ETAPA_PUBLICACION,
-      })
-      .orderBy('historial.fechaInicio', 'DESC')
-      .getMany();
-
-    return articulos.map((articulo) => ({
-        id: articulo.id,
-        codigo: articulo.codigo,
-        titulo: articulo.titulo,
-        etapa_nombre: articulo.etapaActual?.nombre || 'PUBLICACIÓN',
-        fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
-      }));
+    const articulos = await this.articuloRepository.find({
+      where: {
+        etapaActualId: ArticulosService.ETAPA_PUBLICACION,
+        edicionId: IsNull(), // ← Agregar esta línea
+      },
+      select: ['id', 'codigo', 'titulo'],
+    });
+    return articulos;
   }
 
   async getEstadisticasGenerales() {
@@ -2375,7 +2357,8 @@ export class ArticulosService {
           continue;
         }
 
-        const estadoCorreccion = this.obtenerEstadoCorreccionDesdeObservacion(obs);
+        const estadoCorreccion =
+          this.obtenerEstadoCorreccionDesdeObservacion(obs);
         const tipo = estadoCorreccion ? 'accion' : 'informacion';
 
         const fechaObs = obs.fechaSubida;
@@ -2420,7 +2403,8 @@ export class ArticulosService {
   private obtenerEstadoCorreccionDesdeObservacion(
     observacion: Observacion,
   ): 'solicitada' | 'enviada' | 'aceptada' | null {
-    const texto = `${observacion.asunto ?? ''} ${observacion.comentarios ?? ''}`.toLowerCase();
+    const texto =
+      `${observacion.asunto ?? ''} ${observacion.comentarios ?? ''}`.toLowerCase();
 
     if (
       /(correccion aceptada|corrección aceptada|correccion aprobada|corrección aprobada)/.test(
@@ -2430,13 +2414,17 @@ export class ArticulosService {
       return 'aceptada';
     }
 
-    if (texto.includes(ArticulosService.ASUNTO_CORRECCION_AUTOR.toLowerCase())) {
+    if (
+      texto.includes(ArticulosService.ASUNTO_CORRECCION_AUTOR.toLowerCase())
+    ) {
       return 'enviada';
     }
 
     if (
       /(correccion|corrección|ajuste|subsan|pendiente)/.test(texto) ||
-      texto.includes(ArticulosService.ASUNTO_CORRECCION_SOLICITADA.toLowerCase())
+      texto.includes(
+        ArticulosService.ASUNTO_CORRECCION_SOLICITADA.toLowerCase(),
+      )
     ) {
       return 'solicitada';
     }
@@ -2609,13 +2597,16 @@ export class ArticulosService {
           );
         }
 
-        const certificadoExistente = await queryRunner.manager.findOne(ArticuloCertificado, {
-          where: {
-            articuloId,
-            tipo: 'publicacion',
+        const certificadoExistente = await queryRunner.manager.findOne(
+          ArticuloCertificado,
+          {
+            where: {
+              articuloId,
+              tipo: 'publicacion',
+            },
+            select: ['id'],
           },
-          select: ['id'],
-        });
+        );
 
         if (certificadoExistente) {
           throw new ConflictException(
@@ -2623,7 +2614,9 @@ export class ArticulosService {
           );
         }
 
-        const historialCertificacionAbierto = (articulo.historialEtapas ?? []).find(
+        const historialCertificacionAbierto = (
+          articulo.historialEtapas ?? []
+        ).find(
           (historial) =>
             historial.etapaId === ArticulosService.ETAPA_CERTIFICACION &&
             !historial.fechaFin,
@@ -2734,7 +2727,8 @@ export class ArticulosService {
     this.validarMetadatosCertificado({
       contextoRequerimiento:
         payload.contextoRequerimiento ?? certificado.contextoRequerimiento,
-      etapaReferencia: payload.etapaReferencia ?? certificado.etapaReferencia ?? '',
+      etapaReferencia:
+        payload.etapaReferencia ?? certificado.etapaReferencia ?? '',
     });
 
     if (payload.tipo) {

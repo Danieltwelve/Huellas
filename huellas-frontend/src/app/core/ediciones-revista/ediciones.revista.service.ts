@@ -9,7 +9,6 @@ export interface CreateEdicionRevistaPayload {
   volumen: number;
   numero: number;
   anio: number;
-  fecha_estado: string;
 }
 
 export interface EstadoEdicionBackend {
@@ -28,22 +27,26 @@ export interface EdicionRevistaBackend {
 }
 
 export interface EdicionPublicadaBackend {
+  estado: any;
   id: number;
   titulo: string;
   volumen: number;
   numero: number;
   anio: number;
   fecha_estado: string;
+  portada?: string | null;
   numeroArticulos: number;
-  articulos: Array<{ id: number; codigo: string; titulo: string }>;
+  articulos: Array<{
+    id: number;
+    codigo: string;
+    titulo: string;
+    resumen: string;
+    autores: Array<{ id: number; nombre: string; correo: string }>;
+  }>;
 }
 
 export interface PublicarEdicionRevistaPayload {
-  titulo: string;
-  volumen: number;
-  numero: number;
-  anio: number;
-  fechaEstado?: string;
+  edicionId: number;
   articuloIds: number[];
 }
 
@@ -52,7 +55,7 @@ export interface UpdateEdicionRevistaPayload {
   volumen: number;
   numero: number;
   anio: number;
-  estado_id: number;
+  estado_id?: number;
 }
 
 interface CreateEdicionRevistaResponse {
@@ -115,6 +118,24 @@ export class EdicionesRevistaService {
     } else {
       return this.http.get<GetEdicionesResponse>(`${environment.apiUrlBackend}/ediciones`);
     }
+  }
+
+  createEdicionConPortada(formData: FormData): Observable<CreateEdicionRevistaResponse> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para crear una edición.'));
+    }
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<CreateEdicionRevistaResponse>(
+          `${environment.apiUrlBackend}/ediciones`,
+          formData,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
   }
 
   createEdicion(payload: CreateEdicionRevistaPayload): Observable<CreateEdicionRevistaResponse> {
@@ -184,42 +205,31 @@ export class EdicionesRevistaService {
 
     if (currentUser) {
       return from(currentUser.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.get<GetConteoArticulosResponse>(
-          `${environment.apiUrlBackend}/ediciones/${id}/conteo-articulos`,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
-      ),
-    );
-    } else {
-      return this.http.get<GetConteoArticulosResponse>(`${environment.apiUrlBackend}/ediciones/${id}/conteo-articulos`);
-    }
-  }
-
-  getEdicionesPublicadas(): Observable<{ message: string; data: EdicionPublicadaBackend[] }> {
-    const currentUser = this.auth.currentUser;
-
-    if (currentUser) {
-      return from(currentUser.getIdToken()).pipe(
         switchMap((token) =>
-          this.http.get<{ message: string; data: EdicionPublicadaBackend[] }>(
-            `${environment.apiUrlBackend}/ediciones/publicadas`,
+          this.http.get<GetConteoArticulosResponse>(
+            `${environment.apiUrlBackend}/ediciones/${id}/conteo-articulos`,
             {
               headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
             },
           ),
         ),
       );
+    } else {
+      return this.http.get<GetConteoArticulosResponse>(
+        `${environment.apiUrlBackend}/ediciones/${id}/conteo-articulos`,
+      );
     }
+  }
 
+  getEdicionesPublicadas(): Observable<{ message: string; data: EdicionPublicadaBackend[] }> {
     return this.http.get<{ message: string; data: EdicionPublicadaBackend[] }>(
       `${environment.apiUrlBackend}/ediciones/publicadas`,
     );
   }
 
-  publicarEdicion(payload: PublicarEdicionRevistaPayload): Observable<PublicarEdicionRevistaResponse> {
+  publicarEdicion(
+    payload: PublicarEdicionRevistaPayload,
+  ): Observable<PublicarEdicionRevistaResponse> {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
@@ -234,6 +244,56 @@ export class EdicionesRevistaService {
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           },
+        ),
+      ),
+    );
+  }
+
+  unpublishEdicion(id: number): Observable<{ message: string }> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para despublicar una edición.'));
+    }
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.patch<{ message: string }>(
+          `${environment.apiUrlBackend}/ediciones/${id}/unpublish`,
+          {}, // body vacío
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
+        ),
+      ),
+    );
+  }
+
+  updateEdicionConPortada(
+    id: number,
+    formData: FormData,
+  ): Observable<UpdateEdicionRevistaResponse> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para editar la edición.'));
+    }
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.put<UpdateEdicionRevistaResponse>(
+          `${environment.apiUrlBackend}/ediciones/${id}`,
+          formData,
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
+        ),
+      ),
+    );
+  }
+
+  deletePortada(id: number): Observable<{ message: string }> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para eliminar la portada.'));
+    }
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.delete<{ message: string }>(
+          `${environment.apiUrlBackend}/ediciones/${id}/portada`,
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
         ),
       ),
     );

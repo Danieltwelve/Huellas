@@ -1,0 +1,85 @@
+/* Estilos para la lista de artículos */
+.articulos-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.articulo-card {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-sizing: border-box;
+}
+
+.articulo-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
+}
+
+.autores,
+.sin-autores {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0;
+}
+
+.articulo-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Botones específicos del componente Articulos */
+.articulo-actions .btn-primary {
+  background: #00b2a9;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex: none;
+  width: auto;
+  min-width: 90px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.articulo-actions .btn-primary:hover {
+  background: #00938c;
+  transform: translateY(-1px);
+}
+
+.articulo-actions .btn-secondary {
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #dbe4ee;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex: none;
+  width: auto;
+  min-width: 90px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.articulo-actions .btn-secondary:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}

@@ -4,6 +4,12 @@ import { Auth } from '@angular/fire/auth';
 import { from, Observable, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environments';
 
+export interface ArticuloPublicable {
+  id: number;
+  codigo: string;
+  titulo: string;
+}
+
 export interface ArticuloResumenBackend {
   id: number;
   codigo: string;
@@ -264,7 +270,11 @@ export class ArticulosService {
     },
   ): Observable<{
     message: string;
-    evaluacion: { porcentaje: number; resultado: 'descartado' | 'correccion-requerida'; observacionId: number };
+    evaluacion: {
+      porcentaje: number;
+      resultado: 'descartado' | 'correccion-requerida';
+      observacionId: number;
+    };
     etapaActual: { id: number; nombre: string };
   }> {
     const currentUser = this.auth.currentUser;
@@ -288,15 +298,15 @@ export class ArticulosService {
       switchMap((token) =>
         this.http.post<{
           message: string;
-          evaluacion: { porcentaje: number; resultado: 'descartado' | 'correccion-requerida'; observacionId: number };
+          evaluacion: {
+            porcentaje: number;
+            resultado: 'descartado' | 'correccion-requerida';
+            observacionId: number;
+          };
           etapaActual: { id: number; nombre: string };
-        }>(
-          `${environment.apiUrlBackend}/articulos/${articuloId}/turnitin/evaluacion`,
-          formData,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
+        }>(`${environment.apiUrlBackend}/articulos/${articuloId}/turnitin/evaluacion`, formData, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
       ),
     );
   }
@@ -345,7 +355,9 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para consultar artículos de publicación.'));
+      return throwError(
+        () => new Error('No hay sesión activa para consultar artículos de publicación.'),
+      );
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -402,14 +414,19 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para consultar artículos asignados.'));
+      return throwError(
+        () => new Error('No hay sesión activa para consultar artículos asignados.'),
+      );
     }
 
     return from(currentUser.getIdToken()).pipe(
       switchMap((token) =>
-        this.http.get<ArticuloResumenBackend[]>(`${environment.apiUrlBackend}/articulos/comite/asignados`, {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-        }),
+        this.http.get<ArticuloResumenBackend[]>(
+          `${environment.apiUrlBackend}/articulos/comite/asignados`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
       ),
     );
   }
@@ -418,7 +435,9 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para consultar artículos asignados.'));
+      return throwError(
+        () => new Error('No hay sesión activa para consultar artículos asignados.'),
+      );
     }
 
     const query = opts ? `?page=${opts.page ?? 1}&limit=${opts.limit ?? 25}` : '';
@@ -436,7 +455,9 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para consultar historial de evaluaciones.'));
+      return throwError(
+        () => new Error('No hay sesión activa para consultar historial de evaluaciones.'),
+      );
     }
 
     const query = opts ? `?page=${opts.page ?? 1}&limit=${opts.limit ?? 25}` : '';
@@ -567,10 +588,13 @@ export class ArticulosService {
 
     return from(currentUser.getIdToken()).pipe(
       switchMap((token) =>
-        this.http.get(`${environment.apiUrlBackend}/articulos/descargar/${encodeURIComponent(filename)}`, {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          responseType: 'blob', // Importante para manejar el archivo binario
-        }),
+        this.http.get(
+          `${environment.apiUrlBackend}/articulos/descargar/${encodeURIComponent(filename)}`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+            responseType: 'blob', // Importante para manejar el archivo binario
+          },
+        ),
       ),
     );
   }
@@ -640,7 +664,10 @@ export class ArticulosService {
   asignarComiteEditorial(
     articuloId: number,
     comiteEditorialId: number,
-  ): Observable<{ message: string; comiteEditorial: { id: number; nombre: string; correo: string } }> {
+  ): Observable<{
+    message: string;
+    comiteEditorial: { id: number; nombre: string; correo: string };
+  }> {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
@@ -649,7 +676,10 @@ export class ArticulosService {
 
     return from(currentUser.getIdToken()).pipe(
       switchMap((token) =>
-        this.http.post<{ message: string; comiteEditorial: { id: number; nombre: string; correo: string } }>(
+        this.http.post<{
+          message: string;
+          comiteEditorial: { id: number; nombre: string; correo: string };
+        }>(
           `${environment.apiUrlBackend}/articulos/${articuloId}/asignar-comite`,
           { comiteEditorialId },
           {
@@ -680,14 +710,19 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para consultar la configuración de envíos.'));
+      return throwError(
+        () => new Error('No hay sesión activa para consultar la configuración de envíos.'),
+      );
     }
 
     return from(currentUser.getIdToken()).pipe(
       switchMap((token) =>
-        this.http.get<EstadoEnviosArticulos>(`${environment.apiUrlBackend}/articulos/configuracion/envios`, {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-        }),
+        this.http.get<EstadoEnviosArticulos>(
+          `${environment.apiUrlBackend}/articulos/configuracion/envios`,
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
       ),
     );
   }
@@ -700,7 +735,9 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para actualizar la configuración de envíos.'));
+      return throwError(
+        () => new Error('No hay sesión activa para actualizar la configuración de envíos.'),
+      );
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -720,7 +757,9 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para consultar estadísticas generales.'));
+      return throwError(
+        () => new Error('No hay sesión activa para consultar estadísticas generales.'),
+      );
     }
 
     return from(currentUser.getIdToken()).pipe(

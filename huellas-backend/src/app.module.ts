@@ -17,6 +17,8 @@ import { ObservacionesArchivosModule } from './modules/observaciones-archivos/ob
 import { TemasModule } from './modules/temas/temas.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RevisoresModule } from './modules/revisores/revisores.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -72,6 +74,10 @@ import { RevisoresModule } from './modules/revisores/revisores.module';
       },
     }),
     ScheduleModule.forRoot(),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads', 'portadas'),
+      serveRoot: '/uploads/portadas',
+    }),
     UsersModule,
     AuthModule,
     RolesModule,

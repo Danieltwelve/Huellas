@@ -45,8 +45,8 @@ export class Articulo {
   @Column({ name: 'etapa_actual_id' })
   etapaActualId!: number;
 
-  @Column({ name: 'edicion_id' })
-  edicionId!: number;
+  @Column({ name: 'edicion_id', nullable: true })
+  edicionId!: number | null;
 
   @Column({ name: 'comite_editorial_id', nullable: true })
   comiteEditorialId!: number | null;

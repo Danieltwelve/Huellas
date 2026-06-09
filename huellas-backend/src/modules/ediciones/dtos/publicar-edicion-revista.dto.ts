@@ -1,36 +1,15 @@
 import {
-  ArrayMaxSize,
-  ArrayMinSize,
   IsArray,
   IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
+  IsPositive,
+  ArrayMinSize,
+  ArrayMaxSize,
 } from 'class-validator';
 
 export class PublicarEdicionRevistaDto {
-  @IsString()
-  @IsNotEmpty()
-  titulo!: string;
-
   @IsInt()
-  @Min(1)
-  volumen!: number;
-
-  @IsInt()
-  @Min(1)
-  numero!: number;
-
-  @IsInt()
-  @Min(1900)
-  @Max(2100)
-  anio!: number;
-
-  @IsOptional()
-  @IsString()
-  fechaEstado?: string;
+  @IsPositive()
+  edicionId!: number;
 
   @IsArray()
   @ArrayMinSize(10)

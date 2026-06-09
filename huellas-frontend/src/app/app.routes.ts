@@ -3,45 +3,56 @@ import { claimsGuard } from './core/auth/claims.guard';
 import { redirectIfAuthenticatedGuard } from './core/auth/redirect-if-authenticated.guard';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent) },
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./pages/home/home.component').then((m) => m.HomeComponent),
+  },
   {
     path: 'login',
-    loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent),
+    loadComponent: () => import('./pages/login/login.component').then((m) => m.LoginComponent),
     canActivate: [redirectIfAuthenticatedGuard],
   },
   {
     path: 'recuperar-contrasena',
     loadComponent: () =>
       import('./pages/login/recuperar-contraseña/recuperar-contrasena.component').then(
-        m => m.RecuperarContrasenaComponent,
+        (m) => m.RecuperarContrasenaComponent,
       ),
     canActivate: [redirectIfAuthenticatedGuard],
   },
   {
     path: 'register',
-    loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent),
+    loadComponent: () =>
+      import('./pages/register/register.component').then((m) => m.RegisterComponent),
     canActivate: [redirectIfAuthenticatedGuard],
   },
   {
     path: 'verificar-correo',
     loadComponent: () =>
       import('./pages/verificar-correo/verificar-correo.component').then(
-        m => m.VerificarCorreoComponent,
+        (m) => m.VerificarCorreoComponent,
       ),
   },
-  { path: 'actual', loadComponent: () => import('./pages/actual/actual.component').then(m => m.ActualComponent) },
+  {
+    path: 'actual',
+    loadComponent: () => import('./pages/actual/actual.component').then((m) => m.ActualComponent),
+  },
   {
     path: 'archivos',
-    loadComponent: () => import('./pages/archivos/archivos.component').then(m => m.ArchivosComponent),
+    loadComponent: () =>
+      import('./pages/archivos/archivos.component').then((m) => m.ArchivosComponent),
   },
   {
     path: 'envios',
-    loadComponent: () => import('./pages/envios/envios.component').then(m => m.EnviosComponent),
+    loadComponent: () => import('./pages/envios/envios.component').then((m) => m.EnviosComponent),
   },
   {
     path: 'gestion-usuarios',
     loadComponent: () =>
-      import('./pages/panel-admin/gestion-usuarios/gestion-usuarios').then(m => m.GestionUsuarios),
+      import('./pages/panel-admin/gestion-usuarios/gestion-usuarios').then(
+        (m) => m.GestionUsuarios,
+      ),
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageUsers',
@@ -52,7 +63,7 @@ export const routes: Routes = [
     path: 'panel-comite-editorial',
     loadChildren: () =>
       import('./pages/panel-comite-editorial/panel-comite-editorial.routes').then(
-        m => m.PANEL_COMITE_EDITORIAL_ROUTES,
+        (m) => m.PANEL_COMITE_EDITORIAL_ROUTES,
       ),
     canActivate: [claimsGuard],
     data: {
@@ -62,7 +73,7 @@ export const routes: Routes = [
   },
   {
     path: 'articulos',
-    loadComponent: () => import('./pages/panel-admin/articulos/articulos').then(m => m.Articulos),
+    loadComponent: () => import('./pages/panel-admin/articulos/articulos').then((m) => m.Articulos),
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageArticulos',
@@ -74,7 +85,7 @@ export const routes: Routes = [
     path: 'estadisticas',
     loadComponent: () =>
       import('./pages/panel-admin/estadisticas/estadisticas.component').then(
-        m => m.EstadisticasComponent,
+        (m) => m.EstadisticasComponent,
       ),
     canActivate: [claimsGuard],
     data: {
@@ -86,8 +97,8 @@ export const routes: Routes = [
   {
     path: 'publicacion',
     loadComponent: () =>
-      import('./pages/panel-admin/gestion-flujo-editorial/publicacion/publicacion.component').then(
-        m => m.PublicacionEditorial,
+      import('./pages/panel-admin/gestion-flujo-editorial/publicacion/publicacion').then(
+        (m) => m.Publicacion,
       ),
     canActivate: [claimsGuard],
     data: {
@@ -100,7 +111,7 @@ export const routes: Routes = [
     path: 'certificados-editoriales',
     loadComponent: () =>
       import('./pages/panel-admin/certificados/certificados-editoriales.component').then(
-        m => m.CertificadosEditorialesComponent,
+        (m) => m.CertificadosEditorialesComponent,
       ),
     canActivate: [claimsGuard],
     data: {
@@ -113,7 +124,7 @@ export const routes: Routes = [
     path: 'flujo-trabajo-articulo/:id',
     loadComponent: () =>
       import('./pages/panel-admin/articulos/flujo-trabajo-articulo/flujo-trabajo-articulo').then(
-        m => m.FlujoTrabajoArticulo,
+        (m) => m.FlujoTrabajoArticulo,
       ),
     canActivate: [claimsGuard],
     data: {
@@ -126,7 +137,7 @@ export const routes: Routes = [
     path: 'gestion-flujo-editorial',
     loadComponent: () =>
       import('./pages/panel-admin/gestion-flujo-editorial/gestion-flujo-editorial').then(
-        m => m.GestionFlujoEditorial,
+        (m) => m.GestionFlujoEditorial,
       ),
     canActivate: [claimsGuard],
     data: {
@@ -136,48 +147,62 @@ export const routes: Routes = [
   },
   {
     path: 'panel-autor',
-    loadChildren: () => import('./pages/panel-autor/panel-autor.routes').then(m => m.PANEL_AUTOR_ROUTES),
+    loadChildren: () =>
+      import('./pages/panel-autor/panel-autor.routes').then((m) => m.PANEL_AUTOR_ROUTES),
     canActivate: [claimsGuard],
     data: { requiredClaim: 'roles', allowedRoles: ['autor', 'admin'] },
   },
   {
     path: 'panel-revisor',
-    loadChildren: () => import('./pages/panel-revisor/panel-revisor.routes').then(m => m.PANEL_REVISOR_ROUTES),
+    loadChildren: () =>
+      import('./pages/panel-revisor/panel-revisor.routes').then((m) => m.PANEL_REVISOR_ROUTES),
     canActivate: [claimsGuard],
     data: { requiredClaim: 'roles', allowedRoles: ['revisor', 'admin'] },
   },
   {
     path: 'perfil',
-    loadComponent: () => import('./core/components/perfil/perfil').then(m => m.Perfil),
+    loadComponent: () => import('./core/components/perfil/perfil').then((m) => m.Perfil),
     canActivate: [claimsGuard],
   },
-  { path: 'avisos', loadComponent: () => import('./pages/avisos/avisos.component').then(m => m.AvisosComponent) },
+  {
+    path: 'avisos',
+    loadComponent: () => import('./pages/avisos/avisos.component').then((m) => m.AvisosComponent),
+  },
   {
     path: 'equipo-editorial',
     loadComponent: () =>
-      import('./pages/equipo-editorial/equipo-editorial.component').then(m => m.EquipoEditorialComponent),
+      import('./pages/equipo-editorial/equipo-editorial.component').then(
+        (m) => m.EquipoEditorialComponent,
+      ),
   },
   {
     path: 'equipo/:id',
-    loadComponent: () => import('./pages/miembro-biografia/miembro-biografia').then(m => m.MiembroBiografia),
+    loadComponent: () =>
+      import('./pages/miembro-biografia/miembro-biografia').then((m) => m.MiembroBiografia),
   },
   {
     path: 'desarrollado-por',
     loadComponent: () =>
-      import('./pages/desarrollado-por/desarrollado-por.component').then(m => m.DesarrolladoPorComponent),
+      import('./pages/desarrollado-por/desarrollado-por.component').then(
+        (m) => m.DesarrolladoPorComponent,
+      ),
   },
   {
     path: 'etica-publicacion',
     loadComponent: () =>
-      import('./pages/etica-publicacion/etica-publicacion.component').then(m => m.EticaPublicacionComponent),
+      import('./pages/etica-publicacion/etica-publicacion.component').then(
+        (m) => m.EticaPublicacionComponent,
+      ),
   },
   {
     path: 'indexacion',
-    loadComponent: () => import('./pages/indexacion/indexacion.component').then(m => m.IndexacionComponent),
+    loadComponent: () =>
+      import('./pages/indexacion/indexacion.component').then((m) => m.IndexacionComponent),
   },
   {
     path: 'acerca-de',
-    loadComponent: () => import('./pages/acerca-de/acerca-de.component').then(m => m.AcercaDeComponent),
+    loadComponent: () =>
+      import('./pages/acerca-de/acerca-de.component').then((m) => m.AcercaDeComponent),
   },
   { path: '**', redirectTo: '' },
 ];

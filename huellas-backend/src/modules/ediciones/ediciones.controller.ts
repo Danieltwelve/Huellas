@@ -7,9 +7,12 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CreateEdicionRevistaDto } from './dtos/create-edicion-revista.dto';
 import { EdicionesService } from './ediciones.service';
@@ -18,6 +21,19 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UpdateEdicionRevistaDto } from './dtos/update-edicion-revista.dto';
 import { PublicarEdicionRevistaDto } from './dtos/publicar-edicion-revista.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { promises as fs } from 'fs';
+
+const portadaStorage = diskStorage({
+  destination: './uploads/portadas',
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = extname(file.originalname);
+    cb(null, `portada-${uniqueSuffix}${ext}`);
+  },
+});
 
 @Controller('ediciones')
 export class EdicionesController {
@@ -32,8 +48,6 @@ export class EdicionesController {
     };
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
   @Get('publicadas')
   async findPublicadas() {
     const ediciones = await this.edicionService.findPublicadas();
@@ -43,17 +57,39 @@ export class EdicionesController {
     };
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
   @Post()
+  @UseInterceptors(FileInterceptor('portada', { storage: portadaStorage }))
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createEdicionDto: CreateEdicionRevistaDto) {
-    const nuevaEdicion = await this.edicionService.create(createEdicionDto);
+  async create(
+    @Body() createEdicionDto: CreateEdicionRevistaDto,
+    @UploadedFile() portada?: Express.Multer.File,
+  ) {
+    let portadaPath: string | undefined;
 
-    return {
-      message: 'Edición creada exitosamente',
-      data: nuevaEdicion,
-    };
+    try {
+      if (portada) {
+        portadaPath = portada.path;
+        createEdicionDto.portada = portadaPath;
+      }
+      const nuevaEdicion = await this.edicionService.create(createEdicionDto);
+      return {
+        message: 'Edición creada exitosamente',
+        data: nuevaEdicion,
+      };
+    } catch (error) {
+      if (portadaPath) {
+        try {
+          await fs.unlink(portadaPath);
+        } catch (unlinkErr) {
+          console.error(
+            'No se pudo eliminar archivo huérfano:',
+            portadaPath,
+            unlinkErr,
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -75,17 +111,41 @@ export class EdicionesController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @UseInterceptors(FileInterceptor('portada', { storage: portadaStorage }))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateEdicionRevistaDto,
+    @UploadedFile() portada?: Express.Multer.File,
   ) {
-    const edicionActualizada = await this.edicionService.update(id, updateDto);
-    return {
-      message: 'Edición actualizada exitosamente',
-      data: edicionActualizada,
-    };
+    let nuevaPortadaPath: string | undefined;
+
+    try {
+      if (portada) {
+        nuevaPortadaPath = portada.path;
+        updateDto.portada = nuevaPortadaPath;
+      }
+      const edicionActualizada = await this.edicionService.update(
+        id,
+        updateDto,
+      );
+      return {
+        message: 'Edición actualizada exitosamente',
+        data: edicionActualizada,
+      };
+    } catch (error) {
+      if (nuevaPortadaPath) {
+        try {
+          await fs.unlink(nuevaPortadaPath);
+        } catch (unlinkErr) {
+          console.error(
+            'No se pudo eliminar portada temporal:',
+            nuevaPortadaPath,
+            unlinkErr,
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   @Get(':id/conteo-articulos')
@@ -95,5 +155,12 @@ export class EdicionesController {
       message: 'Conteo de artículos calculado correctamente',
       data,
     };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Patch(':id/unpublish')
+  async unpublish(@Param('id', ParseIntPipe) id: number) {
+    return await this.edicionService.unpublishEdicion(id);
   }
 }

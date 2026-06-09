@@ -31,17 +31,6 @@
   max-width: 58rem;
 }
 
-.header-badge {
-  background: linear-gradient(135deg, #0f766e, #44b2a9);
-  color: #fff;
-  padding: 0.65rem 0.9rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  white-space: nowrap;
-  box-shadow: 0 10px 20px rgba(68, 178, 169, 0.18);
-}
-
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -134,12 +123,6 @@
 .alert--error .alert__icon {
   background: #ef4444;
   color: #fff;
-}
-
-.publication-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.12fr;
-  gap: 0.9rem;
 }
 
 .panel-card {
@@ -333,88 +316,106 @@
   line-height: 1.35;
 }
 
-.published-section {
-  margin-top: 1rem;
-  display: grid;
-  gap: 0.85rem;
+/* Select personalizado mejorado */
+.form-group {
+  margin-bottom: 1.25rem;
 }
 
-.panel-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 1rem;
+.form-label {
+  display: block;
+  width: 100%;
 }
 
-.published-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
-}
-
-.published-card {
-  border: 1px solid #d9e4ee;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
-  padding: 1rem;
-  display: grid;
-  gap: 0.65rem;
-}
-
-.published-card__top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.published-badge {
-  display: inline-flex;
-  padding: 0.35rem 0.65rem;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-size: 0.8rem;
-  font-weight: 800;
-}
-
-.published-card h4 {
-  margin: 0;
-  color: #0f172a;
-}
-
-.published-card p,
-.published-date {
-  margin: 0;
-  color: #64748b;
-}
-
-.published-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.article-tag {
-  display: inline-flex;
-  padding: 0.3rem 0.55rem;
-  border-radius: 999px;
-  background: #f1f5f9;
-  color: #334155;
-  font-size: 0.75rem;
+.label-text {
+  display: block;
+  font-size: 0.85rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0f766e;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
 }
 
-.empty-state {
-  margin: 0;
-  padding: 0.9rem 1rem;
+.custom-select {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #0f172a;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
   border-radius: 14px;
-  border: 1px dashed #cbd5e1;
-  color: #64748b;
-  background: #fff;
+  cursor: pointer;
+  transition: all 0.25s ease-in-out;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230f766e' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2rem;
+}
+
+.custom-select:hover:not(:disabled) {
+  border-color: #44b2a9;
+  background-color: #fefefe;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(68, 178, 169, 0.15);
+}
+
+.custom-select:focus {
+  outline: none;
+  border-color: #0f766e;
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.1);
+}
+
+.custom-select:disabled {
+  background-color: #f1f5f9;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.custom-select option {
+  padding: 0.75rem;
+  font-size: 0.9rem;
+}
+
+/* Placeholder/empty option styling */
+.custom-select option[value=""],
+.custom-select option:first-child {
+  color: #94a3b8;
+}
+
+.custom-select option:checked {
+  background: linear-gradient(135deg, #0f766e 0%, #44b2a9 100%);
+  color: white;
+}
+
+app-articulos {
+  display: block;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.panel-card--form {
+  margin-top: 0.5rem;
+}
+
+.error-message {
+  background: #fef2f2;
+  border-left: 4px solid #dc2626;
+  color: #991b1b;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 @media (max-width: 980px) {
+
   .page-header,
   .selection-header,
   .panel-heading {
@@ -423,7 +424,6 @@
   }
 
   .summary-grid,
-  .publication-grid,
   .published-grid {
     grid-template-columns: 1fr;
   }
