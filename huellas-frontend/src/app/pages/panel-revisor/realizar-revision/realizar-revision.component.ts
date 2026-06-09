@@ -407,7 +407,7 @@ export class RealizarRevisionComponent implements OnInit {
     }
 
     if (this.apruebaPublicacion === null) {
-      this.errorRevision = 'Debes indicar si el artículo se aprueba para publicación (Sí o No).';
+      this.errorRevision = 'Debes indicar la decisión final del artículo.';
       return;
     }
     this.mostrandoConfirmacion = true;
@@ -428,8 +428,9 @@ export class RealizarRevisionComponent implements OnInit {
     this.mostrandoConfirmacion = false;
 
     try {
-      // La decisión final sólo puede ser aceptar o rechazar, derivada de apruebaPublicacion
-      const recomendacionToSend: 'aceptar' | 'rechazar' = this.apruebaPublicacion === 'si' ? 'aceptar' : 'rechazar';
+      // La decisión final puede ser aceptar o rechazar, derivada de apruebaPublicacion
+      const recomendacionToSend: 'aceptar' | 'rechazar' =
+        this.apruebaPublicacion === 'si' ? 'aceptar' : 'rechazar';
       this.recomendacion = recomendacionToSend;
 
       const resultado = await firstValueFrom(

@@ -43,8 +43,10 @@
 	<div class="turnitin-grid">
 		<ng-container *ngFor="let revisor of revisores; trackBy: trackById">
 			<article class="turnitin-card" [class.turnitin-card--recomendada]="revisor.destacado">
-				<span *ngIf="revisor.recomendacion" class="turnitin-badge">{{ revisor.recomendacion }}</span>
-				<span *ngIf="esRevisorAsignado(revisor)" class="turnitin-badge turnitin-badge--assigned">Asignado</span>
+				<div class="turnitin-badges-row" *ngIf="revisor.recomendacion || esRevisorAsignado(revisor)" style="display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.2rem;">
+					<span *ngIf="revisor.recomendacion" class="turnitin-badge">{{ revisor.recomendacion }}</span>
+					<span *ngIf="esRevisorAsignado(revisor)" class="turnitin-badge turnitin-badge--assigned" style="margin-left: 0;">Asignado</span>
+				</div>
 
 			<div class="turnitin-card-header">
 				<div class="turnitin-identity">
@@ -64,8 +66,24 @@
 			</div>
 
 			<div class="turnitin-body">
-				<p class="turnitin-label">Perfil / Descripción</p>
-				<p>{{ revisor.descripcion }}</p>
+				<div class="turnitin-body-header" [style.cursor]="revisor.descripcion.length > 150 ? 'pointer' : 'default'" (click)="revisor.descripcion.length > 150 && toggleDescripcion(revisor)" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+					<p class="turnitin-label" style="margin: 0;">Perfil / Descripción</p>
+					<button
+						type="button"
+						class="btn-toggle-desc"
+						*ngIf="revisor.descripcion.length > 150"
+						aria-label="Toggle descripción"
+						style="background: none; border: none; color: #0f766e; cursor: pointer; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 4px; padding: 0;"
+					>
+						<span>{{ revisor.expandido ? 'Cerrar' : 'Mostrar' }}</span>
+						<svg [style.transform]="revisor.expandido ? 'rotate(180deg)' : 'rotate(0deg)'" style="width: 14px; height: 14px; transition: transform 0.2s ease; stroke: currentColor; fill: none; stroke-width: 2.5;" viewBox="0 0 24 24">
+							<polyline points="6 9 12 15 18 9"></polyline>
+						</svg>
+					</button>
+				</div>
+				<p class="turnitin-desc-text" style="margin: 0; font-size: 0.86rem; color: #475569; line-height: 1.45;">
+					{{ revisor.expandido || revisor.descripcion.length <= 150 ? revisor.descripcion : (revisor.descripcion | slice:0:150) + '...' }}
+				</p>
 			</div>
 
 			<div class="turnitin-actions">
@@ -83,11 +101,14 @@
 						type="button"
 						class="btn-outline-danger"
 						*ngIf="esRevisorAsignado(revisor)"
-						[disabled]="revocandoAsignacion"
+						[disabled]="revocandoAsignacion || yaEvaluado"
 						(click)="abrirModalRevocar()"
 					>
 						{{ revocandoAsignacion ? 'Revocando...' : 'Revocar asignación' }}
 					</button>
+					<span *ngIf="esRevisorAsignado(revisor) && yaEvaluado" class="turnitin-lock-note" style="color: #dc2626; font-weight: 600;">
+						No se puede revocar: el revisor ya evaluó este artículo.
+					</span>
 					<span *ngIf="tieneRevisorAsignado && !esRevisorAsignado(revisor)" class="turnitin-lock-note">
 						Revoca la asignación actual para cambiar de revisor.
 					</span>

@@ -40,7 +40,7 @@ type PerfilRevisorUpdateBody = {
 };
 
 type RegistrarRevisionBody = {
-  recomendacion?: 'aceptar' | 'rechazar';
+  recomendacion?: 'aceptar' | 'ajustes' | 'rechazar';
   calificacion?: number;
   comentarios?: string;
 };

@@ -1,6 +1,6 @@
 <div class="timeline-container">
   <div class="selector-card">
-    <label for="articuloSelector">Artículo a seguir</label>
+    <label for="articuloSelector">Artículo a seguir (Seguimiento uno a uno)</label>
     <button
       type="button"
       class="selector-trigger"
@@ -20,7 +20,7 @@
     </button>
 
     @if (selectorOpen) {
-      <div class="selector-menu" role="listbox" aria-label="Artículos del autor">
+      <div class="selector-menu" role="listbox" aria-label="Artículos registrados">
         <input
           type="text"
           class="selector-search"
@@ -46,7 +46,7 @@
             <span class="selector-option__badge">{{ articulo.codigo }}</span>
             <span class="selector-option__body">
               <strong>{{ articulo.titulo }}</strong>
-              <small>Haz clic para abrir su timeline</small>
+              <small>Estado actual: {{ articulo.etapa_nombre }}</small>
             </span>
           </button>
         }
@@ -66,15 +66,15 @@
   }
 
   @if (!cargandoLista && articulos.length === 0) {
-    <div class="demo-banner">Aún no tienes artículos enviados para seguimiento.</div>
+    <div class="demo-banner">No hay artículos registrados en el sistema para realizar seguimiento.</div>
   }
 
   @if (flujo) {
     <div class="header-card">
       <div class="header-info">
-        <p class="eyebrow">Proceso editorial</p>
-        <h1>Timeline del artículo</h1>
-        <p>{{ titulo }}</p>
+        <p class="eyebrow">Vista de seguimiento (Solo lectura)</p>
+        <h1>Seguimiento del artículo</h1>
+        <p class="title-details">{{ titulo }}</p>
       </div>
       <div class="progress-section">
         <div class="progress-labels">
@@ -86,16 +86,79 @@
         </div>
         @if (siguientePaso; as paso) {
           <p class="next-step">
-            Siguiente paso recomendado: <strong>{{ paso.nombre }}</strong>
+            Etapa actual del flujo: <strong>{{ paso.nombre }}</strong>
           </p>
         }
       </div>
     </div>
 
-    <div class="content-card">
-      <h2 class="card-title">Etapas del proceso</h2>
+    <!-- Contexto Editorial Section -->
+    <section class="resumen-envio" [class.resumen-envio--colapsado]="!resumenEnvioExpandido">
+      <div class="section-head">
+        <div>
+          <span class="section-kicker">Contexto editorial</span>
+          <h2>Información enviada por el autor</h2>
+        </div>
+        <button
+          type="button"
+          class="section-toggle"
+          [class.is-collapsed]="!resumenEnvioExpandido"
+          (click)="resumenEnvioExpandido = !resumenEnvioExpandido"
+          [attr.aria-expanded]="resumenEnvioExpandido"
+          aria-label="Mostrar u ocultar contexto editorial"
+        >
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+      <div class="resumen-content" *ngIf="resumenEnvioExpandido">
+        <div class="resumen-grid">
+          <article class="resumen-item">
+            <h3>Autores</h3>
+            <p>{{ autoresArticulo }}</p>
+          </article>
+          <article class="resumen-item">
+            <h3>Temas</h3>
+            <p>{{ temasArticulo }}</p>
+          </article>
+          <article class="resumen-item">
+            <h3>Palabras clave</h3>
+            <p>{{ palabrasClaveArticulo }}</p>
+          </article>
+          <article class="resumen-item">
+            <h3>Fecha de envío</h3>
+            <p>{{ fechaEnvioArticulo }}</p>
+          </article>
+        </div>
+        <article class="resumen-item resumen-item--full">
+          <h3>Resumen</h3>
+          <p>{{ resumenArticulo }}</p>
+        </article>
+      </div>
+    </section>
 
-      <div class="timeline-track">
+    <!-- Ruta Editorial Timeline Section -->
+    <section class="content-card timeline-etapas-panel" [class.timeline-etapas-panel--colapsado]="!rutaEditorialExpandida">
+      <div class="section-head section-head--compact">
+        <div>
+          <span class="section-kicker">Ruta editorial</span>
+          <h2>Cronograma de Etapas</h2>
+        </div>
+        <button
+          type="button"
+          class="section-toggle"
+          [class.is-collapsed]="!rutaEditorialExpandida"
+          (click)="rutaEditorialExpandida = !rutaEditorialExpandida"
+          [attr.aria-expanded]="rutaEditorialExpandida"
+          aria-label="Mostrar u ocultar ruta editorial"
+        >
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+      <div class="timeline-content timeline-track" *ngIf="rutaEditorialExpandida">
         <div class="connecting-line"></div>
         @for (etapa of etapas; track etapa.nombre) {
           <article
@@ -132,14 +195,15 @@
           </article>
         }
       </div>
-    </div>
+    </section>
 
+    <!-- History / Flow observations Section -->
     <div class="content-card">
-      <h2 class="card-title">Historial detallado</h2>
+      <h2 class="card-title">Seguimiento e Historial Detallado</h2>
       <div class="history-toolbar">
         <div class="history-toolbar__copy">
           <p class="history-toolbar__eyebrow">Filtro rápido</p>
-          <p class="history-toolbar__hint">Muestra solo observaciones, certificados o Turnitin.</p>
+          <p class="history-toolbar__hint">Muestra solo observaciones, certificados o Turnitin del artículo.</p>
         </div>
 
         <div class="history-filters" role="group" aria-label="Filtros del historial">
@@ -155,8 +219,8 @@
           <article class="history-item">
             <div class="history-date">Sin movimientos</div>
             <div class="history-details">
-              <strong>No hay observaciones registradas</strong>
-              <p>Cuando el equipo editorial publique observaciones o cambios, apareceran aqui.</p>
+              <strong>No hay observaciones ni registros de flujo</strong>
+              <p>Este artículo aún no presenta registros de seguimiento.</p>
             </div>
           </article>
         }
@@ -165,23 +229,32 @@
           <article class="history-item history-item--empty">
             <div class="history-date">Sin coincidencias</div>
             <div class="history-details">
-              <strong>No encontramos resultados</strong>
-              <p>Prueba con otra palabra clave, una fecha o el nombre del evento.</p>
+              <strong>No se encontraron registros para este filtro</strong>
+              <p>Prueba seleccionando otra opción de filtrado rápido.</p>
             </div>
           </article>
         }
 
         @for (evento of historialFiltrado; track evento.fecha + evento.titulo) {
           <article class="history-item">
-            <div class="history-date">{{ evento.fecha }}</div>
+            <div class="history-meta">
+              <span class="history-date">{{ evento.fecha }}</span>
+              <span class="history-autor">{{ evento.autor }}</span>
+              <span class="history-rol">{{ evento.rol }}</span>
+            </div>
             <div class="history-details">
               <strong>{{ evento.titulo }}</strong>
-              <p style="white-space: pre-line;">{{ evento.descripcion }}</p>
+              <p class="history-desc" style="white-space: pre-line;">{{ evento.descripcion }}</p>
               @if (evento.archivos.length > 0) {
                 <div class="history-files">
                   @for (archivo of evento.archivos; track archivo.path) {
                     <button type="button" class="file-download-btn" (click)="descargarArchivo(archivo.path, archivo.nombre)">
-                      Descargar {{ archivo.nombre }}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-download">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      {{ archivo.nombre }}
                     </button>
                   }
                 </div>
@@ -193,6 +266,7 @@
     </div>
   }
 
+  <!-- Stage Detail dialog modal -->
   <dialog
     #stageDialog
     class="stage-modal"

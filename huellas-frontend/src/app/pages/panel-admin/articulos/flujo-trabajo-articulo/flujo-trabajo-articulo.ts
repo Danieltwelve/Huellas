@@ -6,12 +6,14 @@ import {
   ArticuloFlujo,
   ArticulosService,
   ObservacionBackend,
+  CertificadoArticuloBackend,
 } from '../../../../core/articulos/articulos.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { normalizarNombreArchivo } from '../../../../core/utils/filename.utils';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { UsersService, UsuarioBackend } from '../../../../core/users/users.service';
 import { RevisionPares } from './revision-pares/revision-pares';
+import { EdicionesRevistaService, EdicionRevistaBackend } from '../../../../core/ediciones-revista/ediciones.revista.service';
 
 interface EtapaFlujo {
   id: number;
@@ -64,10 +66,28 @@ export class FlujoTrabajoArticulo {
   private readonly authService = inject(AuthService);
   private readonly usersService = inject(UsersService);
   private readonly router = inject(Router);
+  private readonly edicionesService = inject(EdicionesRevistaService);
   private readonly autoRefreshMs = 12000;
   articuloIdActual: number | null = null;
   private autoRefreshSubscription: Subscription | null = null;
   private modalExitoMoverTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  checklistRevisionFinal = {
+    ajustesRevisores: false,
+    normasFormato: false,
+    referenciasBibliograficas: false,
+    redaccionOrtografia: false,
+    metadatosInglesEspanol: false,
+  };
+  guardandoChecklist = false;
+
+  edicionesList: EdicionRevistaBackend[] = [];
+  edicionSeleccionadaId: number | null = null;
+  doiPublicacion = '';
+  issnPublicacion = '';
+  paginasPublicacion = '';
+  guardandoMetadata = false;
+  publicandoArticulo = false;
 
   private static readonly ETAPA_REVISION_PRELIMINAR = 1;
   private static readonly ETAPA_COMITE_EDITORIAL = 6;
@@ -91,6 +111,7 @@ export class FlujoTrabajoArticulo {
   archivoCertificacion: File | null = null;
   nombreArchivoCertificacion = '';
   subiendoCertificacion = false;
+  certificadoPublicacionCargado: CertificadoArticuloBackend | null = null;
   decisionTurnitin: 'aceptado' | 'rechazado_similitud' | 'solicitar_cambios' | null = null;
   evaluandoComite = false;
   decisionComite: 'aceptar' | 'rechazar' = 'aceptar';
@@ -105,7 +126,6 @@ export class FlujoTrabajoArticulo {
   comentarioObservacion = '';
   archivoObservacion: File | null = null;
   nombreArchivoObservacion = '';
-  etapaSeleccionadaId: number | null = null;
   etapaMoverSeleccionadaId: number | null = null;
   mostrarModalConfirmacionMover = false;
   etapaDestinoConfirmacion: EtapaFlujo | null = null;
@@ -121,6 +141,7 @@ export class FlujoTrabajoArticulo {
   mostrarModalErrorTurnitin = false;
   mensajeErrorTurnitin: string | null = null;
   mostrarModalConfirmacionCorreccion = false;
+  mostrarModalConfirmacionCertificado = false;
   registroCorreccionConfirmacion: RegistroFlujo | null = null;
   comentarioAceptacionCorreccion = '';
 
@@ -177,6 +198,7 @@ export class FlujoTrabajoArticulo {
     });
 
     this.loadCommitteeMembers();
+    this.cargarEdiciones();
   }
 
   ngOnDestroy(): void {
@@ -220,10 +242,11 @@ export class FlujoTrabajoArticulo {
         this.articulo = data;
         this.tituloArticulo = `${data.codigo} - ${data.titulo}`;
         this.actualizarEtapaActual(data.etapaActual.id);
-        this.etapaSeleccionadaId = data.etapaActual.id;
         this.etapaMoverSeleccionadaId = this.etapaSiguientePermitida?.id ?? null;
         this.committeeMemberSeleccionadoId = data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
         this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
+        this.mapearChecklistYMetadata(data);
+        this.cargarCertificadoPublicacion(data.id);
       },
       error: () => {
         // En auto-refresh silencioso ignoramos errores temporales para no interrumpir la vista.
@@ -255,7 +278,6 @@ export class FlujoTrabajoArticulo {
         this.articulo = data;
         this.tituloArticulo = `${data.codigo} - ${data.titulo}`;
         this.actualizarEtapaActual(data.etapaActual.id);
-        this.etapaSeleccionadaId = data.etapaActual.id;
         this.etapaMoverSeleccionadaId = this.etapaSiguientePermitida?.id ?? null;
         this.mostrarModalConfirmacionMover = false;
         this.etapaDestinoConfirmacion = null;
@@ -266,10 +288,13 @@ export class FlujoTrabajoArticulo {
         this.miembroComiteConfirmacion = null;
         this.mostrarModalConfirmacionTurnitin = false;
         this.mostrarModalExitoTurnitin = false;
+        this.mostrarModalConfirmacionCertificado = false;
         this.mensajeExitoTurnitin = '';
         this.committeeMemberSeleccionadoId = data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
         this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
+        this.mapearChecklistYMetadata(data);
         this.loading = false;
+        this.cargarCertificadoPublicacion(data.id);
         alCompletar?.();
       },
       error: (err) => {
@@ -280,11 +305,83 @@ export class FlujoTrabajoArticulo {
     });
   }
 
+  cargarEdiciones(): void {
+    this.edicionesService.getEdiciones().subscribe({
+      next: (res) => {
+        this.edicionesList = res.data ?? [];
+      },
+      error: (err) => {
+        console.error('Error al cargar ediciones:', err);
+      },
+    });
+  }
+
+  private mapearChecklistYMetadata(data: ArticuloFlujo): void {
+    if (data.revisionFinalChecklist) {
+      try {
+        this.checklistRevisionFinal = {
+          ...this.checklistRevisionFinal,
+          ...JSON.parse(data.revisionFinalChecklist),
+        };
+      } catch (e) {
+        console.error('Error parsing checklist JSON', e);
+      }
+    } else {
+      this.checklistRevisionFinal = {
+        ajustesRevisores: false,
+        normasFormato: false,
+        referenciasBibliograficas: false,
+        redaccionOrtografia: false,
+        metadatosInglesEspanol: false,
+      };
+    }
+
+    this.edicionSeleccionadaId = data.edicionId ?? null;
+    this.doiPublicacion = data.doi ?? '';
+    this.issnPublicacion = data.issn ?? '';
+    this.paginasPublicacion = data.paginas ?? '';
+  }
+
   private actualizarEtapaActual(etapaActualId: number): void {
     this.etapas = this.etapasDisponibles.map((etapa) => ({
       ...etapa,
       activa: etapa.id === etapaActualId,
     }));
+  }
+
+  cargarCertificadoPublicacion(articuloId: number): void {
+    this.articulosService.listarCertificados().subscribe({
+      next: (certificados) => {
+        this.certificadoPublicacionCargado =
+          certificados.find((c) => c.articuloId === articuloId && c.tipo === 'publicacion') ?? null;
+      },
+      error: () => {
+        this.certificadoPublicacionCargado = null;
+      },
+    });
+  }
+
+  descargarCertificado(certificadoId: number): void {
+    const cert = this.certificadoPublicacionCargado;
+    const nombreOriginal = cert?.archivoNombreOriginal || `certificado-${certificadoId}.pdf`;
+
+    this.articulosService.descargarCertificado(certificadoId).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = normalizarNombreArchivo(nombreOriginal);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Error al descargar certificado:', err);
+        this.accionError = 'No fue posible descargar el certificado.';
+        this.accionExitosa = null;
+      },
+    });
   }
 
   private mapearObservacionesAHistorial(observaciones: ObservacionBackend[] = []): RegistroFlujo[] {
@@ -363,15 +460,69 @@ export class FlujoTrabajoArticulo {
   }
 
   private formatearAsuntoHistorial(asunto?: string): string {
-    const valor = (asunto ?? '').trim();
+    let valor = (asunto ?? '').trim();
     if (!valor) {
       return 'Sin asunto';
     }
 
-    return valor.replace(
+    valor = valor.replace(
       /evaluaci[oó]n\s+de\s+comite[-\s]editorial/gi,
       'Evaluación de comité editorial',
     );
+
+    // Mapear "Revisión por pares: AJUSTES" a "Revisión por pares: ACEPTAR"
+    valor = valor.replace(
+      /revisi[oó]n por pares:\s*ajustes/gi,
+      'Revisión por pares: ACEPTAR',
+    );
+
+    // Mapear "Revisión por pares completada: AJUSTES" a "Revisión por pares completada: APROBADO"
+    valor = valor.replace(
+      /revisi[oó]n por pares completada:\s*ajustes/gi,
+      'Revisión por pares completada: APROBADO',
+    );
+
+    return valor;
+  }
+
+  formatearComentario(comentario?: string | null): string {
+    if (!comentario) {
+      return '';
+    }
+
+    // Cortar el comentario si contiene la sección de la rúbrica detallada (1. Sobre...)
+    let resumen = comentario;
+    const indexSobre = comentario.search(/(?:\r?\n)?\d+\.\s+Sobre/i);
+    if (indexSobre !== -1) {
+      resumen = comentario.substring(0, indexSobre);
+    } else {
+      const indexSobreSinNumero = comentario.search(/(?:\r?\n)?Sobre la redacción/i);
+      if (indexSobreSinNumero !== -1) {
+        resumen = comentario.substring(0, indexSobreSinNumero);
+      }
+    }
+
+    // Formatear líneas introduciendo saltos de línea antes de campos clave si vienen pegados
+    resumen = resumen
+      .replace(/\s*(Calificación:)/gi, '\n$1')
+      .replace(/\s*(Recomendación:)/gi, '\n$1')
+      .replace(/\s*(Comentarios:)/gi, '\n$1')
+      .replace(/\s*(Jurado evaluador:)/gi, '\n$1')
+      .replace(/\s*(Artículo:)/gi, '\n$1')
+      .replace(/\s*(Recomendación seleccionada:)/gi, '\n$1')
+      .replace(/\s*(Se aprueba para publicación:)/gi, '\n$1')
+      .replace(/\s*(Criterios aprobados:)/gi, '\n$1')
+      .replace(/\s*(Criterios rechazados:)/gi, '\n$1')
+      .trim();
+
+    // Mapear Ajustes -> Aceptar/Aprobado para visualización consistente
+    resumen = resumen
+      .replace(/Recomendación:\s*AJUSTES/gi, 'Recomendación: ACEPTAR')
+      .replace(/Recomendación seleccionada:\s*ajustes/gi, 'Recomendación seleccionada: ACEPTAR')
+      .replace(/Decisión:\s*AJUSTES/gi, 'Decisión: ACEPTAR')
+      .replace(/Decisión final:\s*AJUSTES/gi, 'Decisión final: ACEPTAR');
+
+    return resumen;
   }
 
   toggleRegistro(registro: RegistroFlujo): void {
@@ -674,22 +825,6 @@ export class FlujoTrabajoArticulo {
     });
   }
 
-  seleccionarEtapa(etapaId: number): void {
-    if (!etapaId) {
-      this.etapaSeleccionadaId = null;
-      return;
-    }
-
-    if (this.soloPuedeMoverAComiteEnPreliminar) {
-      this.etapaSeleccionadaId =
-        etapaId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL
-          ? etapaId
-          : FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL;
-      return;
-    }
-
-    this.etapaSeleccionadaId = etapaId;
-  }
 
   onArchivoObservacionSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -750,8 +885,19 @@ export class FlujoTrabajoArticulo {
       return;
     }
 
+    if (file && file.size > 10 * 1024 * 1024) {
+      this.archivoCertificacion = null;
+      this.nombreArchivoCertificacion = '';
+      input.value = '';
+      this.accionError = 'El archivo de certificación no puede superar los 10 MB.';
+      this.accionExitosa = null;
+      return;
+    }
+
     this.archivoCertificacion = file;
     this.nombreArchivoCertificacion = file?.name ?? '';
+    this.accionError = null;
+    this.accionExitosa = null;
   }
 
   onPorcentajeTurnitinInput(event: Event): void {
@@ -782,6 +928,18 @@ export class FlujoTrabajoArticulo {
     return file.size <= FlujoTrabajoArticulo.MAX_TURNITIN_FILE_SIZE_BYTES;
   }
 
+  abrirConfirmacionCertificado(): void {
+    if (!this.archivoCertificacion) {
+      this.accionError = 'Debes seleccionar un archivo de certificado válido.';
+      return;
+    }
+    this.mostrarModalConfirmacionCertificado = true;
+  }
+
+  cancelarConfirmacionCertificado(): void {
+    this.mostrarModalConfirmacionCertificado = false;
+  }
+
   subirCertificadoPublicacion(): void {
     if (!this.articulo || !this.puedeMostrarCertificacion || this.subiendoCertificacion) {
       return;
@@ -793,6 +951,7 @@ export class FlujoTrabajoArticulo {
       return;
     }
 
+    this.cancelarConfirmacionCertificado();
     this.subiendoCertificacion = true;
     this.accionError = null;
     this.accionExitosa = null;
@@ -942,7 +1101,7 @@ export class FlujoTrabajoArticulo {
       .agregarObservacion(this.articulo.id, {
         asunto,
         comentarios: this.comentarioObservacion.trim() || undefined,
-        etapaId: this.etapaSeleccionadaId ?? this.articulo.etapaActual.id,
+        etapaId: this.articulo.etapaActual.id,
         archivo: this.archivoObservacion,
       })
       .subscribe({
@@ -989,24 +1148,10 @@ export class FlujoTrabajoArticulo {
       return;
     }
 
-    // La etapa actual debe estar terminada (fechaFin) o, en el caso de comité,
-    // haber sido evaluada como aceptada antes de permitir avanzar.
-    if (!this.etapaActualTerminada) {
-      if (!(this.estaEnEtapaComite && this.resultadoEvaluacionComite === 'aceptado')) {
-        this.accionError = 'No puedes avanzar hasta que la etapa actual se haya finalizado o aceptado.';
-        this.accionExitosa = null;
-        return;
-      }
-    }
-
-    // La etapa actual debe estar terminada (fechaFin) o, en el caso de comité,
-    // haber sido evaluada como aceptada antes de permitir avanzar.
-    if (!this.etapaActualTerminada) {
-      if (!(this.estaEnEtapaComite && this.resultadoEvaluacionComite === 'aceptado')) {
-        this.accionError = 'No puedes avanzar hasta que la etapa actual se haya finalizado o aceptado.';
-        this.accionExitosa = null;
-        return;
-      }
+    if (!this.puedeMoverPorTerminacion) {
+      this.accionError = this.mensajeReglaMovimiento || 'No puedes avanzar hasta que la etapa actual se haya finalizado o aceptado.';
+      this.accionExitosa = null;
+      return;
     }
 
     this.etapaDestinoConfirmacion = etapaSiguiente;
@@ -1063,6 +1208,12 @@ export class FlujoTrabajoArticulo {
     if (this.bloqueaAvancePorFaltaCriterioRevisor) {
       this.accionError =
         'No puedes avanzar desde Revisión por pares hasta que el revisor asignado emita su criterio.';
+      this.accionExitosa = null;
+      return;
+    }
+
+    if (!this.puedeMoverPorTerminacion) {
+      this.accionError = this.mensajeReglaMovimiento || 'No puedes avanzar hasta que la etapa actual se haya finalizado o aceptado.';
       this.accionExitosa = null;
       return;
     }
@@ -1174,12 +1325,13 @@ export class FlujoTrabajoArticulo {
       return false;
     }
 
-    const etapaActualId = this.articulo?.etapaActual?.id;
+    const etapaActualId = this.articulo?.etapaActual?.id ?? null;
     return etapaActualId === FlujoTrabajoArticulo.ETAPA_REVISION_PRELIMINAR;
   }
 
   get puedeMostrarTurnitin(): boolean {
-    return this.articulo?.etapaActual?.id === 3 && this.authService.hasAnyRole(['admin', 'director', 'monitor']);
+    const etapaActualId = this.articulo?.etapaActual?.id ?? null;
+    return etapaActualId === 3 && this.authService.hasAnyRole(['admin', 'director', 'monitor']);
   }
 
   get estaEnCertificacion(): boolean {
@@ -1187,17 +1339,20 @@ export class FlujoTrabajoArticulo {
   }
 
   get puedeMostrarCertificacion(): boolean {
-    return this.esAdminEditorial && this.estaEnCertificacion;
+    const etapaActualId = this.articulo?.etapaActual?.id ?? null;
+    return this.esAdminEditorial && etapaActualId === FlujoTrabajoArticulo.ETAPA_CERTIFICACION;
   }
 
   get puedeMostrarRevisionPares(): boolean {
-    return this.articulo?.etapaActual?.id === FlujoTrabajoArticulo.ETAPA_REVISION_PARES;
+    const etapaActualId = this.articulo?.etapaActual?.id ?? null;
+    return etapaActualId === FlujoTrabajoArticulo.ETAPA_REVISION_PARES;
   }
 
   get puedeMostrarAsignacionComite(): boolean {
+    const etapaActualId = this.articulo?.etapaActual?.id ?? null;
     return (
       this.puedeAsignarComite &&
-      this.articulo?.etapaActual?.id === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL
+      etapaActualId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL
     );
   }
 
@@ -1245,6 +1400,58 @@ export class FlujoTrabajoArticulo {
     return null;
   }
 
+  get resultadoRevisionParesActual(): 'aceptar' | 'rechazar' | null {
+    if (!this.articulo) {
+      return null;
+    }
+
+    if (this.articulo.etapaActual?.id !== FlujoTrabajoArticulo.ETAPA_REVISION_PARES) {
+      return null;
+    }
+
+    const revisorUsuarioId = this.articulo.revisor?.usuarioId;
+    if (!revisorUsuarioId) {
+      return null;
+    }
+
+    const fechaInicioRevisionParesActualMs = this.getFechaInicioRevisionParesActualMs();
+
+    // Buscar el registro de revisión por pares más reciente del revisor en esta etapa
+    const registroRevision = this.historialVisible.find((registro) => {
+      if (registro.etapaId !== FlujoTrabajoArticulo.ETAPA_REVISION_PARES) {
+        return false;
+      }
+
+      if (registro.usuarioId !== revisorUsuarioId) {
+        return false;
+      }
+
+      if (!this.esAsuntoRevisionPares(registro.asunto)) {
+        return false;
+      }
+
+      if (fechaInicioRevisionParesActualMs === null) {
+        return true;
+      }
+
+      return registro.fechaOrden >= fechaInicioRevisionParesActualMs;
+    });
+
+    if (!registroRevision) {
+      return null;
+    }
+
+    const asunto = (registroRevision.asunto ?? '').toLowerCase();
+    if (asunto.includes('aceptar') || asunto.includes('ajustes')) {
+      return 'aceptar';
+    }
+    if (asunto.includes('rechazar')) {
+      return 'rechazar';
+    }
+
+    return null;
+  }
+
   get mensajeResultadoComite(): string {
     if (this.resultadoEvaluacionComite === 'aceptado') {
       return 'Comité Editorial aprobó el artículo. El equipo editorial ya puede moverlo a la siguiente etapa.';
@@ -1258,9 +1465,10 @@ export class FlujoTrabajoArticulo {
   }
 
   get puedeMostrarEvaluacionComite(): boolean {
+    const etapaActualId = this.articulo?.etapaActual?.id ?? null;
     return (
       this.esComiteEditorial &&
-      this.estaEnEtapaComite &&
+      etapaActualId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL &&
       !this.articuloYaEvaluadoPorComite
     );
   }
@@ -1312,10 +1520,51 @@ export class FlujoTrabajoArticulo {
   }
 
   get puedeMoverPorTerminacion(): boolean {
-    // Permite mover si la etapa actual está terminada o, en caso de Comité, si fue aceptada
-    return (
-      this.etapaActualTerminada || (this.estaEnEtapaComite && this.resultadoEvaluacionComite === 'aceptado')
-    );
+    if (!this.articulo) {
+      return false;
+    }
+
+    const etapaId = this.articulo.etapaActual?.id;
+
+    // Revisión Preliminar (1): se puede mover libremente
+    if (etapaId === FlujoTrabajoArticulo.ETAPA_REVISION_PRELIMINAR) {
+      return true;
+    }
+
+    // Comité Editorial (6): se puede mover si fue aceptada
+    if (etapaId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL) {
+      return this.resultadoEvaluacionComite === 'aceptado';
+    }
+
+    // Turnitin (3): se puede mover si ya fue evaluado por Turnitin
+    if (etapaId === 3) {
+      return this.articuloYaEvaluadoPorTurnitin;
+    }
+
+    // Revisión por pares (4): se puede mover si el revisor emitió criterio y fue 'aceptar'
+    if (etapaId === FlujoTrabajoArticulo.ETAPA_REVISION_PARES) {
+      return this.revisorAsignadoEmitioCriterioActual && this.resultadoRevisionParesActual === 'aceptar';
+    }
+
+    // Certificación (8): requiere que se haya subido el certificado
+    if (etapaId === FlujoTrabajoArticulo.ETAPA_CERTIFICACION) {
+      return this.etapaActualTerminada;
+    }
+
+    // Revisión final (9): se puede mover si toda la checklist está marcada como verdadera
+    if (etapaId === 9) {
+      const checklist = this.checklistRevisionFinal;
+      return !!(
+        checklist.ajustesRevisores &&
+        checklist.normasFormato &&
+        checklist.referenciasBibliograficas &&
+        checklist.redaccionOrtografia &&
+        checklist.metadatosInglesEspanol
+      );
+    }
+
+    // Lógica por defecto para otros estados
+    return this.etapaActualTerminada;
   }
 
   get revisorAsignadoEmitioCriterioActual(): boolean {
@@ -1384,6 +1633,15 @@ export class FlujoTrabajoArticulo {
     }
 
     if (!this.puedeMoverPorTerminacion) {
+      if (this.articulo?.etapaActual?.id === 9) {
+        return 'Completa todos los ítems de la lista de revisión final antes de avanzar a la etapa de Publicación.';
+      }
+      if (this.articulo?.etapaActual?.id === FlujoTrabajoArticulo.ETAPA_REVISION_PARES) {
+        if (this.resultadoRevisionParesActual === 'rechazar') {
+          return 'El artículo fue rechazado en la revisión por pares y queda descartado.';
+        }
+        return 'No puedes avanzar hasta que el revisor asignado emita un criterio de aceptación.';
+      }
       return 'La etapa actual no está finalizada ni aceptada.';
     }
 
@@ -1426,11 +1684,15 @@ export class FlujoTrabajoArticulo {
       this.evaluandoTurnitin ||
       this.evaluandoComite ||
       this.asignandoComite ||
+      this.guardandoChecklist ||
+      this.guardandoMetadata ||
+      this.publicandoArticulo ||
       this.mostrarModalConfirmacionMover ||
       this.mostrarModalConfirmacionAsignacion ||
       this.mostrarModalExitoAsignacion ||
       this.mostrarModalConfirmacionTurnitin ||
       this.mostrarModalExitoTurnitin ||
+      this.mostrarModalConfirmacionCertificado ||
       !!this.archivoObservacion ||
       !!this.archivoTurnitin ||
       !!this.archivoCertificacion ||
@@ -1625,5 +1887,82 @@ export class FlujoTrabajoArticulo {
     this.archivoTurnitin = null;
     this.nombreArchivoTurnitin = '';
     this.decisionTurnitin = null;
+  }
+
+  get estaEnRevisionFinal(): boolean {
+    return this.articulo?.etapaActual?.id === 9;
+  }
+
+  get estaEnPublicacion(): boolean {
+    return this.articulo?.etapaActual?.id === 5;
+  }
+
+  get puedeMostrarRevisionFinal(): boolean {
+    const etapaActualId = this.articulo?.etapaActual?.id ?? null;
+    return etapaActualId === 9 && this.esAdminEditorial;
+  }
+
+  get puedeMostrarPublicacion(): boolean {
+    const etapaActualId = this.articulo?.etapaActual?.id ?? null;
+    return etapaActualId === 5 && this.esAdminEditorial;
+  }
+
+  guardarChecklistFinal(): void {
+    if (!this.articuloIdActual) return;
+    this.guardandoChecklist = true;
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService
+      .guardarChecklistRevisionFinal(this.articuloIdActual, this.checklistRevisionFinal)
+      .subscribe({
+        next: (res) => {
+          this.guardandoChecklist = false;
+          this.accionExitosa = res.message || 'Lista de chequeo guardada exitosamente.';
+          this.cargarArticulo(this.articuloIdActual!);
+        },
+        error: (err) => {
+          this.guardandoChecklist = false;
+          this.accionError = err?.error?.message || 'Error al guardar la lista de chequeo.';
+        },
+      });
+  }
+
+  guardarMetadatosPublicacion(publicar: boolean = false): void {
+    if (!this.articuloIdActual) return;
+    if (!this.edicionSeleccionadaId) {
+      this.accionError = 'Debes seleccionar una edición para el artículo.';
+      return;
+    }
+
+    if (publicar) {
+      this.publicandoArticulo = true;
+    } else {
+      this.guardandoMetadata = true;
+    }
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService
+      .guardarMetadataPublicacion(this.articuloIdActual, {
+        edicionId: this.edicionSeleccionadaId,
+        doi: this.doiPublicacion.trim() || undefined,
+        issn: this.issnPublicacion.trim() || undefined,
+        paginas: this.paginasPublicacion.trim() || undefined,
+        publicar,
+      })
+      .subscribe({
+        next: (res) => {
+          this.guardandoMetadata = false;
+          this.publicandoArticulo = false;
+          this.accionExitosa = res.message || 'Metadatos procesados correctamente.';
+          this.cargarArticulo(this.articuloIdActual!);
+        },
+        error: (err) => {
+          this.guardandoMetadata = false;
+          this.publicandoArticulo = false;
+          this.accionError = err?.error?.message || 'Error al procesar metadatos.';
+        },
+      });
   }
 }

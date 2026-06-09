@@ -91,7 +91,7 @@
                 <span class="turnitin-badge">Similitud: {{ textoSimilitudTurnitin(historial[0]) }}</span>
               }
               <p class="meta">{{ historial[0].usuario?.nombre || 'Equipo editorial' }} <span *ngIf="historial[0].etapa?.nombre"> - {{ historial[0].etapa?.nombre }}</span></p>
-              <p class="comentario" *ngIf="historial[0].comentarios">{{ historial[0].comentarios }}</p>
+              <p class="comentario" *ngIf="historial[0].comentarios" style="white-space: pre-line;">{{ formatearComentario(historial[0].comentarios) }}</p>
               @if (historial[0].archivos.length > 0) {
                 <div class="archivos">
                   @for (archivo of historial[0].archivos; track archivo.archivoPath) {

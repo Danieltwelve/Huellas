@@ -42,6 +42,12 @@ export class Articulo {
   @Column({ type: 'varchar', nullable: true })
   issn!: string;
 
+  @Column({ name: 'paginas', type: 'varchar', nullable: true })
+  paginas!: string | null;
+
+  @Column({ name: 'revision_final_checklist', type: 'text', nullable: true })
+  revisionFinalChecklist!: string | null;
+
   @Column({ name: 'etapa_actual_id' })
   etapaActualId!: number;
 

@@ -1,14 +1,13 @@
 import { ChangeDetectorRef, Component, ElementRef, HostListener, ViewChild, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import {
   ArticuloFlujo,
   ArticulosService,
   ObservacionBackend,
+  ArticuloResumenBackend,
 } from '../../../core/articulos/articulos.service';
-import {
-  ArticuloAutor,
-  ArticulosAutorService,
-} from '../../../core/articulos/articulos-autor.service';
 import { normalizarNombreArchivo } from '../../../core/utils/filename.utils';
 
 interface EtapaEditorial {
@@ -25,25 +24,27 @@ interface EtapaEditorial {
 
 interface EventoTimeline {
   fecha: string;
+  autor: string;
+  rol: string;
   titulo: string;
   descripcion: string;
   archivos: Array<{ nombre: string; path: string }>;
 }
 
 @Component({
-  selector: 'app-timeline-editorial',
+  selector: 'app-seguimiento',
   standalone: true,
-  templateUrl: './timeline-editorial.component.html',
-  styleUrls: ['./timeline-editorial.component.css']
+  imports: [CommonModule, FormsModule],
+  templateUrl: './seguimiento.component.html',
+  styleUrls: ['./seguimiento.component.css']
 })
-export class TimelineEditorialComponent implements OnInit {
-  private readonly articulosAutorService = inject(ArticulosAutorService);
+export class SeguimientoComponent implements OnInit {
   private readonly articulosService = inject(ArticulosService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  articulos: ArticuloAutor[] = [];
+  articulos: ArticuloResumenBackend[] = [];
   articuloSeleccionadoId: number | null = null;
   selectorOpen = false;
   searchTerm = '';
@@ -53,6 +54,10 @@ export class TimelineEditorialComponent implements OnInit {
   cargandoFlujo = false;
   error: string | null = null;
   etapaDetalleModal: EtapaEditorial | null = null;
+
+  resumenEnvioExpandido = true;
+  rutaEditorialExpandida = true;
+
   @ViewChild('stageDialog') stageDialog?: ElementRef<HTMLDialogElement>;
 
   private readonly ordenEtapas: number[] = [1, 6, 3, 4, 8, 9, 5];
@@ -68,25 +73,25 @@ export class TimelineEditorialComponent implements OnInit {
   }> = [
     {
       id: 1,
-      nombre: 'Revision preliminar',
-      descripcion: 'Validacion editorial inicial del envio',
+      nombre: 'Revisión Preliminar',
+      descripcion: 'Validación editorial inicial del envío',
       detalle:
-        'El equipo editorial revisa que el artículo cumpla con los requisitos minimos de forma, alcance y documentación antes de continuar con el flujo.',
+        'El equipo editorial revisa que el artículo cumpla con los requisitos mínimos de forma, alcance y documentación antes de continuar con el flujo.',
       objetivos: [
-        'Verificar que el envio corresponda a la convocatoria y categoria correcta.',
-        'Confirmar que el archivo y los metadatos esten completos.',
+        'Verificar que el envío corresponda a la convocatoria y categoría correcta.',
+        'Confirmar que el archivo y los metadatos estén completos.',
       ],
       puntosClave: ['Formato general', 'Datos del autor', 'Cumplimiento de normas básicas'],
-      resultadoEsperado: 'Aceptación inicial del articulo para continuar al comite editorial.',
+      resultadoEsperado: 'Aceptación inicial del artículo para continuar al comité editorial.',
     },
     {
       id: 6,
-      nombre: 'Comité editorial',
-      descripcion: 'Evaluación y decision del comite editorial',
+      nombre: 'Comité Editorial',
+      descripcion: 'Evaluación y decisión del comité editorial',
       detalle:
-        'El comité define si el artículo avanza, requiere ajustes o se descarta, tomando en cuenta pertinencia, alcance tematico y valor editorial.',
+        'El comité define si el artículo avanza, requiere ajustes o se descarta, tomando en cuenta pertinencia, alcance temático y valor editorial.',
       objetivos: [
-        'Evaluar la pertinencia editorial del articulo.',
+        'Evaluar la pertinencia editorial del artículo.',
         'Definir la ruta siguiente dentro del proceso.',
       ],
       puntosClave: ['Pertinencia temática', 'Coherencia editorial', 'Decisión de avance'],
@@ -103,20 +108,20 @@ export class TimelineEditorialComponent implements OnInit {
         'Registrar observaciones si el informe requiere correcciones.',
       ],
       puntosClave: ['Similitud total', 'Citas y referencias', 'Soporte de informe'],
-      resultadoEsperado: 'Un reporte de originalidad asociado al articulo.',
+      resultadoEsperado: 'Un reporte de originalidad asociado al artículo.',
     },
     {
       id: 4,
       nombre: 'Revisión por pares',
       descripcion: 'Evaluación por revisores académicos',
       detalle:
-        'El artículo pasa a revisión experta para valorar rigor metodologico, aporte academico, claridad argumentativa y calidad de resultados.',
+        'El artículo pasa a revisión experta para valorar rigor metodológico, aporte académico, claridad argumentativa y calidad de resultados.',
       objetivos: [
         'Obtener concepto de revisores especializados.',
         'Identificar ajustes de fondo y forma antes de la decisión final.',
       ],
-      puntosClave: ['Rigor metodologico', 'Aporte académico', 'Observaciones de pares'],
-      resultadoEsperado: 'Conceptos de revision que orientan la siguiente decisión editorial.',
+      puntosClave: ['Rigor metodológico', 'Aporte académico', 'Observaciones de pares'],
+      resultadoEsperado: 'Conceptos de revisión que orientan la siguiente decisión editorial.',
     },
     {
       id: 8,
@@ -128,7 +133,7 @@ export class TimelineEditorialComponent implements OnInit {
         'Confirmar documentos obligatorios y autorizaciones.',
         'Dejar el proceso listo para el cierre documental.',
       ],
-      puntosClave: ['Soportes firmados', 'Version final', 'Checklist editorial'],
+      puntosClave: ['Soportes firmados', 'Versión final', 'Checklist editorial'],
       resultadoEsperado: 'Expediente certificado para pasar al cierre del flujo.',
     },
     {
@@ -136,7 +141,7 @@ export class TimelineEditorialComponent implements OnInit {
       nombre: 'Revisión final',
       descripcion: 'Revisión integral previa a la publicación',
       detalle:
-        'Antes de publicar, se hace una ultima lectura integral para detectar detalles pendientes de estilo, consistencia o formato.',
+        'Antes de publicar, se hace una última lectura integral para detectar detalles pendientes de estilo, consistencia o formato.',
       objetivos: [
         'Verificar que no existan pendientes editoriales.',
         'Asegurar consistencia final antes de la salida.',
@@ -155,7 +160,7 @@ export class TimelineEditorialComponent implements OnInit {
         'Dejar trazabilidad del cierre editorial.',
       ],
       puntosClave: ['Maquetación final', 'Publicación en volumen', 'Disponibilidad pública'],
-      resultadoEsperado: 'Articulo publicado y visible en la plataforma.',
+      resultadoEsperado: 'Artículo publicado y visible en la plataforma.',
     },
   ];
 
@@ -166,11 +171,11 @@ export class TimelineEditorialComponent implements OnInit {
     });
   }
 
-  get articuloSeleccionado(): ArticuloAutor | null {
+  get articuloSeleccionado(): ArticuloResumenBackend | null {
     return this.articulos.find((articulo) => articulo.id === this.articuloSeleccionadoId) ?? null;
   }
 
-  get filteredArticulos(): ArticuloAutor[] {
+  get filteredArticulos(): ArticuloResumenBackend[] {
     if (!this.searchTerm) {
       return this.articulos;
     }
@@ -188,7 +193,7 @@ export class TimelineEditorialComponent implements OnInit {
     this.cargandoLista = true;
     this.error = null;
 
-    this.articulosAutorService.getMisArticulos().subscribe({
+    this.articulosService.getResumenArticulos().subscribe({
       next: (articulos) => {
         this.articulos = articulos;
         this.cargandoLista = false;
@@ -209,8 +214,8 @@ export class TimelineEditorialComponent implements OnInit {
         this.cargarFlujo(articuloValido);
       },
       error: (err) => {
-        console.error('Error cargando artículos del autor:', err);
-        this.error = 'No fue posible cargar tus artículos.';
+        console.error('Error cargando artículos:', err);
+        this.error = 'No fue posible cargar la lista de artículos.';
         this.cargandoLista = false;
         this.cdr.detectChanges();
       },
@@ -225,7 +230,6 @@ export class TimelineEditorialComponent implements OnInit {
     this.selectorOpen = !this.selectorOpen;
 
     if (this.selectorOpen) {
-      // focus the search box when menu opens
       setTimeout(() => {
         const input = document.querySelector('.selector-menu .selector-search') as HTMLInputElement | null;
         input?.focus();
@@ -235,13 +239,12 @@ export class TimelineEditorialComponent implements OnInit {
     }
   }
 
-  seleccionarArticulo(articulo: ArticuloAutor): void {
+  seleccionarArticulo(articulo: ArticuloResumenBackend): void {
     if (!articulo?.id) {
       this.selectorOpen = false;
       return;
     }
 
-    // always set selected id and reload its flujo so the header updates
     this.articuloSeleccionadoId = articulo.id;
     this.selectorOpen = false;
     this.router.navigate([], {
@@ -277,8 +280,8 @@ export class TimelineEditorialComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error al cargar timeline del artículo:', err);
-        this.error = 'No fue posible cargar el seguimiento del artículo.';
+        console.error('Error al cargar flujo del artículo:', err);
+        this.error = 'No fue posible cargar el seguimiento del artículo seleccionado.';
         this.cargandoFlujo = false;
         this.cdr.detectChanges();
       },
@@ -295,6 +298,38 @@ export class TimelineEditorialComponent implements OnInit {
     }
 
     return 'Selecciona un artículo para ver su seguimiento';
+  }
+
+  get autoresArticulo(): string {
+    if (!this.flujo?.autores) {
+      return 'Sin autores registrados';
+    }
+    return this.flujo.autores.map((a) => `${a.nombre} (${a.email})`).join(', ');
+  }
+
+  get temasArticulo(): string {
+    if (!this.flujo?.temas || this.flujo.temas.length === 0) {
+      return 'Sin temas';
+    }
+    return this.flujo.temas.join(', ');
+  }
+
+  get palabrasClaveArticulo(): string {
+    if (!this.flujo?.palabrasClave || this.flujo.palabrasClave.length === 0) {
+      return 'Sin palabras clave';
+    }
+    return this.flujo.palabrasClave.join(', ');
+  }
+
+  get fechaEnvioArticulo(): string {
+    if (!this.flujo?.fechaEnvio) {
+      return 'Sin fecha';
+    }
+    return this.formatearFechaLarga(this.flujo.fechaEnvio);
+  }
+
+  get resumenArticulo(): string {
+    return this.flujo?.resumen || 'Sin resumen registrado';
   }
 
   get etapas(): EtapaEditorial[] {
@@ -379,7 +414,9 @@ export class TimelineEditorialComponent implements OnInit {
       .sort((a, b) => new Date(b.fechaSubida).getTime() - new Date(a.fechaSubida).getTime())
       .map((obs: ObservacionBackend) => ({
         fecha: this.formatearFechaLarga(obs.fechaSubida),
-        titulo: (obs.asunto || 'Observacion editorial')
+        autor: obs.usuario?.nombre ?? 'Usuario desconocido',
+        rol: this.formatearRolHistorial(obs.usuario?.roles?.[0]?.nombre),
+        titulo: (obs.asunto || 'Observación editorial')
           .replace(/revisi[oó]n por pares:\s*ajustes/gi, 'Revisión por pares: ACEPTAR')
           .replace(/revisi[oó]n por pares completada:\s*ajustes/gi, 'Revisión por pares completada: APROBADO'),
         descripcion: this.formatearComentario(obs.comentarios) || 'Sin comentarios adicionales.',
@@ -462,11 +499,33 @@ export class TimelineEditorialComponent implements OnInit {
       return 'Sin fecha';
     }
 
-    return fecha.toLocaleDateString('es-CO', {
+    return new Intl.DateTimeFormat('es-CO', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
-    });
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'America/Bogota',
+    }).format(fecha);
+  }
+
+  private formatearRolHistorial(rol?: string): string {
+    const valor = (rol ?? '').trim();
+    if (!valor) {
+      return 'Sin rol';
+    }
+
+    const normalizado = valor
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    if (normalizado.includes('comite-editorial') || normalizado.includes('comite editorial')) {
+      return 'Comité editorial';
+    }
+
+    return valor.replace(/-/g, ' ');
   }
 
   formatearComentario(comentario?: string | null): string {
@@ -474,7 +533,6 @@ export class TimelineEditorialComponent implements OnInit {
       return '';
     }
 
-    // Cortar el comentario si contiene la sección de la rúbrica detallada (1. Sobre...)
     let resumen = comentario;
     const indexSobre = comentario.search(/(?:\r?\n)?\d+\.\s+Sobre/i);
     if (indexSobre !== -1) {
@@ -486,7 +544,6 @@ export class TimelineEditorialComponent implements OnInit {
       }
     }
 
-    // Formatear líneas introduciendo saltos de línea antes de campos clave si vienen pegados
     resumen = resumen
       .replace(/\s*(Calificación:)/gi, '\n$1')
       .replace(/\s*(Recomendación:)/gi, '\n$1')
@@ -499,7 +556,6 @@ export class TimelineEditorialComponent implements OnInit {
       .replace(/\s*(Criterios rechazados:)/gi, '\n$1')
       .trim();
 
-    // Mapear Ajustes -> Aceptar/Aprobado para visualización consistente
     resumen = resumen
       .replace(/Recomendación:\s*AJUSTES/gi, 'Recomendación: ACEPTAR')
       .replace(/Recomendación seleccionada:\s*ajustes/gi, 'Recomendación seleccionada: ACEPTAR')
@@ -534,4 +590,3 @@ export class TimelineEditorialComponent implements OnInit {
     return 'observaciones';
   }
 }
-

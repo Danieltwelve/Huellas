@@ -64,6 +64,12 @@ export class SideBar {
       route: '/articulos',
     },
     {
+      label: 'Seguimiento',
+      icon: 'eye',
+      allowedRoles: ['admin', 'director', 'monitor'],
+      route: '/seguimiento',
+    },
+    {
       label: 'Certificados',
       icon: 'certificate',
       allowedRoles: ['admin', 'director', 'monitor'],

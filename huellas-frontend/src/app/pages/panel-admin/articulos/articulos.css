@@ -577,85 +577,110 @@ tbody tr:last-child td {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.28rem 0.55rem;
+  height: 25px;
+  padding: 0 0.65rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  line-height: 1;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.stage-pill::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  background-color: currentColor;
+  flex-shrink: 0;
 }
 
 .stage--revision-preliminar {
   color: #b45309;
-  background: #fff7e7;
-  border-color: #fddc9d;
+  background: #fffbeb;
+  border-color: rgba(245, 158, 11, 0.25);
 }
 
 .stage--turnitin {
-  color: #9a3412;
-  background: #fff3e8;
-  border-color: #fdba74;
+  color: #c2410c;
+  background: #fff7ed;
+  border-color: rgba(249, 115, 22, 0.25);
 }
 
 .stage--comite-editorial {
   color: #0f766e;
-  background: #e7fffb;
-  border-color: #5eead4;
+  background: #f0fdfa;
+  border-color: rgba(20, 184, 166, 0.25);
 }
 
 .stage--revision-pares {
   color: #6d28d9;
-  background: #f4efff;
-  border-color: #d8b4fe;
+  background: #faf5ff;
+  border-color: rgba(168, 85, 247, 0.25);
 }
 
 .stage--certificacion {
-  color: #0c4a6e;
+  color: #0891b2;
   background: #ecfeff;
-  border-color: #67e8f9;
+  border-color: rgba(6, 182, 212, 0.25);
 }
 
 .stage--revision-final {
-  color: #7c2d12;
-  background: #fff7ed;
-  border-color: #fdba74;
+  color: #be123c;
+  background: #fff5f5;
+  border-color: rgba(239, 68, 68, 0.25);
 }
 
 .stage--publicacion {
-  color: #166534;
-  background: #effff2;
-  border-color: #86efac;
+  color: #047857;
+  background: #f0fdf4;
+  border-color: rgba(16, 185, 129, 0.25);
 }
 
 .status-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.3rem 0.6rem;
+  height: 25px;
+  padding: 0 0.65rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.status-pill::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  background-color: currentColor;
+  flex-shrink: 0;
 }
 
 .status--pendiente {
-  color: #a16207;
+  color: #b45309;
   background: #fffbeb;
-  border-color: #fde68a;
+  border-color: rgba(245, 158, 11, 0.25);
 }
 
 .status--aceptado {
-  color: #166534;
+  color: #047857;
   background: #f0fdf4;
-  border-color: #86efac;
+  border-color: rgba(16, 185, 129, 0.25);
 }
 
 .status--rechazado {
-  color: #b91c1c;
-  background: #fef2f2;
-  border-color: #fecaca;
+  color: #be123c;
+  background: #fff5f5;
+  border-color: rgba(239, 68, 68, 0.25);
 }
 
 .deadline-cell {
@@ -682,29 +707,42 @@ tbody tr:last-child td {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.28rem 0.55rem;
+  height: 25px;
+  padding: 0 0.65rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.deadline-pill::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  background-color: currentColor;
+  flex-shrink: 0;
 }
 
 .deadline--ok {
-  color: #166534;
+  color: #047857;
   background: #f0fdf4;
-  border-color: #86efac;
+  border-color: rgba(16, 185, 129, 0.25);
 }
 
 .deadline--proximo {
-  color: #a16207;
+  color: #b45309;
   background: #fffbeb;
-  border-color: #fde68a;
+  border-color: rgba(245, 158, 11, 0.25);
 }
 
 .deadline--vencido {
-  color: #b91c1c;
-  background: #fef2f2;
-  border-color: #fecaca;
+  color: #be123c;
+  background: #fff5f5;
+  border-color: rgba(239, 68, 68, 0.25);
 }
 
 .view-cell {

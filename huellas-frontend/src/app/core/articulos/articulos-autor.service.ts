@@ -15,6 +15,7 @@ export interface ArticuloAutor {
   correccion_vencida?: boolean;
   fecha_vencimiento_correccion?: string | null;
   solicitud_prorroga_correccion_pendiente?: boolean;
+  evaluado_pares?: boolean;
 }
 
 export interface NotificacionAutorBackend {

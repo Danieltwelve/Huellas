@@ -1,4 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import {
   ArticulosAutorService,
   ArticuloAutor,
@@ -36,7 +37,7 @@ interface ArticuloAutorListado extends ArticuloAutor {
 @Component({
   selector: 'app-mi-panel',
   standalone: true,
-  imports: [FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './mi-panel.component.html',
   styleUrls: ['./mi-panel.component.css']
 })
@@ -190,16 +191,31 @@ export class MiPanelComponent implements OnInit {
   }
 
   getEstadoArticulo(articulo: ArticuloAutor): 'revision' | 'correccion' | 'publicado' {
+    const valor = articulo.etapa_nombre.toLowerCase();
+    if (valor.includes('publicado')) {
+      return 'publicado';
+    }
+
+    if (
+      valor.includes('certificaci') ||
+      valor.includes('final') ||
+      valor.includes('comite') ||
+      valor.includes('pares')
+    ) {
+      return 'revision';
+    }
+
     if (articulo.correccion_pendiente || articulo.correccion_vencida || articulo.solicitud_prorroga_correccion_pendiente) {
       return 'correccion';
     }
 
-    const valor = articulo.etapa_nombre.toLowerCase();
-    if (valor.includes('publicado')) return 'publicado';
     return 'revision';
   }
 
   getEstadoLabel(articulo: ArticuloAutor): string {
+    if (articulo.etapa_nombre.toLowerCase().includes('pares')) {
+      return articulo.evaluado_pares ? 'Evaluado' : 'En Revision';
+    }
     const estado = this.getEstadoArticulo(articulo);
     if (estado === 'publicado') return 'Publicado';
     if (articulo.correccion_vencida) return 'Plazo vencido';
@@ -208,14 +224,50 @@ export class MiPanelComponent implements OnInit {
   }
 
   getEtapaClass(etapa: string): string {
-    const valor = etapa.toLowerCase();
-    if (valor.includes('publicado')) return 'badge-green';
-    if (valor.includes('correccion')) return 'badge-orange';
-    if (valor.includes('evaluacion') || valor.includes('revision')) return 'badge-yellow';
-    return 'badge-blue';
+    const etapaNormalizada = this.normalizarTexto(etapa);
+
+    if (etapaNormalizada.includes('revision preliminar')) {
+      return 'stage--revision-preliminar';
+    }
+
+    if (etapaNormalizada.includes('turnitin')) {
+      return 'stage--turnitin';
+    }
+
+    if (etapaNormalizada.includes('revision por pares')) {
+      return 'stage--revision-pares';
+    }
+
+    if (etapaNormalizada.includes('certificacion')) {
+      return 'stage--certificacion';
+    }
+
+    if (etapaNormalizada.includes('revision final')) {
+      return 'stage--revision-final';
+    }
+
+    if (etapaNormalizada.includes('comite editorial')) {
+      return 'stage--comite-editorial';
+    }
+
+    if (etapaNormalizada.includes('publicacion')) {
+      return 'stage--publicacion';
+    }
+
+    return '';
+  }
+
+  private normalizarTexto(texto: string): string {
+    return (texto ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
   }
 
   getEstadoClass(articulo: ArticuloAutor): string {
+    if (articulo.etapa_nombre.toLowerCase().includes('pares') && articulo.evaluado_pares) {
+      return 'state-published';
+    }
     const estado = this.getEstadoArticulo(articulo);
     if (estado === 'publicado') return 'state-published';
     if (estado === 'correccion') return 'state-pending';
@@ -735,6 +787,13 @@ export class MiPanelComponent implements OnInit {
   }
 
   puedeEnviarCorreccion(articulo: ArticuloAutor): boolean {
+    const valor = articulo.etapa_nombre.toLowerCase();
+    if (
+      !valor.includes('preliminar') &&
+      !valor.includes('turnitin')
+    ) {
+      return false;
+    }
     if (!articulo.correccion_pendiente || articulo.correccion_vencida) {
       return false;
     }
