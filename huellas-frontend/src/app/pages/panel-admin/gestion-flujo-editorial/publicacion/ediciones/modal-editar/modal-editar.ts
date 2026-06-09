@@ -40,7 +40,6 @@ export class ModalEditar {
 
   currentPortadaUrl: string | null = null;
   newPortadaFile: File | null = null;
-  previewUrl: string | null = null;
   isDeletingCover = false;
 
   isOpen = false;
@@ -75,26 +74,9 @@ export class ModalEditar {
     };
 
     this.newPortadaFile = null;
-    this.previewUrl = null;
     this.isOpen = true;
     this.showConfirmModal = false;
     this.showResultModal = false;
-  }
-
-  onPortadaSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length) {
-      this.newPortadaFile = input.files[0];
-      // Crear vista previa
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.previewUrl = e.target?.result as string;
-      };
-      reader.readAsDataURL(this.newPortadaFile);
-    } else {
-      this.newPortadaFile = null;
-      this.previewUrl = null;
-    }
   }
 
   closeModal(): void {
@@ -220,6 +202,21 @@ export class ModalEditar {
       numero: null,
       anio: null,
     };
+  }
+
+  removerNuevaPortada(): void {
+    this.newPortadaFile = null;
+    const fileInput = document.getElementById('nueva-portada') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  }
+
+  onPortadaSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length) {
+      this.newPortadaFile = input.files[0];
+    } else {
+      this.newPortadaFile = null;
+    }
   }
 
   removeCover(): void {

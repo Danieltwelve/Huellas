@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { Ediciones } from './ediciones/ediciones';
+import { Ediciones } from '../publicacion/ediciones/ediciones';
 import { Requisitos } from './requisitos/requisitos';
 
 export type EnvioSidebarId = 'requisitos-envio' | 'ediciones';
@@ -12,7 +12,7 @@ interface EnvioSidebarItem {
 @Component({
   selector: 'app-envios',
   standalone: true,
-  imports: [Ediciones, Requisitos],
+  imports: [Requisitos, Ediciones],
   templateUrl: './envios.html',
   styleUrl: './envios.css',
 })

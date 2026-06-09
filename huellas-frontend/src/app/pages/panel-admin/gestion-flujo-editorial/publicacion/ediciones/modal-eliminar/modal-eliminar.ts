@@ -3,15 +3,14 @@ import { ModalShellComponent } from '../../../../../../core/components/modal-she
 import { EdicionesRevistaService } from '../../../../../../core/ediciones-revista/ediciones.revista.service';
 
 @Component({
-  selector: 'app-modal-eliminar-edicion',
+  selector: 'app-modal-eliminar',
   standalone: true,
   imports: [ModalShellComponent],
-  templateUrl: './modal-eliminar-edicion.html',
-  styleUrl: './modal-eliminar-edicion.css',
+  templateUrl: './modal-eliminar.html',
+  styleUrl: './modal-eliminar.css',
 })
-export class ModalEliminarEdicion {
+export class ModalEliminar {
   private readonly edicionesRevistaService = inject(EdicionesRevistaService);
-
   @Output() eliminada = new EventEmitter<void>();
 
   isOpen = false;
@@ -30,20 +29,14 @@ export class ModalEliminarEdicion {
   }
 
   closeModal(): void {
-    if (this.deletingEdicion) {
-      return;
-    }
-
+    if (this.deletingEdicion) return;
     this.isOpen = false;
     this.requestError = '';
     this.resetSelection();
   }
 
   confirmDelete(): void {
-    if (this.deletingEdicion || this.selectedEdicionId === null) {
-      return;
-    }
-
+    if (this.deletingEdicion || this.selectedEdicionId === null) return;
     this.deletingEdicion = true;
     this.requestError = '';
 
@@ -56,14 +49,10 @@ export class ModalEliminarEdicion {
       },
       error: (error) => {
         this.deletingEdicion = false;
-
         const backendMessage = Array.isArray(error?.error?.message)
           ? error.error.message.join(', ')
           : error?.error?.message;
-
-        this.requestError =
-          backendMessage ||
-          'No se pudo eliminar la edicion. Intenta nuevamente en unos instantes.';
+        this.requestError = backendMessage || 'No se pudo eliminar la edición. Intenta nuevamente.';
       },
     });
   }
@@ -77,5 +66,4 @@ export class ModalEliminarEdicion {
     this.selectedEdicionId = null;
     this.selectedEdicionTitulo = '';
   }
-
 }

@@ -1,0 +1,37 @@
+@if (isOpen) {
+<app-modal-shell [title]="'Eliminar edición'" ariaLabel="Eliminar edición" [width]="'min(500px, 92vw)'"
+  [panelClass]="'modal-card--danger'" (closed)="closeModal()">
+  <div modal-body>
+    @if (requestError) {
+    <p class="request-error">{{ requestError }}</p>
+    }
+    <div class="warning-icon" aria-hidden="true">!</div>
+    <p class="warning-text">
+      Estás por eliminar la edición:
+      <strong>{{ selectedEdicionTitulo }}</strong>
+    </p>
+    <p class="warning-subtext">Esta acción no se puede deshacer. ¿Deseas continuar?</p>
+  </div>
+  <div modal-footer>
+    <button type="button" class="modal-btn-cancelar" (click)="closeModal()" [disabled]="deletingEdicion">
+      Cancelar
+    </button>
+    <button type="button" class="modal-btn-eliminar" (click)="confirmDelete()" [disabled]="deletingEdicion">
+      {{ deletingEdicion ? 'Eliminando...' : 'Eliminar edición' }}
+    </button>
+  </div>
+</app-modal-shell>
+}
+
+@if (showSuccessModal) {
+<app-modal-shell [title]="'Edición eliminada'" ariaLabel="Edición eliminada" [width]="'min(420px, 92vw)'"
+  [footerClass]="'centered'" (closed)="closeSuccessModal()">
+  <div modal-body class="success-content">
+    <div class="success-icon" aria-hidden="true">✓</div>
+    <p>La operación se realizó exitosamente.</p>
+  </div>
+  <div modal-footer>
+    <button type="button" class="modal-btn-confirmar" (click)="closeSuccessModal()">Entendido</button>
+  </div>
+</app-modal-shell>
+}

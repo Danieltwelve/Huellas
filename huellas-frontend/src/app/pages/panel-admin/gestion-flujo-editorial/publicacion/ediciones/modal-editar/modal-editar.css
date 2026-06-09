@@ -182,7 +182,7 @@
   letter-spacing: 0.03em;
   color: #0f766e;
   margin-bottom: 0.75rem;
-  margin-bottom: 0.6;
+  margin-top: 1rem;
 }
 
 .portada-preview {
@@ -200,6 +200,48 @@
   border: 1px solid #cbd5e1;
   object-fit: contain;
   background: #f8fafc;
+}
+
+.current-portada {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.portada-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.nombre-archivo {
+  font-size: 0.85rem;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.btn-remover {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  transition: color 0.2s;
+}
+
+.btn-remover:hover {
+  color: #dc2626;
 }
 
 .btn-remover-portada {

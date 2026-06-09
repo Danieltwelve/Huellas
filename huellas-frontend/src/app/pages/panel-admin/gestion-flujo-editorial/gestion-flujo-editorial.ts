@@ -3,21 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ArticulosService } from '../../../core/articulos/articulos.service';
 import { Envios } from './envios/envios';
 
-type FlujoTabId =
-  | 'envio'
-  | 'revision-preliminar'
-  | 'comite-editorial'
-  | 'turnitin'
-  | 'revision-pares'
-  | 'certificacion'
-  | 'revision-final'
-  | 'publicacion';
-
-interface FlujoTab {
-  id: FlujoTabId;
-  label: string;
-}
-
 @Component({
   selector: 'app-gestion-flujo-editorial',
   standalone: true,
@@ -28,18 +13,6 @@ interface FlujoTab {
 export class GestionFlujoEditorial implements OnInit {
   private readonly articulosService = inject(ArticulosService);
 
-  readonly tabs: FlujoTab[] = [
-    { id: 'envio', label: 'Envíos' },
-    { id: 'revision-preliminar', label: 'Revisión Preliminar' },
-    { id: 'comite-editorial', label: 'Comité Editorial' },
-    { id: 'turnitin', label: 'Turnitin' },
-    { id: 'revision-pares', label: 'Revisión por pares' },
-    { id: 'certificacion', label: 'Certificación' },
-    { id: 'revision-final', label: 'Revisión final' },
-    { id: 'publicacion', label: 'Publicación' },
-  ];
-
-  activeTab: FlujoTabId = 'envio';
   envioHabilitado = true;
   cargandoEstadoEnvios = true;
   guardandoEstadoEnvios = false;
@@ -100,11 +73,8 @@ export class GestionFlujoEditorial implements OnInit {
     });
   }
 
-  selectTab(tabId: FlujoTabId): void {
-    this.activeTab = tabId;
-  }
-
+  // Método requerido por el evento (guardar) del componente Envios
   onGuardar(): void {
-    // Solo diseño por ahora.
+    // Puede implementarse más adelante si se necesita lógica adicional
   }
 }

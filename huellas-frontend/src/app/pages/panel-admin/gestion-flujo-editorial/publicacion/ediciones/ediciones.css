@@ -13,20 +13,58 @@
 
 .search-container {
   display: flex;
-  gap: 0.75rem;
   align-items: center;
+  gap: 0.75rem;
   margin: 0.6rem 0 0;
+  width: 80%;
 }
 
 .search-input {
-  flex: 1 1 auto;
-  padding: 0.6rem 0.9rem;
-  border-radius: 12px;
+  flex: 1;
+  width: 100%;
+  padding: 0.6rem 0.9rem 0.6rem 2.5rem;
+  border-radius: 40px;
   border: 1px solid #e2e8f0;
-  background: #fff;
+  background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"></circle><line x1="21" y1="21" x2="15" y2="15"></line></svg>') no-repeat left 0.8rem center;
+  background-size: 16px;
   color: #0f172a;
-  font-size: 0.95rem;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.03);
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #44b2a9;
+  box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.2);
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.estado-select {
+  padding: 0.6rem 2rem 0.6rem 1rem;
+  border-radius: 40px;
+  border: 1px solid #e2e8f0;
+  background-color: #fff;
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.estado-select:focus {
+  outline: none;
+  border-color: #44b2a9;
+  box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.2);
 }
 
 /* TABLA */
@@ -162,9 +200,13 @@
   fill: #0f172a;
 }
 
-.action-btn.eliminar:hover {
+.action-btn.despublicar:hover {
   background: #fef2f2;
   border-color: #fecaca;
+}
+
+.action-btn.despublicar:hover svg {
+  fill: #d4c00b;
 }
 
 .action-btn.eliminar:hover svg {
@@ -181,8 +223,8 @@
 }
 
 .btn-primary {
-  border-radius: 10px;
-  padding: 0.6rem 1.1rem;
+  border-radius: 7px;
+  padding: 0.4rem 1rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
@@ -215,8 +257,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-container {
@@ -235,6 +282,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

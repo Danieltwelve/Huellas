@@ -18,32 +18,26 @@
         {{ cargandoEstadoEnvios ? 'Cargando...' : (envioHabilitado ? 'Habilitado' : 'Deshabilitado') }}
       </span>
 
-      <button
-        type="button"
-        class="envios-card__button"
-        (click)="alternarEstadoEnvios()"
-        [disabled]="cargandoEstadoEnvios || guardandoEstadoEnvios"
-      >
+      <button type="button" class="envios-card__button" (click)="alternarEstadoEnvios()"
+        [disabled]="cargandoEstadoEnvios || guardandoEstadoEnvios">
         {{ guardandoEstadoEnvios ? 'Guardando...' : (envioHabilitado ? 'Deshabilitar envío' : 'Habilitar envío') }}
       </button>
     </div>
   </section>
 
+  <!-- Componente que contiene el sidebar de requisitos y ediciones -->
+  <app-envios (guardar)="onGuardar()"></app-envios>
+
   <div class="modal-overlay" *ngIf="mostrarModalConfirmacionEnvios" (click)="cancelarConfirmacionEnvios()">
-    <section
-      class="modal-confirmacion"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Confirmar cambio de estado de envíos"
-      (click)="$event.stopPropagation()"
-    >
+    <section class="modal-confirmacion" role="dialog" aria-modal="true"
+      aria-label="Confirmar cambio de estado de envíos" (click)="$event.stopPropagation()">
       <h3>
         {{ estadoEnvioPendiente ? 'Habilitar envío de artículos' : 'Deshabilitar envío de artículos' }}
       </h3>
       <p>
         {{ estadoEnvioPendiente
-          ? 'Los autores podrán volver a enviar nuevos artículos.'
-          : 'Los autores ya no podrán enviar nuevos artículos mientras el envío esté desactivado.' }}
+        ? 'Los autores podrán volver a enviar nuevos artículos.'
+        : 'Los autores ya no podrán enviar nuevos artículos mientras el envío esté desactivado.' }}
       </p>
       <div class="modal-actions">
         <button type="button" class="btn-secondary" (click)="cancelarConfirmacionEnvios()">Cancelar</button>
@@ -53,18 +47,4 @@
       </div>
     </section>
   </div>
-
-  <nav class="flujo-tabs" aria-label="Etapas del flujo editorial">
-    @for (tab of tabs; track tab.id) {
-    <button type="button" class="tab-button" [class.active]="activeTab === tab.id" (click)="selectTab(tab.id)">
-      {{ tab.label }}
-    </button>
-    }
-  </nav>
-
-  <hr class="divider" />
-
-  @if (activeTab === 'envio') {
-  <app-envios (guardar)="onGuardar()"></app-envios>
-  }
 </section>

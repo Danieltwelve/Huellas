@@ -41,7 +41,8 @@
       <li><a routerLink="/avisos" (click)="closeMenu()" routerLinkActive="active">Avisos</a></li>
       <li><a routerLink="/equipo-editorial" (click)="closeMenu()" routerLinkActive="active">Equipo Editorial</a></li>
       <li class="dropdown-mobile" (click)="toggleDropdown('info')">
-        <a href="javascript:void(0)" routerLinkActive="active" [class.active]="openDropdown === 'info'">Más Información</a>
+        <a href="javascript:void(0)" routerLinkActive="active" [class.active]="openDropdown === 'info'">Más
+          Información</a>
         <ul class="submenu-mobile" [class.active]="openDropdown === 'info'">
           <li><a routerLink="/desarrollado-por" (click)="closeMenu()">Desarrollado por</a></li>
           <li><a routerLink="/etica-publicacion" (click)="closeMenu()">Ética de Publicación</a></li>
@@ -53,13 +54,9 @@
     }
     @if (user$ | async) {
     <div class="user-actions">
-      <app-notification-dropdown
-        [items]="notifications"
-        [loading]="notificationLoading"
-        [error]="notificationError"
+      <app-notification-dropdown [items]="notifications" [loading]="notificationLoading" [error]="notificationError"
         (itemSelected)="navigateToNotification($event)"
-        (centerSelected)="goToNotificationCenter()"
-      ></app-notification-dropdown>
+        (centerSelected)="goToNotificationCenter()"></app-notification-dropdown>
 
       <button type="button" class="icon-btn user-trigger" aria-label="Menú de usuario" (click)="toggleUserMenu()"
         [class.active]="userMenuOpen">
@@ -94,7 +91,7 @@
     } @else {
     <div class="auth">
       @if (!(user$ | async)) {
-        <a routerLink="/login" (click)="closeMenu()" class="btn-outline">Iniciar sesión</a>
+      <a routerLink="/login" (click)="closeMenu()" class="btn-outline">Iniciar sesión</a>
       }
     </div>
     }

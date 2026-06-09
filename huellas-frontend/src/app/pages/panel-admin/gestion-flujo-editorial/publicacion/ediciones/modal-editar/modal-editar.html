@@ -28,21 +28,20 @@
 
     <div class="portada-section">
       <label class="portada-label">Portada</label>
-      @if (currentPortadaUrl && !previewUrl) {
-      <div class="portada-preview">
-        <img [src]="currentPortadaUrl" alt="Portada actual" class="portada-img">
+      @if (currentPortadaUrl && !newPortadaFile) {
+      <div class="current-portada">
+        <span class="nombre-archivo">Portada actual</span>
         <button type="button" class="btn-remover-portada" (click)="removeCover()" [disabled]="isDeletingCover">
           {{ isDeletingCover ? 'Eliminando...' : 'Eliminar portada' }}
         </button>
       </div>
       }
-
-      @if (previewUrl) {
-      <div class="portada-preview">
-        <img [src]="previewUrl" alt="Nueva portada" class="portada-img">
+      @if (newPortadaFile) {
+      <div class="portada-info">
+        <span class="nombre-archivo">{{ newPortadaFile.name }}</span>
+        <button type="button" class="btn-remover" (click)="removerNuevaPortada()">✕</button>
       </div>
       }
-
       <div class="portada-upload">
         <input type="file" id="nueva-portada" accept="image/jpeg,image/png,image/gif"
           (change)="onPortadaSelected($event)">

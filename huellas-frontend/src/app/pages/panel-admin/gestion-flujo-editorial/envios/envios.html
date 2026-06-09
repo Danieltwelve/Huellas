@@ -1,12 +1,8 @@
 <section class="envio-layout">
   <aside class="envio-sidebar" aria-label="Opciones de envío">
     @for (item of sidebarItems; track item.id) {
-    <button
-      type="button"
-      class="sidebar-button"
-      [class.active]="activeSidebarItem === item.id"
-      (click)="selectSidebarItem(item.id)"
-    >
+    <button type="button" class="sidebar-button" [class.active]="activeSidebarItem === item.id"
+      (click)="selectSidebarItem(item.id)">
       {{ item.label }}
     </button>
     }

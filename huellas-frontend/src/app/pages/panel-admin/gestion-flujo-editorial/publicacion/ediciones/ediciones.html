@@ -2,37 +2,42 @@
   <div class="panel-heading">
     <div>
       <h2>Catálogo de Ediciones de Revista</h2>
-      <p>Gestione las ediciones publicadas y artículos asociados</p>
     </div>
-    <button type="button" class="btn-primary" (click)="abrirModalCrear()">+ Nueva Edición</button>
+    <button type="button" class="btn-primary" (click)="abrirModalCrear()">+ Crear edición</button>
   </div>
 
   <div class="search-container">
-    <input type="text" placeholder="Q Buscar edición..." class="search-input" />
+    <input type="text" placeholder="Buscar edición, fecha, artículos o estado..." class="search-input"
+      [(ngModel)]="terminoBusqueda" />
+    <select class="estado-select" [(ngModel)]="filtroEstado">
+      <option value="">Filtrar por estado</option>
+      <option value="ABIERTA">ABIERTA</option>
+      <option value="PUBLICADA">PUBLICADA</option>
+    </select>
   </div>
 
   @if (loading) {
-  <p class="empty-state">Cargando información de publicación...</p>
+  <p class="empty-state">Cargando información de ediciones...</p>
   }
 
-  @if (!loading && edicionesPublicadas.length === 0) {
-  <p class="empty-state">No hay ediciones publicadas aún.</p>
+  @if (!loading && ediciones.length === 0) {
+  <p class="empty-state">No hay ediciones registradas.</p>
   }
 
-  @if (!loading && edicionesPublicadas.length > 0) {
+  @if (!loading && ediciones.length > 0) {
   <div class="tabla-wrapper">
     <table class="ediciones-tabla">
       <thead>
         <tr>
           <th scope="col">Edición</th>
-          <th scope="col">Fecha de publicación</th>
+          <th scope="col">Fecha de estado</th>
           <th scope="col">Artículos</th>
           <th scope="col">Estado</th>
           <th scope="col">Acciones</th>
         </tr>
       </thead>
       <tbody>
-        @for (edicion of edicionesPublicadas; track trackEdicion($index, edicion)) {
+        @for (edicion of edicionesFiltradas; track trackEdicion($index, edicion)) {
         <tr>
           <td>
             <div class="edicion-info">
@@ -45,9 +50,8 @@
           <td>{{ edicion.numeroArticulos }}</td>
           <td>
             <span class="estado-chip" [class.abierta]="edicion.estado === 'ABIERTA'"
-              [class.publicada]="edicion.estado === 'PUBLICADA' || !edicion.estado"
-              [class.revision]="edicion.estado === 'EN REVISION'">
-              {{ edicion.estado || 'PUBLICADA' }}
+              [class.publicada]="edicion.estado === 'PUBLICADA'">
+              {{ edicion.estado }}
             </span>
           </td>
           <td>
@@ -58,12 +62,28 @@
                     d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92-9.06 9.06zM20.71 7.04a1 1 0 0 0 0-1.42l-2.33-2.33a1 1 0 0 0-1.42 0l-1.82 1.82 3.75 3.75 1.82-1.82z" />
                 </svg>
               </button>
-              <button class="action-btn eliminar" aria-label="Eliminar edición" (click)="abrirModalEliminar(edicion)">
+
+              @if (edicion.estado === 'ABIERTA') {
+              <button class="action-btn eliminar" aria-label="Eliminar edición"
+                (click)="modalEliminar.openModal(edicion.id, edicion.titulo)">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     d="M6 7h12v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm3-4h6l1 1h4v2H4V4h4l1-1zm1 6v10h2V9h-2zm4 0v10h2V9h-2z" />
                 </svg>
               </button>
+              }
+
+              @if (edicion.estado === 'PUBLICADA') {
+              <button class="action-btn despublicar" aria-label="Despublicar edición"
+                (click)="abrirModalDespublicar(edicion)">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+                  <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                  <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2" />
+                </svg>
+              </button>
+              }
             </div>
           </td>
         </tr>
@@ -76,17 +96,19 @@
   <!-- Modales -->
   <app-modal-crear (creada)="onEdicionCreada()"></app-modal-crear>
   <app-modal-editar (actualizada)="cargarEdiciones()"></app-modal-editar>
-  @if (modalEliminarAbierto) {
+  <app-modal-eliminar #modalEliminar (eliminada)="cargarEdiciones()"></app-modal-eliminar>
+
+  @if (modalDespublicarAbierto) {
   <div class="modal-overlay">
     <div class="modal-container">
       <h3>Confirmar despublicación</h3>
-      <p>¿Estás seguro de que deseas <strong>despublicar</strong> la edición <strong>{{ edicionAEliminar?.titulo
+      <p>¿Estás seguro de que deseas <strong>despublicar</strong> la edición <strong>{{ edicionADespublicar?.titulo
           }}</strong>?
         <br>Pasará a estado <strong>ABIERTA</strong> y los artículos quedarán disponibles para futuras ediciones.
       </p>
       <div class="modal-buttons">
-        <button class="btn-cancelar" (click)="cerrarModalEliminar()" [disabled]="unpublishing">Cancelar</button>
-        <button class="btn-aceptar" (click)="confirmarEliminar()" [disabled]="unpublishing">
+        <button class="btn-cancelar" (click)="cerrarModalDespublicar()" [disabled]="unpublishing">Cancelar</button>
+        <button class="btn-aceptar" (click)="confirmarDespublicar()" [disabled]="unpublishing">
           {{ unpublishing ? 'Despublicando...' : 'Aceptar' }}
         </button>
       </div>
