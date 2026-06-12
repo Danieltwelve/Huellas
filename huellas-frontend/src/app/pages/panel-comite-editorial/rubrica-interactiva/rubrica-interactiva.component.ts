@@ -2,21 +2,24 @@ import { CommonModule } from '@angular/common';
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-interface CriterioRubrica {
-  id: number;
-  nombre: string;
+export interface RubricaItem {
+  id: string;
   descripcion: string;
-  puntajeMaximo: number;
-  puntajeOtorgado: number;
-  observaciones: string;
+  cumple: boolean | null; // true = Sí, false = No, null = Sin seleccionar
 }
 
-interface ResultadoRubrica {
-  criterios: CriterioRubrica[];
-  puntajeTotalOtorgado: number;
-  puntajeTotalPosible: number;
-  porcentajeAlcanzado: number;
-  recomendacion: 'aceptar' | 'rechazar' | 'pendiente';
+export interface RubricaCategoria {
+  id: string;
+  nombre: string;
+  items: RubricaItem[];
+  sugerencias: string;
+}
+
+export interface ResultadoRubrica {
+  completo: boolean;
+  observacionCompilada: string;
+  respuestas: { id: string; cumple: boolean | null }[];
+  observacionesGenerales: string;
 }
 
 @Component({
@@ -27,115 +30,237 @@ interface ResultadoRubrica {
   styleUrl: './rubrica-interactiva.component.css',
 })
 export class RubricaInteractivaComponent implements OnInit {
+  @Input() nombreEvaluador = '';
   @Input() articuloTitulo = '';
   @Output() rubricaCompleta = new EventEmitter<ResultadoRubrica>();
 
-  criterios: CriterioRubrica[] = [
+  observacionesGenerales = '';
+  confirmada = false;
+
+  categorias: RubricaCategoria[] = [
     {
-      id: 1,
-      nombre: 'Originalidad y aporte científico',
-      descripcion: 'El artículo presenta un aporte original y significativo a la disciplina',
-      puntajeMaximo: 20,
-      puntajeOtorgado: 0,
-      observaciones: '',
+      id: 'pertinencia_originalidad',
+      nombre: 'PERTINENCIA Y ORIGINALIDAD',
+      sugerencias: '',
+      items: [
+        {
+          id: 'pertinencia_1',
+          descripcion: '¿El tema del artículo es relevante para la revista y su comunidad científica, aporta un enfoque novedoso o un avance significativo en el área y presenta una justificación clara y bien argumentada?',
+          cumple: null,
+        },
+      ],
     },
     {
-      id: 2,
-      nombre: 'Coherencia metodológica',
-      descripcion: 'Los métodos utilizados son apropiados y están bien explicados',
-      puntajeMaximo: 20,
-      puntajeOtorgado: 0,
-      observaciones: '',
+      id: 'estructura_organizacion',
+      nombre: 'ESTRUCTURA Y ORGANIZACIÓN',
+      sugerencias: '',
+      items: [
+        {
+          id: 'estructura_1',
+          descripcion: 'Cumple con las secciones fundamentales de un artículo científico: título, resumen, introducción, metodología, resultados, discusión, conclusiones y bibliografía.',
+          cumple: null,
+        },
+      ],
     },
     {
-      id: 3,
-      nombre: 'Rigor en resultados y discusión',
-      descripcion: 'Los resultados son claros y la discusión es profunda y coherente',
-      puntajeMaximo: 20,
-      puntajeOtorgado: 0,
-      observaciones: '',
+      id: 'resumen_palabras',
+      nombre: 'RESUMEN Y PALABRAS CLAVE',
+      sugerencias: '',
+      items: [
+        {
+          id: 'resumen_1',
+          descripcion: 'Resume con claridad el objetivo, metodología, resultados y conclusiones.',
+          cumple: null,
+        },
+        {
+          id: 'resumen_2',
+          descripcion: 'Es conciso y refleja adecuadamente el contenido del artículo.',
+          cumple: null,
+        },
+        {
+          id: 'resumen_3',
+          descripcion: 'Contiene palabras clave representativas y pertinentes.',
+          cumple: null,
+        },
+      ],
     },
     {
-      id: 4,
-      nombre: 'Cumplimiento de normas editoriales',
-      descripcion: 'El artículo cumple con normas de formato, citación y estilo',
-      puntajeMaximo: 20,
-      puntajeOtorgado: 0,
-      observaciones: '',
+      id: 'marco_teorico',
+      nombre: 'MARCO TEÓRICO EN LA INTRODUCCIÓN',
+      sugerencias: '',
+      items: [
+        {
+          id: 'marco_1',
+          descripcion: 'La introducción presenta una fundamentación teórica sólida y actualizada.',
+          cumple: null,
+        },
+        {
+          id: 'marco_2',
+          descripcion: 'Demuestra un conocimiento adecuado en el área.',
+          cumple: null,
+        },
+        {
+          id: 'marco_3',
+          descripcion: 'Relaciona de manera pertinente los conceptos y teorías con el problema investigado.',
+          cumple: null,
+        },
+      ],
     },
     {
-      id: 5,
-      nombre: 'Pertinencia temática para la revista',
-      descripcion: 'El tema es relevante y alineado con el scope de la revista',
-      puntajeMaximo: 20,
-      puntajeOtorgado: 0,
-      observaciones: '',
+      id: 'metodologia',
+      nombre: 'METODOLOGÍA EN LA INTRODUCCIÓN',
+      sugerencias: '',
+      items: [
+        {
+          id: 'metodologia_1',
+          descripcion: 'Es clara, detallada y replicable.',
+          cumple: null,
+        },
+        {
+          id: 'metodologia_2',
+          descripcion: 'Describe adecuadamente el tipo de estudio, población/muestra, técnicas e instrumentos de recolección de datos y análisis.',
+          cumple: null,
+        },
+        {
+          id: 'metodologia_3',
+          descripcion: 'Justifica la elección de la metodología utilizada.',
+          cumple: null,
+        },
+      ],
+    },
+    {
+      id: 'resultados',
+      nombre: 'RESULTADOS',
+      sugerencias: '',
+      items: [
+        {
+          id: 'resultados_1',
+          descripcion: 'Presenta un alcance general de los resultados de manera clara y comprensible.',
+          cumple: null,
+        },
+        {
+          id: 'resultados_2',
+          descripcion: 'Explica la relevancia y las implicaciones de los resultados obtenidos.',
+          cumple: null,
+        },
+      ],
+    },
+    {
+      id: 'redaccion_estilo',
+      nombre: 'REDACCIÓN Y ESTILO',
+      sugerencias: '',
+      items: [
+        {
+          id: 'redaccion_1',
+          descripcion: 'La redacción es clara, precisa y académica.',
+          cumple: null,
+        },
+        {
+          id: 'redaccion_2',
+          descripcion: 'Se mantiene la coherencia y cohesión textual.',
+          cumple: null,
+        },
+        {
+          id: 'redaccion_3',
+          descripcion: 'Está libre de errores ortográficos, gramaticales y de puntuación.',
+          cumple: null,
+        },
+      ],
     },
   ];
 
-  get resultado(): ResultadoRubrica {
-    const puntajeTotalOtorgado = this.criterios.reduce((sum, c) => sum + c.puntajeOtorgado, 0);
-    const puntajeTotalPosible = this.criterios.reduce((sum, c) => sum + c.puntajeMaximo, 0);
-    const porcentajeAlcanzado = Math.round((puntajeTotalOtorgado / puntajeTotalPosible) * 100);
-
-    let recomendacion: 'aceptar' | 'rechazar' | 'pendiente' = 'pendiente';
-    if (porcentajeAlcanzado >= 70) {
-      recomendacion = 'aceptar';
-    } else if (porcentajeAlcanzado < 50) {
-      recomendacion = 'rechazar';
-    }
-
-    return {
-      criterios: this.criterios,
-      puntajeTotalOtorgado,
-      puntajeTotalPosible,
-      porcentajeAlcanzado,
-      recomendacion,
-    };
-  }
-
   ngOnInit(): void {}
 
-  actualizarPuntaje(criterioId: number, nuevoValor: number): void {
-    const criterio = this.criterios.find((c) => c.id === criterioId);
-    if (criterio) {
-      criterio.puntajeOtorgado = Math.max(0, Math.min(nuevoValor, criterio.puntajeMaximo));
-    }
+  get totalItems(): number {
+    return this.categorias.reduce((acc, cat) => acc + cat.items.length, 0);
   }
 
-  actualizarObservacion(criterioId: number, observacion: string): void {
-    const criterio = this.criterios.find((c) => c.id === criterioId);
-    if (criterio) {
-      criterio.observaciones = observacion;
-    }
+  get itemsRespondidos(): number {
+    return this.categorias.reduce(
+      (acc, cat) => acc + cat.items.filter((item) => item.cumple !== null).length,
+      0
+    );
   }
 
-  getColorBarra(porcentaje: number): string {
-    if (porcentaje >= 70) return 'success';
-    if (porcentaje >= 50) return 'warning';
-    return 'danger';
+  get todoContestado(): boolean {
+    return this.itemsRespondidos === this.totalItems;
   }
 
-  getRecomendacionTexto(): string {
-    const { recomendacion, porcentajeAlcanzado } = this.resultado;
-
-    if (recomendacion === 'aceptar') {
-      return `✓ Artículo APROBADO (${porcentajeAlcanzado}%)`;
-    } else if (recomendacion === 'rechazar') {
-      return `✗ Artículo RECHAZADO (${porcentajeAlcanzado}%)`;
-    } else {
-      return `? Evaluar más criterios (${porcentajeAlcanzado}%)`;
-    }
+  alCambiarSeleccion(): void {
+    // Si cambia algún valor, desconfirmamos para obligar a que se vuelva a dar click en Confirmar
+    this.confirmada = false;
+    this.emitirEstado(false);
   }
 
   completarEvaluacion(): void {
-    this.rubricaCompleta.emit(this.resultado);
+    if (!this.todoContestado) return;
+    this.confirmada = true;
+    this.emitirEstado(true);
   }
 
   reiniciar(): void {
-    this.criterios.forEach((c) => {
-      c.puntajeOtorgado = 0;
-      c.observaciones = '';
+    this.categorias.forEach((cat) => {
+      cat.sugerencias = '';
+      cat.items.forEach((item) => {
+        item.cumple = null;
+      });
     });
+    this.observacionesGenerales = '';
+    this.confirmada = false;
+    this.emitirEstado(false);
+  }
+
+  private emitirEstado(isConfirmado: boolean): void {
+    const respuestas = this.categorias.flatMap((cat) =>
+      cat.items.map((item) => ({ id: item.id, cumple: item.cumple }))
+    );
+
+    const resultado: ResultadoRubrica = {
+      completo: isConfirmado && this.todoContestado,
+      observacionCompilada: this.generarReporteCompilado(),
+      respuestas,
+      observacionesGenerales: this.observacionesGenerales,
+    };
+
+    this.rubricaCompleta.emit(resultado);
+  }
+
+  private generarReporteCompilado(): string {
+    let report = `==================================================\n`;
+    report += `    RÚBRICA DE EVALUACIÓN - COMITÉ EDITORIAL\n`;
+    report += `==================================================\n\n`;
+    report += `Nombre del evaluador: ${this.nombreEvaluador || 'No especificado'}\n`;
+    report += `Artículo: ${this.articuloTitulo || 'No especificado'}\n`;
+    report += `Fecha de evaluación: ${new Date().toLocaleDateString('es-ES')}\n\n`;
+    report += `--------------------------------------------------\n`;
+    report += `CRITERIOS DE EVALUACIÓN:\n`;
+    report += `--------------------------------------------------\n\n`;
+
+    this.categorias.forEach((cat, indexCat) => {
+      report += `${indexCat + 1}. ${cat.nombre}\n`;
+      cat.items.forEach((item) => {
+        const checkChar =
+          item.cumple === true
+            ? '[X] Sí  [ ] No'
+            : item.cumple === false
+            ? '[ ] Sí  [X] No'
+            : '[ ] Sí  [ ] No';
+        report += `   - ${item.descripcion}\n`;
+        report += `     Cumple: ${checkChar}\n`;
+      });
+      if (cat.sugerencias && cat.sugerencias.trim()) {
+        report += `   Sugerencias: ${cat.sugerencias.trim()}\n`;
+      } else {
+        report += `   Sugerencias: Sin observaciones adicionales\n`;
+      }
+      report += `\n`;
+    });
+
+    report += `==================================================\n`;
+    report += `OBSERVACIONES GENERALES:\n`;
+    report += `==================================================\n`;
+    report += `${this.observacionesGenerales || 'Ninguna'}\n`;
+
+    return report;
   }
 }

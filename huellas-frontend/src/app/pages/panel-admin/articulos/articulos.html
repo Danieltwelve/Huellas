@@ -265,7 +265,7 @@
                 <span class="deadline-pill" [ngClass]="getEstadoPlazoClase(articulo)">
                   {{ getEstadoPlazoLabel(articulo) }}
                 </span>
-                @if (articulo.fechaVencimiento !== '-') {
+                @if (articulo.estadoEvaluacion === 'pendiente' && articulo.fechaVencimiento !== '-') {
                 <span class="deadline-date">Vence: {{ articulo.fechaVencimiento }}</span>
                 }
               </div>
@@ -317,7 +317,7 @@
             <span class="deadline-pill" [ngClass]="getEstadoPlazoClase(articulo)">
               {{ getEstadoPlazoLabel(articulo) }}
             </span>
-            @if (articulo.fechaVencimiento !== '-') {
+            @if (articulo.estadoEvaluacion === 'pendiente' && articulo.fechaVencimiento !== '-') {
             <span class="deadline-date">Vence: {{ articulo.fechaVencimiento }}</span>
             }
           </span>

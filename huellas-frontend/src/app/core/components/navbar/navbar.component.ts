@@ -373,9 +373,37 @@ export class NavbarComponent implements OnInit {
     this.articulosService.getResumenArticulos().subscribe({
       next: (articulos) => {
         const idsLeidos = this.obtenerIdsLeidos();
+        const list: NavbarNotificacion[] = [];
 
-        this.notifications = articulos
-          .map((item) => this.mapearNotificacionEditorial(item))
+        for (const item of articulos) {
+          list.push(this.mapearNotificacionEditorial(item));
+
+          if (item.solicitudProrrogaComitePendiente) {
+            list.push({
+              id: `prorroga-comite-${item.id}`,
+              articuloId: item.id,
+              codigoArticulo: item.codigo,
+              titulo: 'Solicitud de prórroga: Comité',
+              detalle: `El miembro de comité solicitó 5 días adicionales para ${item.codigo}.`,
+              fecha: item.fecha_inicio ? new Date(item.fecha_inicio) : new Date(),
+              enlace: this.obtenerEnlaceArticulo(item.id),
+            });
+          }
+
+          if (item.solicitudProrrogaCorreccionPendiente) {
+            list.push({
+              id: `prorroga-autor-${item.id}`,
+              articuloId: item.id,
+              codigoArticulo: item.codigo,
+              titulo: 'Solicitud de prórroga: Autor',
+              detalle: `El autor solicitó 1 día adicional de prórroga para ${item.codigo}.`,
+              fecha: item.fecha_inicio ? new Date(item.fecha_inicio) : new Date(),
+              enlace: this.obtenerEnlaceArticulo(item.id),
+            });
+          }
+        }
+
+        this.notifications = list
           .map((item) => ({
             ...item,
             leida: idsLeidos.has(item.id),

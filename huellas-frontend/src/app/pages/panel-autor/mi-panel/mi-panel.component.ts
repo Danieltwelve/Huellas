@@ -63,6 +63,8 @@ export class MiPanelComponent implements OnInit {
   private notificacionesPorArticulo = new Map<number, NotificacionAutorBackend[]>();
   arrastrandoArchivoCorreccion = false;
   subiendoCorreccionIds = new Set<number>();
+  modalConfirmarProrrogaAutor = false;
+  articuloProrrogaAutorConfirmar: ArticuloAutor | null = null;
   estadoFiltro: 'todos' | 'revision' | 'correccion' | 'publicado' = 'todos';
   ordenArticulos: OrdenArticulos = 'llegada-reciente';
   readonly hoy = new Date();
@@ -836,6 +838,20 @@ export class MiPanelComponent implements OnInit {
     if (!this.puedeSolicitarProrroga(articulo)) {
       return;
     }
+    this.articuloProrrogaAutorConfirmar = articulo;
+    this.modalConfirmarProrrogaAutor = true;
+  }
+
+  cancelarProrrogaAutor(): void {
+    this.modalConfirmarProrrogaAutor = false;
+    this.articuloProrrogaAutorConfirmar = null;
+  }
+
+  confirmarProrrogaAutor(): void {
+    if (!this.articuloProrrogaAutorConfirmar) return;
+    const articulo = this.articuloProrrogaAutorConfirmar;
+    this.modalConfirmarProrrogaAutor = false;
+    this.articuloProrrogaAutorConfirmar = null;
 
     this.subiendoCorreccionIds.add(articulo.id);
 

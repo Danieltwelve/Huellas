@@ -108,6 +108,13 @@ export class FlujoTrabajoArticulo {
   observacionTurnitin = '';
   archivoTurnitin: File | null = null;
   nombreArchivoTurnitin = '';
+
+  mostrarModalConfirmacionProrrogaComite = false;
+  decisionProrrogaComiteConfirmar: 'aceptar' | 'rechazar' | null = null;
+  resolviendoProrrogaComite = false;
+
+  mostrarModalConfirmacionProrrogaCorreccion = false;
+  decisionProrrogaCorreccionConfirmar: 'aceptar' | 'rechazar' | null = null;
   archivoCertificacion: File | null = null;
   nombreArchivoCertificacion = '';
   subiendoCertificacion = false;
@@ -138,6 +145,7 @@ export class FlujoTrabajoArticulo {
   mostrarModalConfirmacionTurnitin = false;
   mostrarModalExitoTurnitin = false;
   mensajeExitoTurnitin = '';
+  tituloModalExito = 'Proceso completado';
   mostrarModalErrorTurnitin = false;
   mensajeErrorTurnitin: string | null = null;
   mostrarModalConfirmacionCorreccion = false;
@@ -688,6 +696,7 @@ export class FlujoTrabajoArticulo {
     return (
       texto.includes('evalu') &&
       texto.includes('comite') &&
+      !texto.includes('prorroga') &&
       (texto.includes('acept') || texto.includes('rechaz'))
     );
   }
@@ -1357,8 +1366,10 @@ export class FlujoTrabajoArticulo {
   }
 
   get articuloYaEvaluadoPorComite(): boolean {
+    if (this.articulo?.evaluacionComiteRealizada) {
+      return true;
+    }
     return this.historialVisible.some((registro) =>
-      registro.etapaId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL &&
       this.esAsuntoEvaluacionComite(registro.asunto),
     );
   }
@@ -1373,15 +1384,17 @@ export class FlujoTrabajoArticulo {
     return !!this.articulo?.solicitudProrrogaCorreccionPendiente;
   }
 
+  get solicitudProrrogaComitePendiente(): boolean {
+    return !!this.articulo?.solicitudProrrogaComitePendiente;
+  }
+
   get fechaVencimientoCorreccion(): string | null {
     return this.articulo?.fechaVencimientoCorreccion ?? null;
   }
 
   get resultadoEvaluacionComite(): 'aceptado' | 'rechazado' | null {
     const evaluacionComite = this.historialVisible.find(
-      (registro) =>
-        registro.etapaId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL &&
-        this.esAsuntoEvaluacionComite(registro.asunto),
+      (registro) => this.esAsuntoEvaluacionComite(registro.asunto),
     );
 
     if (!evaluacionComite) {
@@ -1812,6 +1825,7 @@ export class FlujoTrabajoArticulo {
       .subscribe({
         next: (respuesta) => {
           this.evaluandoTurnitin = false;
+          this.tituloModalExito = 'Turnitin procesado correctamente';
           this.mensajeExitoTurnitin =
             respuesta.message || 'Evaluación de Turnitin registrada correctamente.';
           this.mostrarModalExitoTurnitin = true;
@@ -1851,6 +1865,25 @@ export class FlujoTrabajoArticulo {
       });
   }
 
+  abrirConfirmacionProrrogaCorreccion(decision: 'aceptar' | 'rechazar'): void {
+    this.decisionProrrogaCorreccionConfirmar = decision;
+    this.mostrarModalConfirmacionProrrogaCorreccion = true;
+  }
+
+  cancelarConfirmacionProrrogaCorreccion(): void {
+    this.mostrarModalConfirmacionProrrogaCorreccion = false;
+    this.decisionProrrogaCorreccionConfirmar = null;
+  }
+
+  confirmarResolucionProrrogaCorreccion(): void {
+    if (!this.decisionProrrogaCorreccionConfirmar) {
+      return;
+    }
+    const decision = this.decisionProrrogaCorreccionConfirmar;
+    this.cancelarConfirmacionProrrogaCorreccion();
+    this.resolverProrrogaCorreccion(decision);
+  }
+
   resolverProrrogaCorreccion(decision: 'aceptar' | 'rechazar'): void {
     if (!this.articulo || !this.solicitudProrrogaCorreccionPendiente) {
       return;
@@ -1866,12 +1899,59 @@ export class FlujoTrabajoArticulo {
         next: (respuesta) => {
           this.evaluandoTurnitin = false;
           this.accionExitosa = respuesta.message;
+          this.tituloModalExito = 'Prórroga procesada';
           this.mensajeExitoTurnitin = respuesta.message;
           this.mostrarModalExitoTurnitin = true;
           this.cargarArticulo(this.articulo!.id);
         },
         error: (err) => {
           this.evaluandoTurnitin = false;
+          this.accionError = err?.error?.message ?? 'No se pudo resolver la solicitud de prórroga.';
+        },
+      });
+  }
+
+  abrirConfirmacionProrrogaComite(decision: 'aceptar' | 'rechazar'): void {
+    this.decisionProrrogaComiteConfirmar = decision;
+    this.mostrarModalConfirmacionProrrogaComite = true;
+  }
+
+  cancelarConfirmacionProrrogaComite(): void {
+    this.mostrarModalConfirmacionProrrogaComite = false;
+    this.decisionProrrogaComiteConfirmar = null;
+  }
+
+  confirmarResolucionProrrogaComite(): void {
+    if (!this.decisionProrrogaComiteConfirmar) {
+      return;
+    }
+    const decision = this.decisionProrrogaComiteConfirmar;
+    this.cancelarConfirmacionProrrogaComite();
+    this.resolverProrrogaComite(decision);
+  }
+
+  resolverProrrogaComite(decision: 'aceptar' | 'rechazar'): void {
+    if (!this.articulo || !this.solicitudProrrogaComitePendiente) {
+      return;
+    }
+
+    this.resolviendoProrrogaComite = true;
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService
+      .resolverProrrogaComite(this.articulo.id, decision)
+      .subscribe({
+        next: (respuesta) => {
+          this.resolviendoProrrogaComite = false;
+          this.accionExitosa = respuesta.message;
+          this.tituloModalExito = 'Prórroga procesada';
+          this.mensajeExitoTurnitin = respuesta.message;
+          this.mostrarModalExitoTurnitin = true;
+          this.cargarArticulo(this.articulo!.id);
+        },
+        error: (err) => {
+          this.resolviendoProrrogaComite = false;
           this.accionError = err?.error?.message ?? 'No se pudo resolver la solicitud de prórroga.';
         },
       });

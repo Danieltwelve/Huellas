@@ -1,94 +1,154 @@
-<div class="rubrica-container">
-  <div class="rubrica-header">
-    <h2>Rúbrica de Evaluación</h2>
-    <p class="articulo-titulo">{{ articuloTitulo }}</p>
-  </div>
-
-  <div class="criterios-list">
-    <div class="criterio-item" *ngFor="let criterio of criterios; let i = index">
-      <div class="criterio-header">
-        <div class="criterio-title">
-          <h3>{{ i + 1 }}. {{ criterio.nombre }}</h3>
-          <p class="criterio-descripcion">{{ criterio.descripcion }}</p>
-        </div>
-      </div>
-
-      <div class="criterio-evaluacion">
-        <div class="puntaje-input-group">
-          <label>Puntuación</label>
-          <div class="input-wrapper">
-            <input
-              type="number"
-              [(ngModel)]="criterio.puntajeOtorgado"
-              (change)="actualizarPuntaje(criterio.id, criterio.puntajeOtorgado)"
-              min="0"
-              [max]="criterio.puntajeMaximo"
-              class="puntaje-input"
-            />
-            <span class="puntaje-max">/ {{ criterio.puntajeMaximo }}</span>
-          </div>
-        </div>
-
-        <div class="puntaje-bar">
-          <div
-            class="puntaje-progress"
-            [class.success]="criterio.puntajeOtorgado >= criterio.puntajeMaximo * 0.7"
-            [class.warning]="
-              criterio.puntajeOtorgado >= criterio.puntajeMaximo * 0.5 &&
-              criterio.puntajeOtorgado < criterio.puntajeMaximo * 0.7
-            "
-            [class.danger]="criterio.puntajeOtorgado < criterio.puntajeMaximo * 0.5"
-            [style.width.%]="(criterio.puntajeOtorgado / criterio.puntajeMaximo) * 100"
-          ></div>
-        </div>
-      </div>
-
-      <div class="observacion-input">
-        <label>Observaciones (opcional)</label>
-        <textarea
-          [(ngModel)]="criterio.observaciones"
-          (change)="actualizarObservacion(criterio.id, criterio.observaciones)"
-          placeholder="Comentarios sobre este criterio..."
-          rows="2"
-        ></textarea>
-      </div>
+<div class="rubrica-digital-card">
+  <!-- Cabecera Oficial -->
+  <div class="rubrica-head-banner">
+    <div class="banner-title-group">
+      <h1>RÚBRICA DE EVALUACIÓN</h1>
+      <h2>COMITÉ EDITORIAL</h2>
+    </div>
+    <div class="revista-badge">
+      <span class="revista-name">revista</span>
+      <span class="revista-logo-text">huellas</span>
     </div>
   </div>
 
-  <div class="resumen-evaluacion">
-    <h3>Resumen</h3>
-
-    <div class="resumen-item">
-      <span>Puntaje Total Otorgado:</span>
-      <strong>{{ resultado.puntajeTotalOtorgado }} / {{ resultado.puntajeTotalPosible }}</strong>
-    </div>
-
-    <div class="resumen-item">
-      <span>Porcentaje Alcanzado:</span>
-      <div class="resumen-barra">
-        <div
-          class="resumen-progress"
-          [class]="getColorBarra(resultado.porcentajeAlcanzado)"
-          [style.width.%]="resultado.porcentajeAlcanzado"
-        ></div>
-      </div>
-      <strong>{{ resultado.porcentajeAlcanzado }}%</strong>
-    </div>
-
-    <div class="recomendacion" [class]="resultado.recomendacion">
-      <p>{{ getRecomendacionTexto() }}</p>
-    </div>
+  <div class="evaluador-info">
+    <p><strong>Nombre del integrante del comité editorial:</strong> {{ nombreEvaluador || 'Cargando evaluador...' }}</p>
   </div>
 
-  <div class="acciones">
-    <button type="button" class="btn-secundario" (click)="reiniciar()">Reiniciar Evaluación</button>
+  <!-- Cuadro de Instrucciones -->
+  <div class="instrucciones-box">
+    <p>
+      <strong>INSTRUCCIONES:</strong> El integrante del comité editorial debe realizar una
+      <strong>revisión general del artículo</strong>, verificando que cumpla con los criterios básicos de calidad
+      académica y presentación. Esta revisión inicial permitirá determinar si el manuscrito está en condiciones de
+      <strong>iniciar el proceso editorial</strong> en la revista <em>Huellas</em>. Para ello, deberá marcar con un
+      criterio de <strong>Sí</strong> o <strong>No</strong> en la casilla correspondiente si el artículo es apto o
+      no para comenzar dicho proceso.
+    </p>
+    <p class="instrucciones-nota">
+      Durante esta revisión general se sugiere prestar atención a aspectos como: claridad en la redacción, coherencia
+      entre las secciones, pertinencia del tema, estructura básica del artículo (título, resumen, introducción,
+      desarrollo, conclusiones, referencias), y cumplimiento de las normas editoriales mínimas. En caso de requerirse
+      ajustes, el evaluador deberá especificar en el apartado de sugerencias de cada sección o en las observaciones
+      generales los aspectos que deben ser corregidos o fortalecidos antes de avanzar a la evaluación por pares.
+    </p>
+  </div>
+
+  <!-- Indicador de Progreso del Diligenciamiento -->
+  <div class="progreso-indicador" [class.completado]="todoContestado">
+    <div class="progreso-text">
+      <span>Progreso de la Rúbrica:</span>
+      <strong>{{ itemsRespondidos }} de {{ totalItems }} evaluados</strong>
+    </div>
+    <div class="progreso-bar-container">
+      <div class="progreso-bar-fill" [style.width.%]="(itemsRespondidos / totalItems) * 100"></div>
+    </div>
+    <p class="progreso-ayuda" *ngIf="!todoContestado">
+      * Debes responder todos los criterios obligatoriamente para habilitar la decisión final.
+    </p>
+    <p class="progreso-ayuda listo" *ngIf="todoContestado && !confirmada">
+      ✓ Rúbrica completamente respondida. ¡Por favor, haz clic en <strong>Confirmar Rúbrica</strong> abajo!
+    </p>
+    <p class="progreso-ayuda confirmado" *ngIf="confirmada">
+      ✓ Rúbrica confirmada. Puedes proceder con la emisión del veredicto final.
+    </p>
+  </div>
+
+  <!-- Tabla de Evaluación -->
+  <div class="table-responsive">
+    <table class="rubrica-table">
+      <thead>
+        <tr>
+          <th colspan="2" class="th-items">ITEMS A EVALUAR</th>
+          <th class="th-radio">Si</th>
+          <th class="th-radio">No</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let cat of categorias">
+          <tr *ngFor="let item of cat.items; let first = first">
+            <!-- Columna de Categoría con Rowspan para agrupar visualmente -->
+            <td *ngIf="first" [attr.rowspan]="cat.items.length" class="td-categoria">
+              {{ cat.nombre }}
+            </td>
+            <!-- Descripción del Criterio -->
+            <td class="td-criterio">
+              {{ item.descripcion }}
+            </td>
+            <!-- Radio Sí -->
+            <td class="td-radio">
+              <label class="radio-container">
+                <input
+                  type="radio"
+                  [name]="item.id"
+                  [value]="true"
+                  [(ngModel)]="item.cumple"
+                  (change)="alCambiarSeleccion()"
+                />
+                <span class="radio-checkmark check-yes"></span>
+              </label>
+            </td>
+            <!-- Radio No -->
+            <td class="td-radio">
+              <label class="radio-container">
+                <input
+                  type="radio"
+                  [name]="item.id"
+                  [value]="false"
+                  [(ngModel)]="item.cumple"
+                  (change)="alCambiarSeleccion()"
+                />
+                <span class="radio-checkmark check-no"></span>
+              </label>
+            </td>
+          </tr>
+          <!-- Fila de Sugerencias específica para cada categoría -->
+          <tr class="tr-sugerencia">
+            <td colspan="4" class="td-sugerencia">
+              <div class="sugerencia-field">
+                <label [for]="'sug-' + cat.id">Sugerencias:</label>
+                <textarea
+                  [id]="'sug-' + cat.id"
+                  rows="2"
+                  [(ngModel)]="cat.sugerencias"
+                  (change)="alCambiarSeleccion()"
+                  placeholder="Detalla correcciones o recomendaciones para esta sección..."
+                ></textarea>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Observaciones Generales a nivel inferior -->
+  <div class="observaciones-generales-section">
+    <h3>Observaciones generales:</h3>
+    <p class="observaciones-subtitle">(Comentarios y sugerencias del evaluador sobre el artículo)</p>
+    <textarea
+      rows="4"
+      [(ngModel)]="observacionesGenerales"
+      (change)="alCambiarSeleccion()"
+      placeholder="Escribe aquí las observaciones generales del artículo..."
+    ></textarea>
+  </div>
+
+  <!-- Botones de Acción de la Rúbrica -->
+  <div class="rubrica-acciones">
+    <button type="button" class="btn-restaurar" (click)="reiniciar()">
+      🔄 Reiniciar Formulario
+    </button>
     <button
       type="button"
-      class="btn-primario"
+      class="btn-confirmar-rubrica"
+      [disabled]="!todoContestado || confirmada"
       (click)="completarEvaluacion()"
-      [disabled]="resultado.puntajeTotalOtorgado === 0"
+      [class.btn-ready]="todoContestado && !confirmada"
+      [class.btn-confirmed]="confirmada"
     >
-      Confirmar Evaluación
+      <span *ngIf="!confirmada">💾 Confirmar Rúbrica</span>
+      <span *ngIf="confirmada">✅ Rúbrica Confirmada</span>
     </button>
   </div>
 </div>

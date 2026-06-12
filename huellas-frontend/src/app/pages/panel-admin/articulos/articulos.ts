@@ -216,6 +216,10 @@ export class Articulos implements OnInit, OnDestroy {
   }
 
   getEstadoPlazoLabel(articulo: ArticuloListado): string {
+    if (articulo.estadoEvaluacion !== 'pendiente') {
+      return 'Evaluado';
+    }
+
     if (articulo.estaVencido) {
       return 'Vencido';
     }
@@ -232,6 +236,10 @@ export class Articulos implements OnInit, OnDestroy {
   }
 
   getEstadoPlazoClase(articulo: ArticuloListado): string {
+    if (articulo.estadoEvaluacion !== 'pendiente') {
+      return 'deadline--ok';
+    }
+
     if (articulo.estaVencido) {
       return 'deadline--vencido';
     }

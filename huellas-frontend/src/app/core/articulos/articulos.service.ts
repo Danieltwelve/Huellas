@@ -21,6 +21,8 @@ export interface ArticuloResumenBackend {
   fecha_vencimiento?: string | null;
   esta_vencido?: boolean;
   dias_restantes?: number | null;
+  solicitudProrrogaComitePendiente?: boolean;
+  solicitudProrrogaCorreccionPendiente?: boolean;
 }
 
 export interface ArticuloPublicacionBackend extends ArticuloResumenBackend {}
@@ -120,6 +122,7 @@ export interface ArticuloFlujo {
   fechaVencimientoComite?: string | null;
   fechaVencimientoCorreccion?: string | null;
   solicitudProrrogaCorreccionPendiente?: boolean;
+  solicitudProrrogaComitePendiente?: boolean;
   resumen: string;
   palabrasClave: string[];
   temas: string[];
@@ -331,6 +334,53 @@ export class ArticulosService {
       switchMap((token) =>
         this.http.patch<{ message: string; fechaVencimientoCorreccion?: string | null }>(
           `${environment.apiUrlBackend}/articulos/${articuloId}/correccion/prorroga`,
+          { decision, comentarios: comentarios?.trim() || undefined },
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  solicitarProrrogaComite(
+    articuloId: number,
+    comentarios?: string,
+  ): Observable<any> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para solicitar prórroga.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<any>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/comite/prorroga`,
+          { comentarios: comentarios?.trim() || undefined },
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  resolverProrrogaComite(
+    articuloId: number,
+    decision: 'aceptar' | 'rechazar',
+    comentarios?: string,
+  ): Observable<any> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para resolver la prórroga.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.patch<any>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/comite/prorroga`,
           { decision, comentarios: comentarios?.trim() || undefined },
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),

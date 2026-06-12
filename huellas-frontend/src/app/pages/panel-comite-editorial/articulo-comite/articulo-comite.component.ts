@@ -9,6 +9,7 @@ import {
 } from '../../../core/articulos/articulos.service';
 import { normalizarNombreArchivo } from '../../../core/utils/filename.utils';
 import { RubricaInteractivaComponent } from '../rubrica-interactiva/rubrica-interactiva.component';
+import { AuthService } from '../../../core/auth/auth.service';
 
 interface DocumentoArticulo {
   nombre: string;
@@ -34,6 +35,7 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly articulosService = inject(ArticulosService);
+  private readonly authService = inject(AuthService);
   private readonly destroy$ = new Subject<void>();
 
   articulo: ArticuloFlujo | null = null;
@@ -42,13 +44,25 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
   mensajeOk: string | null = null;
   mensajeError: string | null = null;
 
+  nombreUsuario = '';
+  rubricaCompletada = false;
+
   decision: 'aceptar' | 'rechazar' = 'aceptar';
   observacion = '';
   archivoComite: File | null = null;
   nombreArchivoComite = '';
   guardandoEvaluacion = false;
   modalConfirmarDescarte = false;
+  modalConfirmarProrrogaComite = false;
+  solicitandoProrroga = false;
   mostrarRubricaDigital = false;
+
+  // Modales de éxito y error
+  mostrarModalExitoComite = false;
+  tituloModalExitoComite = '';
+  mensajeExitoComite = '';
+  mostrarModalErrorComite = false;
+  mensajeErrorComite = '';
 
   // Campos para información de vencimiento
   diasRestantes: number | null = null;
@@ -60,7 +74,7 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
     rubricas: false,
     documentos: true,
     decision: true,
-    'rubrica-digital': false,
+    'rubrica-digital': true,
   };
 
   readonly documentosRubrica: DocumentoRubrica[] = [
@@ -77,6 +91,10 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
   ];
 
   ngOnInit(): void {
+    this.authService.user$.pipe(takeUntil(this.destroy$)).subscribe((user) => {
+      this.nombreUsuario = user?.displayName || user?.email || 'Miembro del Comité Editorial';
+    });
+
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       const id = Number(params['id']);
 
@@ -175,6 +193,56 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
     this.router.navigate(['/panel-comite-editorial/articulos']);
   }
 
+  solicitarProrrogaComite(): void {
+    this.modalConfirmarProrrogaComite = true;
+  }
+
+  cancelarSolicitudProrrogaComite(): void {
+    this.modalConfirmarProrrogaComite = false;
+  }
+
+  confirmarSolicitudProrrogaComite(): void {
+    if (!this.articulo || this.solicitandoProrroga) return;
+
+    this.solicitandoProrroga = true;
+    this.modalConfirmarProrrogaComite = false;
+
+    this.articulosService.solicitarProrrogaComite(this.articulo.id).subscribe({
+      next: (res) => {
+        this.solicitandoProrroga = false;
+        this.mensajeOk = null;
+        this.mensajeError = null;
+        this.abrirModalExitoComite('Solicitud Enviada', res.message || 'La solicitud de prórroga de 5 días ha sido enviada correctamente.');
+        this.cargarArticulo(this.articulo!.id);
+      },
+      error: (err) => {
+        this.solicitandoProrroga = false;
+        this.mensajeOk = null;
+        this.mensajeError = null;
+        this.abrirModalErrorComite(err?.error?.message || 'No se pudo enviar la solicitud de prórroga.');
+      },
+    });
+  }
+
+  abrirModalExitoComite(titulo: string, mensaje: string): void {
+    this.tituloModalExitoComite = titulo;
+    this.mensajeExitoComite = mensaje;
+    this.mostrarModalExitoComite = true;
+  }
+
+  cerrarModalExitoComite(): void {
+    this.mostrarModalExitoComite = false;
+  }
+
+  abrirModalErrorComite(mensaje: string): void {
+    this.mensajeErrorComite = mensaje;
+    this.mostrarModalErrorComite = true;
+  }
+
+  cerrarModalErrorComite(): void {
+    this.mostrarModalErrorComite = false;
+  }
+
   onArchivoComiteSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files && input.files.length > 0 ? input.files[0] : null;
@@ -192,6 +260,7 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
     return (
       texto.includes('evalu') &&
       texto.includes('comite') &&
+      !texto.includes('prorroga') &&
       (texto.includes('acept') || texto.includes('rechaz'))
     );
   }
@@ -205,6 +274,13 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
       this.mensajeError =
         'Este artículo ya fue evaluado por el comité o ya no está en etapa de comité.';
       this.mensajeOk = null;
+      return;
+    }
+
+    if (!this.rubricaCompletada) {
+      this.mensajeError = 'Debes diligenciar y confirmar obligatoriamente la Rúbrica de Evaluación Digital antes de emitir tu decisión.';
+      this.mensajeOk = null;
+      this.modalConfirmarDescarte = false;
       return;
     }
 
@@ -238,13 +314,22 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
           this.archivoComite = null;
           this.nombreArchivoComite = '';
           this.mensajeOk = respuesta.message;
+          this.mensajeError = null;
+          this.abrirModalExitoComite(
+            'Evaluación Registrada',
+            respuesta.message || 'La decisión y la rúbrica han sido registradas correctamente.'
+          );
           this.cargarArticulo(this.articulo!.id);
         },
         error: (err) => {
           this.guardandoEvaluacion = false;
           this.modalConfirmarDescarte = false;
+          this.mensajeOk = null;
           this.mensajeError =
             err?.error?.message ?? 'No se pudo guardar la evaluación del comité.';
+          this.abrirModalErrorComite(
+            this.mensajeError || 'No se pudo guardar la evaluación del comité.'
+          );
         },
       });
   }
@@ -254,18 +339,18 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
   }
 
   alRubricaCompleta(resultado: any): void {
-    // Usar la recomendación de la rúbrica
-    this.decision = resultado.recomendacion === 'aceptar' ? 'aceptar' : 'rechazar';
-
-    // Pre-llenar la observación con el resultado
-    const criteriosEval = resultado.criterios
-      .filter((c: any) => c.observaciones)
-      .map((c: any) => `${c.nombre}: ${c.observaciones}`)
-      .join('\n');
-
-    this.observacion = `Evaluación de rúbrica: ${resultado.porcentajeAlcanzado}%\n\n${criteriosEval}`;
-    this.mostrarRubricaDigital = false;
-    this.seccionesAbiertas['decision'] = true;
+    this.rubricaCompletada = resultado.completo;
+    if (resultado.completo) {
+      this.observacion = resultado.observacionCompilada;
+      this.seccionesAbiertas['decision'] = true;
+      
+      // Limpiar mensaje de error si existía
+      if (this.mensajeError === 'Debes diligenciar y confirmar obligatoriamente la Rúbrica de Evaluación Digital antes de emitir tu decisión.') {
+        this.mensajeError = null;
+      }
+    } else {
+      this.observacion = '';
+    }
   }
 
   cancelarDescarte(): void {
@@ -358,7 +443,7 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
     const observaciones = this.articulo?.observaciones ?? [];
 
     return observaciones.some(
-      (obs) => obs.etapa?.id === 6 && this.esAsuntoEvaluacionComite(obs.asunto),
+      (obs) => this.esAsuntoEvaluacionComite(obs.asunto),
     );
   }
 

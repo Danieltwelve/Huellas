@@ -63,6 +63,12 @@ export class ArticulosService {
     'Prórroga de corrección de Turnitin aceptada';
   private static readonly ASUNTO_CORRECCION_PRORROGA_RECHAZADA =
     'Prórroga de corrección de Turnitin rechazada';
+  private static readonly ASUNTO_COMITE_PRORROGA_SOLICITADA =
+    'Solicitud de plazo adicional para evaluación de comité';
+  private static readonly ASUNTO_COMITE_PRORROGA_ACEPTADA =
+    'Prórroga de evaluación de comité aceptada';
+  private static readonly ASUNTO_COMITE_PRORROGA_RECHAZADA =
+    'Prórroga de evaluación de comité rechazada';
   private static readonly ASUNTO_CERTIFICADO_EDITORIAL =
     'Nuevo certificado editorial disponible';
 
@@ -81,6 +87,42 @@ export class ArticulosService {
     @InjectRepository(Revisores)
     private readonly revisoresRepository: Repository<Revisores>,
   ) {}
+
+  private isAsuntoEvaluacionComite(asunto?: string): boolean {
+    const texto = (asunto ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    return (
+      texto.includes('evalu') &&
+      texto.includes('comite') &&
+      !texto.includes('prorroga') &&
+      (texto.includes('acept') || texto.includes('rechaz'))
+    );
+  }
+
+  private isAsuntoEvaluacionComiteAprobado(asunto?: string): boolean {
+    if (!this.isAsuntoEvaluacionComite(asunto)) {
+      return false;
+    }
+    const texto = (asunto ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return texto.includes('acept') || texto.includes('aprob');
+  }
+
+  private isAsuntoEvaluacionComiteRechazado(asunto?: string): boolean {
+    if (!this.isAsuntoEvaluacionComite(asunto)) {
+      return false;
+    }
+    const texto = (asunto ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return texto.includes('rechaz');
+  }
 
   private readonly configuracionEnviosKey = 'envios_articulos_habilitados';
 
@@ -334,11 +376,7 @@ export class ArticulosService {
     const fechaEnvioInicial = historialEnvioInicial[0]?.fechaInicio;
 
     const evaluacionComiteRealizada = (articulo.observaciones ?? []).some(
-      (obs) =>
-        [
-          ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
-          ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
-        ].includes(obs.asunto),
+      (obs) => this.isAsuntoEvaluacionComite(obs.asunto),
     );
 
     return {
@@ -356,6 +394,8 @@ export class ArticulosService {
       fechaVencimientoCorreccion: articulo.fechaVencimientoCorreccion ?? null,
       solicitudProrrogaCorreccionPendiente:
         articulo.solicitudProrrogaCorreccionPendiente ?? false,
+      solicitudProrrogaComitePendiente:
+        articulo.solicitudProrrogaComitePendiente ?? false,
       resumen: articulo.resumen,
       palabrasClave: articulo.palabrasClave
         .split(',')
@@ -543,37 +583,25 @@ export class ArticulosService {
         articulo.etapaActualId === ArticulosService.ETAPA_COMITE_EDITORIAL &&
         nuevaEtapaId === ArticulosService.ETAPA_TURNITIN
       ) {
-        const evaluacionComiteAceptada = await queryRunner.manager.findOne(
-          Observacion,
-          {
-            where: {
-              articuloId,
-              etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
-              asunto: ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
-            },
-            select: ['id'],
-          },
+        const tieneEvaluacionAceptada = (articulo.observaciones ?? []).some(
+          (obs) =>
+            obs.etapaId === ArticulosService.ETAPA_COMITE_EDITORIAL &&
+            this.isAsuntoEvaluacionComiteAprobado(obs.asunto),
         );
 
-        const evaluacionComiteRechazada = await queryRunner.manager.findOne(
-          Observacion,
-          {
-            where: {
-              articuloId,
-              etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
-              asunto: ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
-            },
-            select: ['id'],
-          },
+        const tieneEvaluacionRechazada = (articulo.observaciones ?? []).some(
+          (obs) =>
+            obs.etapaId === ArticulosService.ETAPA_COMITE_EDITORIAL &&
+            this.isAsuntoEvaluacionComiteRechazado(obs.asunto),
         );
 
-        if (evaluacionComiteRechazada) {
+        if (tieneEvaluacionRechazada) {
           throw new BadRequestException(
             'El artículo fue rechazado por el Comité Editorial y no puede avanzar a Turnitin.',
           );
         }
 
-        if (!evaluacionComiteAceptada) {
+        if (!tieneEvaluacionAceptada) {
           throw new BadRequestException(
             'Para mover a Turnitin, primero debes contar con una evaluación aprobada del Comité Editorial.',
           );
@@ -950,19 +978,9 @@ export class ArticulosService {
         select: ['id', 'asunto'],
       });
 
-      const evaluacionComiteExistente = observacionesComite.find((obs) => {
-        const asuntoNormalizado = (obs.asunto ?? '')
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '');
-
-        return (
-          asuntoNormalizado.includes('evalu') &&
-          asuntoNormalizado.includes('comite') &&
-          (asuntoNormalizado.includes('acept') ||
-            asuntoNormalizado.includes('rechaz'))
-        );
-      });
+      const evaluacionComiteExistente = observacionesComite.find((obs) =>
+        this.isAsuntoEvaluacionComite(obs.asunto),
+      );
 
       if (evaluacionComiteExistente) {
         throw new BadRequestException(
@@ -1238,12 +1256,7 @@ export class ArticulosService {
       .map((articulo) => {
         const evaluacionesComite = (articulo.observaciones ?? [])
           .filter((obs) => obs.usuarioId === usuarioId)
-          .filter((obs) =>
-            [
-              ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
-              ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
-            ].includes(obs.asunto),
-          )
+          .filter((obs) => this.isAsuntoEvaluacionComite(obs.asunto))
           .sort(
             (a, b) =>
               new Date(b.fechaSubida).getTime() -
@@ -1261,18 +1274,12 @@ export class ArticulosService {
           | 'evaluado-aceptado'
           | 'evaluado-rechazado' = 'pendiente';
 
-        if (
-          evaluacionReciente?.asunto ===
-          ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO
-        ) {
-          estadoEvaluacion = 'evaluado-aceptado';
-        }
-
-        if (
-          evaluacionReciente?.asunto ===
-          ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO
-        ) {
-          estadoEvaluacion = 'evaluado-rechazado';
+        if (evaluacionReciente) {
+          estadoEvaluacion = this.isAsuntoEvaluacionComiteAprobado(
+            evaluacionReciente.asunto,
+          )
+            ? 'evaluado-aceptado'
+            : 'evaluado-rechazado';
         }
 
         if (!pendiente && !evaluacionReciente) {
@@ -1308,9 +1315,10 @@ export class ArticulosService {
           ? new Date(fechaVencimientoBase)
           : null;
         const estaVencido =
+          pendiente &&
           !!fechaVencimientoDate &&
           fechaVencimientoDate.getTime() < ahora.getTime();
-        const diasRestantes = fechaVencimientoDate
+        const diasRestantes = pendiente && fechaVencimientoDate
           ? Math.ceil(
               (fechaVencimientoDate.getTime() - ahora.getTime()) /
                 (1000 * 60 * 60 * 24),
@@ -1367,12 +1375,7 @@ export class ArticulosService {
       .flatMap((articulo) => {
         const evaluacionesComite = (articulo.observaciones ?? [])
           .filter((obs) => obs.usuarioId === usuarioId)
-          .filter((obs) =>
-            [
-              ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
-              ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
-            ].includes(obs.asunto),
-          );
+          .filter((obs) => this.isAsuntoEvaluacionComite(obs.asunto));
 
         return evaluacionesComite.map((obs) => {
           const fechaAsignacionBase =
@@ -1403,10 +1406,9 @@ export class ArticulosService {
             articuloId: articulo.id,
             codigo: articulo.codigo,
             titulo: articulo.titulo,
-            decision:
-              obs.asunto === ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO
-                ? 'aceptado'
-                : 'rechazado',
+            decision: this.isAsuntoEvaluacionComiteAprobado(obs.asunto)
+              ? 'aceptado'
+              : 'rechazado',
             fechaEvaluacion: obs.fechaSubida,
             diasEvaluacion,
             etapaActual: articulo.etapaActual?.nombre ?? 'Sin etapa',
@@ -1729,7 +1731,13 @@ export class ArticulosService {
   async getResumenArticulos() {
     const articulos = await this.articuloRepository
       .createQueryBuilder('articulo')
-      .select(['articulo.id', 'articulo.codigo', 'articulo.titulo'])
+      .select([
+        'articulo.id',
+        'articulo.codigo',
+        'articulo.titulo',
+        'articulo.solicitudProrrogaComitePendiente',
+        'articulo.solicitudProrrogaCorreccionPendiente',
+      ])
       .innerJoin('articulo.etapaActual', 'etapa')
       .addSelect(['etapa.nombre'])
 
@@ -1749,6 +1757,8 @@ export class ArticulosService {
       titulo: articulo.titulo,
       etapa_nombre: articulo.etapaActual?.nombre || 'Desconocida',
       fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
+      solicitudProrrogaComitePendiente: articulo.solicitudProrrogaComitePendiente,
+      solicitudProrrogaCorreccionPendiente: articulo.solicitudProrrogaCorreccionPendiente,
     }));
   }
 
@@ -2112,7 +2122,6 @@ export class ArticulosService {
   ) {
     const articulo = await this.articuloRepository.findOne({
       where: { id: articuloId },
-      relations: ['observaciones', 'observaciones.usuario'],
     });
 
     if (!articulo) {
@@ -2133,6 +2142,22 @@ export class ArticulosService {
       );
     }
 
+    if (decision === 'aceptar') {
+      const fechaBase = articulo.fechaVencimientoCorreccion
+        ? new Date(articulo.fechaVencimientoCorreccion)
+        : new Date();
+
+      if (fechaBase.getTime() < Date.now()) {
+        fechaBase.setTime(Date.now());
+      }
+
+      fechaBase.setDate(fechaBase.getDate() + 1);
+      articulo.fechaVencimientoCorreccion = fechaBase;
+    }
+
+    articulo.solicitudProrrogaCorreccionPendiente = false;
+    await this.articuloRepository.save(articulo);
+
     const asunto =
       decision === 'aceptar'
         ? ArticulosService.ASUNTO_CORRECCION_PRORROGA_ACEPTADA
@@ -2152,28 +2177,147 @@ export class ArticulosService {
 
     await this.dataSource.getRepository(Observacion).save(observacion);
 
-    if (decision === 'aceptar') {
-      const fechaBase = articulo.fechaVencimientoCorreccion
-        ? new Date(articulo.fechaVencimientoCorreccion)
-        : new Date();
-
-      if (fechaBase.getTime() < Date.now()) {
-        fechaBase.setTime(Date.now());
-      }
-
-      fechaBase.setDate(fechaBase.getDate() + 1);
-      articulo.fechaVencimientoCorreccion = fechaBase;
-    }
-
-    articulo.solicitudProrrogaCorreccionPendiente = false;
-    await this.articuloRepository.save(articulo);
-
     return {
       message:
         decision === 'aceptar'
           ? 'Prórroga de corrección aprobada.'
           : 'Prórroga de corrección rechazada.',
       fechaVencimientoCorreccion: articulo.fechaVencimientoCorreccion ?? null,
+    };
+  }
+
+  async solicitarProrrogaComite(
+    articuloId: number,
+    usuarioComiteId: number,
+    comentarios?: string,
+  ) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['comiteEditorial', 'observaciones'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    this.ensureArticuloNoDescartado(articulo);
+
+    if (articulo.comiteEditorialId !== usuarioComiteId) {
+      throw new ForbiddenException(
+        'No tienes permiso para solicitar una prórroga en este artículo.',
+      );
+    }
+
+    if (articulo.etapaActualId !== ArticulosService.ETAPA_COMITE_EDITORIAL) {
+      throw new BadRequestException(
+        'Solo puedes solicitar prórroga cuando el artículo está en la etapa de Comité Editorial.',
+      );
+    }
+
+    if (articulo.solicitudProrrogaComitePendiente) {
+      throw new BadRequestException(
+        'Ya existe una solicitud de prórroga pendiente de revisión.',
+      );
+    }
+
+    // Validar si el plazo está vencido
+    const ahora = new Date();
+    const vencido =
+      !!articulo.fechaVencimientoComite &&
+      new Date(articulo.fechaVencimientoComite).getTime() < ahora.getTime();
+
+    if (!vencido) {
+      throw new BadRequestException(
+        'Solo se puede solicitar una prórroga si el plazo ya se encuentra vencido.',
+      );
+    }
+
+    articulo.solicitudProrrogaComitePendiente = true;
+    await this.articuloRepository.save(articulo);
+
+    const observacion = this.dataSource.getRepository(Observacion).create({
+      articuloId,
+      usuarioId: usuarioComiteId,
+      etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
+      asunto: ArticulosService.ASUNTO_COMITE_PRORROGA_SOLICITADA,
+      comentarios:
+        comentarios?.trim() ||
+        'El miembro del Comité Editorial solicita una prórroga de 5 días adicionales para evaluar el artículo.',
+    });
+
+    await this.dataSource.getRepository(Observacion).save(observacion);
+
+    return {
+      message: 'Solicitud de prórroga del comité enviada correctamente.',
+    };
+  }
+
+  async resolverSolicitudProrrogaComite(
+    articuloId: number,
+    usuarioId: number,
+    decision: 'aceptar' | 'rechazar',
+    comentarios?: string,
+  ) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    this.ensureArticuloNoDescartado(articulo);
+
+    if (articulo.etapaActualId !== ArticulosService.ETAPA_COMITE_EDITORIAL) {
+      throw new BadRequestException(
+        'La solicitud de prórroga solo puede resolverse en la etapa de Comité Editorial.',
+      );
+    }
+
+    if (!articulo.solicitudProrrogaComitePendiente) {
+      throw new BadRequestException(
+        'No hay ninguna solicitud de prórroga pendiente para el Comité Editorial.',
+      );
+    }
+
+    if (decision === 'aceptar') {
+      const ahora = new Date();
+      const fechaBase = articulo.fechaVencimientoComite
+        ? new Date(articulo.fechaVencimientoComite)
+        : ahora;
+
+      const nuevaFecha = new Date(Math.max(ahora.getTime(), fechaBase.getTime()) + 5 * 24 * 60 * 60 * 1000);
+      articulo.fechaVencimientoComite = nuevaFecha;
+    }
+
+    articulo.solicitudProrrogaComitePendiente = false;
+    await this.articuloRepository.save(articulo);
+
+    const asunto =
+      decision === 'aceptar'
+        ? ArticulosService.ASUNTO_COMITE_PRORROGA_ACEPTADA
+        : ArticulosService.ASUNTO_COMITE_PRORROGA_RECHAZADA;
+
+    const observacion = this.dataSource.getRepository(Observacion).create({
+      articuloId,
+      usuarioId,
+      etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
+      asunto,
+      comentarios:
+        comentarios?.trim() ||
+        (decision === 'aceptar'
+          ? 'Se aprueba una prórroga de 5 días para la evaluación.'
+          : 'Se rechaza la solicitud de prórroga de evaluación.'),
+    });
+
+    await this.dataSource.getRepository(Observacion).save(observacion);
+
+    return {
+      message:
+        decision === 'aceptar'
+          ? 'Prórroga de evaluación aprobada.'
+          : 'Prórroga de evaluación rechazada.',
+      fechaVencimientoComite: articulo.fechaVencimientoComite ?? null,
     };
   }
 
@@ -2667,10 +2811,7 @@ export class ArticulosService {
 
       if (payload.tipo === 'evaluacion') {
         const tieneEvaluacion = (articulo.observaciones ?? []).some((obs) =>
-          [
-            ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO,
-            ArticulosService.ASUNTO_EVALUACION_COMITE_RECHAZADO,
-          ].includes(obs.asunto),
+          this.isAsuntoEvaluacionComite(obs.asunto),
         );
 
         if (!tieneEvaluacion) {

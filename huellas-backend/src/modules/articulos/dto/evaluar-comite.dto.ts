@@ -6,6 +6,6 @@ export class EvaluarComiteDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(1000)
+  @MaxLength(8000)
   observacion?: string;
 }

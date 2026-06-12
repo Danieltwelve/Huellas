@@ -832,6 +832,23 @@
   box-shadow: 0 14px 22px -20px rgba(15, 118, 110, 0.7);
 }
 
+.btn-danger-action {
+  border: 1px solid #dc2626;
+  color: #ffffff;
+  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-danger-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 22px -20px rgba(220, 38, 38, 0.7);
+}
+
 .btn-full {
   width: 100%;
 }

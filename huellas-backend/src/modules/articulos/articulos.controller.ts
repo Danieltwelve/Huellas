@@ -770,6 +770,41 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('comite-editorial')
+  @Post(':id/comite/prorroga')
+  async solicitarProrrogaComite(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+    @Body() body: { comentarios?: string },
+  ) {
+    return await this.articulosService.solicitarProrrogaComite(
+      id,
+      req.user.userId,
+      body?.comentarios?.trim(),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Patch(':id/comite/prorroga')
+  async resolverProrrogaComite(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+    @Body() body: { decision: 'aceptar' | 'rechazar'; comentarios?: string },
+  ) {
+    if (!body?.decision || !['aceptar', 'rechazar'].includes(body.decision)) {
+      throw new BadRequestException('Debes indicar una decisión válida.');
+    }
+
+    return await this.articulosService.resolverSolicitudProrrogaComite(
+      id,
+      req.user.userId,
+      body.decision,
+      body?.comentarios?.trim(),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('autor', 'monitor', 'director', 'admin', 'comite-editorial')
   @Get('descargar/:filename')
   async descargarArchivo(

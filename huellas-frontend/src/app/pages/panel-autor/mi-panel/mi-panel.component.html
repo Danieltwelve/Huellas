@@ -318,4 +318,36 @@
       </section>
     </div>
   }
+
+  @if (modalConfirmarProrrogaAutor) {
+    <div class="correccion-modal-backdrop" (click)="cancelarProrrogaAutor()">
+      <section class="correccion-modal" (click)="$event.stopPropagation()" aria-label="Confirmar solicitud de prórroga">
+        <header class="correccion-modal-header">
+          <h3>Confirmar solicitud de prórroga</h3>
+          <button type="button" class="btn-close" (click)="cancelarProrrogaAutor()" aria-label="Cerrar">×</button>
+        </header>
+        <div class="correccion-modal-body">
+          <p class="correccion-articulo-codigo">{{ articuloProrrogaAutorConfirmar?.codigo || 'S/N' }}</p>
+          <p class="correccion-articulo-titulo">{{ articuloProrrogaAutorConfirmar?.titulo }}</p>
+          <p class="correccion-ayuda">
+            ¿Deseas solicitar una prórroga de <strong>1 día adicional</strong> para enviar la corrección de este artículo?
+          </p>
+          <p style="font-size: 0.82rem; color: #64748b; margin: 0;">
+            Esta solicitud se enviará a la dirección editorial para su aprobación.
+          </p>
+        </div>
+        <footer class="correccion-modal-footer">
+          <button type="button" class="btn-outline-sm" (click)="cancelarProrrogaAutor()">Cancelar</button>
+          <button
+            type="button"
+            class="btn-primary-sm"
+            style="background: #e05e00; border-color: #e05e00; color: #fff;"
+            (click)="confirmarProrrogaAutor()"
+          >
+            Sí, solicitar
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
 </div>

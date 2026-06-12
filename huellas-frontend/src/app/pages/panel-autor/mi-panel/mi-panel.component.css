@@ -426,14 +426,17 @@ tbody tr:hover {
 }
 
 .btn-correction {
-  border-color: #f2c792;
-  color: #9a3412;
-  background: #fff7ed;
+  background: #ea580c;
+  color: #ffffff;
+  border: 1px solid #ea580c;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-correction:hover {
-  border-color: #fb923c;
-  background: #ffedd5;
+  background: #c2410c;
+  border-color: #c2410c;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 14px rgba(234, 88, 12, 0.3);
 }
 
 .actions-cell {

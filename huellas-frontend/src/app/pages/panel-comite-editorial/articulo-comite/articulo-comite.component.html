@@ -12,10 +12,21 @@
   <!-- Banner de vencimiento -->
   <div class="banner-vencimiento" *ngIf="diasRestantes !== null && puedeEvaluarComite" [class.vencido]="estaVencido" [class.critico]="!estaVencido && diasRestantes <= 3">
     <span class="icon">⏰</span>
-    <div class="content">
-      <strong *ngIf="estaVencido">Plazo VENCIDO</strong>
-      <strong *ngIf="!estaVencido">{{ diasRestantes }} días para evaluar</strong>
-      <span *ngIf="fechaVencimiento"> - Vence el {{ fechaVencimiento | date: 'short' }}</span>
+    <div class="content" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+      <div>
+        <strong *ngIf="estaVencido">Plazo VENCIDO</strong>
+        <strong *ngIf="!estaVencido">{{ diasRestantes }} días para evaluar</strong>
+        <span *ngIf="fechaVencimiento"> - Vence el {{ fechaVencimiento | date: 'short' }}</span>
+        <span *ngIf="articulo?.solicitudProrrogaComitePendiente" style="margin-left: 10px; font-style: italic; font-weight: bold;">(Prórroga de 5 días solicitada y pendiente)</span>
+      </div>
+      <button
+        *ngIf="estaVencido && !articulo?.solicitudProrrogaComitePendiente"
+        type="button"
+        class="btn-solicitar-prorroga"
+        (click)="solicitarProrrogaComite()"
+      >
+        Solicitar prórroga (5 días)
+      </button>
     </div>
   </div>
 
@@ -47,6 +58,7 @@
       <div *ngIf="seccionesAbiertas['rubrica-digital']">
         <p class="info-text">Usa esta herramienta interactiva para evaluar el artículo. Los resultados te ayudarán a tomar una decisión informada.</p>
         <app-rubrica-interactiva
+          [nombreEvaluador]="nombreUsuario"
           [articuloTitulo]="articulo.titulo"
           (rubricaCompleta)="alRubricaCompleta($event)"
         ></app-rubrica-interactiva>
@@ -96,22 +108,33 @@
       <p class="subtitulo" *ngIf="!puedeEvaluarComite">{{ mensajeEstadoEvaluacion }}</p>
 
       <div *ngIf="seccionesAbiertas.decision && puedeEvaluarComite">
-        <label class="campo">
+        <!-- Aviso de rúbrica obligatoria -->
+        <div class="aviso-rubrica-estado" [class.pendiente]="!rubricaCompletada" [class.completado]="rubricaCompletada">
+          <span class="icon">{{ rubricaCompletada ? '✅' : '⚠️' }}</span>
+          <div class="content">
+            <strong *ngIf="!rubricaCompletada">Rúbrica pendiente de confirmación</strong>
+            <strong *ngIf="rubricaCompletada">Rúbrica confirmada con éxito</strong>
+            <p *ngIf="!rubricaCompletada">Debes responder y confirmar la Rúbrica de Evaluación Digital arriba para habilitar la toma de decisión.</p>
+            <p *ngIf="rubricaCompletada">La rúbrica ha sido compilada en el campo de observación. Revisa tu decisión final antes de emitir.</p>
+          </div>
+        </div>
+
+        <label class="campo" [class.disabled]="!rubricaCompletada">
           Decisión
-          <select [(ngModel)]="decision">
+          <select [(ngModel)]="decision" [disabled]="!rubricaCompletada">
             <option value="aceptar">Aceptar artículo</option>
             <option value="rechazar">Rechazar artículo</option>
           </select>
         </label>
 
-        <label class="campo">
-          Observación
-          <textarea [(ngModel)]="observacion" rows="4" placeholder="Comentario de evaluación"></textarea>
+        <label class="campo" [class.disabled]="!rubricaCompletada">
+          Observación (Autogenerada por la rúbrica)
+          <textarea [(ngModel)]="observacion" rows="6" placeholder="Completa la rúbrica arriba para generar la observación..." [disabled]="!rubricaCompletada"></textarea>
         </label>
 
-        <label class="campo">
+        <label class="campo" [class.disabled]="!rubricaCompletada">
           Adjuntar soporte (opcional)
-          <input type="file" (change)="onArchivoComiteSeleccionado($event)" />
+          <input type="file" (change)="onArchivoComiteSeleccionado($event)" [disabled]="!rubricaCompletada" />
         </label>
 
         <p class="subtitulo" *ngIf="nombreArchivoComite">Archivo seleccionado: {{ nombreArchivoComite }}</p>
@@ -120,7 +143,7 @@
 
     <section class="sticky-action" *ngIf="seccionesAbiertas.decision && puedeEvaluarComite">
       <p class="subtitulo">{{ decision === 'rechazar' ? 'El rechazo quedará registrado para revisión del equipo editorial.' : 'La aprobación quedará registrada para que el equipo editorial avance el flujo.' }}</p>
-      <button type="button" class="btn-primario" (click)="evaluarArticulo()" [disabled]="guardandoEvaluacion">
+      <button type="button" class="btn-primario" (click)="evaluarArticulo()" [disabled]="guardandoEvaluacion || !rubricaCompletada">
         {{ guardandoEvaluacion ? 'Guardando evaluación...' : 'Emitir decisión' }}
       </button>
     </section>
@@ -138,6 +161,53 @@
       <div class="modal-actions">
         <button type="button" class="btn-secundario" (click)="cancelarDescarte()">Cancelar</button>
         <button type="button" class="btn-primario" (click)="confirmarDescarte()">Sí, emitir criterio</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="modalConfirmarProrrogaComite" (click)="cancelarSolicitudProrrogaComite()">
+    <div class="modal-box" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h3>Confirmar solicitud de prórroga</h3>
+      <p>
+        ¿Estás seguro de que deseas solicitar una prórroga de <strong>5 días adicionales</strong> para realizar la evaluación de este artículo?
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secundario" (click)="cancelarSolicitudProrrogaComite()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="confirmarSolicitudProrrogaComite()" [disabled]="solicitandoProrroga">
+          {{ solicitandoProrroga ? 'Solicitando...' : 'Sí, solicitar prórroga' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de éxito para comité -->
+  <div class="modal-overlay" *ngIf="mostrarModalExitoComite" (click)="cerrarModalExitoComite()">
+    <div class="modal-box" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div style="text-align: center; margin-bottom: 0.8rem;">
+        <span style="font-size: 2.5rem; color: #10b981;">✅</span>
+      </div>
+      <h3 style="text-align: center;">{{ tituloModalExitoComite }}</h3>
+      <p style="text-align: center; color: #475569; margin: 0.5rem 0 1rem;">
+        {{ mensajeExitoComite }}
+      </p>
+      <div class="modal-actions" style="justify-content: center; margin-top: 1rem;">
+        <button type="button" class="btn-primario" (click)="cerrarModalExitoComite()">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de error para comité -->
+  <div class="modal-overlay" *ngIf="mostrarModalErrorComite" (click)="cerrarModalErrorComite()">
+    <div class="modal-box" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div style="text-align: center; margin-bottom: 0.8rem;">
+        <span style="font-size: 2.5rem; color: #ef4444;">❌</span>
+      </div>
+      <h3 style="text-align: center; color: #b91c1c;">Ha ocurrido un error</h3>
+      <p style="text-align: center; color: #475569; margin: 0.5rem 0 1rem;">
+        {{ mensajeErrorComite }}
+      </p>
+      <div class="modal-actions" style="justify-content: center; margin-top: 1rem;">
+        <button type="button" class="btn-secundario" (click)="cerrarModalErrorComite()">Cerrar</button>
       </div>
     </div>
   </div>

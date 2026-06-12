@@ -351,6 +351,8 @@ export class UsersService {
     const verificationLink =
       await this.firebaseAuth.generateEmailVerificationLink(correo);
 
+    this.logger.log(`[SMTP-DEBUG] Enlace de verificación para ${correo}: ${verificationLink}`);
+
     const sentBySmtp = await this.sendVerificationEmailBySmtp(
       correo,
       verificationLink,
@@ -372,6 +374,9 @@ export class UsersService {
     strictSmtp: boolean,
   ): Promise<void> {
     const resetLink = await this.firebaseAuth.generatePasswordResetLink(correo);
+
+    this.logger.log(`[SMTP-DEBUG] Enlace de restablecimiento de contraseña para ${correo}: ${resetLink}`);
+
     const sentBySmtp = await this.sendPasswordResetEmailBySmtp(
       correo,
       resetLink,
@@ -517,7 +522,7 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     const newUser = this.userRepository.create(createUserDto);
     const defaultRole = await this.rolesRepository.findOne({
-      where: { rol: 'admin' },
+      where: { rol: 'autor' },
     });
     if (defaultRole) {
       newUser.roles = [defaultRole];
@@ -789,6 +794,47 @@ export class UsersService {
 
     if (!hadRevisorRole && hasRevisorRole) {
       await this.ensureRevisorExists(savedUser.id);
+    }
+
+    // Sincronizar roles con Firebase Custom Claims si se modificaron
+    if (data.roles) {
+      try {
+        const firebaseUser = await this.firebaseAuth.getUserByEmail(savedUser.correo);
+        const roleNames: string[] = savedUser.roles?.map((r) => r.rol) ?? [];
+
+        const editorialManagers = ['admin', 'director', 'monitor', 'comite-editorial'];
+        const userManagers = ['admin', 'director', 'monitor'];
+
+        const canViewArchivos = roleNames.some((rol) =>
+          [...editorialManagers, 'revisor'].includes(rol),
+        );
+
+        const canSubmitEnvios = roleNames.some((rol) =>
+          ['admin', 'autor'].includes(rol),
+        );
+
+        const canManageUsers = roleNames.some((rol) => userManagers.includes(rol));
+        const canManageArticulos = roleNames.some((rol) => editorialManagers.includes(rol));
+        const canManageFlujoEditorial = roleNames.some((rol) => editorialManagers.includes(rol));
+
+        const customClaims = {
+          roles: roleNames,
+          canViewArchivos,
+          canSubmitEnvios,
+          canManageUsers,
+          canManageArticulos,
+          canManageFlujoEditorial,
+          externalSystemUid: `huellas-db-${savedUser.id}`,
+        };
+
+        await this.firebaseAuth.setCustomUserClaims(firebaseUser.uid, customClaims);
+      } catch (error) {
+        this.logger.warn(
+          `No se pudieron actualizar claims en Firebase para ${savedUser.correo}: ${
+            error instanceof Error ? error.message : 'error desconocido'
+          }`,
+        );
+      }
     }
 
     return savedUser;

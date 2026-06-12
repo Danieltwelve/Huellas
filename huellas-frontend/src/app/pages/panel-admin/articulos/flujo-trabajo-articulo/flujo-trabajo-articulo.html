@@ -106,17 +106,17 @@
         <p class="file-name" *ngIf="fechaVencimientoCorreccion">Vence el {{ formatearFechaVencimientoCorreccion(fechaVencimientoCorreccion) }}</p>
         <div class="decision-options">
           <button
-            class="btn-outline-teal btn-full"
+            class="btn-danger-action btn-full"
             type="button"
-            (click)="resolverProrrogaCorreccion('rechazar')"
+            (click)="abrirConfirmacionProrrogaCorreccion('rechazar')"
             [disabled]="evaluandoTurnitin"
           >
             Rechazar solicitud
           </button>
           <button
-            class="btn-outline-teal btn-full"
+            class="btn-primario btn-full"
             type="button"
-            (click)="resolverProrrogaCorreccion('aceptar')"
+            (click)="abrirConfirmacionProrrogaCorreccion('aceptar')"
             [disabled]="evaluandoTurnitin"
           >
             Aceptar solicitud
@@ -212,6 +212,29 @@
         <ng-template #sinDocumentosRubrica>
           <p class="file-name">No hay documentos asociados a este artículo.</p>
         </ng-template>
+      </section>
+
+      <section class="accion-card card-turnitin" *ngIf="estaEnEtapaComite && !estaEnCertificacion && solicitudProrrogaComitePendiente">
+        <span class="accion-label">Solicitud de prórroga de evaluación (Comité)</span>
+        <p class="asignacion-helper">El miembro del Comité Editorial pidió 5 días adicionales para evaluar el artículo.</p>
+        <div class="decision-options">
+          <button
+            class="btn-outline-teal btn-full"
+            type="button"
+            (click)="abrirConfirmacionProrrogaComite('rechazar')"
+            [disabled]="resolviendoProrrogaComite"
+          >
+            Rechazar solicitud
+          </button>
+          <button
+            class="btn-outline-teal btn-full"
+            type="button"
+            (click)="abrirConfirmacionProrrogaComite('aceptar')"
+            [disabled]="resolviendoProrrogaComite"
+          >
+            Aceptar solicitud
+          </button>
+        </div>
       </section>
 
       <section class="accion-card card-evaluacion" *ngIf="puedeMostrarEvaluacionComite && !estaEnCertificacion">
@@ -596,7 +619,7 @@
   <div class="modal-overlay" *ngIf="mostrarModalExitoTurnitin" (click)="cerrarModalExitoTurnitin()">
     <section class="modal-confirmacion modal-confirmacion--turnitin-exito" role="dialog" aria-modal="true" aria-label="Evaluación Turnitin registrada" (click)="$event.stopPropagation()">
       <span class="modal-turnitin-badge">Evaluación registrada</span>
-      <h3>Turnitin procesado correctamente</h3>
+      <h3>{{ tituloModalExito }}</h3>
       <p>{{ mensajeExitoTurnitin }}</p>
       <div class="modal-acciones">
         <button type="button" class="btn-primario" (click)="cerrarModalExitoTurnitin()">Entendido</button>
@@ -656,6 +679,36 @@
           [disabled]="subiendoCertificacion"
         >
           {{ subiendoCertificacion ? 'Subiendo...' : 'Sí, subir certificado' }}
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionProrrogaComite" (click)="cancelarConfirmacionProrrogaComite()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar prórroga comité" (click)="$event.stopPropagation()">
+      <h3>Confirmar resolución de prórroga</h3>
+      <p>
+        ¿Estás seguro de que deseas <strong>{{ decisionProrrogaComiteConfirmar === 'aceptar' ? 'aprobar' : 'rechazar' }}</strong> la solicitud de prórroga de 5 días para la evaluación de comité?
+      </p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionProrrogaComite()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="confirmarResolucionProrrogaComite()" [disabled]="resolviendoProrrogaComite">
+          {{ resolviendoProrrogaComite ? 'Procesando...' : 'Sí, confirmar' }}
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionProrrogaCorreccion" (click)="cancelarConfirmacionProrrogaCorreccion()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar prórroga corrección" (click)="$event.stopPropagation()">
+      <h3>Confirmar resolución de prórroga</h3>
+      <p>
+        ¿Estás seguro de que deseas <strong>{{ decisionProrrogaCorreccionConfirmar === 'aceptar' ? 'aprobar' : 'rechazar' }}</strong> la solicitud de prórroga de 1 día para el envío de correcciones?
+      </p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionProrrogaCorreccion()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="confirmarResolucionProrrogaCorreccion()" [disabled]="evaluandoTurnitin">
+          {{ evaluandoTurnitin ? 'Procesando...' : 'Sí, confirmar' }}
         </button>
       </div>
     </section>
