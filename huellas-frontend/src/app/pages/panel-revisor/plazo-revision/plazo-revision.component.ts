@@ -23,6 +23,8 @@ interface ArticuloRevisorListado {
   prioridad: 'alta' | 'media' | 'baja';
   ronda: number;
   ordenLlegada: number;
+  solicitudProrrogaRevisorPendiente?: boolean;
+  prorrogaRevisorAceptada?: boolean;
 }
 
 interface EstadoProrroga {
@@ -38,44 +40,54 @@ interface EstadoProrroga {
 export class PlazoRevisionComponent implements OnInit {
   private readonly revisoresService = inject(RevisoresService);
 
-  articulos: ArticuloRevisorListado[] = ARTICULOS_ASIGNADOS_MOCK.map((articulo, index) => ({
-    ...articulo,
-    ordenLlegada: ((): number => {
-      const ts = new Date(articulo.fechaAsignacion).getTime();
-      return Number.isNaN(ts) ? index : ts;
-    })(),
-  }));
+  articulos: ArticuloRevisorListado[] = ARTICULOS_ASIGNADOS_MOCK
+    .filter((a) => a.estado !== 'evaluado')
+    .map((articulo, index) => ({
+      ...articulo,
+      ordenLlegada: ((): number => {
+        const ts = new Date(articulo.fechaAsignacion).getTime();
+        return Number.isNaN(ts) ? index : ts;
+      })(),
+    }));
   prorrogasSolicitadas: EstadoProrroga = {};
   mensaje = '';
   ordenArticulos: OrdenArticulos = 'llegada-reciente';
+  mostrarModalConfirmacion = false;
+  articuloSeleccionadoId: number | null = null;
 
   async ngOnInit(): Promise<void> {
     try {
       const data = await firstValueFrom(this.revisoresService.getArticulosAsignadosRevisor());
-      this.articulos = data.map((articulo, index) => ({
-        id: articulo.id,
-        codigo: articulo.codigo,
-        titulo: articulo.titulo,
-        resumen: articulo.resumen,
-        tema: articulo.tema,
-        fechaAsignacion: articulo.fechaAsignacion ?? new Date().toISOString(),
-        fechaLimite: articulo.fechaLimite ?? new Date().toISOString(),
-        estado: articulo.estado,
-        prioridad: articulo.prioridad,
-        ronda: articulo.ronda,
-        ordenLlegada: ((): number => {
-          const ts = new Date(articulo.fechaAsignacion ?? '').getTime();
-          return Number.isNaN(ts) ? index : ts;
-        })(),
-      }));
+      this.articulos = data
+        .filter((articulo) => articulo.estado !== 'evaluado')
+        .map((articulo, index) => ({
+          id: articulo.id,
+          codigo: articulo.codigo,
+          titulo: articulo.titulo,
+          resumen: articulo.resumen,
+          tema: articulo.tema,
+          fechaAsignacion: articulo.fechaAsignacion ?? new Date().toISOString(),
+          fechaLimite: articulo.fechaLimite ?? new Date().toISOString(),
+          estado: articulo.estado,
+          prioridad: articulo.prioridad,
+          ronda: articulo.ronda,
+          solicitudProrrogaRevisorPendiente: articulo.solicitudProrrogaRevisorPendiente,
+          prorrogaRevisorAceptada: articulo.prorrogaRevisorAceptada,
+          ordenLlegada: ((): number => {
+            const ts = new Date(articulo.fechaAsignacion ?? '').getTime();
+            return Number.isNaN(ts) ? index : ts;
+          })(),
+        }));
     } catch {
-      this.articulos = ARTICULOS_ASIGNADOS_MOCK.map((articulo, index) => ({
-        ...articulo,
-        ordenLlegada: ((): number => {
-          const ts = new Date(articulo.fechaAsignacion).getTime();
-          return Number.isNaN(ts) ? index : ts;
-        })(),
-      }));
+      this.articulos = ARTICULOS_ASIGNADOS_MOCK
+        .filter((a) => a.estado !== 'evaluado')
+        .map((articulo, index) => ({
+          ...articulo,
+          ordenLlegada: ((): number => {
+            const ts = new Date(articulo.fechaAsignacion).getTime();
+            return Number.isNaN(ts) ? index : ts;
+          })(),
+        }));
     }
   }
 
@@ -120,18 +132,68 @@ export class PlazoRevisionComponent implements OnInit {
     return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   }
 
+  obtenerArticulo(articuloId: number): ArticuloRevisorListado | undefined {
+    return this.articulos.find((a) => a.id === articuloId);
+  }
+
   tieneProrroga(articuloId: number): boolean {
-    return Boolean(this.prorrogasSolicitadas[articuloId]);
+    const art = this.obtenerArticulo(articuloId);
+    return !!art?.prorrogaRevisorAceptada;
+  }
+
+  prorrogasSolicitadasPendientes(articuloId: number): boolean {
+    const art = this.obtenerArticulo(articuloId);
+    return !!art?.solicitudProrrogaRevisorPendiente;
   }
 
   solicitarProrroga(articuloId: number): void {
-    if (this.tieneProrroga(articuloId)) {
-      this.mensaje = 'Este articulo ya uso su unica prorroga de 15 dias.';
+    const art = this.obtenerArticulo(articuloId);
+    if (!art) return;
+
+    if (art.prorrogaRevisorAceptada) {
+      this.mensaje = 'Este artículo ya usó su única prórroga de 15 días.';
+      return;
+    }
+    if (art.solicitudProrrogaRevisorPendiente) {
+      this.mensaje = 'Ya existe una solicitud de prórroga pendiente de revisión.';
       return;
     }
 
-    this.prorrogasSolicitadas[articuloId] = true;
-    this.mensaje = 'Prorroga de 15 dias solicitada correctamente.';
+    this.revisoresService.solicitarProrrogaRevisor(articuloId).subscribe({
+      next: (res) => {
+        art.solicitudProrrogaRevisorPendiente = true;
+        this.mensaje = 'Prórroga de 15 días solicitada correctamente.';
+      },
+      error: (err) => {
+        this.mensaje = err.error?.message || 'Error al solicitar la prórroga.';
+      }
+    });
+  }
+
+  formatearFecha(fechaStr: string): string {
+    if (!fechaStr) return '';
+    if (fechaStr.includes('T')) {
+      return fechaStr.split('T')[0];
+    }
+    return fechaStr;
+  }
+
+  solicitarProrrogaConConfirmacion(articuloId: number): void {
+    this.articuloSeleccionadoId = articuloId;
+    this.mostrarModalConfirmacion = true;
+  }
+
+  cancelarConfirmacion(): void {
+    this.mostrarModalConfirmacion = false;
+    this.articuloSeleccionadoId = null;
+  }
+
+  confirmarSolicitarProrroga(): void {
+    if (this.articuloSeleccionadoId !== null) {
+      const id = this.articuloSeleccionadoId;
+      this.cancelarConfirmacion();
+      this.solicitarProrroga(id);
+    }
   }
 
   private compararFechas(fechaA: string, fechaB: string): number {

@@ -446,7 +446,7 @@ export class NuevoArticuloComponent implements OnInit {
         this.enviando = false;
         this.exito = true;
         this.cdr.detectChanges();
-        setTimeout(() => this.router.navigate(['/panel-autor']), 2000);
+        setTimeout(() => this.router.navigate(['/panel-autor']), 3000);
       },
       error: (err: any) => {
         console.error('❌ Error al enviar artículo:', err);

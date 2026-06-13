@@ -805,6 +805,41 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('revisor')
+  @Post(':id/revisor/prorroga')
+  async solicitarProrrogaRevisor(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+    @Body() body: { comentarios?: string },
+  ) {
+    return await this.articulosService.solicitarProrrogaRevisor(
+      id,
+      req.user.userId,
+      body?.comentarios?.trim(),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Patch(':id/revisor/prorroga')
+  async resolverProrrogaRevisor(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+    @Body() body: { decision: 'aceptar' | 'rechazar'; comentarios?: string },
+  ) {
+    if (!body?.decision || !['aceptar', 'rechazar'].includes(body.decision)) {
+      throw new BadRequestException('Debes indicar una decisión válida.');
+    }
+
+    return await this.articulosService.resolverSolicitudProrrogaRevisor(
+      id,
+      req.user.userId,
+      body.decision,
+      body?.comentarios?.trim(),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('autor', 'monitor', 'director', 'admin', 'comite-editorial')
   @Get('descargar/:filename')
   async descargarArchivo(

@@ -71,6 +71,12 @@ export class ArticulosService {
     'Prórroga de evaluación de comité rechazada';
   private static readonly ASUNTO_CERTIFICADO_EDITORIAL =
     'Nuevo certificado editorial disponible';
+  private static readonly ASUNTO_REVISOR_PRORROGA_SOLICITADA =
+    'Revisión por pares: prórroga solicitada';
+  private static readonly ASUNTO_REVISOR_PRORROGA_ACEPTADA =
+    'Revisión por pares: prórroga aceptada';
+  private static readonly ASUNTO_REVISOR_PRORROGA_RECHAZADA =
+    'Revisión por pares: prórroga rechazada';
 
   constructor(
     private dataSource: DataSource,
@@ -396,6 +402,10 @@ export class ArticulosService {
         articulo.solicitudProrrogaCorreccionPendiente ?? false,
       solicitudProrrogaComitePendiente:
         articulo.solicitudProrrogaComitePendiente ?? false,
+      solicitudProrrogaRevisorPendiente:
+        articulo.solicitudProrrogaRevisorPendiente ?? false,
+      prorrogaRevisorAceptada:
+        articulo.prorrogaRevisorAceptada ?? false,
       resumen: articulo.resumen,
       palabrasClave: articulo.palabrasClave
         .split(',')
@@ -1737,6 +1747,7 @@ export class ArticulosService {
         'articulo.titulo',
         'articulo.solicitudProrrogaComitePendiente',
         'articulo.solicitudProrrogaCorreccionPendiente',
+        'articulo.solicitudProrrogaRevisorPendiente',
       ])
       .innerJoin('articulo.etapaActual', 'etapa')
       .addSelect(['etapa.nombre'])
@@ -1759,6 +1770,7 @@ export class ArticulosService {
       fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
       solicitudProrrogaComitePendiente: articulo.solicitudProrrogaComitePendiente,
       solicitudProrrogaCorreccionPendiente: articulo.solicitudProrrogaCorreccionPendiente,
+      solicitudProrrogaRevisorPendiente: articulo.solicitudProrrogaRevisorPendiente,
     }));
   }
 
@@ -2318,6 +2330,129 @@ export class ArticulosService {
           ? 'Prórroga de evaluación aprobada.'
           : 'Prórroga de evaluación rechazada.',
       fechaVencimientoComite: articulo.fechaVencimientoComite ?? null,
+    };
+  }
+
+  async solicitarProrrogaRevisor(
+    articuloId: number,
+    usuarioRevisorId: number,
+    comentarios?: string,
+  ) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['revisor'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    this.ensureArticuloNoDescartado(articulo);
+
+    if (!articulo.revisor || articulo.revisor.usuarioId !== usuarioRevisorId) {
+      throw new ForbiddenException(
+        'No tienes permiso para solicitar una prórroga en este artículo.',
+      );
+    }
+
+    if (articulo.etapaActualId !== ArticulosService.ETAPA_REVISION_PARES) {
+      throw new BadRequestException(
+        'Solo puedes solicitar prórroga cuando el artículo está en la etapa de Revisión por pares.',
+      );
+    }
+
+    if (articulo.solicitudProrrogaRevisorPendiente) {
+      throw new BadRequestException(
+        'Ya existe una solicitud de prórroga pendiente de revisión.',
+      );
+    }
+
+    if (articulo.prorrogaRevisorAceptada) {
+      throw new BadRequestException(
+        'Ya se ha otorgado una prórroga para esta revisión y no se puede solicitar otra.',
+      );
+    }
+
+    articulo.solicitudProrrogaRevisorPendiente = true;
+    await this.articuloRepository.save(articulo);
+
+    const observacion = this.dataSource.getRepository(Observacion).create({
+      articuloId,
+      usuarioId: usuarioRevisorId,
+      etapaId: ArticulosService.ETAPA_REVISION_PARES,
+      asunto: ArticulosService.ASUNTO_REVISOR_PRORROGA_SOLICITADA,
+      comentarios:
+        comentarios?.trim() ||
+        'El Revisor solicita una prórroga de 15 días adicionales para evaluar el artículo.',
+    });
+
+    await this.dataSource.getRepository(Observacion).save(observacion);
+
+    return {
+      message: 'Solicitud de prórroga de revisión por pares enviada correctamente.',
+    };
+  }
+
+  async resolverSolicitudProrrogaRevisor(
+    articuloId: number,
+    usuarioId: number,
+    decision: 'aceptar' | 'rechazar',
+    comentarios?: string,
+  ) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    this.ensureArticuloNoDescartado(articulo);
+
+    if (articulo.etapaActualId !== ArticulosService.ETAPA_REVISION_PARES) {
+      throw new BadRequestException(
+        'La solicitud de prórroga solo puede resolverse en la etapa de Revisión por pares.',
+      );
+    }
+
+    if (!articulo.solicitudProrrogaRevisorPendiente) {
+      throw new BadRequestException(
+        'No hay ninguna solicitud de prórroga pendiente para el Revisor.',
+      );
+    }
+
+    if (decision === 'aceptar') {
+      articulo.prorrogaRevisorAceptada = true;
+    }
+
+    articulo.solicitudProrrogaRevisorPendiente = false;
+    await this.articuloRepository.save(articulo);
+
+    const asunto =
+      decision === 'aceptar'
+        ? ArticulosService.ASUNTO_REVISOR_PRORROGA_ACEPTADA
+        : ArticulosService.ASUNTO_REVISOR_PRORROGA_RECHAZADA;
+
+    const observacion = this.dataSource.getRepository(Observacion).create({
+      articuloId,
+      usuarioId,
+      etapaId: ArticulosService.ETAPA_REVISION_PARES,
+      asunto,
+      comentarios:
+        comentarios?.trim() ||
+        (decision === 'aceptar'
+          ? 'Se aprueba una prórroga de 15 días para la evaluación.'
+          : 'Se rechaza la solicitud de prórroga de evaluación.'),
+    });
+
+    await this.dataSource.getRepository(Observacion).save(observacion);
+
+    return {
+      message:
+        decision === 'aceptar'
+          ? 'Prórroga de evaluación de revisor aprobada.'
+          : 'Prórroga de evaluación de revisor rechazada.',
+      prorrogaRevisorAceptada: articulo.prorrogaRevisorAceptada,
     };
   }
 

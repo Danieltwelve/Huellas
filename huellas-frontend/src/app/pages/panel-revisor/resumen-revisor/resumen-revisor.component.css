@@ -1,123 +1,268 @@
 :host {
   display: block;
-  color: #12263a;
+  color: #0f172a;
 }
 
 .hero {
   display: grid;
   grid-template-columns: 1.3fr 320px;
-  gap: 1rem;
+  gap: 1.5rem;
   align-items: stretch;
+  background: radial-gradient(900px 140px at 0% -10%, rgba(0, 163, 154, 0.08) 0%, transparent 55%);
+  padding-bottom: 0.5rem;
 }
 
 .kicker {
   margin: 0;
-  color: #0f766e;
+  color: #0d9488;
   letter-spacing: 0.12em;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
 h1 {
-  margin: 0.3rem 0 0.5rem;
-  font-size: 1.8rem;
+  margin: 0.4rem 0 0.6rem;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.025em;
 }
 
 .hero p {
   margin: 0;
-  color: #41566d;
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .deadline-card {
-  border: 1px solid #d6e1ee;
+  border: 1px solid #e2e8f0;
   border-radius: 16px;
-  background: linear-gradient(135deg, #f1fbf9, #fef8ea);
-  padding: 1rem;
-  display: grid;
-  gap: 0.35rem;
+  background: linear-gradient(135deg, #f0fdfa, #eff6ff);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+.deadline-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle, rgba(0, 163, 154, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.deadline-card span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .deadline-card strong {
-  font-size: 1.45rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0.25rem 0;
+}
+
+.deadline-card small {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
 }
 
 .stats-grid {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.8rem;
+  gap: 1rem;
 }
 
 .stat-card {
-  border: 1px solid #d6e1ee;
-  border-radius: 12px;
-  background: #fff;
-  padding: 0.95rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 1.25rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 4px solid #cbd5e1;
 }
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+.stat-card:nth-child(1) { border-left-color: #0d9488; } /* Total - Teal */
+.stat-card:nth-child(2) { border-left-color: #f59e0b; } /* Pending - Amber */
+.stat-card:nth-child(3) { border-left-color: #3b82f6; } /* Process - Blue */
+.stat-card:nth-child(4) { border-left-color: #10b981; } /* Evaluated - Green */
 
 .stat-card h3 {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #0f172a;
 }
 
 .stat-card p {
-  margin: 0.2rem 0 0;
-  color: #566b82;
+  margin: 0.25rem 0 0;
+  color: #64748b;
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
 .summary-block {
-  margin-top: 1rem;
+  margin-top: 2rem;
 }
 
 .summary-block h2 {
-  margin: 0 0 0.65rem;
-  font-size: 1.2rem;
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .summary-list {
   display: grid;
-  gap: 0.7rem;
+  gap: 1rem;
 }
 
-.summary-list article {
-  border: 1px solid #d6e1ee;
-  border-radius: 13px;
-  background: #fff;
-  padding: 0.95rem;
+.article-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 1.25rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
 }
 
-.summary-list header {
+.article-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+}
+
+.article-card--evaluado {
+  background: #f8fafc;
+  opacity: 0.85;
+}
+
+.article-card header {
   display: flex;
   justify-content: space-between;
-  gap: 0.8rem;
-  color: #3f556b;
-  font-size: 0.85rem;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
 }
 
-.summary-list h3 {
-  margin: 0.48rem 0 0.38rem;
-  font-size: 1.05rem;
+.article-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.summary-list p {
+.article-code {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.05em;
+  background: #f1f5f9;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.status-badge--pendiente {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.status-badge--en-proceso {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-badge--evaluado {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.article-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.icon-calendar {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: #94a3b8;
+}
+
+.article-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.article-card p {
   margin: 0;
-  color: #54697f;
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 .policy-note {
-  margin-top: 1rem;
-  border: 1px dashed #8fb9b3;
-  border-radius: 12px;
-  padding: 0.9rem;
-  background: #f5fcfa;
+  margin-top: 2rem;
+  border: 1px solid #b2f5ea;
+  border-radius: 16px;
+  padding: 1.25rem;
+  background: #f0fdfa;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
 }
 
-.policy-note h3 {
-  margin: 0 0 0.3rem;
+.policy-note-icon {
+  margin-top: 0.1rem;
+  color: #0d9488;
+  flex-shrink: 0;
 }
 
-.policy-note p {
+.policy-note-content h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+.policy-note-content p {
   margin: 0;
+  font-size: 0.88rem;
+  color: #115e59;
+  line-height: 1.5;
 }
 
 @media (max-width: 960px) {

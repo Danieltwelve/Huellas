@@ -141,9 +141,10 @@ export class RevisoresService {
       .filter((articulo) => articulo.revisor?.usuarioId === usuarioId)
       .map((articulo, index) => {
         const fechaAsignacion = this.obtenerFechaAsignacionRevision(articulo);
+        const diasExtension = articulo.prorrogaRevisorAceptada ? 15 : 0;
         const fechaLimite = fechaAsignacion
           ? new Date(
-              new Date(fechaAsignacion).getTime() + 30 * 24 * 60 * 60 * 1000,
+              new Date(fechaAsignacion).getTime() + (30 + diasExtension) * 24 * 60 * 60 * 1000,
             )
           : null;
         const diasRestantes = fechaLimite
@@ -164,6 +165,8 @@ export class RevisoresService {
           fechaAsignacion: fechaAsignacion?.toISOString() ?? null,
           fechaLimite: fechaLimite?.toISOString() ?? null,
           estado: articulosConRevision.has(articulo.id) ? 'evaluado' : 'en-proceso',
+          solicitudProrrogaRevisorPendiente: articulo.solicitudProrrogaRevisorPendiente ?? false,
+          prorrogaRevisorAceptada: articulo.prorrogaRevisorAceptada ?? false,
           prioridad:
             diasRestantes !== null && diasRestantes <= 5
               ? 'alta'

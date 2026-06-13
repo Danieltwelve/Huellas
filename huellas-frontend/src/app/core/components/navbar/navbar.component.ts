@@ -401,6 +401,18 @@ export class NavbarComponent implements OnInit {
               enlace: this.obtenerEnlaceArticulo(item.id),
             });
           }
+
+          if (item.solicitudProrrogaRevisorPendiente) {
+            list.push({
+              id: `prorroga-revisor-${item.id}`,
+              articuloId: item.id,
+              codigoArticulo: item.codigo,
+              titulo: 'Solicitud de prórroga: Revisor',
+              detalle: `El revisor solicitó 15 días adicionales para ${item.codigo}.`,
+              fecha: item.fecha_inicio ? new Date(item.fecha_inicio) : new Date(),
+              enlace: this.obtenerEnlaceArticulo(item.id),
+            });
+          }
         }
 
         this.notifications = list

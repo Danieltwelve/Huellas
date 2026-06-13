@@ -152,6 +152,8 @@ tbody tr:last-child td {
 }
 
 button {
+  font-family: inherit;
+  font-size: 0.85rem;
   border: 1px solid #cbd5e1;
   border-radius: 9px;
   background: #ffffff;
@@ -159,16 +161,140 @@ button {
   font-weight: 700;
   padding: 0.5rem 0.7rem;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-button:hover:not([disabled]) {
-  border-color: #00a39a;
-  color: #0f766e;
+/* Table buttons styling */
+.btn-solicitar {
+  background: #00a39a;
+  border: 1px solid #00a39a;
+  color: #ffffff;
+  font-weight: 600;
+  padding: 0.52rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 163, 154, 0.15), 0 2px 4px -1px rgba(0, 163, 154, 0.1);
 }
 
-button[disabled] {
-  background: #9ea8b3;
+.btn-solicitar:hover:not([disabled]) {
+  background: #008f86;
+  border-color: #008f86;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px -2px rgba(0, 163, 154, 0.25);
+  color: #ffffff;
+}
+
+.btn-pendiente {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #d97706;
+  font-weight: 600;
+  padding: 0.52rem 1rem;
+  border-radius: 10px;
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-usada {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
+  font-weight: 600;
+  padding: 0.52rem 1rem;
+  border-radius: 10px;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-confirmacion {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.75rem;
+  width: 90%;
+  max-width: 460px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  animation: scaleUp 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-confirmacion h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.modal-confirmacion p {
+  margin: 0 0 1.5rem;
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.btn-secundario {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secundario:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.btn-primario {
+  background: #00a39a;
+  border: 1px solid #00a39a;
+  color: #ffffff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primario:hover {
+  background: #008f86;
+  border-color: #008f86;
+  box-shadow: 0 4px 12px rgba(0, 163, 154, 0.25);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 @media (max-width: 860px) {

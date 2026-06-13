@@ -72,6 +72,29 @@
 
     <aside class="acciones-laterales">
 
+      <section class="accion-card card-turnitin" *ngIf="puedeMostrarRevisionPares && !estaEnCertificacion && solicitudProrrogaRevisorPendiente">
+        <span class="accion-label">Solicitud de prórroga de evaluación (Revisor)</span>
+        <p class="asignacion-helper">El Revisor asignado solicitó 15 días adicionales para evaluar el artículo.</p>
+        <div class="decision-options">
+          <button
+            class="btn-outline-teal btn-full"
+            type="button"
+            (click)="abrirConfirmacionProrrogaRevisor('rechazar')"
+            [disabled]="resolviendoProrrogaRevisor"
+          >
+            Rechazar solicitud
+          </button>
+          <button
+            class="btn-outline-teal btn-full"
+            type="button"
+            (click)="abrirConfirmacionProrrogaRevisor('aceptar')"
+            [disabled]="resolviendoProrrogaRevisor"
+          >
+            Aceptar solicitud
+          </button>
+        </div>
+      </section>
+
       <app-revision-pares
         *ngIf="puedeMostrarRevisionPares && !estaEnCertificacion"
         [articuloId]="articuloIdActual"
@@ -709,6 +732,21 @@
         <button type="button" class="btn-secundario" (click)="cancelarConfirmacionProrrogaCorreccion()">Cancelar</button>
         <button type="button" class="btn-primario" (click)="confirmarResolucionProrrogaCorreccion()" [disabled]="evaluandoTurnitin">
           {{ evaluandoTurnitin ? 'Procesando...' : 'Sí, confirmar' }}
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionProrrogaRevisor" (click)="cancelarConfirmacionProrrogaRevisor()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar prórroga revisor" (click)="$event.stopPropagation()">
+      <h3>Confirmar resolución de prórroga</h3>
+      <p>
+        ¿Estás seguro de que deseas <strong>{{ decisionProrrogaRevisorConfirmar === 'aceptar' ? 'aprobar' : 'rechazar' }}</strong> la solicitud de prórroga de 15 días para la evaluación de revisión por pares?
+      </p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionProrrogaRevisor()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="confirmarResolucionProrrogaRevisor()" [disabled]="resolviendoProrrogaRevisor">
+          {{ resolviendoProrrogaRevisor ? 'Procesando...' : 'Sí, confirmar' }}
         </button>
       </div>
     </section>

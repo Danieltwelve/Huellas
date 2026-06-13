@@ -113,6 +113,10 @@ export class FlujoTrabajoArticulo {
   decisionProrrogaComiteConfirmar: 'aceptar' | 'rechazar' | null = null;
   resolviendoProrrogaComite = false;
 
+  mostrarModalConfirmacionProrrogaRevisor = false;
+  decisionProrrogaRevisorConfirmar: 'aceptar' | 'rechazar' | null = null;
+  resolviendoProrrogaRevisor = false;
+
   mostrarModalConfirmacionProrrogaCorreccion = false;
   decisionProrrogaCorreccionConfirmar: 'aceptar' | 'rechazar' | null = null;
   archivoCertificacion: File | null = null;
@@ -1388,6 +1392,10 @@ export class FlujoTrabajoArticulo {
     return !!this.articulo?.solicitudProrrogaComitePendiente;
   }
 
+  get solicitudProrrogaRevisorPendiente(): boolean {
+    return !!this.articulo?.solicitudProrrogaRevisorPendiente;
+  }
+
   get fechaVencimientoCorreccion(): string | null {
     return this.articulo?.fechaVencimientoCorreccion ?? null;
   }
@@ -1952,6 +1960,52 @@ export class FlujoTrabajoArticulo {
         },
         error: (err) => {
           this.resolviendoProrrogaComite = false;
+          this.accionError = err?.error?.message ?? 'No se pudo resolver la solicitud de prórroga.';
+        },
+      });
+  }
+
+  abrirConfirmacionProrrogaRevisor(decision: 'aceptar' | 'rechazar'): void {
+    this.decisionProrrogaRevisorConfirmar = decision;
+    this.mostrarModalConfirmacionProrrogaRevisor = true;
+  }
+
+  cancelarConfirmacionProrrogaRevisor(): void {
+    this.mostrarModalConfirmacionProrrogaRevisor = false;
+    this.decisionProrrogaRevisorConfirmar = null;
+  }
+
+  confirmarResolucionProrrogaRevisor(): void {
+    if (!this.decisionProrrogaRevisorConfirmar) {
+      return;
+    }
+    const decision = this.decisionProrrogaRevisorConfirmar;
+    this.cancelarConfirmacionProrrogaRevisor();
+    this.resolverProrrogaRevisor(decision);
+  }
+
+  resolverProrrogaRevisor(decision: 'aceptar' | 'rechazar'): void {
+    if (!this.articulo || !this.solicitudProrrogaRevisorPendiente) {
+      return;
+    }
+
+    this.resolviendoProrrogaRevisor = true;
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService
+      .resolverProrrogaRevisor(this.articulo.id, decision)
+      .subscribe({
+        next: (respuesta) => {
+          this.resolviendoProrrogaRevisor = false;
+          this.accionExitosa = respuesta.message;
+          this.tituloModalExito = 'Prórroga procesada';
+          this.mensajeExitoTurnitin = respuesta.message;
+          this.mostrarModalExitoTurnitin = true;
+          this.cargarArticulo(this.articulo!.id);
+        },
+        error: (err) => {
+          this.resolviendoProrrogaRevisor = false;
           this.accionError = err?.error?.message ?? 'No se pudo resolver la solicitud de prórroga.';
         },
       });

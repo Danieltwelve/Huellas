@@ -23,6 +23,8 @@ export interface ArticuloResumenBackend {
   dias_restantes?: number | null;
   solicitudProrrogaComitePendiente?: boolean;
   solicitudProrrogaCorreccionPendiente?: boolean;
+  solicitudProrrogaRevisorPendiente?: boolean;
+  prorrogaRevisorAceptada?: boolean;
 }
 
 export interface ArticuloPublicacionBackend extends ArticuloResumenBackend {}
@@ -123,6 +125,8 @@ export interface ArticuloFlujo {
   fechaVencimientoCorreccion?: string | null;
   solicitudProrrogaCorreccionPendiente?: boolean;
   solicitudProrrogaComitePendiente?: boolean;
+  solicitudProrrogaRevisorPendiente?: boolean;
+  prorrogaRevisorAceptada?: boolean;
   resumen: string;
   palabrasClave: string[];
   temas: string[];
@@ -381,6 +385,30 @@ export class ArticulosService {
       switchMap((token) =>
         this.http.patch<any>(
           `${environment.apiUrlBackend}/articulos/${articuloId}/comite/prorroga`,
+          { decision, comentarios: comentarios?.trim() || undefined },
+          {
+            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          },
+        ),
+      ),
+    );
+  }
+
+  resolverProrrogaRevisor(
+    articuloId: number,
+    decision: 'aceptar' | 'rechazar',
+    comentarios?: string,
+  ): Observable<any> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para resolver la prórroga.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.patch<any>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/revisor/prorroga`,
           { decision, comentarios: comentarios?.trim() || undefined },
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),

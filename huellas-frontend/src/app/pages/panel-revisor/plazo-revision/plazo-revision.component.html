@@ -55,15 +55,24 @@
         @for (articulo of articulosOrdenados; track articulo.id) {
           <tr>
             <td>{{ articulo.codigo }} - {{ articulo.titulo }}</td>
-            <td>{{ articulo.fechaLimite }}</td>
+            <td>{{ formatearFecha(articulo.fechaLimite) }}</td>
             <td>{{ diasRestantes(articulo.fechaLimite) }}</td>
             <td>
               <button
                 type="button"
-                (click)="solicitarProrroga(articulo.id)"
-                [disabled]="tieneProrroga(articulo.id)"
+                [class.btn-solicitar]="!tieneProrroga(articulo.id) && !prorrogasSolicitadasPendientes(articulo.id)"
+                [class.btn-pendiente]="prorrogasSolicitadasPendientes(articulo.id)"
+                [class.btn-usada]="tieneProrroga(articulo.id)"
+                (click)="solicitarProrrogaConConfirmacion(articulo.id)"
+                [disabled]="tieneProrroga(articulo.id) || prorrogasSolicitadasPendientes(articulo.id)"
               >
-                {{ tieneProrroga(articulo.id) ? 'Prorroga usada' : 'Solicitar 15 dias' }}
+                @if (prorrogasSolicitadasPendientes(articulo.id)) {
+                  Pendiente de aprobación
+                } @else if (tieneProrroga(articulo.id)) {
+                  Prórroga usada
+                } @else {
+                  Solicitar 15 días
+                }
               </button>
             </td>
           </tr>
@@ -72,3 +81,18 @@
     </table>
   </div>
 </section>
+
+@if (mostrarModalConfirmacion) {
+  <div class="modal-overlay" (click)="cancelarConfirmacion()">
+    <section class="modal-confirmacion" (click)="$event.stopPropagation()">
+      <h3>Solicitar Prórroga de Plazo</h3>
+      <p>
+        ¿Estás seguro de que deseas solicitar una prórroga de 15 días adicionales para la evaluación de este artículo?
+      </p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" (click)="cancelarConfirmacion()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="confirmarSolicitarProrroga()">Sí, solicitar</button>
+      </div>
+    </section>
+  </div>
+}

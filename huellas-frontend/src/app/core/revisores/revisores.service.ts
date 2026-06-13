@@ -39,6 +39,8 @@ export interface ArticuloRevisorDto {
 	estado: 'pendiente' | 'en-proceso' | 'evaluado';
 	prioridad: 'alta' | 'media' | 'baja';
 	ronda: number;
+	solicitudProrrogaRevisorPendiente?: boolean;
+	prorrogaRevisorAceptada?: boolean;
 	enlace?: string;
 }
 
@@ -263,6 +265,26 @@ export class RevisoresService {
 				),
 			);
 		}
+
+	solicitarProrrogaRevisor(articuloId: number, comentarios?: string): Observable<any> {
+		const currentUser = this.auth.currentUser;
+
+		if (!currentUser) {
+			return throwError(
+				() => new Error('No hay sesión activa para solicitar la prórroga.'),
+			);
+		}
+
+		return from(currentUser.getIdToken()).pipe(
+			switchMap((token) =>
+				this.http.post<any>(
+					`${this.baseUrl}/articulos/${articuloId}/revisor/prorroga`,
+					{ comentarios: comentarios?.trim() || undefined },
+					{ headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
+				),
+			),
+		);
+	}
 
 	private buildRevisionFormData(payload: RevisionRevisorPayload): FormData {
 			const formData = new FormData();

@@ -257,3 +257,48 @@
     height: 38px;
   }
 }
+
+.user-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 196px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.7rem;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.2);
+  padding: 0.45rem;
+  z-index: 500;
+}
+
+.role-title {
+  margin: 4px 8px 8px;
+  padding: 0 4px 8px;
+  color: #0f172a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.logout-option {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 0.55rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-align: left;
+  text-decoration: none;
+}
+
+.logout-option:hover {
+  background: rgba(15, 118, 110, 0.12);
+  color: #00a39a;
+}

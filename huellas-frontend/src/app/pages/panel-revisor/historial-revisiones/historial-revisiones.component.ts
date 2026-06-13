@@ -44,6 +44,7 @@ export class HistorialRevisionesComponent implements OnInit {
 
   decisionLabel(decision: string): string {
     if (decision === 'aceptar') return 'Aceptar';
+    if (decision === 'ajustes') return 'Ajustes';
     return 'Rechazar';
   }
 
@@ -57,8 +58,31 @@ export class HistorialRevisionesComponent implements OnInit {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     }).format(valor);
+  }
+
+  formatoObservacionHtml(texto: string): string {
+    if (!texto) return '';
+
+    // Reemplazos de encabezados principales
+    let html = texto
+      .replace(/Calificación:/g, '<strong>Calificación:</strong>')
+      .replace(/Recomendación:/g, '<br/><strong>Recomendación:</strong>')
+      .replace(/Comentarios:/g, '<br/><strong>Comentarios:</strong>')
+      .replace(/Jurado evaluador:/g, '<br/><strong>Jurado evaluador:</strong>')
+      .replace(/Articulo:/g, '<br/><strong>Artículo:</strong>')
+      .replace(/Recomendación seleccionada:/g, '<br/><strong>Recomendación seleccionada:</strong>')
+      .replace(/Se aprueba para publicación:/g, '<br/><strong>Se aprueba para publicación:</strong>');
+
+    // Reemplazos de preguntas de rúbrica (del 1 al 15)
+    for (let i = 1; i <= 15; i++) {
+      const regex = new RegExp(`${i}\\.\\s+Sobre`, 'g');
+      html = html.replace(regex, `<br/><br/><strong>${i}. Sobre`);
+    }
+
+    // Reemplazos de respuestas
+    html = html.replace(/Respuesta:/g, '<br/><span class="respuesta-label">Respuesta:</span>');
+
+    return html;
   }
 }

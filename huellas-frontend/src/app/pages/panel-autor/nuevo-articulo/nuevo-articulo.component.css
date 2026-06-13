@@ -1,4 +1,4 @@
-﻿.nuevo-page {
+.nuevo-page {
   min-height: 100%;
   padding: 8px 0 20px;
 }
@@ -729,5 +729,20 @@ textarea.field-input {
   .confirm-modal__footer .btn-secondary {
     width: 100%;
   }
+}
+
+.success-modal__icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+  color: #166534;
+  font-weight: 900;
+  font-size: 1.4rem;
+  border: 1px solid rgba(22, 101, 52, 0.18);
 }
 

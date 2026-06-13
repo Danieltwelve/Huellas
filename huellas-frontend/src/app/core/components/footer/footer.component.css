@@ -257,9 +257,6 @@
   font-size: inherit;
 }
 
-.panel-call-link {
-  min-height: 2.25rem;
-}
 
 .panel-text-link:hover,
 .panel-text-link:focus-visible {

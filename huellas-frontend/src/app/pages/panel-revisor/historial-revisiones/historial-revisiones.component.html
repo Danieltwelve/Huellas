@@ -8,16 +8,28 @@
     <article class="event">
       <div class="event-top">
         <span>{{ item.codigoArticulo }}</span>
-        <span class="decision">{{ decisionLabel(item.decision) }}</span>
+        <span class="decision"
+              [class.decision--aceptar]="item.decision === 'aceptar'"
+              [class.decision--ajustes]="item.decision === 'ajustes'"
+              [class.decision--rechazar]="item.decision === 'rechazar'">
+          {{ decisionLabel(item.decision) }}
+        </span>
       </div>
       <h2>{{ item.tituloArticulo }}</h2>
-      <p>{{ item.observacion }}</p>
+      <div class="observation-box" [innerHTML]="formatoObservacionHtml(item.observacion)"></div>
       <div class="event-meta">
         <small>Enviado el {{ formatoFecha(item.fechaEnvio) }}</small>
         @if (item.tieneAdjunto) {
           <span class="attachment-pill">Con adjunto</span>
         }
-        <a class="open-link" [href]="item.enlace || '/panel-revisor/realizar-revision'">Abrir artículo</a>
+        <a class="open-link" [href]="item.enlace || '/panel-revisor/realizar-revision'">
+          Abrir artículo
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 0.85rem; height: 0.85rem;">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </a>
       </div>
     </article>
   }

@@ -5,13 +5,7 @@
       ← Volver al panel
     </button>
   </div>
-
-  @if (exito) {
-    <div class="success-banner">
-      ✅ Artículo enviado correctamente. Redirigiendo…
-    </div>
-  } @else {
-    <div class="form-card">
+  <div class="form-card">
       <div class="form-head">
         <div>
           <p class="form-kicker">Envio editorial</p>
@@ -260,7 +254,6 @@
 
       </form>
     </div>
-  }
 
   @if (showConfirmationModal) {
     <div class="modal-backdrop" (click)="cancelarConfirmacion()"></div>
@@ -293,6 +286,26 @@
         </button>
         <button type="button" class="btn-primary" (click)="confirmarEnvio()" [disabled]="enviando">
           {{ enviando ? 'Enviando...' : 'Confirmar envío' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (exito) {
+    <div class="modal-backdrop"></div>
+    <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="exito-envio-title">
+      <div class="confirm-modal__header">
+        <div class="success-modal__icon" aria-hidden="true">✓</div>
+        <div>
+          <p class="confirm-modal__eyebrow">Envío exitoso</p>
+          <h3 id="exito-envio-title">¡Artículo enviado!</h3>
+          <p>Su artículo fue enviado con éxito. En breve será redirigido al panel de autor.</p>
+        </div>
+      </div>
+
+      <div class="confirm-modal__footer">
+        <button type="button" class="btn-primary" (click)="volver()">
+          Ir al panel
         </button>
       </div>
     </div>

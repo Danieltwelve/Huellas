@@ -92,6 +92,20 @@ export class Articulo {
   })
   solicitudProrrogaComitePendiente!: boolean;
 
+  @Column({
+    name: 'solicitud_prorroga_revisor_pendiente',
+    type: 'boolean',
+    default: false,
+  })
+  solicitudProrrogaRevisorPendiente!: boolean;
+
+  @Column({
+    name: 'prorroga_revisor_aceptada',
+    type: 'boolean',
+    default: false,
+  })
+  prorrogaRevisorAceptada!: boolean;
+
   // Relaciones
   @ManyToOne(() => EtapaArticulo, (etapa) => etapa.articulos)
   @JoinColumn({ name: 'etapa_actual_id' })

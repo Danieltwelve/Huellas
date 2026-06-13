@@ -9,7 +9,7 @@
   <article class="deadline-card">
     <span>Próximo vencimiento</span>
     <strong>{{ proximoVencimiento }}</strong>
-    <small>Plazo base: 30 dias por artículo</small>
+    <small>Plazo base: 30 días por artículo</small>
   </article>
 </section>
 
@@ -36,10 +36,29 @@
   <h2>Resumen de artículos</h2>
   <div class="summary-list">
     @for (articulo of articulos; track articulo.id) {
-      <article>
+      <article class="article-card" [class.article-card--evaluado]="articulo.estado === 'evaluado'">
         <header>
-          <span>{{ articulo.codigo }}</span>
-          <strong>{{ formatFecha(articulo.fechaLimite) }}</strong>
+          <div class="article-header-left">
+            <span class="article-code">{{ articulo.codigo }}</span>
+            <span class="status-badge" 
+                  [class.status-badge--pendiente]="articulo.estado === 'pendiente'"
+                  [class.status-badge--en-proceso]="articulo.estado === 'en-proceso'"
+                  [class.status-badge--evaluado]="articulo.estado === 'evaluado'">
+              {{ 
+                articulo.estado === 'evaluado' ? 'Evaluado' : 
+                articulo.estado === 'en-proceso' ? 'En revisión' : 'Pendiente'
+              }}
+            </span>
+          </div>
+          <strong class="article-date">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="icon-calendar">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            {{ formatFecha(articulo.fechaLimite) }}
+          </strong>
         </header>
         <h3>{{ articulo.titulo }}</h3>
         <p>{{ articulo.resumen }}</p>
@@ -49,8 +68,15 @@
 </section>
 
 <section class="policy-note">
-  <h3>Política de plazo y prórroga</h3>
-  <p>
-    Cada revisión tiene 30 dias de plazo. El sistema permite solicitar una única prórroga de 15 días por artículo.
-  </p>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="policy-note-icon" style="width: 1.25rem; height: 1.25rem;">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="12" y1="16" x2="12" y2="12"></line>
+    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+  </svg>
+  <div class="policy-note-content">
+    <h3>Política de plazo y prórroga</h3>
+    <p>
+      Cada revisión tiene 30 días de plazo. El sistema permite solicitar una única prórroga de 15 días por artículo.
+    </p>
+  </div>
 </section>
