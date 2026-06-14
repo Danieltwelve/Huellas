@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UsersService } from '../../users/users.service';
 
@@ -12,6 +12,7 @@ import { UsersService } from '../../users/users.service';
 export class Perfil implements OnInit {
   private usersService = inject(UsersService);
 
+  userId = 0;
   nombre = '';
   telefono = '';
   mensaje = '';
@@ -20,11 +21,13 @@ export class Perfil implements OnInit {
   ngOnInit(): void {
     this.usersService.getPerfilUsuario().subscribe({
       next: (perfil) => {
+        this.userId = perfil.id;
         this.nombre = perfil.nombre ?? '';
         this.telefono = perfil.telefono ?? '';
       },
       error: (error) => {
-        console.error('No se pudo cargar el perfil del usuario.', error);
+        console.error('No se pudo cargar el perfil.', error);
+        this.mensaje = 'Error al cargar los datos.';
       },
     });
   }
@@ -48,11 +51,12 @@ export class Perfil implements OnInit {
         next: (perfil) => {
           this.nombre = perfil.nombre ?? '';
           this.telefono = perfil.telefono ?? '';
-          this.mensaje = 'Perfil actualizado correctamente.';
           this.closeConfirmModal();
+          this.mensaje = 'Perfil actualizado correctamente.';
         },
         error: (error) => {
-          console.error('No se pudo actualizar el perfil del usuario.', error);
+          this.closeConfirmModal();
+          this.mensaje = error?.error?.message || 'Error al actualizar el perfil.';
         },
       });
   }

@@ -83,16 +83,16 @@ export class SideBar {
       route: '/certificados-editoriales',
     },
     {
-      label: 'Estadísticas',
-      icon: 'chart',
-      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
-      route: '/estadisticas',
-    },
-    {
       label: 'Publicación',
       icon: 'newspaper',
       allowedRoles: ['admin', 'director', 'monitor'],
       route: '/publicacion',
+    },
+    {
+      label: 'Estadísticas',
+      icon: 'chart',
+      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      route: '/estadisticas',
     },
   ];
 

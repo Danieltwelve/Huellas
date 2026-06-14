@@ -8,14 +8,9 @@ import {
   CertificadoArticuloBackend,
   UsuarioCertificadosBackend,
 } from '../../../core/articulos/articulos.service';
+import { ModalEliminarCertificado } from './modal-eliminar-certificado/modal-eliminar-certificado';
 
-type TipoCertificado =
-  | 'evaluacion'
-  | 'publicacion'
-  | 'aceptacion'
-  | 'envio'
-  | 'revision'
-  | 'otro';
+type TipoCertificado = 'evaluacion' | 'publicacion' | 'aceptacion' | 'envio' | 'revision' | 'otro';
 
 type ContextoRequerimiento = 'autor' | 'comite-editorial';
 
@@ -26,7 +21,7 @@ interface UsuarioConArticulos extends UsuarioCertificadosBackend {
 @Component({
   selector: 'app-certificados-editoriales',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ModalEliminarCertificado],
   templateUrl: './certificados-editoriales.component.html',
   styleUrl: './certificados-editoriales.component.css',
 })
@@ -54,6 +49,8 @@ export class CertificadosEditorialesComponent {
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
   private successTimeout: any;
 
+  @ViewChild(ModalEliminarCertificado) modalEliminarCertificado!: ModalEliminarCertificado;
+
   ngOnInit(): void {
     this.cargarDatos();
   }
@@ -72,7 +69,9 @@ export class CertificadosEditorialesComponent {
   getFecha(certificado: CertificadoArticuloBackend): Date | null {
     const anyC = certificado as any;
     if (anyC && anyC.fechaSubidaDate) {
-      return anyC.fechaSubidaDate instanceof Date ? anyC.fechaSubidaDate : this.normalizeDate(anyC.fechaSubidaDate);
+      return anyC.fechaSubidaDate instanceof Date
+        ? anyC.fechaSubidaDate
+        : this.normalizeDate(anyC.fechaSubidaDate);
     }
     return this.normalizeDate(anyC?.fechaSubida);
   }
@@ -89,10 +88,13 @@ export class CertificadosEditorialesComponent {
     }).subscribe({
       next: ({ articulos, autores, comiteEditorial, certificados }) => {
         this.articulos = articulos;
-        this.certificados = certificados.map((c) => ({
-          ...c,
-          fechaSubidaDate: this.normalizeDate((c as any).fechaSubida),
-        } as any));
+        this.certificados = certificados.map(
+          (c) =>
+            ({
+              ...c,
+              fechaSubidaDate: this.normalizeDate((c as any).fechaSubida),
+            }) as any,
+        );
 
         if (articulos.length === 0) {
           this.autores = [];
@@ -151,7 +153,9 @@ export class CertificadosEditorialesComponent {
   }
 
   get usuarioSeleccionado(): UsuarioConArticulos | null {
-    return this.usuariosDisponibles.find((usuario) => usuario.id === this.usuarioIdSeleccionado) ?? null;
+    return (
+      this.usuariosDisponibles.find((usuario) => usuario.id === this.usuarioIdSeleccionado) ?? null
+    );
   }
 
   get articulosDisponibles(): ArticuloResumenBackend[] {
@@ -241,7 +245,12 @@ export class CertificadosEditorialesComponent {
     this.error = null;
     this.success = null;
 
-    if (!this.usuarioIdSeleccionado || !this.articuloIdSeleccionado || !this.archivo || !this.etapaReferencia.trim()) {
+    if (
+      !this.usuarioIdSeleccionado ||
+      !this.articuloIdSeleccionado ||
+      !this.archivo ||
+      !this.etapaReferencia.trim()
+    ) {
       this.showUploadConfirmModal = false;
       this.error = 'Completa los campos requeridos antes de subir el certificado.';
       return;
@@ -309,7 +318,9 @@ export class CertificadosEditorialesComponent {
   }
 
   get usuarioSeleccionadoDisplay(): string {
-    return this.usuarioSeleccionado ? `${this.usuarioSeleccionado.nombre} (${this.usuarioSeleccionado.articulos.length})` : '-';
+    return this.usuarioSeleccionado
+      ? `${this.usuarioSeleccionado.nombre} (${this.usuarioSeleccionado.articulos.length})`
+      : '-';
   }
 
   get totalCertificados(): number {
@@ -385,32 +396,6 @@ export class CertificadosEditorialesComponent {
       });
   }
 
-  eliminar(certificado: CertificadoArticuloBackend): void {
-    this.error = null;
-    this.clearSuccess();
-
-    const confirmar = window.confirm(
-      `Se eliminará el certificado "${certificado.titulo}". Esta acción no se puede deshacer.`,
-    );
-
-    if (!confirmar) {
-      return;
-    }
-
-    this.articulosService.eliminarCertificado(certificado.id).subscribe({
-      next: () => {
-        this.showSuccess('Certificado eliminado correctamente.');
-        if (this.certificadoEnEdicionId === certificado.id) {
-          this.cancelarEdicion();
-        }
-        this.cargarDatos();
-      },
-      error: (err) => {
-        this.error = err?.error?.message ?? 'No se pudo eliminar el certificado.';
-      },
-    });
-  }
-
   private showSuccess(message: string): void {
     this.success = message;
     if (this.successTimeout) {
@@ -446,5 +431,13 @@ export class CertificadosEditorialesComponent {
         this.error = 'No se pudo descargar el certificado seleccionado.';
       },
     });
+  }
+
+  abrirModalEliminar(certificado: CertificadoArticuloBackend): void {
+    this.modalEliminarCertificado.openModal(certificado);
+  }
+
+  onCertificadoEliminado(): void {
+    this.cargarDatos(); // recarga la lista
   }
 }

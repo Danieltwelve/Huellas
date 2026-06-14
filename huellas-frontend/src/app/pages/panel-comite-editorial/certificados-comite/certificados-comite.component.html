@@ -1,53 +1,75 @@
-<section class="panel">
-  <header class="panel__header">
-    <h1>Certificados</h1>
-    <p>Descarga los certificados cargados por el equipo editorial para tus artículos asignados.</p>
+<section class="certificados-panel">
+  <header class="panel-header">
+    <div class="header-copy">
+      <span class="eyebrow">Documentación editorial</span>
+      <h1>Certificados</h1>
+      <p>Descarga los certificados cargados por el equipo editorial para tus artículos asignados.</p>
+    </div>
   </header>
 
   @if (error) {
-    <p class="status status--error">{{ error }}</p>
+  <div class="alert alert--error" role="alert">
+    <span class="alert__icon">!</span>
+    <div class="alert__content">{{ error }}</div>
+    <button type="button" class="alert__close" (click)="error = null" aria-label="Cerrar">×</button>
+  </div>
   }
 
   @if (loading) {
+  <div class="loading-state">
+    <div class="spinner"></div>
     <p>Cargando certificados...</p>
+  </div>
   }
 
   @if (!loading && certificados.length === 0) {
+  <div class="empty-state">
     <p>No hay certificados disponibles para tus artículos.</p>
+  </div>
   }
 
   @if (!loading && certificados.length > 0) {
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Artículo</th>
-            <th>Tipo</th>
-            <th>Título</th>
-            <th>Contexto</th>
-            <th>Etapa ref.</th>
-            <th>Subido por</th>
-            <th>Fecha</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (certificado of certificados; track certificado.id) {
-            <tr>
-              <td>{{ certificado.codigoArticulo }} - {{ certificado.tituloArticulo }}</td>
-              <td>{{ certificado.tipo }}</td>
-              <td>{{ certificado.titulo }}</td>
-              <td>{{ certificado.contextoRequerimiento }}</td>
-              <td>{{ certificado.etapaReferencia || '-' }}</td>
-              <td>{{ certificado.subidoPor }}</td>
-              <td>{{ certificado.fechaSubida | date: 'short' }}</td>
-              <td>
-                <button class="btn" type="button" (click)="descargar(certificado)">Descargar PDF</button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+  <div class="table-container">
+    <table class="certificados-tabla">
+      <thead>
+        <tr>
+          <th>Artículo</th>
+          <th>Tipo</th>
+          <th>Título</th>
+          <th>Contexto</th>
+          <th>Etapa ref.</th>
+          <th>Subido por</th>
+          <th>Fecha</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (certificado of certificados; track certificado.id) {
+        <tr class="certificado-row">
+          <td class="articulo-cell">
+            <strong>{{ certificado.codigoArticulo }}</strong>
+            <span>{{ certificado.tituloArticulo }}</span>
+          </td>
+          <td>{{ certificado.tipo }}</td>
+          <td>{{ certificado.titulo }}</td>
+          <td>{{ certificado.contextoRequerimiento }}</td>
+          <td>{{ certificado.etapaReferencia || '-' }}</td>
+          <td>{{ certificado.subidoPor }}</td>
+          <td>{{ certificado.fechaSubida | date: 'dd/MM/yyyy HH:mm' }}</td>
+          <td>
+            <button class="btn-download" type="button" (click)="descargar(certificado)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Descargar PDF
+            </button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
   }
 </section>

@@ -3,7 +3,7 @@
 :host {
   display: block;
   padding: 2rem;
-  background: radial-gradient(circle at 10% 20%, #fef9f2 0%, #f4f2ef 100%);
+  background: radial-gradient(circle at 10% 20%, #fcfeff 0%, #fbfeff 100%);
   color: #1e2a36;
   min-height: 100%;
 }
@@ -299,6 +299,46 @@ button:hover {
   .modal {
     padding: 1.5rem;
   }
+}
+
+.email-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-secondary {
+  border: 1px solid #cbd5e1;
+  background: transparent;
+  color: #2c9c91;
+  padding: 0.4rem 1rem;
+  border-radius: 40px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #f0fdfa;
+  border-color: #2c9c91;
+  transform: translateY(-1px);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.verification-message {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #2c9c91;
+  background: #e0f2ef;
+  padding: 0.4rem 0.8rem;
+  border-radius: 12px;
+  display: inline-block;
 }
 
 @media (max-width: 500px) {

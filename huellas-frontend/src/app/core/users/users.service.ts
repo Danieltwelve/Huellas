@@ -43,8 +43,10 @@ export interface RolBackend {
 }
 
 export interface PerfilUsuarioResponse {
+  id: number;
   nombre: string;
   telefono: string;
+  correo: string;
 }
 
 export interface PerfilUsuarioUpdatePayload {

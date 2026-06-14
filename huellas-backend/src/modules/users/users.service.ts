@@ -351,7 +351,9 @@ export class UsersService {
     const verificationLink =
       await this.firebaseAuth.generateEmailVerificationLink(correo);
 
-    this.logger.log(`[SMTP-DEBUG] Enlace de verificación para ${correo}: ${verificationLink}`);
+    this.logger.log(
+      `[SMTP-DEBUG] Enlace de verificación para ${correo}: ${verificationLink}`,
+    );
 
     const sentBySmtp = await this.sendVerificationEmailBySmtp(
       correo,
@@ -375,7 +377,9 @@ export class UsersService {
   ): Promise<void> {
     const resetLink = await this.firebaseAuth.generatePasswordResetLink(correo);
 
-    this.logger.log(`[SMTP-DEBUG] Enlace de restablecimiento de contraseña para ${correo}: ${resetLink}`);
+    this.logger.log(
+      `[SMTP-DEBUG] Enlace de restablecimiento de contraseña para ${correo}: ${resetLink}`,
+    );
 
     const sentBySmtp = await this.sendPasswordResetEmailBySmtp(
       correo,
@@ -623,8 +627,10 @@ export class UsersService {
     }
 
     return {
+      id: user.id,
       nombre: user.nombre ?? '',
       telefono: user.telefono ?? '',
+      correo: user.correo ?? '',
       perfilAcademico: revisor?.perfil ?? '',
       institucion: revisor?.institucion ?? '',
     };
@@ -640,57 +646,53 @@ export class UsersService {
     },
   ) {
     const [user, revisor] = await Promise.all([
-      this.userRepository.findOne({ where: { id: usuarioId }, relations: ['roles'] }),
-      this.revisoresRepository.findOne({
-        where: { usuarioId },
+      this.userRepository.findOne({
+        where: { id: usuarioId },
+        relations: ['roles'],
       }),
+      this.revisoresRepository.findOne({ where: { usuarioId } }),
     ]);
 
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
+    if (!user) throw new NotFoundException('Usuario no encontrado');
 
-    if (typeof data.nombre === 'string') {
-      user.nombre = data.nombre;
-    }
+    // Actualizar nombre y teléfono
+    if (typeof data.nombre === 'string') user.nombre = data.nombre;
+    if (typeof data.telefono === 'string') user.telefono = data.telefono;
 
-    if (typeof data.telefono === 'string') {
-      user.telefono = data.telefono;
-    }
+    // Ya no hay cambio de correo
 
+    // Actualizar revisor si es el caso
     const esRevisor = this.hasRoleName(user.roles, 'revisor');
     const tieneCamposRevisor =
       typeof data.perfilAcademico === 'string' ||
       typeof data.institucion === 'string';
-
     if (esRevisor && tieneCamposRevisor) {
-      const revisorActual = revisor ?? this.revisoresRepository.create({
-        usuarioId,
-        perfil: '',
-        cargaActual: 0,
-        institucion: '',
-      });
-
-      if (typeof data.perfilAcademico === 'string') {
+      const revisorActual =
+        revisor ??
+        this.revisoresRepository.create({
+          usuarioId,
+          perfil: '',
+          cargaActual: 0,
+          institucion: '',
+        });
+      if (typeof data.perfilAcademico === 'string')
         revisorActual.perfil = data.perfilAcademico;
-      }
-
-      if (typeof data.institucion === 'string') {
+      if (typeof data.institucion === 'string')
         revisorActual.institucion = data.institucion;
-      }
-
       await this.revisoresRepository.save(revisorActual);
     }
 
     await this.userRepository.save(user);
 
+    // Retornar datos actualizados
     const perfilRevisor = await this.revisoresRepository.findOne({
       where: { usuarioId },
     });
-
     return {
+      id: user.id,
       nombre: user.nombre ?? '',
       telefono: user.telefono ?? '',
+      correo: user.correo ?? '', // se sigue devolviendo pero no se usa para edición
       perfilAcademico: perfilRevisor?.perfil ?? '',
       institucion: perfilRevisor?.institucion ?? '',
     };
@@ -799,10 +801,17 @@ export class UsersService {
     // Sincronizar roles con Firebase Custom Claims si se modificaron
     if (data.roles) {
       try {
-        const firebaseUser = await this.firebaseAuth.getUserByEmail(savedUser.correo);
+        const firebaseUser = await this.firebaseAuth.getUserByEmail(
+          savedUser.correo,
+        );
         const roleNames: string[] = savedUser.roles?.map((r) => r.rol) ?? [];
 
-        const editorialManagers = ['admin', 'director', 'monitor', 'comite-editorial'];
+        const editorialManagers = [
+          'admin',
+          'director',
+          'monitor',
+          'comite-editorial',
+        ];
         const userManagers = ['admin', 'director', 'monitor'];
 
         const canViewArchivos = roleNames.some((rol) =>
@@ -813,9 +822,15 @@ export class UsersService {
           ['admin', 'autor'].includes(rol),
         );
 
-        const canManageUsers = roleNames.some((rol) => userManagers.includes(rol));
-        const canManageArticulos = roleNames.some((rol) => editorialManagers.includes(rol));
-        const canManageFlujoEditorial = roleNames.some((rol) => editorialManagers.includes(rol));
+        const canManageUsers = roleNames.some((rol) =>
+          userManagers.includes(rol),
+        );
+        const canManageArticulos = roleNames.some((rol) =>
+          editorialManagers.includes(rol),
+        );
+        const canManageFlujoEditorial = roleNames.some((rol) =>
+          editorialManagers.includes(rol),
+        );
 
         const customClaims = {
           roles: roleNames,
@@ -827,7 +842,10 @@ export class UsersService {
           externalSystemUid: `huellas-db-${savedUser.id}`,
         };
 
-        await this.firebaseAuth.setCustomUserClaims(firebaseUser.uid, customClaims);
+        await this.firebaseAuth.setCustomUserClaims(
+          firebaseUser.uid,
+          customClaims,
+        );
       } catch (error) {
         this.logger.warn(
           `No se pudieron actualizar claims en Firebase para ${savedUser.correo}: ${

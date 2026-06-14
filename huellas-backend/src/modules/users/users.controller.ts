@@ -1,6 +1,3 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import {
   Body,
   Controller,
@@ -77,7 +74,10 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Put('perfil')
-  updatePerfil(@Req() req: RequestWithUser, @Body() body: PerfilUsuarioUpdateBody) {
+  updatePerfil(
+    @Req() req: RequestWithUser,
+    @Body() body: PerfilUsuarioUpdateBody,
+  ) {
     const userId = Number(req.user?.userId);
     return this.usersService.updatePerfilByUsuarioId(userId, body);
   }
