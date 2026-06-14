@@ -11,7 +11,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createReadStream, existsSync, promises as fs } from 'fs';
-import { DataSource, In, IsNull, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  DataSource,
+  In,
+  IsNull,
+  Like,
+  MoreThanOrEqual,
+  Not,
+  Repository,
+} from 'typeorm';
 import { PaginationQueryDto } from 'src/common/dto/pagination.query.dto';
 import ExcelJS from 'exceljs';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
@@ -404,8 +412,7 @@ export class ArticulosService {
         articulo.solicitudProrrogaComitePendiente ?? false,
       solicitudProrrogaRevisorPendiente:
         articulo.solicitudProrrogaRevisorPendiente ?? false,
-      prorrogaRevisorAceptada:
-        articulo.prorrogaRevisorAceptada ?? false,
+      prorrogaRevisorAceptada: articulo.prorrogaRevisorAceptada ?? false,
       resumen: articulo.resumen,
       palabrasClave: articulo.palabrasClave
         .split(',')
@@ -559,11 +566,21 @@ export class ArticulosService {
     try {
       const articulo = await queryRunner.manager.findOne(Articulo, {
         where: { id: articuloId },
+        relations: ['observaciones'],
       });
 
       if (!articulo) {
         throw new NotFoundException('Artículo no encontrado');
       }
+
+      console.log(
+        'Observaciones cargadas:',
+        articulo.observaciones?.map((o) => ({
+          id: o.id,
+          asunto: o.asunto,
+          etapaId: o.etapaId,
+        })),
+      );
 
       this.ensureArticuloNoDescartado(articulo);
 
@@ -667,6 +684,7 @@ export class ArticulosService {
             fechaSubida: MoreThanOrEqual(
               historialRevisionParesActual.fechaInicio,
             ),
+            asunto: Not(Like('%completada%')),
           },
           order: { fechaSubida: 'DESC' },
           select: ['id', 'asunto', 'fechaSubida'],
@@ -1328,12 +1346,13 @@ export class ArticulosService {
           pendiente &&
           !!fechaVencimientoDate &&
           fechaVencimientoDate.getTime() < ahora.getTime();
-        const diasRestantes = pendiente && fechaVencimientoDate
-          ? Math.ceil(
-              (fechaVencimientoDate.getTime() - ahora.getTime()) /
-                (1000 * 60 * 60 * 24),
-            )
-          : null;
+        const diasRestantes =
+          pendiente && fechaVencimientoDate
+            ? Math.ceil(
+                (fechaVencimientoDate.getTime() - ahora.getTime()) /
+                  (1000 * 60 * 60 * 24),
+              )
+            : null;
 
         return {
           id: articulo.id,
@@ -1768,9 +1787,12 @@ export class ArticulosService {
       titulo: articulo.titulo,
       etapa_nombre: articulo.etapaActual?.nombre || 'Desconocida',
       fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
-      solicitudProrrogaComitePendiente: articulo.solicitudProrrogaComitePendiente,
-      solicitudProrrogaCorreccionPendiente: articulo.solicitudProrrogaCorreccionPendiente,
-      solicitudProrrogaRevisorPendiente: articulo.solicitudProrrogaRevisorPendiente,
+      solicitudProrrogaComitePendiente:
+        articulo.solicitudProrrogaComitePendiente,
+      solicitudProrrogaCorreccionPendiente:
+        articulo.solicitudProrrogaCorreccionPendiente,
+      solicitudProrrogaRevisorPendiente:
+        articulo.solicitudProrrogaRevisorPendiente,
     }));
   }
 
@@ -2051,8 +2073,9 @@ export class ArticulosService {
       .getRepository(ObservacionArchivo)
       .save(observacionArchivo);
 
-    articulo.solicitudProrrogaCorreccionPendiente = false;
-    await this.articuloRepository.save(articulo);
+    await this.articuloRepository.update(articuloId, {
+      solicitudProrrogaCorreccionPendiente: false,
+    });
 
     return {
       message: 'Corrección cargada correctamente',
@@ -2298,7 +2321,10 @@ export class ArticulosService {
         ? new Date(articulo.fechaVencimientoComite)
         : ahora;
 
-      const nuevaFecha = new Date(Math.max(ahora.getTime(), fechaBase.getTime()) + 5 * 24 * 60 * 60 * 1000);
+      const nuevaFecha = new Date(
+        Math.max(ahora.getTime(), fechaBase.getTime()) +
+          5 * 24 * 60 * 60 * 1000,
+      );
       articulo.fechaVencimientoComite = nuevaFecha;
     }
 
@@ -2389,7 +2415,8 @@ export class ArticulosService {
     await this.dataSource.getRepository(Observacion).save(observacion);
 
     return {
-      message: 'Solicitud de prórroga de revisión por pares enviada correctamente.',
+      message:
+        'Solicitud de prórroga de revisión por pares enviada correctamente.',
     };
   }
 

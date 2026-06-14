@@ -33,7 +33,7 @@
       </button>
       <button class="resend-verification-btn" type="button" (click)="restoreAccess()"
         [disabled]="resendingVerification || restoringAccess">
-        {{ restoringAccess ? 'Restableciendo...' : 'Restablecer acceso' }}
+        {{ restoringAccess ? 'Restableciendo...' : 'Restablecer contraseña' }}
       </button>
       @if (verificationMessage) {
       <p class="verification-message">{{ verificationMessage }}</p>

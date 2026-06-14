@@ -31,17 +31,15 @@ app-side-bar {
 }
 
 .content-layout {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  position: relative;
+  z-index: 0;
 }
 
 app-navbar {
-  display: block;
   position: sticky;
   top: 0;
-  z-index: 110;
+  z-index: 110; /* o 9999, pero no es necesario */
+  isolation: isolate;
 }
 
 .page-content {

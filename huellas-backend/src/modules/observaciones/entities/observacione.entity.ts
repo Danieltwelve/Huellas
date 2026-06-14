@@ -45,6 +45,13 @@ export class Observacion {
   })
   estadoCorreccion?: 'solicitada' | 'enviada' | 'aceptada' | null;
 
+  @Column({
+    name: 'decision_revision_pares',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
+
   // Relaciones
   @ManyToOne(() => Articulo, (articulo) => articulo.observaciones)
   @JoinColumn({ name: 'articulo_id' })

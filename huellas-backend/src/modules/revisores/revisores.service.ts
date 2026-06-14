@@ -1,7 +1,7 @@
-/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
- 
+
 import {
   BadRequestException,
   ConflictException,
@@ -21,9 +21,12 @@ import { ObservacionArchivo } from 'src/modules/observaciones-archivos/entities/
 @Injectable()
 export class RevisoresService {
   private static readonly ETAPA_REVISION_PARES = 4;
-  private static readonly ASUNTO_REVISION_PARES_APROBADO = 'Revisión por pares: ACEPTAR';
-  private static readonly ASUNTO_REVISION_PARES_AJUSTES = 'Revisión por pares: AJUSTES';
-  private static readonly ASUNTO_REVISION_PARES_RECHAZADO = 'Revisión por pares: RECHAZAR';
+  private static readonly ASUNTO_REVISION_PARES_APROBADO =
+    'Revisión por pares: ACEPTAR';
+  private static readonly ASUNTO_REVISION_PARES_AJUSTES =
+    'Revisión por pares: AJUSTES';
+  private static readonly ASUNTO_REVISION_PARES_RECHAZADO =
+    'Revisión por pares: RECHAZAR';
 
   constructor(
     private readonly dataSource: DataSource,
@@ -122,10 +125,13 @@ export class RevisoresService {
     const observacionesRepo = this.dataSource.getRepository(Observacion);
     const observacionesRevisor = await observacionesRepo
       .createQueryBuilder('observacion')
-      .where('observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId', {
-        usuarioId,
-        etapaId: RevisoresService.ETAPA_REVISION_PARES,
-      })
+      .where(
+        'observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId',
+        {
+          usuarioId,
+          etapaId: RevisoresService.ETAPA_REVISION_PARES,
+        },
+      )
       .andWhere(
         '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
         {
@@ -135,7 +141,9 @@ export class RevisoresService {
         },
       )
       .getMany();
-    const articulosConRevision = new Set(observacionesRevisor.map((o) => o.articuloId));
+    const articulosConRevision = new Set(
+      observacionesRevisor.map((o) => o.articuloId),
+    );
 
     return articulos
       .filter((articulo) => articulo.revisor?.usuarioId === usuarioId)
@@ -144,7 +152,8 @@ export class RevisoresService {
         const diasExtension = articulo.prorrogaRevisorAceptada ? 15 : 0;
         const fechaLimite = fechaAsignacion
           ? new Date(
-              new Date(fechaAsignacion).getTime() + (30 + diasExtension) * 24 * 60 * 60 * 1000,
+              new Date(fechaAsignacion).getTime() +
+                (30 + diasExtension) * 24 * 60 * 60 * 1000,
             )
           : null;
         const diasRestantes = fechaLimite
@@ -160,13 +169,15 @@ export class RevisoresService {
           titulo: articulo.titulo,
           resumen: articulo.resumen,
           tema:
-            articulo.temas?.map((tema) => tema.nombre).filter(Boolean).join(', ') ||
-            'Sin tema',
+            articulo.temas
+              ?.map((tema) => tema.nombre)
+              .filter(Boolean)
+              .join(', ') || 'Sin tema',
           fechaAsignacion: fechaAsignacion?.toISOString() ?? null,
           fechaLimite: fechaLimite?.toISOString() ?? null,
-          estado: articulosConRevision.has(articulo.id) ? 'evaluado' : 'en-proceso',
-          solicitudProrrogaRevisorPendiente: articulo.solicitudProrrogaRevisorPendiente ?? false,
-          prorrogaRevisorAceptada: articulo.prorrogaRevisorAceptada ?? false,
+          estado: articulosConRevision.has(articulo.id)
+            ? 'evaluado'
+            : 'en-proceso',
           prioridad:
             diasRestantes !== null && diasRestantes <= 5
               ? 'alta'
@@ -176,7 +187,8 @@ export class RevisoresService {
           ronda: Math.max(
             1,
             (articulo.historialEtapas ?? []).filter(
-              (historial) => historial.etapaId === RevisoresService.ETAPA_REVISION_PARES,
+              (historial) =>
+                historial.etapaId === RevisoresService.ETAPA_REVISION_PARES,
             ).length,
           ),
           enlace: `/panel-revisor/realizar-revision?articuloId=${articulo.id}`,
@@ -190,8 +202,12 @@ export class RevisoresService {
 
     return articulos
       .sort((a, b) => {
-        const fechaA = a.fechaAsignacion ? new Date(a.fechaAsignacion).getTime() : 0;
-        const fechaB = b.fechaAsignacion ? new Date(b.fechaAsignacion).getTime() : 0;
+        const fechaA = a.fechaAsignacion
+          ? new Date(a.fechaAsignacion).getTime()
+          : 0;
+        const fechaB = b.fechaAsignacion
+          ? new Date(b.fechaAsignacion).getTime()
+          : 0;
         return fechaB - fechaA;
       })
       .map((articulo) => ({
@@ -248,11 +264,14 @@ export class RevisoresService {
     const observacionesRepo = this.dataSource.getRepository(Observacion);
     const revisionExistente = await observacionesRepo
       .createQueryBuilder('observacion')
-      .where('observacion.articuloId = :articuloId AND observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId', {
-        articuloId,
-        usuarioId,
-        etapaId: RevisoresService.ETAPA_REVISION_PARES,
-      })
+      .where(
+        'observacion.articuloId = :articuloId AND observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId',
+        {
+          articuloId,
+          usuarioId,
+          etapaId: RevisoresService.ETAPA_REVISION_PARES,
+        },
+      )
       .andWhere(
         '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
         {
@@ -270,7 +289,11 @@ export class RevisoresService {
     }
 
     const calificacion = Number(data.calificacion);
-    if (!Number.isFinite(calificacion) || calificacion < 1 || calificacion > 5) {
+    if (
+      !Number.isFinite(calificacion) ||
+      calificacion < 1 ||
+      calificacion > 5
+    ) {
       throw new BadRequestException('La calificación debe estar entre 1 y 5.');
     }
 
@@ -285,7 +308,9 @@ export class RevisoresService {
     const observacionBase = [
       `Calificación: ${calificacion}/5`,
       `Decisión: ${recomendacion.toUpperCase()}`,
-      data.comentarios?.trim() ? `Comentarios:\n${data.comentarios.trim()}` : '',
+      data.comentarios?.trim()
+        ? `Comentarios:\n${data.comentarios.trim()}`
+        : '',
     ]
       .filter(Boolean)
       .join('\n\n');
@@ -327,7 +352,7 @@ export class RevisoresService {
     for (const autorId of autorIds) {
       const notificacionAutor = observacionesRepo.create({
         articuloId,
-        usuarioId: usuarioId, // Revisor's user ID so that it is not skipped for the author
+        usuarioId: usuarioId,
         etapaId: RevisoresService.ETAPA_REVISION_PARES,
         asunto: `Revisión por pares completada: ${
           recomendacion === 'aceptar'
@@ -356,10 +381,13 @@ export class RevisoresService {
       .createQueryBuilder('observacion')
       .leftJoinAndSelect('observacion.articulo', 'articulo')
       .leftJoinAndSelect('observacion.archivos', 'archivos')
-      .where('observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId', {
-        usuarioId,
-        etapaId: RevisoresService.ETAPA_REVISION_PARES,
-      })
+      .where(
+        'observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId',
+        {
+          usuarioId,
+          etapaId: RevisoresService.ETAPA_REVISION_PARES,
+        },
+      )
       .andWhere(
         '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
         {
@@ -373,15 +401,14 @@ export class RevisoresService {
 
     return observaciones.map((observacion) => {
       const asunto = (observacion.asunto ?? '').toLowerCase();
-      const decision = asunto.includes('rechaz')
-        ? 'rechazar'
-        : 'aceptar';
+      const decision = asunto.includes('rechaz') ? 'rechazar' : 'aceptar';
       const archivoPrincipal = observacion.archivos?.[0] ?? null;
 
       return {
         id: observacion.id,
         articuloId: observacion.articuloId,
-        codigoArticulo: observacion.articulo?.codigo ?? `ART-${observacion.articuloId}`,
+        codigoArticulo:
+          observacion.articulo?.codigo ?? `ART-${observacion.articuloId}`,
         tituloArticulo: observacion.articulo?.titulo ?? 'Artículo sin título',
         decision,
         fechaEnvio: observacion.fechaSubida.toISOString(),
@@ -504,7 +531,9 @@ Ejemplo de formato de respuesta:
 
     for (const item of relevancias) {
       const id = Number(item?.id);
-      const relevancia = String(item?.relevancia ?? '').toUpperCase().trim();
+      const relevancia = String(item?.relevancia ?? '')
+        .toUpperCase()
+        .trim();
       if (Number.isFinite(id) && valoresValidos.has(relevancia)) {
         mapa.set(id, relevancia);
       }
@@ -586,9 +615,13 @@ Ejemplo de formato de respuesta:
 
   private obtenerFechaAsignacionRevision(articulo: Articulo): Date | null {
     const historialRevision = (articulo.historialEtapas ?? [])
-      .filter((historial) => historial.etapaId === RevisoresService.ETAPA_REVISION_PARES)
+      .filter(
+        (historial) =>
+          historial.etapaId === RevisoresService.ETAPA_REVISION_PARES,
+      )
       .sort(
-        (a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime(),
+        (a, b) =>
+          new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime(),
       );
 
     if (historialRevision.length > 0) {

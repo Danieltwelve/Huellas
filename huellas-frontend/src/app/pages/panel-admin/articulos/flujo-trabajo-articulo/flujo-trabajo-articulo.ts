@@ -13,7 +13,9 @@ import { normalizarNombreArchivo } from '../../../../core/utils/filename.utils';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { UsersService, UsuarioBackend } from '../../../../core/users/users.service';
 import { RevisionPares } from './revision-pares/revision-pares';
-import { EdicionesRevistaService, EdicionRevistaBackend } from '../../../../core/ediciones-revista/ediciones.revista.service';
+import { EdicionesRevistaService } from '../../../../core/ediciones-revista/ediciones.revista.service';
+import { ResumenAutor } from './resumen-autor/resumen-autor';
+import { Publicacion } from './publicacion/publicacion';
 
 interface EtapaFlujo {
   id: number;
@@ -53,7 +55,7 @@ interface EtapaTimeline {
 
 @Component({
   selector: 'app-flujo-trabajo-articulo',
-  imports: [CommonModule, FormsModule, RevisionPares],
+  imports: [CommonModule, FormsModule, RevisionPares, ResumenAutor, Publicacion],
   templateUrl: './flujo-trabajo-articulo.html',
   styleUrl: './flujo-trabajo-articulo.css',
   standalone: true,
@@ -80,14 +82,6 @@ export class FlujoTrabajoArticulo {
     metadatosInglesEspanol: false,
   };
   guardandoChecklist = false;
-
-  edicionesList: EdicionRevistaBackend[] = [];
-  edicionSeleccionadaId: number | null = null;
-  doiPublicacion = '';
-  issnPublicacion = '';
-  paginasPublicacion = '';
-  guardandoMetadata = false;
-  publicandoArticulo = false;
 
   private static readonly ETAPA_REVISION_PRELIMINAR = 1;
   private static readonly ETAPA_COMITE_EDITORIAL = 6;
@@ -157,7 +151,6 @@ export class FlujoTrabajoArticulo {
   registroCorreccionConfirmacion: RegistroFlujo | null = null;
   comentarioAceptacionCorreccion = '';
 
-  resumenEnvioExpandido = false;
   rutaEditorialExpandida = false;
 
   tituloArticulo = 'Cargando...';
@@ -210,7 +203,6 @@ export class FlujoTrabajoArticulo {
     });
 
     this.loadCommitteeMembers();
-    this.cargarEdiciones();
   }
 
   ngOnDestroy(): void {
@@ -221,10 +213,6 @@ export class FlujoTrabajoArticulo {
   volverAlListado(): void {
     // Ir al listado de artículos del panel de administración
     this.router.navigate(['/articulos']);
-  }
-
-  toggleResumenEnvio(): void {
-    this.resumenEnvioExpandido = !this.resumenEnvioExpandido;
   }
 
   toggleRutaEditorial(): void {
@@ -255,7 +243,8 @@ export class FlujoTrabajoArticulo {
         this.tituloArticulo = `${data.codigo} - ${data.titulo}`;
         this.actualizarEtapaActual(data.etapaActual.id);
         this.etapaMoverSeleccionadaId = this.etapaSiguientePermitida?.id ?? null;
-        this.committeeMemberSeleccionadoId = data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
+        this.committeeMemberSeleccionadoId =
+          data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
         this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
         this.mapearChecklistYMetadata(data);
         this.cargarCertificadoPublicacion(data.id);
@@ -302,7 +291,8 @@ export class FlujoTrabajoArticulo {
         this.mostrarModalExitoTurnitin = false;
         this.mostrarModalConfirmacionCertificado = false;
         this.mensajeExitoTurnitin = '';
-        this.committeeMemberSeleccionadoId = data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
+        this.committeeMemberSeleccionadoId =
+          data.comiteEditorial?.id ?? this.committeeMemberSeleccionadoId;
         this.historialObservaciones = this.mapearObservacionesAHistorial(data.observaciones);
         this.mapearChecklistYMetadata(data);
         this.loading = false;
@@ -313,17 +303,6 @@ export class FlujoTrabajoArticulo {
         console.error('Error al cargar artículo:', err);
         this.error = 'Error al cargar los datos del artículo';
         this.loading = false;
-      },
-    });
-  }
-
-  cargarEdiciones(): void {
-    this.edicionesService.getEdiciones().subscribe({
-      next: (res) => {
-        this.edicionesList = res.data ?? [];
-      },
-      error: (err) => {
-        console.error('Error al cargar ediciones:', err);
       },
     });
   }
@@ -347,11 +326,6 @@ export class FlujoTrabajoArticulo {
         metadatosInglesEspanol: false,
       };
     }
-
-    this.edicionSeleccionadaId = data.edicionId ?? null;
-    this.doiPublicacion = data.doi ?? '';
-    this.issnPublicacion = data.issn ?? '';
-    this.paginasPublicacion = data.paginas ?? '';
   }
 
   private actualizarEtapaActual(etapaActualId: number): void {
@@ -483,10 +457,7 @@ export class FlujoTrabajoArticulo {
     );
 
     // Mapear "Revisión por pares: AJUSTES" a "Revisión por pares: ACEPTAR"
-    valor = valor.replace(
-      /revisi[oó]n por pares:\s*ajustes/gi,
-      'Revisión por pares: ACEPTAR',
-    );
+    valor = valor.replace(/revisi[oó]n por pares:\s*ajustes/gi, 'Revisión por pares: ACEPTAR');
 
     // Mapear "Revisión por pares completada: AJUSTES" a "Revisión por pares completada: APROBADO"
     valor = valor.replace(
@@ -566,7 +537,20 @@ export class FlujoTrabajoArticulo {
         const dia = String(day).padStart(2, '0');
         const hora = String(hour12).padStart(2, '0');
         const minutos = String(minute).padStart(2, '0');
-        const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        const meses = [
+          'ene',
+          'feb',
+          'mar',
+          'abr',
+          'may',
+          'jun',
+          'jul',
+          'ago',
+          'sep',
+          'oct',
+          'nov',
+          'dic',
+        ];
 
         return `${dia} ${meses[Math.max(0, month - 1)]} ${year}, ${hora}:${minutos} ${periodo}`;
       }
@@ -715,12 +699,13 @@ export class FlujoTrabajoArticulo {
   }
 
   get articuloYaSolicitadoCambiosTurnitin(): boolean {
-    return this.historialVisible.some((registro) =>
-      registro.etapaId === 3 &&
-      ((registro.asunto ?? '').toLowerCase().includes('solicitud') ||
-        (registro.asunto ?? '').toLowerCase().includes('solicitar cambios') ||
-        (registro.asunto ?? '').toLowerCase().includes('solicitar correccion') ||
-        (registro.asunto ?? '').toLowerCase().includes('solicitar corrección')),
+    return this.historialVisible.some(
+      (registro) =>
+        registro.etapaId === 3 &&
+        ((registro.asunto ?? '').toLowerCase().includes('solicitud') ||
+          (registro.asunto ?? '').toLowerCase().includes('solicitar cambios') ||
+          (registro.asunto ?? '').toLowerCase().includes('solicitar correccion') ||
+          (registro.asunto ?? '').toLowerCase().includes('solicitar corrección')),
     );
   }
   private esAsuntoRevisionPares(asunto: string): boolean {
@@ -741,10 +726,7 @@ export class FlujoTrabajoArticulo {
     const historialRevisionPares = (this.articulo.historialEtapas ?? [])
       .filter((historial) => historial.etapaId === FlujoTrabajoArticulo.ETAPA_REVISION_PARES)
       .filter((historial) => !historial.fechaFin)
-      .sort(
-        (a, b) =>
-          new Date(b.fechaInicio).getTime() - new Date(a.fechaInicio).getTime(),
-      );
+      .sort((a, b) => new Date(b.fechaInicio).getTime() - new Date(a.fechaInicio).getTime());
 
     const fechaInicioActual = historialRevisionPares[0]?.fechaInicio;
     if (!fechaInicioActual) {
@@ -837,7 +819,6 @@ export class FlujoTrabajoArticulo {
       year: 'numeric',
     });
   }
-
 
   onArchivoObservacionSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -989,7 +970,8 @@ export class FlujoTrabajoArticulo {
         },
         error: (err) => {
           this.subiendoCertificacion = false;
-          this.accionError = err?.error?.message ?? 'No se pudo subir el certificado de publicación.';
+          this.accionError =
+            err?.error?.message ?? 'No se pudo subir el certificado de publicación.';
         },
       });
   }
@@ -1042,7 +1024,8 @@ export class FlujoTrabajoArticulo {
         next: (respuesta) => {
           this.asignandoComite = false;
           this.accionExitosa = respuesta.message;
-          const nombreMiembro = this.miembroComiteSeleccionado?.nombre ?? 'el integrante seleccionado';
+          const nombreMiembro =
+            this.miembroComiteSeleccionado?.nombre ?? 'el integrante seleccionado';
           this.mensajeExitoAsignacion = `Se asignó correctamente ${nombreMiembro} al Comité Editorial.`;
           this.mostrarModalExitoAsignacion = true;
           this.cargarArticulo(this.articulo!.id);
@@ -1060,8 +1043,7 @@ export class FlujoTrabajoArticulo {
     }
 
     if (this.decisionComite === 'rechazar' && !this.observacionComite.trim()) {
-      this.accionError =
-        'Debes escribir una observación cuando rechazas un artículo.';
+      this.accionError = 'Debes escribir una observación cuando rechazas un artículo.';
       this.accionExitosa = null;
       return;
     }
@@ -1082,8 +1064,7 @@ export class FlujoTrabajoArticulo {
           this.observacionComite = '';
           this.archivoComite = null;
           this.nombreArchivoComite = '';
-          this.accionExitosa =
-            respuesta.message || 'Evaluación de comité editorial registrada.';
+          this.accionExitosa = respuesta.message || 'Evaluación de comité editorial registrada.';
           this.cargarArticulo(this.articulo!.id);
         },
         error: (err) => {
@@ -1162,7 +1143,9 @@ export class FlujoTrabajoArticulo {
     }
 
     if (!this.puedeMoverPorTerminacion) {
-      this.accionError = this.mensajeReglaMovimiento || 'No puedes avanzar hasta que la etapa actual se haya finalizado o aceptado.';
+      this.accionError =
+        this.mensajeReglaMovimiento ||
+        'No puedes avanzar hasta que la etapa actual se haya finalizado o aceptado.';
       this.accionExitosa = null;
       return;
     }
@@ -1226,7 +1209,9 @@ export class FlujoTrabajoArticulo {
     }
 
     if (!this.puedeMoverPorTerminacion) {
-      this.accionError = this.mensajeReglaMovimiento || 'No puedes avanzar hasta que la etapa actual se haya finalizado o aceptado.';
+      this.accionError =
+        this.mensajeReglaMovimiento ||
+        'No puedes avanzar hasta que la etapa actual se haya finalizado o aceptado.';
       this.accionExitosa = null;
       return;
     }
@@ -1254,42 +1239,6 @@ export class FlujoTrabajoArticulo {
     });
   }
 
-  get resumenArticulo(): string {
-    return this.articulo?.resumen ?? 'Sin resumen';
-  }
-
-  get temasArticulo(): string {
-    if (!this.articulo?.temas?.length) {
-      return 'Sin temas registrados';
-    }
-
-    return this.articulo.temas.join(', ');
-  }
-
-  get palabrasClaveArticulo(): string {
-    if (!this.articulo?.palabrasClave?.length) {
-      return 'Sin palabras clave';
-    }
-
-    return this.articulo.palabrasClave.join(', ');
-  }
-
-  get autoresArticulo(): string {
-    if (!this.articulo?.autores?.length) {
-      return 'Sin autores registrados';
-    }
-
-    return this.articulo.autores.map((autor) => autor.nombre).join(', ');
-  }
-
-  get fechaEnvioArticulo(): string {
-    if (!this.articulo?.fechaEnvio) {
-      return 'Sin fecha de envío';
-    }
-
-    return this.formatearFecha(new Date(this.articulo.fechaEnvio));
-  }
-
   get esComiteEditorial(): boolean {
     return this.authService.hasAnyRole(['comite-editorial']);
   }
@@ -1311,11 +1260,12 @@ export class FlujoTrabajoArticulo {
   }
 
   get documentosRubrica(): ArchivoRegistro[] {
-    const documentos = this.historialVisible.flatMap((registro) =>
-      registro.archivos?.map((archivo) => ({
-        nombre: archivo.nombre,
-        path: archivo.path,
-      })) ?? [],
+    const documentos = this.historialVisible.flatMap(
+      (registro) =>
+        registro.archivos?.map((archivo) => ({
+          nombre: archivo.nombre,
+          path: archivo.path,
+        })) ?? [],
     );
 
     const vistos = new Set<string>();
@@ -1363,24 +1313,19 @@ export class FlujoTrabajoArticulo {
 
   get puedeMostrarAsignacionComite(): boolean {
     const etapaActualId = this.articulo?.etapaActual?.id ?? null;
-    return (
-      this.puedeAsignarComite &&
-      etapaActualId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL
-    );
+    return this.puedeAsignarComite && etapaActualId === FlujoTrabajoArticulo.ETAPA_COMITE_EDITORIAL;
   }
 
   get articuloYaEvaluadoPorComite(): boolean {
     if (this.articulo?.evaluacionComiteRealizada) {
       return true;
     }
-    return this.historialVisible.some((registro) =>
-      this.esAsuntoEvaluacionComite(registro.asunto),
-    );
+    return this.historialVisible.some((registro) => this.esAsuntoEvaluacionComite(registro.asunto));
   }
 
   get articuloYaEvaluadoPorTurnitin(): boolean {
-    return this.historialVisible.some((registro) =>
-      registro.etapaId === 3 && this.esAsuntoEvaluacionTurnitin(registro.asunto),
+    return this.historialVisible.some(
+      (registro) => registro.etapaId === 3 && this.esAsuntoEvaluacionTurnitin(registro.asunto),
     );
   }
 
@@ -1401,8 +1346,8 @@ export class FlujoTrabajoArticulo {
   }
 
   get resultadoEvaluacionComite(): 'aceptado' | 'rechazado' | null {
-    const evaluacionComite = this.historialVisible.find(
-      (registro) => this.esAsuntoEvaluacionComite(registro.asunto),
+    const evaluacionComite = this.historialVisible.find((registro) =>
+      this.esAsuntoEvaluacionComite(registro.asunto),
     );
 
     if (!evaluacionComite) {
@@ -1507,10 +1452,7 @@ export class FlujoTrabajoArticulo {
       return null;
     }
 
-    if (
-      this.estaEnEtapaComite &&
-      this.resultadoEvaluacionComite !== 'aceptado'
-    ) {
+    if (this.estaEnEtapaComite && this.resultadoEvaluacionComite !== 'aceptado') {
       return null;
     }
 
@@ -1564,7 +1506,9 @@ export class FlujoTrabajoArticulo {
 
     // Revisión por pares (4): se puede mover si el revisor emitió criterio y fue 'aceptar'
     if (etapaId === FlujoTrabajoArticulo.ETAPA_REVISION_PARES) {
-      return this.revisorAsignadoEmitioCriterioActual && this.resultadoRevisionParesActual === 'aceptar';
+      return (
+        this.revisorAsignadoEmitioCriterioActual && this.resultadoRevisionParesActual === 'aceptar'
+      );
     }
 
     // Certificación (8): requiere que se haya subido el certificado
@@ -1690,7 +1634,7 @@ export class FlujoTrabajoArticulo {
   }
 
   get botonAsignacionLabel(): string {
-    return 'Asignar al comité';
+    return 'Asignar';
   }
 
   get puedeAsignarComiteInicial(): boolean {
@@ -1706,8 +1650,6 @@ export class FlujoTrabajoArticulo {
       this.evaluandoComite ||
       this.asignandoComite ||
       this.guardandoChecklist ||
-      this.guardandoMetadata ||
-      this.publicandoArticulo ||
       this.mostrarModalConfirmacionMover ||
       this.mostrarModalConfirmacionAsignacion ||
       this.mostrarModalExitoAsignacion ||
@@ -1731,7 +1673,8 @@ export class FlujoTrabajoArticulo {
     }
 
     if (this.articuloYaEvaluadoPorTurnitin) {
-      this.accionError = 'Este artículo ya fue evaluado en Turnitin y no admite una nueva evaluación.';
+      this.accionError =
+        'Este artículo ya fue evaluado en Turnitin y no admite una nueva evaluación.';
       this.accionExitosa = null;
       return;
     }
@@ -1771,7 +1714,11 @@ export class FlujoTrabajoArticulo {
       return false;
     }
 
-    if (!Number.isFinite(this.porcentajeTurnitin) || this.porcentajeTurnitin < 0 || this.porcentajeTurnitin > 100) {
+    if (
+      !Number.isFinite(this.porcentajeTurnitin) ||
+      this.porcentajeTurnitin < 0 ||
+      this.porcentajeTurnitin > 100
+    ) {
       this.abrirModalErrorTurnitin('El porcentaje de Turnitin debe estar entre 0 y 100%.');
       return false;
     }
@@ -1784,13 +1731,17 @@ export class FlujoTrabajoArticulo {
 
     // Si el porcentaje es menor de 65, se debe seleccionar una decisión específica
     if ((this.porcentajeTurnitin ?? 0) < 65 && !this.decisionTurnitin) {
-      this.abrirModalErrorTurnitin('Debes seleccionar una decisión: aceptado, rechazado por similitud o solicitar cambios.');
+      this.abrirModalErrorTurnitin(
+        'Debes seleccionar una decisión: aceptado, rechazado por similitud o solicitar cambios.',
+      );
       return false;
     }
 
     // Si se solicita cambios, solo se permite una vez
     if (this.decisionTurnitin === 'solicitar_cambios' && this.articuloYaSolicitadoCambiosTurnitin) {
-      this.abrirModalErrorTurnitin('Ya existe una solicitud de cambios por Turnitin para este artículo.');
+      this.abrirModalErrorTurnitin(
+        'Ya existe una solicitud de cambios por Turnitin para este artículo.',
+      );
       return false;
     }
 
@@ -1803,7 +1754,12 @@ export class FlujoTrabajoArticulo {
   }
 
   registrarEvaluacionTurnitin(): void {
-    if (!this.articulo || !this.puedeMostrarTurnitin || this.evaluandoTurnitin || this.articuloYaEvaluadoPorTurnitin) {
+    if (
+      !this.articulo ||
+      !this.puedeMostrarTurnitin ||
+      this.evaluandoTurnitin ||
+      this.articuloYaEvaluadoPorTurnitin
+    ) {
       return;
     }
 
@@ -1842,23 +1798,26 @@ export class FlujoTrabajoArticulo {
           // Si se seleccionó solicitar cambios, creamos una observación para dejar rastro y notificar al autor
           if (this.decisionTurnitin === 'solicitar_cambios') {
             const asunto = 'Solicitud de cambios por Turnitin';
-            const comentarios = this.observacionTurnitin.trim() || 'Se solicita corrección por similitud.';
-            this.articulosService.agregarObservacion(this.articulo!.id, {
-              asunto,
-              comentarios,
-              etapaId: 3,
-              archivo: fileToSend ?? undefined,
-            }).subscribe({
-              next: () => {
-                // recargar para reflejar la observación
-                this.cargarArticulo(this.articulo!.id);
-                this.resetTurnitinForm();
-              },
-              error: () => {
-                // ignoramos errores secundarios de la observación pero limpiamos formulario
-                this.resetTurnitinForm();
-              },
-            });
+            const comentarios =
+              this.observacionTurnitin.trim() || 'Se solicita corrección por similitud.';
+            this.articulosService
+              .agregarObservacion(this.articulo!.id, {
+                asunto,
+                comentarios,
+                etapaId: 3,
+                archivo: fileToSend ?? undefined,
+              })
+              .subscribe({
+                next: () => {
+                  // recargar para reflejar la observación
+                  this.cargarArticulo(this.articulo!.id);
+                  this.resetTurnitinForm();
+                },
+                error: () => {
+                  // ignoramos errores secundarios de la observación pero limpiamos formulario
+                  this.resetTurnitinForm();
+                },
+              });
           } else {
             // limpiar campos cuando no hay observación adicional
             this.cargarArticulo(this.articulo!.id);
@@ -1901,22 +1860,20 @@ export class FlujoTrabajoArticulo {
     this.accionError = null;
     this.accionExitosa = null;
 
-    this.articulosService
-      .resolverProrrogaCorreccion(this.articulo.id, decision)
-      .subscribe({
-        next: (respuesta) => {
-          this.evaluandoTurnitin = false;
-          this.accionExitosa = respuesta.message;
-          this.tituloModalExito = 'Prórroga procesada';
-          this.mensajeExitoTurnitin = respuesta.message;
-          this.mostrarModalExitoTurnitin = true;
-          this.cargarArticulo(this.articulo!.id);
-        },
-        error: (err) => {
-          this.evaluandoTurnitin = false;
-          this.accionError = err?.error?.message ?? 'No se pudo resolver la solicitud de prórroga.';
-        },
-      });
+    this.articulosService.resolverProrrogaCorreccion(this.articulo.id, decision).subscribe({
+      next: (respuesta) => {
+        this.evaluandoTurnitin = false;
+        this.accionExitosa = respuesta.message;
+        this.tituloModalExito = 'Prórroga procesada';
+        this.mensajeExitoTurnitin = respuesta.message;
+        this.mostrarModalExitoTurnitin = true;
+        this.cargarArticulo(this.articulo!.id);
+      },
+      error: (err) => {
+        this.evaluandoTurnitin = false;
+        this.accionError = err?.error?.message ?? 'No se pudo resolver la solicitud de prórroga.';
+      },
+    });
   }
 
   abrirConfirmacionProrrogaComite(decision: 'aceptar' | 'rechazar'): void {
@@ -1947,22 +1904,20 @@ export class FlujoTrabajoArticulo {
     this.accionError = null;
     this.accionExitosa = null;
 
-    this.articulosService
-      .resolverProrrogaComite(this.articulo.id, decision)
-      .subscribe({
-        next: (respuesta) => {
-          this.resolviendoProrrogaComite = false;
-          this.accionExitosa = respuesta.message;
-          this.tituloModalExito = 'Prórroga procesada';
-          this.mensajeExitoTurnitin = respuesta.message;
-          this.mostrarModalExitoTurnitin = true;
-          this.cargarArticulo(this.articulo!.id);
-        },
-        error: (err) => {
-          this.resolviendoProrrogaComite = false;
-          this.accionError = err?.error?.message ?? 'No se pudo resolver la solicitud de prórroga.';
-        },
-      });
+    this.articulosService.resolverProrrogaComite(this.articulo.id, decision).subscribe({
+      next: (respuesta) => {
+        this.resolviendoProrrogaComite = false;
+        this.accionExitosa = respuesta.message;
+        this.tituloModalExito = 'Prórroga procesada';
+        this.mensajeExitoTurnitin = respuesta.message;
+        this.mostrarModalExitoTurnitin = true;
+        this.cargarArticulo(this.articulo!.id);
+      },
+      error: (err) => {
+        this.resolviendoProrrogaComite = false;
+        this.accionError = err?.error?.message ?? 'No se pudo resolver la solicitud de prórroga.';
+      },
+    });
   }
 
   abrirConfirmacionProrrogaRevisor(decision: 'aceptar' | 'rechazar'): void {
@@ -1993,22 +1948,20 @@ export class FlujoTrabajoArticulo {
     this.accionError = null;
     this.accionExitosa = null;
 
-    this.articulosService
-      .resolverProrrogaRevisor(this.articulo.id, decision)
-      .subscribe({
-        next: (respuesta) => {
-          this.resolviendoProrrogaRevisor = false;
-          this.accionExitosa = respuesta.message;
-          this.tituloModalExito = 'Prórroga procesada';
-          this.mensajeExitoTurnitin = respuesta.message;
-          this.mostrarModalExitoTurnitin = true;
-          this.cargarArticulo(this.articulo!.id);
-        },
-        error: (err) => {
-          this.resolviendoProrrogaRevisor = false;
-          this.accionError = err?.error?.message ?? 'No se pudo resolver la solicitud de prórroga.';
-        },
-      });
+    this.articulosService.resolverProrrogaRevisor(this.articulo.id, decision).subscribe({
+      next: (respuesta) => {
+        this.resolviendoProrrogaRevisor = false;
+        this.accionExitosa = respuesta.message;
+        this.tituloModalExito = 'Prórroga procesada';
+        this.mensajeExitoTurnitin = respuesta.message;
+        this.mostrarModalExitoTurnitin = true;
+        this.cargarArticulo(this.articulo!.id);
+      },
+      error: (err) => {
+        this.resolviendoProrrogaRevisor = false;
+        this.accionError = err?.error?.message ?? 'No se pudo resolver la solicitud de prórroga.';
+      },
+    });
   }
 
   get requiereSoporteCorreccionTurnitin(): boolean {
@@ -2062,41 +2015,9 @@ export class FlujoTrabajoArticulo {
       });
   }
 
-  guardarMetadatosPublicacion(publicar: boolean = false): void {
-    if (!this.articuloIdActual) return;
-    if (!this.edicionSeleccionadaId) {
-      this.accionError = 'Debes seleccionar una edición para el artículo.';
-      return;
+  recargarArticulo(): void {
+    if (this.articuloIdActual) {
+      this.cargarArticulo(this.articuloIdActual);
     }
-
-    if (publicar) {
-      this.publicandoArticulo = true;
-    } else {
-      this.guardandoMetadata = true;
-    }
-    this.accionError = null;
-    this.accionExitosa = null;
-
-    this.articulosService
-      .guardarMetadataPublicacion(this.articuloIdActual, {
-        edicionId: this.edicionSeleccionadaId,
-        doi: this.doiPublicacion.trim() || undefined,
-        issn: this.issnPublicacion.trim() || undefined,
-        paginas: this.paginasPublicacion.trim() || undefined,
-        publicar,
-      })
-      .subscribe({
-        next: (res) => {
-          this.guardandoMetadata = false;
-          this.publicandoArticulo = false;
-          this.accionExitosa = res.message || 'Metadatos procesados correctamente.';
-          this.cargarArticulo(this.articuloIdActual!);
-        },
-        error: (err) => {
-          this.guardandoMetadata = false;
-          this.publicandoArticulo = false;
-          this.accionError = err?.error?.message || 'Error al procesar metadatos.';
-        },
-      });
   }
 }

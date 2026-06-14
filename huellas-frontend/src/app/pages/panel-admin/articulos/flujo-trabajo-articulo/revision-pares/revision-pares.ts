@@ -47,6 +47,8 @@ export class RevisionPares implements OnInit {
   private revisorAsignadoInput: RevisorDto | null = null;
   private revisorAsignadoLocal: RevisorPares | null = null;
   private modalRevocarTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  itemsPorPagina = 3;
+  paginaActual = 1;
 
   private revisoresService = inject(RevisoresService);
 
@@ -65,6 +67,7 @@ export class RevisionPares implements OnInit {
       }));
       this.allRevisores = [...this.revisores];
       this.sincronizarRevisorAsignado();
+      this.resetearPaginacion();
     } catch (err) {
       console.error('Error cargando revisores', err);
     }
@@ -102,6 +105,7 @@ export class RevisionPares implements OnInit {
     this.searchTerm = (value || '').toLowerCase();
     if (!this.searchTerm) {
       this.revisores = [...this.allRevisores];
+      this.resetearPaginacion();
       return;
     }
 
@@ -137,6 +141,7 @@ export class RevisionPares implements OnInit {
 
     if (!this.searchTerm) {
       this.revisores = [...actualizadas];
+      this.resetearPaginacion();
       return;
     }
 
@@ -333,6 +338,7 @@ export class RevisionPares implements OnInit {
     this.revisores = this.allRevisores.map((revisor) =>
       revisor.id === this.revisorAsignadoLocal?.id ? this.revisorAsignadoLocal! : revisor,
     );
+    this.resetearPaginacion();
   }
 
   esRevisorAsignado(revisor: RevisorPares): boolean {
@@ -350,5 +356,35 @@ export class RevisionPares implements OnInit {
       descripcion: revisor.perfil ?? '',
       expandido: false,
     };
+  }
+
+  get revisoresPaginados(): RevisorPares[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.revisores.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get totalPaginas(): number {
+    return Math.ceil(this.revisores.length / this.itemsPorPagina);
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas) return;
+    this.paginaActual = pagina;
+  }
+
+  paginaSiguiente(): void {
+    if (this.paginaActual < this.totalPaginas) {
+      this.paginaActual++;
+    }
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+    }
+  }
+
+  private resetearPaginacion(): void {
+    this.paginaActual = 1;
   }
 }

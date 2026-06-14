@@ -17,8 +17,6 @@ export class LoginComponent {
   private cdr = inject(ChangeDetectorRef);
 
   showVerificationModal = false;
-  showWrongModal = false;
-  wrongModalMessage = 'Hubo un problema al iniciar sesión con correo y contraseña.';
   showMicrosoftLinkModal = false;
   showMicrosoftLinkResultModal = false;
   microsoftLinkResultSuccess = false;
@@ -27,6 +25,7 @@ export class LoginComponent {
   microsoftLinkPassword = '';
   microsoftLinkError = '';
   linkingMicrosoft = false;
+  loginError: string | null = null;
 
   correo = '';
   contrasena = '';
@@ -44,15 +43,35 @@ export class LoginComponent {
 
       await this.authService.logInWithEmailAndPassword(credentials);
       this.router.navigate([this.authService.getPostLoginRoute()]);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof Error && error.message === 'EMAIL_NOT_VERIFIED') {
         this.showVerificationModal = true;
         this.cdr.detectChanges();
-      } else {
-        this.wrongModalMessage = 'Hubo un problema al iniciar sesión con correo y contraseña.';
-        this.showWrongModal = true;
-        this.cdr.detectChanges();
+        return;
       }
+
+      let mensaje = '';
+      if (
+        error?.code === 'auth/invalid-credential' ||
+        error?.code === 'auth/user-not-found' ||
+        error?.code === 'auth/wrong-password'
+      ) {
+        mensaje = 'Correo electrónico o contraseña incorrectos.';
+      } else if (error?.code === 'auth/invalid-email') {
+        mensaje = 'El formato del correo electrónico no es válido.';
+      } else if (error?.code === 'auth/too-many-requests') {
+        mensaje = 'Demasiados intentos fallidos. Intenta más tarde.';
+      } else {
+        mensaje = 'Ocurrió un error al iniciar sesión. Intenta nuevamente.';
+      }
+      this.loginError = mensaje;
+      this.cdr.detectChanges();
+    }
+  }
+
+  clearLoginError(): void {
+    if (this.loginError) {
+      this.loginError = null;
     }
   }
 
@@ -62,8 +81,6 @@ export class LoginComponent {
       this.router.navigate(['/']);
     } catch (error) {
       alert('Hubo un problema al cerrar sesión.');
-      this.showWrongModal = true;
-      this.cdr.detectChanges();
     }
   }
 
@@ -71,9 +88,10 @@ export class LoginComponent {
     try {
       await this.authService.loginWithGoogle();
       this.router.navigate([this.authService.getPostLoginRoute()]);
-    } catch (error) {
-      this.showWrongModal = true;
-      this.cdr.detectChanges();
+    } catch (error: any) {
+      if (error?.code === 'auth/cancelled-popup-request') {
+        return;
+      }
     }
   }
 
@@ -91,9 +109,9 @@ export class LoginComponent {
         return;
       }
 
-      this.wrongModalMessage = 'Hubo un problema al iniciar sesión con Microsoft.';
-      this.showWrongModal = true;
-      this.cdr.detectChanges();
+      if (error?.code === 'auth/cancelled-popup-request') {
+        return;
+      }
     }
   }
 
@@ -153,11 +171,6 @@ export class LoginComponent {
 
   closeVerificationModal(): void {
     this.showVerificationModal = false;
-    this.cdr.detectChanges();
-  }
-
-  closeWrongModal(): void {
-    this.showWrongModal = false;
     this.cdr.detectChanges();
   }
 }

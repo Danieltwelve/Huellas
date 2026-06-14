@@ -1,0 +1,61 @@
+<section class="accion-card card-publicacion">
+  <span class="accion-label">Publicación del Artículo</span>
+
+  <!-- Mensaje informativo cuando ya está publicado -->
+  <div *ngIf="etapaActualTerminada" class="alert alert-success">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+    <span>El artículo ha sido publicado formalmente. Puedes editar los metadatos si es necesario.</span>
+  </div>
+
+  <p class="asignacion-helper">Completa los metadatos de publicación y elige la edición de la revista.</p>
+
+  <div class="publicacion-inputs">
+    <!-- Edición - siempre visible -->
+    <div class="input-group">
+      <label for="edicionSelect">Edición de la Revista</label>
+      <div class="select-wrapper">
+        <select id="edicionSelect" [(ngModel)]="edicionSeleccionadaId" aria-label="Seleccionar edición">
+          <option [ngValue]="null" disabled>Selecciona una edición</option>
+          <option *ngFor="let edicion of edicionesList" [ngValue]="edicion.id">
+            {{ edicion.titulo }} (Vol. {{ edicion.volumen }}, Nº {{ edicion.numero }})
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- DOI -->
+    <div class="input-group">
+      <label for="doiInput">DOI</label>
+      <input id="doiInput" type="text" class="input-control" [(ngModel)]="doiPublicacion"
+        placeholder="e.g. 10.12345/huellas.v1i1.100" />
+    </div>
+
+    <!-- ISSN -->
+    <div class="input-group">
+      <label for="issnInput">ISSN</label>
+      <input id="issnInput" type="text" class="input-control" [(ngModel)]="issnPublicacion"
+        placeholder="e.g. 2448-6515" />
+    </div>
+
+    <!-- Páginas -->
+    <div class="input-group">
+      <label for="paginasInput">Rango de Páginas</label>
+      <input id="paginasInput" type="text" class="input-control" [(ngModel)]="paginasPublicacion"
+        placeholder="e.g. 12-25" />
+    </div>
+
+    <!-- Botón único -->
+    <button class="btn-guardar" type="button" (click)="guardarMetadatosPublicacion()"
+      [disabled]="guardandoMetadata || !edicionSeleccionadaId">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+      {{ guardandoMetadata ? 'Guardando...' : 'Guardar datos' }}
+    </button>
+  </div>
+</section>

@@ -22,85 +22,32 @@
     }
   </nav>
 
-  <section class="resumen-envio" *ngIf="articulo" [class.resumen-envio--colapsado]="!resumenEnvioExpandido">
-    <div class="section-head">
-      <div>
-        <span class="section-kicker">Contexto editorial</span>
-        <h2>Información enviada por el autor</h2>
-      </div>
-      <button
-        type="button"
-        class="section-toggle"
-        [class.is-collapsed]="!resumenEnvioExpandido"
-        (click)="toggleResumenEnvio()"
-        [attr.aria-expanded]="resumenEnvioExpandido"
-        aria-label="Mostrar u ocultar contexto editorial"
-      >
-        <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </button>
-    </div>
-    <div class="resumen-content" *ngIf="resumenEnvioExpandido">
-      <div class="resumen-grid">
-        <article class="resumen-item">
-          <h3>Autores</h3>
-          <p>{{ autoresArticulo }}</p>
-        </article>
-        <article class="resumen-item">
-          <h3>Temas</h3>
-          <p>{{ temasArticulo }}</p>
-        </article>
-        <article class="resumen-item">
-          <h3>Palabras clave</h3>
-          <p>{{ palabrasClaveArticulo }}</p>
-        </article>
-        <article class="resumen-item">
-          <h3>Fecha de envío</h3>
-          <p>{{ fechaEnvioArticulo }}</p>
-        </article>
-      </div>
-      <article class="resumen-item resumen-item--full">
-        <h3>Resumen</h3>
-        <p>{{ resumenArticulo }}</p>
-      </article>
-    </div>
-  </section>
+  <app-resumen-autor [articulo]="articulo" *ngIf="articulo"></app-resumen-autor>
 
   <div class="contenido-principal">
 
 
     <aside class="acciones-laterales">
 
-      <section class="accion-card card-turnitin" *ngIf="puedeMostrarRevisionPares && !estaEnCertificacion && solicitudProrrogaRevisorPendiente">
+      <section class="accion-card card-turnitin"
+        *ngIf="puedeMostrarRevisionPares && !estaEnCertificacion && solicitudProrrogaRevisorPendiente">
         <span class="accion-label">Solicitud de prórroga de evaluación (Revisor)</span>
         <p class="asignacion-helper">El Revisor asignado solicitó 15 días adicionales para evaluar el artículo.</p>
         <div class="decision-options">
-          <button
-            class="btn-outline-teal btn-full"
-            type="button"
-            (click)="abrirConfirmacionProrrogaRevisor('rechazar')"
-            [disabled]="resolviendoProrrogaRevisor"
-          >
+          <button class="btn-outline-teal btn-full" type="button" (click)="abrirConfirmacionProrrogaRevisor('rechazar')"
+            [disabled]="resolviendoProrrogaRevisor">
             Rechazar solicitud
           </button>
-          <button
-            class="btn-outline-teal btn-full"
-            type="button"
-            (click)="abrirConfirmacionProrrogaRevisor('aceptar')"
-            [disabled]="resolviendoProrrogaRevisor"
-          >
+          <button class="btn-outline-teal btn-full" type="button" (click)="abrirConfirmacionProrrogaRevisor('aceptar')"
+            [disabled]="resolviendoProrrogaRevisor">
             Aceptar solicitud
           </button>
         </div>
       </section>
 
-      <app-revision-pares
-        *ngIf="puedeMostrarRevisionPares && !estaEnCertificacion"
-        [articuloId]="articuloIdActual"
+      <app-revision-pares *ngIf="puedeMostrarRevisionPares && !estaEnCertificacion" [articuloId]="articuloIdActual"
         [revisorAsignado]="articulo?.revisor ?? null"
-        [yaEvaluado]="revisorAsignadoEmitioCriterioActual"
-      ></app-revision-pares>
+        [yaEvaluado]="revisorAsignadoEmitioCriterioActual"></app-revision-pares>
 
       <div class="accion-group" *ngIf="puedeMostrarObservacion && !estaEnCertificacion">
         <span class="accion-label">Añadir corrección u observación</span>
@@ -118,62 +65,48 @@
         </button>
       </div>
 
-      <section class="accion-card card-resultado-turnitin" *ngIf="puedeMostrarTurnitin && !estaEnCertificacion && articuloYaEvaluadoPorTurnitin">
+      <section class="accion-card card-resultado-turnitin"
+        *ngIf="puedeMostrarTurnitin && !estaEnCertificacion && articuloYaEvaluadoPorTurnitin">
         <span class="accion-label">Evaluación Turnitin</span>
-        <p class="asignacion-helper">Este artículo ya tiene una evaluación de Turnitin registrada y no admite una nueva evaluación.</p>
+        <p class="asignacion-helper">Este artículo ya tiene una evaluación de Turnitin registrada y no admite una nueva
+          evaluación.</p>
       </section>
 
-      <section class="accion-card card-turnitin" *ngIf="puedeMostrarTurnitin && !estaEnCertificacion && solicitudProrrogaCorreccionPendiente">
+      <section class="accion-card card-turnitin"
+        *ngIf="puedeMostrarTurnitin && !estaEnCertificacion && solicitudProrrogaCorreccionPendiente">
         <span class="accion-label">Solicitud de prórroga de corrección</span>
         <p class="asignacion-helper">El autor pidió 1 día adicional para subir la corrección.</p>
-        <p class="file-name" *ngIf="fechaVencimientoCorreccion">Vence el {{ formatearFechaVencimientoCorreccion(fechaVencimientoCorreccion) }}</p>
+        <p class="file-name" *ngIf="fechaVencimientoCorreccion">Vence el {{
+          formatearFechaVencimientoCorreccion(fechaVencimientoCorreccion) }}</p>
         <div class="decision-options">
-          <button
-            class="btn-danger-action btn-full"
-            type="button"
-            (click)="abrirConfirmacionProrrogaCorreccion('rechazar')"
-            [disabled]="evaluandoTurnitin"
-          >
+          <button class="btn-danger-action btn-full" type="button"
+            (click)="abrirConfirmacionProrrogaCorreccion('rechazar')" [disabled]="evaluandoTurnitin">
             Rechazar solicitud
           </button>
-          <button
-            class="btn-primario btn-full"
-            type="button"
-            (click)="abrirConfirmacionProrrogaCorreccion('aceptar')"
-            [disabled]="evaluandoTurnitin"
-          >
+          <button class="btn-primario btn-full" type="button" (click)="abrirConfirmacionProrrogaCorreccion('aceptar')"
+            [disabled]="evaluandoTurnitin">
             Aceptar solicitud
           </button>
         </div>
       </section>
 
-      <section class="accion-card card-turnitin" *ngIf="puedeMostrarTurnitin && !estaEnCertificacion && !articuloYaEvaluadoPorTurnitin">
+      <section class="accion-card card-turnitin"
+        *ngIf="puedeMostrarTurnitin && !estaEnCertificacion && !articuloYaEvaluadoPorTurnitin">
         <span class="accion-label">Evaluación Turnitin</span>
         <p class="asignacion-helper">Registra la similitud (%) y adjunta el reporte (soporte obligatorio).</p>
 
         <div class="turnitin-inputs">
           <label for="porcentajeTurnitin">Similitud (%)</label>
-          <input
-            id="porcentajeTurnitin"
-            type="number"
-            class="input-control"
-            min="0"
-            max="100"
-            [value]="porcentajeTurnitin ?? ''"
-            (input)="onPorcentajeTurnitinInput($event)"
-            aria-label="Porcentaje de similitud"
-          />
+          <input id="porcentajeTurnitin" type="number" class="input-control" min="0" max="100"
+            [value]="porcentajeTurnitin ?? ''" (input)="onPorcentajeTurnitinInput($event)"
+            aria-label="Porcentaje de similitud" />
 
-          <textarea
-            class="input-control"
-            [(ngModel)]="observacionTurnitin"
-            rows="3"
-            placeholder="Observación (puedes indicar la decisión aquí)"
-            aria-label="Observación de Turnitin"
-          ></textarea>
+          <textarea class="input-control" [(ngModel)]="observacionTurnitin" rows="3"
+            placeholder="Observación (puedes indicar la decisión aquí)" aria-label="Observación de Turnitin"></textarea>
 
           <label class="file-label" for="archivoTurnitin">Adjuntar soporte Turnitin (obligatorio)</label>
-          <input id="archivoTurnitin" type="file" accept=".pdf,.doc,.docx" (change)="onArchivoTurnitinSeleccionado($event)" class="file-input" />
+          <input id="archivoTurnitin" type="file" accept=".pdf,.doc,.docx"
+            (change)="onArchivoTurnitinSeleccionado($event)" class="file-input" />
           <p class="file-name" *ngIf="nombreArchivoTurnitin">{{ nombreArchivoTurnitin }}</p>
 
           <div class="turnitin-decision" *ngIf="porcentajeTurnitin !== null && porcentajeTurnitin < 65">
@@ -184,25 +117,24 @@
                 <span>Aceptado sin cambios</span>
               </label>
               <label class="decision-pill">
-                <input type="radio" name="decisionTurnitin" [(ngModel)]="decisionTurnitin" [value]="'rechazado_similitud'" />
+                <input type="radio" name="decisionTurnitin" [(ngModel)]="decisionTurnitin"
+                  [value]="'rechazado_similitud'" />
                 <span>Rechazado por similitud</span>
               </label>
               <label class="decision-pill" [class.disabled]="articuloYaSolicitadoCambiosTurnitin">
-                <input type="radio" name="decisionTurnitin" [(ngModel)]="decisionTurnitin" [value]="'solicitar_cambios'" [disabled]="articuloYaSolicitadoCambiosTurnitin" />
+                <input type="radio" name="decisionTurnitin" [(ngModel)]="decisionTurnitin" [value]="'solicitar_cambios'"
+                  [disabled]="articuloYaSolicitadoCambiosTurnitin" />
                 <span>Solicitar cambios</span>
               </label>
             </div>
-            <p class="asignacion-helper" *ngIf="articuloYaSolicitadoCambiosTurnitin">Ya existe una solicitud de cambios registrada para este artículo.</p>
+            <p class="asignacion-helper" *ngIf="articuloYaSolicitadoCambiosTurnitin">Ya existe una solicitud de cambios
+              registrada para este artículo.</p>
           </div>
 
           <p class="asignacion-helper">Selecciona la decisión y pulsa registrar evaluación.</p>
 
-          <button
-            class="btn-outline-teal btn-full"
-            type="button"
-            (click)="abrirConfirmacionEvaluacionTurnitin()"
-            [disabled]="evaluandoTurnitin"
-          >
+          <button class="btn-outline-teal btn-full" type="button" (click)="abrirConfirmacionEvaluacionTurnitin()"
+            [disabled]="evaluandoTurnitin">
             {{ evaluandoTurnitin ? 'Registrando...' : 'Registrar evaluación' }}
           </button>
         </div>
@@ -217,11 +149,7 @@
         <p class="rubrica-subtitle">Documentos para revisión</p>
         <div class="bloque-archivo" *ngIf="documentosRubrica.length; else sinDocumentosRubrica">
           <div class="archivo-row" *ngFor="let archivo of documentosRubrica">
-            <button
-              type="button"
-              class="archivo-descarga-btn"
-              (click)="descargarArchivo(archivo.path, archivo.nombre)"
-            >
+            <button type="button" class="archivo-descarga-btn" (click)="descargarArchivo(archivo.path, archivo.nombre)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-download">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
@@ -237,24 +165,18 @@
         </ng-template>
       </section>
 
-      <section class="accion-card card-turnitin" *ngIf="estaEnEtapaComite && !estaEnCertificacion && solicitudProrrogaComitePendiente">
+      <section class="accion-card card-turnitin"
+        *ngIf="estaEnEtapaComite && !estaEnCertificacion && solicitudProrrogaComitePendiente">
         <span class="accion-label">Solicitud de prórroga de evaluación (Comité)</span>
-        <p class="asignacion-helper">El miembro del Comité Editorial pidió 5 días adicionales para evaluar el artículo.</p>
+        <p class="asignacion-helper">El miembro del Comité Editorial pidió 5 días adicionales para evaluar el artículo.
+        </p>
         <div class="decision-options">
-          <button
-            class="btn-outline-teal btn-full"
-            type="button"
-            (click)="abrirConfirmacionProrrogaComite('rechazar')"
-            [disabled]="resolviendoProrrogaComite"
-          >
+          <button class="btn-outline-teal btn-full" type="button" (click)="abrirConfirmacionProrrogaComite('rechazar')"
+            [disabled]="resolviendoProrrogaComite">
             Rechazar solicitud
           </button>
-          <button
-            class="btn-outline-teal btn-full"
-            type="button"
-            (click)="abrirConfirmacionProrrogaComite('aceptar')"
-            [disabled]="resolviendoProrrogaComite"
-          >
+          <button class="btn-outline-teal btn-full" type="button" (click)="abrirConfirmacionProrrogaComite('aceptar')"
+            [disabled]="resolviendoProrrogaComite">
             Aceptar solicitud
           </button>
         </div>
@@ -271,88 +193,101 @@
           </select>
         </div>
 
-        <textarea
-          class="input-control"
-          [(ngModel)]="observacionComite"
-          rows="4"
-          placeholder="Observación de la evaluación"
-          [disabled]="!estaEnEtapaComite"
-        ></textarea>
+        <textarea class="input-control" [(ngModel)]="observacionComite" rows="4"
+          placeholder="Observación de la evaluación" [disabled]="!estaEnEtapaComite"></textarea>
 
         <label class="file-label" for="archivoComite">Adjuntar rúbrica o soporte (opcional)</label>
-        <input
-          id="archivoComite"
-          type="file"
-          (change)="onArchivoComiteSeleccionado($event)"
-          class="file-input"
-          [disabled]="!estaEnEtapaComite"
-        />
+        <input id="archivoComite" type="file" (change)="onArchivoComiteSeleccionado($event)" class="file-input"
+          [disabled]="!estaEnEtapaComite" />
         <p class="file-name" *ngIf="nombreArchivoComite">{{ nombreArchivoComite }}</p>
 
-        <button
-          class="btn-outline-teal btn-full"
-          type="button"
-          (click)="evaluarArticuloComite()"
-          [disabled]="evaluandoComite || !estaEnEtapaComite"
-        >
+        <button class="btn-outline-teal btn-full" type="button" (click)="evaluarArticuloComite()"
+          [disabled]="evaluandoComite || !estaEnEtapaComite">
           {{ evaluandoComite ? 'Enviando evaluación...' : 'Enviar evaluación' }}
         </button>
       </section>
 
       <section class="accion-card" *ngIf="esComiteEditorial && estaEnEtapaComite && articuloYaEvaluadoPorComite">
         <span class="accion-label">Evaluación de Comité Editorial</span>
-        <p class="asignacion-helper">Este artículo ya fue evaluado por el Comité Editorial y no admite una nueva evaluación.</p>
-      </section>
-
-      <section class="accion-card card-resultado-comite" *ngIf="estaEnEtapaComite && resultadoEvaluacionComite as resultado">
-        <span class="accion-label">Resultado del Comité Editorial</span>
-        <span class="tag-flow-rule" [class.tag-flow-rule--rechazado]="resultado === 'rechazado'">
-          {{ resultado === 'aceptado' ? 'Aceptado por comité' : 'Rechazado por comité' }}
-        </span>
-        <p class="asignacion-helper" [class.asignacion-helper--rechazado]="resultado === 'rechazado'">
-          {{ mensajeResultadoComite }}
-        </p>
+        <p class="asignacion-helper">Este artículo ya fue evaluado por el Comité Editorial y no admite una nueva
+          evaluación.</p>
       </section>
 
       <section class="accion-card card-asignacion" *ngIf="puedeMostrarAsignacionComite && !estaEnCertificacion">
-        <span class="accion-label">Asignar miembro del Comité Editorial</span>
-        <p class="asignacion-helper">Selecciona el integrante responsable de evaluar este artículo.</p>
 
-        <div class="asignacion-meta" *ngIf="articulo?.comiteEditorial as asignadoActual">
-          <span class="tag-mandatory">Asignado actualmente</span>
-          <p>
-            {{ asignadoActual.nombre }}
-            <span>{{ asignadoActual.email }}</span>
+        <div class="asignacion-header">
+          <div class="title-wrapper">
+            <span class="accion-label">Asignar miembro del Comité</span>
+            <span class="tag-flow-rule" *ngIf="!puedeAsignarComiteInicial">Ya asignado</span>
+          </div>
+
+          <p class="asignacion-helper" *ngIf="puedeAsignarComiteInicial">
+            Selecciona el integrante responsable de evaluar este artículo.
+          </p>
+
+          <p class="asignacion-helper"
+            *ngIf="!puedeAsignarComiteInicial && articulo?.comiteEditorial as asignadoActual">
+            <strong>Integrante actual:</strong> {{ asignadoActual.nombre }} ({{ asignadoActual.email }})
           </p>
         </div>
 
-        <div class="select-wrapper" *ngIf="puedeAsignarComiteInicial">
-          <select aria-label="Seleccionar miembro del comité" [(ngModel)]="committeeMemberSeleccionadoId">
-            <option *ngFor="let member of committeeMembers" [ngValue]="member.id">
-              {{ member.nombre }}
-            </option>
-          </select>
+        <div class="asignacion-controls" *ngIf="puedeAsignarComiteInicial">
+          <div class="select-wrapper select-asignacion">
+            <select aria-label="Seleccionar miembro del comité" [(ngModel)]="committeeMemberSeleccionadoId">
+              <option [ngValue]="null" disabled>Selecciona un integrante...</option>
+              <option *ngFor="let member of committeeMembers" [ngValue]="member.id">
+                {{ member.nombre }}
+              </option>
+            </select>
+            <p class="file-name" *ngIf="miembroComiteSeleccionado as seleccionado"
+              style="margin-top: 6px; padding-left: 4px;">
+              Correo: {{ seleccionado.correo }}
+            </p>
+          </div>
+
+          <button class="btn-outline-teal btn-asignacion-action" type="button"
+            (click)="abrirConfirmacionAsignacionComite()"
+            [disabled]="asignandoComite || !committeeMemberSeleccionadoId">
+            {{ asignandoComite ? 'Guardando...' : botonAsignacionLabel }}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              style="margin-left: 6px;">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <line x1="20" y1="8" x2="20" y2="14"></line>
+              <line x1="23" y1="11" x2="17" y2="11"></line>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <section class="accion-card card-resultado-comite"
+        *ngIf="estaEnEtapaComite && resultadoEvaluacionComite as resultado">
+        <div class="resultado-header">
+          <div class="resultado-badge" [class.resultado-badge--aceptado]="resultado === 'aceptado'">
+            <svg *ngIf="resultado === 'aceptado'" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <svg *ngIf="resultado === 'rechazado'" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </div>
+          <div>
+            <span class="accion-label">Resultado del Comité Editorial</span>
+            <span class="tag-flow-rule" [class.tag-flow-rule--rechazado]="resultado === 'rechazado'">
+              {{ resultado === 'aceptado' ? 'Aprobado' : 'Rechazado' }}
+            </span>
+          </div>
         </div>
 
-        <p class="file-name" *ngIf="puedeAsignarComiteInicial && miembroComiteSeleccionado as seleccionado">
-          Correo del miembro seleccionado: {{ seleccionado.correo }}
-        </p>
-
-        <p class="asignacion-note">Regla activa: máximo 4 artículos por miembro del comité.</p>
-
-        <p class="asignacion-note" *ngIf="!puedeAsignarComiteInicial">
-          Este artículo ya tiene integrante asignado.
-        </p>
-
-        <button
-          *ngIf="puedeAsignarComiteInicial"
-          class="btn-outline-teal btn-full"
-          type="button"
-          (click)="abrirConfirmacionAsignacionComite()"
-          [disabled]="asignandoComite || !committeeMemberSeleccionadoId"
-        >
-          {{ asignandoComite ? 'Guardando asignación...' : botonAsignacionLabel }}
-        </button>
+        <div class="resultado-content">
+          <p class="asignacion-helper" [class.asignacion-helper--rechazado]="resultado === 'rechazado'">
+            {{ mensajeResultadoComite }}
+          </p>
+        </div>
       </section>
 
       <section class="accion-card card-certificacion" *ngIf="puedeMostrarCertificacion">
@@ -367,11 +302,8 @@
             <p class="file-name">
               <strong>Archivo:</strong> {{ certificadoPublicacionCargado.archivoNombreOriginal }}
             </p>
-            <button
-              type="button"
-              class="btn-outline-teal btn-full btn-download-cert"
-              (click)="descargarCertificado(certificadoPublicacionCargado.id)"
-            >
+            <button type="button" class="btn-outline-teal btn-full btn-download-cert"
+              (click)="descargarCertificado(certificadoPublicacionCargado.id)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-inline">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
@@ -400,13 +332,8 @@
                 Solo formato PDF (Máx. 10MB)
               </span>
             </label>
-            <input
-              id="archivoCertificacion"
-              type="file"
-              accept=".pdf"
-              (change)="onArchivoCertificacionSeleccionado($event)"
-              style="display: none;"
-            />
+            <input id="archivoCertificacion" type="file" accept=".pdf"
+              (change)="onArchivoCertificacionSeleccionado($event)" style="display: none;" />
           </div>
 
           <!-- File info card when selected -->
@@ -420,12 +347,8 @@
             </span>
           </div>
 
-          <button
-            class="btn-outline-teal btn-full"
-            type="button"
-            (click)="abrirConfirmacionCertificado()"
-            [disabled]="subiendoCertificacion || !archivoCertificacion"
-          >
+          <button class="btn-outline-teal btn-full" type="button" (click)="abrirConfirmacionCertificado()"
+            [disabled]="subiendoCertificacion || !archivoCertificacion">
             Subir certificado de publicación
           </button>
         </ng-template>
@@ -434,7 +357,8 @@
       <!-- Stage 9: Revisión final checklist -->
       <section class="accion-card card-revision-final" *ngIf="puedeMostrarRevisionFinal">
         <span class="accion-label">Revisión Final</span>
-        <p class="asignacion-helper">Verifica que el autor haya cumplido con todos los ajustes solicitados por los revisores.</p>
+        <p class="asignacion-helper">Verifica que el autor haya cumplido con todos los ajustes solicitados por los
+          revisores.</p>
 
         <div class="checklist-container">
           <label class="checklist-item">
@@ -459,106 +383,49 @@
           </label>
         </div>
 
-        <button
-          class="btn-outline-teal btn-full"
-          type="button"
-          (click)="guardarChecklistFinal()"
-          [disabled]="guardandoChecklist"
-        >
+        <button class="btn-outline-teal btn-full" type="button" (click)="guardarChecklistFinal()"
+          [disabled]="guardandoChecklist">
           {{ guardandoChecklist ? 'Guardando...' : 'Guardar lista de chequeo' }}
         </button>
       </section>
 
       <!-- Stage 5: Publicación form -->
-      <section class="accion-card card-publicacion" *ngIf="puedeMostrarPublicacion">
-        <span class="accion-label">Publicación del Artículo</span>
-        
-        <ng-container *ngIf="etapaActualTerminada; else formularioPublicar">
-          <p class="asignacion-helper text-success" style="color: #2e7d32; font-weight: 500; margin-bottom: 8px;">
-            El artículo ha sido publicado formalmente.
-          </p>
-          <div class="publicado-info-box" style="margin-top: 12px; padding: 12px; background: rgba(46, 125, 50, 0.05); border: 1px solid rgba(46, 125, 50, 0.2); border-radius: 6px; font-size: 0.9rem;">
-            <p style="margin-bottom: 6px;"><strong>DOI:</strong> {{ doiPublicacion || 'No registrado' }}</p>
-            <p style="margin-bottom: 6px;"><strong>ISSN:</strong> {{ issnPublicacion || 'No registrado' }}</p>
-            <p style="margin-bottom: 6px;"><strong>Páginas:</strong> {{ paginasPublicacion || 'No registrado' }}</p>
+      <app-publicacion *ngIf="puedeMostrarPublicacion" [articuloId]="articuloIdActual"
+        [etapaActualTerminada]="etapaActualTerminada" [doiInicial]="articulo?.doi || ''"
+        [issnInicial]="articulo?.issn || ''" [paginasInicial]="articulo?.paginas || ''"
+        [edicionIdInicial]="articulo?.edicionId ?? null" (publicacionCompletada)="recargarArticulo()">
+      </app-publicacion>
+
+      <section class="accion-card card-mover" *ngIf="!estaEnCertificacion || etapaActualTerminada"
+        [class.card-mover--foco]="soloPuedeMoverAComiteEnPreliminar">
+
+        <div class="mover-header">
+          <div class="title-wrapper">
+            <span class="accion-label">Avanzar a siguiente etapa</span>
+            <span class="tag-flow-rule">Avance en orden</span>
           </div>
-        </ng-container>
-
-        <ng-template #formularioPublicar>
-          <p class="asignacion-helper">Completa los metadatos de publicación y elige la edición de la revista.</p>
-
-          <div class="publicacion-inputs" style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
-            <div>
-              <label for="edicionSelect">Edición de la Revista</label>
-              <div class="select-wrapper">
-                <select id="edicionSelect" [(ngModel)]="edicionSeleccionadaId" aria-label="Seleccionar edición">
-                  <option [ngValue]="null" disabled>Selecciona una edición</option>
-                  <option *ngFor="let edicion of edicionesList" [ngValue]="edicion.id">
-                    {{ edicion.titulo }} (Vol. {{ edicion.volumen }}, Nº {{ edicion.numero }})
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label for="doiInput">DOI</label>
-              <input id="doiInput" type="text" class="input-control" [(ngModel)]="doiPublicacion" placeholder="e.g. 10.12345/huellas.v1i1.100" />
-            </div>
-
-            <div>
-              <label for="issnInput">ISSN</label>
-              <input id="issnInput" type="text" class="input-control" [(ngModel)]="issnPublicacion" placeholder="e.g. 2448-6515" />
-            </div>
-
-            <div>
-              <label for="paginasInput">Rango de Páginas</label>
-              <input id="paginasInput" type="text" class="input-control" [(ngModel)]="paginasPublicacion" placeholder="e.g. 12-25" />
-            </div>
-
-            <div style="display: flex; gap: 8px; margin-top: 8px;">
-              <button
-                class="btn-outline-teal"
-                style="flex: 1;"
-                type="button"
-                (click)="guardarMetadatosPublicacion(false)"
-                [disabled]="guardandoMetadata || publicandoArticulo"
-              >
-                {{ guardandoMetadata ? 'Guardando...' : 'Guardar borrador' }}
-              </button>
-              <button
-                class="btn-primario"
-                style="flex: 1.2; padding: 10px 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s;"
-                type="button"
-                (click)="guardarMetadatosPublicacion(true)"
-                [disabled]="guardandoMetadata || publicandoArticulo"
-              >
-                {{ publicandoArticulo ? 'Publicando...' : 'Publicar artículo' }}
-              </button>
-            </div>
-          </div>
-        </ng-template>
-      </section>
-
-      <section class="accion-card card-mover" *ngIf="!estaEnCertificacion || etapaActualTerminada" [class.card-mover--foco]="soloPuedeMoverAComiteEnPreliminar">
-        <span class="accion-label">Mover artículo</span>
-        <span class="tag-flow-rule">Avance en orden</span>
-        <p class="asignacion-helper">{{ mensajeReglaMovimiento }}</p>
-
-        <div class="select-wrapper">
-          <select aria-label="Seleccionar etapa" [(ngModel)]="etapaMoverSeleccionadaId" [disabled]="!etapaSiguientePermitida">
-            <option [ngValue]="null" *ngIf="!etapaSiguientePermitida">No hay etapas siguientes</option>
-            <option *ngFor="let etapa of etapasDisponiblesMover" [ngValue]="etapa.id">{{ etapa.titulo }}</option>
-          </select>
+          <p class="asignacion-helper">{{ mensajeReglaMovimiento }}</p>
         </div>
 
-        <button
-          class="btn-outline-teal btn-full"
-          type="button"
-          (click)="abrirConfirmacionMoverArticulo()"
-          [disabled]="moviendoEtapa || !etapaSiguientePermitida || bloqueaAvancePorFaltaCriterioRevisor || !puedeMoverPorTerminacion"
-        >
-          {{ moviendoEtapa ? 'Moviendo...' : 'Mover Registro' }}
-        </button>
+        <div class="mover-controls">
+          <div class="select-wrapper select-mover">
+            <select aria-label="Seleccionar etapa" [(ngModel)]="etapaMoverSeleccionadaId"
+              [disabled]="!etapaSiguientePermitida">
+              <option [ngValue]="null" *ngIf="!etapaSiguientePermitida">No hay etapas siguientes disponibles</option>
+              <option *ngFor="let etapa of etapasDisponiblesMover" [ngValue]="etapa.id">{{ etapa.titulo }}</option>
+            </select>
+          </div>
+          <button class="btn-outline-teal btn-mover-action" type="button" (click)="abrirConfirmacionMoverArticulo()"
+            [disabled]="moviendoEtapa || !etapaSiguientePermitida || bloqueaAvancePorFaltaCriterioRevisor || !puedeMoverPorTerminacion">
+            {{ moviendoEtapa ? 'Avanzando...' : 'Avanzar' }}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              style="margin-left: 6px;">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
       </section>
 
       <div class="mensaje-accion mensaje-accion--error" *ngIf="accionError">{{ accionError }}</div>
@@ -567,7 +434,8 @@
   </div>
 
   <div class="modal-overlay" *ngIf="mostrarModalExitoMover" (click)="cerrarModalExitoMover()">
-    <section class="modal-confirmacion modal-confirmacion--mover-exito" role="dialog" aria-modal="true" aria-label="Etapa actualizada correctamente" (click)="$event.stopPropagation()">
+    <section class="modal-confirmacion modal-confirmacion--mover-exito" role="dialog" aria-modal="true"
+      aria-label="Etapa actualizada correctamente" (click)="$event.stopPropagation()">
       <span class="modal-mover-badge">Etapa actualizada</span>
       <h3>Cambio de etapa completado</h3>
       <p>{{ mensajeExitoMover }}</p>
@@ -578,7 +446,8 @@
   </div>
 
   <div class="modal-overlay" *ngIf="mostrarModalConfirmacionMover" (click)="cancelarConfirmacionMoverArticulo()">
-    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar cambio de etapa" (click)="$event.stopPropagation()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar cambio de etapa"
+      (click)="$event.stopPropagation()">
       <h3>Confirmar cambio de etapa</h3>
       <p *ngIf="articulo && etapaDestinoConfirmacion">
         ¿Estás seguro de mover el artículo de <strong>{{ articulo.etapaActual.nombre }}</strong>
@@ -586,20 +455,18 @@
       </p>
       <div class="modal-acciones">
         <button type="button" class="btn-secundario" (click)="cancelarConfirmacionMoverArticulo()">Cancelar</button>
-        <button
-          type="button"
-          class="btn-primario"
-          (click)="moverArticulo()"
-          [disabled]="moviendoEtapa || bloqueaAvancePorFaltaCriterioRevisor || !puedeMoverPorTerminacion"
-        >
+        <button type="button" class="btn-primario" (click)="moverArticulo()"
+          [disabled]="moviendoEtapa || bloqueaAvancePorFaltaCriterioRevisor || !puedeMoverPorTerminacion">
           {{ moviendoEtapa ? 'Moviendo...' : 'Sí, cambiar etapa' }}
         </button>
       </div>
     </section>
   </div>
 
-  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionAsignacion" (click)="cancelarConfirmacionAsignacionComite()">
-    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar asignación de comité" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionAsignacion"
+    (click)="cancelarConfirmacionAsignacionComite()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar asignación de comité"
+      (click)="$event.stopPropagation()">
       <h3>Confirmar asignación</h3>
       <p *ngIf="articulo && miembroComiteConfirmacion">
         ¿Deseas asignar este artículo a <strong>{{ miembroComiteConfirmacion.nombre }}</strong>
@@ -615,7 +482,8 @@
   </div>
 
   <div class="modal-overlay" *ngIf="mostrarModalExitoAsignacion" (click)="cerrarModalExitoAsignacion()">
-    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Asignación exitosa" (click)="$event.stopPropagation()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Asignación exitosa"
+      (click)="$event.stopPropagation()">
       <h3>Asignación exitosa</h3>
       <p>{{ mensajeExitoAsignacion }}</p>
       <div class="modal-acciones">
@@ -624,15 +492,19 @@
     </section>
   </div>
 
-  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionTurnitin" (click)="cancelarConfirmacionEvaluacionTurnitin()">
-    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar evaluación Turnitin" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionTurnitin"
+    (click)="cancelarConfirmacionEvaluacionTurnitin()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar evaluación Turnitin"
+      (click)="$event.stopPropagation()">
       <h3>Confirmar evaluación Turnitin</h3>
       <p>
         ¿Deseas registrar esta evaluación con <strong>{{ porcentajeTurnitin }}%</strong> de similitud?
       </p>
       <div class="modal-acciones">
-        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionEvaluacionTurnitin()">Cancelar</button>
-        <button type="button" class="btn-primario" (click)="registrarEvaluacionTurnitin()" [disabled]="evaluandoTurnitin">
+        <button type="button" class="btn-secundario"
+          (click)="cancelarConfirmacionEvaluacionTurnitin()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="registrarEvaluacionTurnitin()"
+          [disabled]="evaluandoTurnitin">
           {{ evaluandoTurnitin ? 'Registrando...' : 'Sí, registrar evaluación' }}
         </button>
       </div>
@@ -640,7 +512,8 @@
   </div>
 
   <div class="modal-overlay" *ngIf="mostrarModalExitoTurnitin" (click)="cerrarModalExitoTurnitin()">
-    <section class="modal-confirmacion modal-confirmacion--turnitin-exito" role="dialog" aria-modal="true" aria-label="Evaluación Turnitin registrada" (click)="$event.stopPropagation()">
+    <section class="modal-confirmacion modal-confirmacion--turnitin-exito" role="dialog" aria-modal="true"
+      aria-label="Evaluación Turnitin registrada" (click)="$event.stopPropagation()">
       <span class="modal-turnitin-badge">Evaluación registrada</span>
       <h3>{{ tituloModalExito }}</h3>
       <p>{{ mensajeExitoTurnitin }}</p>
@@ -651,7 +524,8 @@
   </div>
 
   <div class="modal-overlay" *ngIf="mostrarModalErrorTurnitin" (click)="cerrarModalErrorTurnitin()">
-    <section class="modal-confirmacion modal-confirmacion--turnitin-error" role="dialog" aria-modal="true" aria-label="Error en evaluación Turnitin" (click)="$event.stopPropagation()">
+    <section class="modal-confirmacion modal-confirmacion--turnitin-error" role="dialog" aria-modal="true"
+      aria-label="Error en evaluación Turnitin" (click)="$event.stopPropagation()">
       <span class="modal-error-badge">Error</span>
       <h3>Validación requerida</h3>
       <p>{{ mensajeErrorTurnitin }}</p>
@@ -661,22 +535,20 @@
     </section>
   </div>
 
-  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionCorreccion" (click)="cancelarConfirmacionAceptacionCorreccion()">
-    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar aceptación de corrección" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionCorreccion"
+    (click)="cancelarConfirmacionAceptacionCorreccion()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar aceptación de corrección"
+      (click)="$event.stopPropagation()">
       <h3>Confirmar aceptación de corrección</h3>
       <p>
         ¿Deseas aceptar la corrección enviada por el autor?
       </p>
-      <textarea
-        class="input-control"
-        rows="3"
-        maxlength="2000"
-        [(ngModel)]="comentarioAceptacionCorreccion"
+      <textarea class="input-control" rows="3" maxlength="2000" [(ngModel)]="comentarioAceptacionCorreccion"
         placeholder="Comentario opcional para el autor"
-        aria-label="Comentario opcional para aceptar corrección"
-      ></textarea>
+        aria-label="Comentario opcional para aceptar corrección"></textarea>
       <div class="modal-acciones">
-        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionAceptacionCorreccion()">Cancelar</button>
+        <button type="button" class="btn-secundario"
+          (click)="cancelarConfirmacionAceptacionCorreccion()">Cancelar</button>
         <button type="button" class="btn-primario" (click)="confirmarAceptacionCorreccionModal()">
           Sí, aceptar corrección
         </button>
@@ -685,71 +557,83 @@
   </div>
 
   <div class="modal-overlay" *ngIf="mostrarModalConfirmacionCertificado" (click)="cancelarConfirmacionCertificado()">
-    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar subida de certificado" (click)="$event.stopPropagation()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar subida de certificado"
+      (click)="$event.stopPropagation()">
       <h3>Confirmar registro de certificado</h3>
       <p *ngIf="articulo && nombreArchivoCertificacion">
-        ¿Estás seguro de registrar el archivo <strong>{{ nombreArchivoCertificacion }}</strong> como el certificado oficial de publicación para este artículo?
+        ¿Estás seguro de registrar el archivo <strong>{{ nombreArchivoCertificacion }}</strong> como el certificado
+        oficial de publicación para este artículo?
       </p>
-      <p style="font-size: 0.85rem; color: #64748b; margin-top: 8px; background: rgba(245, 158, 11, 0.05); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.2);">
-        ⚠️ Una vez registrado el certificado de publicación, la etapa de Certificación se considerará cerrada y no se podrá modificar.
+      <p
+        style="font-size: 0.85rem; color: #64748b; margin-top: 8px; background: rgba(245, 158, 11, 0.05); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.2);">
+        ⚠️ Una vez registrado el certificado de publicación, la etapa de Certificación se considerará cerrada y no se
+        podrá modificar.
       </p>
       <div class="modal-acciones" style="margin-top: 20px;">
         <button type="button" class="btn-secundario" (click)="cancelarConfirmacionCertificado()">Cancelar</button>
-        <button
-          type="button"
-          class="btn-primario"
-          (click)="subirCertificadoPublicacion()"
-          [disabled]="subiendoCertificacion"
-        >
+        <button type="button" class="btn-primario" (click)="subirCertificadoPublicacion()"
+          [disabled]="subiendoCertificacion">
           {{ subiendoCertificacion ? 'Subiendo...' : 'Sí, subir certificado' }}
         </button>
       </div>
     </section>
   </div>
 
-  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionProrrogaComite" (click)="cancelarConfirmacionProrrogaComite()">
-    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar prórroga comité" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionProrrogaComite"
+    (click)="cancelarConfirmacionProrrogaComite()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar prórroga comité"
+      (click)="$event.stopPropagation()">
       <h3>Confirmar resolución de prórroga</h3>
       <p>
-        ¿Estás seguro de que deseas <strong>{{ decisionProrrogaComiteConfirmar === 'aceptar' ? 'aprobar' : 'rechazar' }}</strong> la solicitud de prórroga de 5 días para la evaluación de comité?
+        ¿Estás seguro de que deseas <strong>{{ decisionProrrogaComiteConfirmar === 'aceptar' ? 'aprobar' : 'rechazar'
+          }}</strong> la solicitud de prórroga de 5 días para la evaluación de comité?
       </p>
       <div class="modal-acciones">
         <button type="button" class="btn-secundario" (click)="cancelarConfirmacionProrrogaComite()">Cancelar</button>
-        <button type="button" class="btn-primario" (click)="confirmarResolucionProrrogaComite()" [disabled]="resolviendoProrrogaComite">
+        <button type="button" class="btn-primario" (click)="confirmarResolucionProrrogaComite()"
+          [disabled]="resolviendoProrrogaComite">
           {{ resolviendoProrrogaComite ? 'Procesando...' : 'Sí, confirmar' }}
         </button>
       </div>
     </section>
   </div>
 
-  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionProrrogaCorreccion" (click)="cancelarConfirmacionProrrogaCorreccion()">
-    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar prórroga corrección" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionProrrogaCorreccion"
+    (click)="cancelarConfirmacionProrrogaCorreccion()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar prórroga corrección"
+      (click)="$event.stopPropagation()">
       <h3>Confirmar resolución de prórroga</h3>
       <p>
-        ¿Estás seguro de que deseas <strong>{{ decisionProrrogaCorreccionConfirmar === 'aceptar' ? 'aprobar' : 'rechazar' }}</strong> la solicitud de prórroga de 1 día para el envío de correcciones?
+        ¿Estás seguro de que deseas <strong>{{ decisionProrrogaCorreccionConfirmar === 'aceptar' ? 'aprobar' :
+          'rechazar' }}</strong> la solicitud de prórroga de 1 día para el envío de correcciones?
       </p>
       <div class="modal-acciones">
-        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionProrrogaCorreccion()">Cancelar</button>
-        <button type="button" class="btn-primario" (click)="confirmarResolucionProrrogaCorreccion()" [disabled]="evaluandoTurnitin">
+        <button type="button" class="btn-secundario"
+          (click)="cancelarConfirmacionProrrogaCorreccion()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="confirmarResolucionProrrogaCorreccion()"
+          [disabled]="evaluandoTurnitin">
           {{ evaluandoTurnitin ? 'Procesando...' : 'Sí, confirmar' }}
         </button>
       </div>
     </section>
   </div>
 
-  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionProrrogaRevisor" (click)="cancelarConfirmacionProrrogaRevisor()">
-    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar prórroga revisor" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionProrrogaRevisor"
+    (click)="cancelarConfirmacionProrrogaRevisor()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar prórroga revisor"
+      (click)="$event.stopPropagation()">
       <h3>Confirmar resolución de prórroga</h3>
       <p>
-        ¿Estás seguro de que deseas <strong>{{ decisionProrrogaRevisorConfirmar === 'aceptar' ? 'aprobar' : 'rechazar' }}</strong> la solicitud de prórroga de 15 días para la evaluación de revisión por pares?
+        ¿Estás seguro de que deseas <strong>{{ decisionProrrogaRevisorConfirmar === 'aceptar' ? 'aprobar' : 'rechazar'
+          }}</strong> la solicitud de prórroga de 15 días para la evaluación de revisión por pares?
       </p>
       <div class="modal-acciones">
         <button type="button" class="btn-secundario" (click)="cancelarConfirmacionProrrogaRevisor()">Cancelar</button>
-        <button type="button" class="btn-primario" (click)="confirmarResolucionProrrogaRevisor()" [disabled]="resolviendoProrrogaRevisor">
+        <button type="button" class="btn-primario" (click)="confirmarResolucionProrrogaRevisor()"
+          [disabled]="resolviendoProrrogaRevisor">
           {{ resolviendoProrrogaRevisor ? 'Procesando...' : 'Sí, confirmar' }}
         </button>
       </div>
     </section>
   </div>
 </section>
-

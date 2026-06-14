@@ -43,7 +43,7 @@
 
       <div class="form-group">
         <label for="nombre">Nombre completo</label>
-        <input id="nombre" type="text" placeholder="Nombre completo" formControlName="nombre"
+        <input id="nombre" type="text" placeholder="Ingresa tu nombre completo" formControlName="nombre"
           [class.is-invalid]="registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched && !registerForm.get('nombre')?.hasError('required')" />
       </div>
 
@@ -58,7 +58,7 @@
 
       <div class="form-group">
         <label for="contraseña">Contraseña</label>
-        <input id="contraseña" type="password" placeholder="Contraseña" formControlName="contraseña"
+        <input id="contraseña" type="password" placeholder="Ingresa una contraseña" formControlName="contraseña"
           [class.is-invalid]="registerForm.get('contraseña')?.invalid && registerForm.get('contraseña')?.touched && !registerForm.get('contraseña')?.hasError('required')" />
         @if (registerForm.get('contraseña')?.touched && registerForm.get('contraseña')?.hasError('minlength')) {
         <small class="field-error">La contraseña debe tener al menos 6 caracteres.</small>

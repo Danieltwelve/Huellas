@@ -18,7 +18,7 @@
 
     <div class="field-group">
       <label for="nombre-completo">Nombre completo</label>
-      <input id="nombre-completo" type="text" placeholder="Nombre completo" [(ngModel)]="createForm.nombre"
+      <input id="nombre-completo" type="text" placeholder="Ingresa nombre completo" [(ngModel)]="createForm.nombre"
         name="nombre" required #nombreField="ngModel" />
       @if (nombreField.touched && !isValidName()) {
       <span class="validation-error">El nombre no puede contener números.</span>
@@ -36,7 +36,7 @@
 
     <div class="field-group">
       <label for="contrasena">Contraseña</label>
-      <input id="contrasena" type="password" placeholder="Contraseña" [(ngModel)]="createForm.contrasena"
+      <input id="contrasena" type="password" placeholder="Ingresa una contraseña" [(ngModel)]="createForm.contrasena"
         name="contrasena" required #passField="ngModel" />
       @if (passField.touched && !isValidPassword()) {
       <span class="validation-error">Mínimo 6 caracteres.</span>
@@ -45,7 +45,7 @@
 
     <div class="field-group">
       <label for="telefono">Teléfono</label>
-      <input id="telefono" type="tel" placeholder="Numero" [(ngModel)]="createForm.telefono" name="telefono" required
+      <input id="telefono" type="tel" placeholder="Ingresa un número telefónico" [(ngModel)]="createForm.telefono" name="telefono" required
         #telField="ngModel" />
       @if (telField.touched && !isValidPhone()) {
       <span class="validation-error">Solo se permiten números.</span>

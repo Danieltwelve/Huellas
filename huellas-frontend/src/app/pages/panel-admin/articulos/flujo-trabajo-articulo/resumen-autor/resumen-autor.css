@@ -1,0 +1,158 @@
+.panel-container {
+  margin-bottom: 1rem;
+}
+
+.table-section {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(17, 37, 58, 0.04);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  /* Mantiene los bordes redondeados limpios */
+}
+
+/* Cabecera interactiva */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(90deg, rgba(0, 163, 154, 0.04) 0%, transparent 100%);
+  border-bottom: 1px solid #edf2f7;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.table-header:hover {
+  background-color: #f8fafc;
+}
+
+.header-titles h2 {
+  font-size: 1.15rem;
+  margin: 0;
+  color: #10273f;
+  font-weight: 600;
+}
+
+.section-kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #00a39a;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+/* Botón de acción */
+.btn-outline-sm {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 0.4rem 0.75rem;
+  border-radius: 2rem;
+  /* Forma de píldora más moderna */
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  pointer-events: none;
+  /* El clic lo maneja el padre .table-header */
+  transition: all 0.2s ease;
+}
+
+.table-header:hover .btn-outline-sm {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+.chevron-icon {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chevron-icon.rotate {
+  transform: rotate(-180deg);
+}
+
+/* Contenido expandible */
+.resumen-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+/* Bloques cerrados para evitar espacios en blanco */
+.metadata-item {
+  background-color: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 0.6rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.metadata-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.metadata-label svg {
+  color: #00a39a;
+  /* Toque de color corporativo en los iconos */
+}
+
+.metadata-value {
+  font-size: 0.95rem;
+  color: #0f172a;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Sección especial para el resumen */
+.resumen-section {
+  background-color: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-left: 4px solid #00a39a;
+  border-radius: 0.6rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.resumen-text {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #334155;
+  font-weight: 400;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .table-header {
+    padding: 1rem;
+  }
+
+  .resumen-content {
+    padding: 1rem;
+  }
+
+  .metadata-grid {
+    grid-template-columns: 1fr;
+  }
+}

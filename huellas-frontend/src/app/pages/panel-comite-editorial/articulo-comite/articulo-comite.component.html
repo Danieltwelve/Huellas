@@ -127,9 +127,9 @@
           </select>
         </label>
 
-        <label class="campo" [class.disabled]="!rubricaCompletada">
-          Observación (Autogenerada por la rúbrica)
-          <textarea [(ngModel)]="observacion" rows="6" placeholder="Completa la rúbrica arriba para generar la observación..." [disabled]="!rubricaCompletada"></textarea>
+        <label class="campo">
+          Observación (opcional)
+          <textarea [(ngModel)]="observacion" rows="4" placeholder="Comentario de evaluación"></textarea>
         </label>
 
         <label class="campo" [class.disabled]="!rubricaCompletada">

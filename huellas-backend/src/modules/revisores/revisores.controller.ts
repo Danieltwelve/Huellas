@@ -1,4 +1,5 @@
-/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import {
   Body,
   BadRequestException,
@@ -80,7 +81,9 @@ function buildRevisionUploadOptions() {
 
       if (!isExtensionValid || !isMimeValid) {
         return cb(
-          new BadRequestException('Solo se permiten archivos PDF, DOC o DOCX válidos.'),
+          new BadRequestException(
+            'Solo se permiten archivos PDF, DOC o DOCX válidos.',
+          ),
           false,
         );
       }
@@ -110,7 +113,10 @@ export class RevisoresController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('revisor')
   @Put('perfil')
-  updatePerfil(@Req() req: RequestWithUser, @Body() body: PerfilRevisorUpdateBody) {
+  updatePerfil(
+    @Req() req: RequestWithUser,
+    @Body() body: PerfilRevisorUpdateBody,
+  ) {
     const userId = Number(req.user?.userId);
     return this.revisoresService.updatePerfilByUsuarioId(userId, body);
   }
