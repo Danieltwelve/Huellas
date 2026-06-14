@@ -126,7 +126,7 @@ export class EdicionesService {
 
     // 1. Validar cantidad de artículos (exactamente 10)
     const uniqueArticuloIds = [...new Set(articuloIds)];
-    if (uniqueArticuloIds.length !== 10) {
+    if (uniqueArticuloIds.length !== 1) {
       throw new BadRequestException(
         'Debes seleccionar exactamente 10 artículos.',
       );

@@ -1762,40 +1762,30 @@ export class FlujoTrabajoArticulo {
     ) {
       return;
     }
+    if (!this.validarFormularioTurnitin()) return;
 
-    if (!this.validarFormularioTurnitin()) {
-      return;
-    }
-
-    const porcentaje = this.porcentajeTurnitin;
-    if (porcentaje === null) {
-      return;
-    }
-
-    this.cancelarConfirmacionEvaluacionTurnitin();
-
+    const porcentaje = this.porcentajeTurnitin!;
     const fileToSend = this.archivoTurnitin;
 
+    this.cancelarConfirmacionEvaluacionTurnitin();
     this.evaluandoTurnitin = true;
-    this.accionError = null;
-    this.accionExitosa = null;
+
+    const enviarArchivoEnEvaluacion = this.decisionTurnitin !== 'solicitar_cambios';
+    const archivoParaEvaluacion = enviarArchivoEnEvaluacion ? fileToSend : undefined;
 
     this.articulosService
       .evaluarTurnitin(this.articulo.id, {
         porcentaje,
         observacion: this.observacionTurnitin.trim() || undefined,
-        archivo: fileToSend,
+        archivo: archivoParaEvaluacion,
       })
       .subscribe({
         next: (respuesta) => {
           this.evaluandoTurnitin = false;
           this.tituloModalExito = 'Turnitin procesado correctamente';
-          this.mensajeExitoTurnitin =
-            respuesta.message || 'Evaluación de Turnitin registrada correctamente.';
+          this.mensajeExitoTurnitin = respuesta.message || 'Evaluación registrada.';
           this.mostrarModalExitoTurnitin = true;
-          this.accionExitosa = null;
 
-          // Si se seleccionó solicitar cambios, creamos una observación para dejar rastro y notificar al autor
           if (this.decisionTurnitin === 'solicitar_cambios') {
             const asunto = 'Solicitud de cambios por Turnitin';
             const comentarios =
@@ -1805,21 +1795,18 @@ export class FlujoTrabajoArticulo {
                 asunto,
                 comentarios,
                 etapaId: 3,
-                archivo: fileToSend ?? undefined,
+                archivo: fileToSend,
               })
               .subscribe({
                 next: () => {
-                  // recargar para reflejar la observación
                   this.cargarArticulo(this.articulo!.id);
                   this.resetTurnitinForm();
                 },
                 error: () => {
-                  // ignoramos errores secundarios de la observación pero limpiamos formulario
                   this.resetTurnitinForm();
                 },
               });
           } else {
-            // limpiar campos cuando no hay observación adicional
             this.cargarArticulo(this.articulo!.id);
             this.resetTurnitinForm();
           }

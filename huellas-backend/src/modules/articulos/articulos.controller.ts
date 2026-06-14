@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -22,11 +23,10 @@ import {
   Query,
   InternalServerErrorException,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { ArticulosService } from './articulos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { extname } from 'path';
+import path, { extname } from 'path';
 import { CreateArticuloCompletoDto } from './dto/create-articulo-completo.dto';
 import { AddObservacionDto } from './dto/add-observacion.dto';
 import { CambiarEtapaDto } from './dto/cambiar-etapa.dto';
@@ -39,7 +39,7 @@ import { validateOrReject, ValidationError } from 'class-validator';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { promises as fs } from 'fs';
+import { createReadStream, promises as fs } from 'fs';
 import { existsSync, mkdirSync } from 'fs';
 import express from 'express';
 import * as mime from 'mime-types';
@@ -839,46 +839,43 @@ export class ArticulosController {
     );
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('autor', 'monitor', 'director', 'admin', 'comite-editorial')
   @Get('descargar/:filename')
   async descargarArchivo(
     @Param('filename') filename: string,
-    @Req() req: any,
     @Res() res: express.Response,
   ) {
     try {
-      const userId = req.user.userId;
-      const userRoles = req.user.roles || [];
-
-      const fileStream = await this.articulosService.getArticuloFileStream(
-        filename,
-        userId,
-        userRoles,
+      // Sanitizar el nombre para evitar path traversal
+      const safeName = path.basename(filename);
+      const filePath = path.join(
+        process.cwd(),
+        'uploads',
+        'articulos',
+        safeName,
       );
 
-      const mimeType = mime.lookup(filename) || 'application/octet-stream';
+      if (!existsSync(filePath)) {
+        throw new NotFoundException('Archivo no encontrado');
+      }
+
+      const mimeType = mime.lookup(filePath) || 'application/octet-stream';
       res.setHeader('Content-Type', mimeType);
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${filename}"`,
+        `attachment; filename="${safeName}"`,
       );
 
-      fileStream.pipe(res);
+      const stream = createReadStream(filePath);
+      stream.pipe(res);
 
-      fileStream.on('error', (err) => {
+      stream.on('error', (err) => {
         console.error('Error al leer el archivo:', err);
         if (!res.headersSent) {
           res.status(500).send('Error interno al servir el archivo');
         }
       });
     } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
-      }
+      if (error instanceof NotFoundException) throw error;
       console.error(error);
       throw new InternalServerErrorException('Error al descargar el archivo');
     }

@@ -1,0 +1,63 @@
+<section class="avisos-section">
+  <div class="panel-heading">
+    <div>
+      <h2>Listado completo de avisos</h2>
+    </div>
+    <button type="button" class="btn-primary" (click)="abrirModalCrear()">
+      + Crear aviso
+    </button>
+  </div>
+
+  <div class="search-container">
+    <input type="text" placeholder="Buscar aviso (tipo, título, mensaje o fecha)..." class="search-input"
+      [(ngModel)]="terminoBusqueda" />
+  </div>
+
+  @if (loading) {
+  <div class="loading-state">
+    <span class="spinner"></span>
+    <p>Cargando avisos...</p>
+  </div>
+  } @else if (error) {
+  <div class="error-state">
+    <p>{{ error }}</p>
+    <button class="btn-secondary" (click)="cargarAvisos()">Reintentar</button>
+  </div>
+  } @else if (avisosFiltrados.length === 0) {
+  <p class="empty-state">No hay avisos que coincidan con la búsqueda.</p>
+  } @else {
+  <div class="tabla-wrapper">
+    <table class="avisos-tabla">
+      <thead>
+        <tr>
+          <th scope="col">TIPO</th>
+          <th scope="col">TÍTULO</th>
+          <th scope="col">FECHA</th>
+          <th scope="col">MENSAJE</th>
+          <th scope="col">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let aviso of avisosFiltrados; trackBy: trackById">
+          <tr>
+            <td>
+              <span class="badge {{ getBadgeClass(aviso.tipo) }}">{{ aviso.tipo }}</span>
+            </td>
+            <td><strong>{{ aviso.titulo }}</strong></td>
+            <td>{{ aviso.fecha | date:'dd/MM/yyyy' }}</td>
+            <td>{{ aviso.mensaje }}</td>
+            <td class="acciones-celda">
+              <button class="action-btn editar" (click)="editarAviso(aviso)">Editar</button>
+              <button class="action-btn eliminar" (click)="eliminarAviso(aviso)">Eliminar</button>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+  }
+</section>
+
+<app-modal-crear-aviso (creado)="recargarAvisos()"></app-modal-crear-aviso>
+<app-modal-eliminar-aviso (eliminado)="recargarAvisos()"></app-modal-eliminar-aviso>
+<app-modal-editar-aviso (actualizado)="recargarAvisos()"></app-modal-editar-aviso>

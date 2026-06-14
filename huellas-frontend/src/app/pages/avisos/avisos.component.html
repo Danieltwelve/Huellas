@@ -22,23 +22,30 @@
       </div>
     </header>
 
+    @if (loading) {
+    <div class="loading-state">
+      <p>Cargando avisos...</p>
+    </div>
+    } @else if (error) {
+    <div class="error-state">
+      <p>{{ error }}</p>
+      <button class="btn-retry" (click)="cargarAvisos()">Reintentar</button>
+    </div>
+    } @else {
     <div class="avisos-list">
-      <article
-        class="aviso-item"
-        *ngFor="let aviso of avisos"
-        [ngClass]="'tipo-' + aviso.tipo"
-      >
+      <article class="aviso-item" *ngFor="let aviso of avisos" [ngClass]="'tipo-' + aviso.tipo.toLowerCase()">
         <div class="aviso-tipo">{{ aviso.tipo | uppercase }}</div>
 
         <div class="aviso-content">
           <div class="aviso-meta">
-            <span class="aviso-date">{{ aviso.fecha }}</span>
+            <span class="aviso-date">{{ aviso.fecha | date:'dd MMMM yyyy' }}</span>
           </div>
 
           <h3>{{ aviso.titulo }}</h3>
-          <p class="contenido">{{ aviso.contenido }}</p>
+          <p class="contenido">{{ aviso.mensaje }}</p>
         </div>
       </article>
     </div>
+    }
   </div>
 </section>

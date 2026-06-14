@@ -13,6 +13,10 @@
     <app-requisitos (guardar)="onGuardar()"></app-requisitos>
     }
 
+    @if (activeSidebarItem === 'avisos') {
+    <app-avisos></app-avisos>
+    }
+
     @if (activeSidebarItem === 'ediciones') {
     <app-ediciones></app-ediciones>
     }

@@ -1,0 +1,80 @@
+@if (isOpen) {
+<app-modal-shell [title]="'Editar aviso'" ariaLabel="Editar aviso" [width]="'min(580px, 92vw)'" (closed)="closeModal()">
+  <div modal-body>
+    @if (requestError) {
+    <p class="request-error">{{ requestError }}</p>
+    }
+
+    <div class="form-group">
+      <label for="editar-tipo">Tipo</label>
+      <select id="editar-tipo" [(ngModel)]="editForm.tipo" name="tipo" required>
+        <option value="Importante">Importante</option>
+        <option value="Actualización">Actualización</option>
+        <option value="Evento">Evento</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="editar-titulo">Título</label>
+      <input id="editar-titulo" type="text" [(ngModel)]="editForm.titulo" name="titulo" required />
+    </div>
+
+    <div class="form-group">
+      <label for="editar-mensaje">Mensaje</label>
+      <textarea id="editar-mensaje" rows="4" [(ngModel)]="editForm.mensaje" name="mensaje" required></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="editar-fecha">Fecha</label>
+      <input id="editar-fecha" type="date" [(ngModel)]="editForm.fecha" name="fecha" required />
+    </div>
+  </div>
+
+  <div modal-footer>
+    <button type="button" class="modal-btn-cancelar" (click)="closeModal()">Cancelar</button>
+    <button type="button" class="modal-btn-guardar" (click)="onGuardarClick()" [disabled]="!isFormValid()">
+      Guardar
+    </button>
+  </div>
+</app-modal-shell>
+}
+
+@if (showConfirmModal) {
+<app-modal-shell [title]="'Confirmar edición'" ariaLabel="Confirmar edición" [width]="'min(520px, 92vw)'"
+  [panelClass]="'modal-card--danger'" (closed)="closeConfirmModal(true)">
+  <div modal-body class="confirm-content">
+    <div class="warning-icon" aria-hidden="true">!</div>
+    <p>
+      Vas a editar el aviso:
+      <strong>{{ selectedAvisoTitulo }}</strong>
+    </p>
+    <p>¿Deseas guardar los cambios?</p>
+  </div>
+
+  <div modal-footer>
+    <button type="button" class="modal-btn-cancelar" (click)="closeConfirmModal(true)" [disabled]="updating">
+      Cancelar
+    </button>
+    <button type="button" class="modal-btn-guardar" (click)="confirmUpdate()" [disabled]="updating">
+      {{ updating ? 'Guardando...' : 'Confirmar' }}
+    </button>
+  </div>
+</app-modal-shell>
+}
+
+@if (showResultModal) {
+<app-modal-shell [title]="resultTitle" ariaLabel="Resultado de edición" [width]="'min(420px, 92vw)'"
+  [footerClass]="'centered'" [panelClass]="resultType === 'error' ? 'modal-card--danger' : ''"
+  (closed)="closeResultModal()">
+  <div modal-body class="result-content">
+    <div class="result-icon" [class.success]="resultType === 'success'" [class.error]="resultType === 'error'">
+      {{ resultType === 'success' ? '✓' : '!' }}
+    </div>
+    <p>{{ resultMessage }}</p>
+  </div>
+
+  <div modal-footer>
+    <button type="button" class="modal-btn-guardar" (click)="closeResultModal()">Entendido</button>
+  </div>
+</app-modal-shell>
+}

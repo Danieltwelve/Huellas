@@ -1,0 +1,60 @@
+@if (isOpen) {
+<app-modal-shell [title]="'Crear aviso'" ariaLabel="Crear aviso" [width]="'min(560px, 92vw)'" (closed)="closeModal()">
+  <div modal-body>
+    @if (requestError) {
+    <p class="request-error">{{ requestError }}</p>
+    }
+
+    <form class="crear-aviso-form" autocomplete="off" (ngSubmit)="onGuardarClick()">
+      <div class="form-group">
+        <label for="aviso-tipo">Tipo</label>
+        <select id="aviso-tipo" [(ngModel)]="createForm.tipo" name="tipo" required>
+          <option value="" disabled selected>Selecciona un tipo</option>
+          <option value="Importante">Importante</option>
+          <option value="Actualización">Actualización</option>
+          <option value="Evento">Evento</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="aviso-titulo">Título</label>
+        <input id="aviso-titulo" type="text" placeholder="Título del aviso" [(ngModel)]="createForm.titulo"
+          name="titulo" required />
+      </div>
+
+      <div class="form-group">
+        <label for="aviso-mensaje">Mensaje</label>
+        <textarea id="aviso-mensaje" rows="4" placeholder="Contenido del aviso" [(ngModel)]="createForm.mensaje"
+          name="mensaje" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="aviso-fecha">Fecha</label>
+        <input id="aviso-fecha" type="date" [(ngModel)]="createForm.fecha" name="fecha" required />
+      </div>
+    </form>
+  </div>
+
+  <div modal-footer>
+    <button type="button" class="modal-btn-cancelar" (click)="closeModal()" [disabled]="creating">
+      Cancelar
+    </button>
+    <button type="button" class="modal-btn-guardar" (click)="onGuardarClick()" [disabled]="creating || !isFormValid()">
+      {{ creating ? 'Guardando...' : 'Guardar' }}
+    </button>
+  </div>
+</app-modal-shell>
+}
+
+@if (showSuccessModal) {
+<app-modal-shell [title]="'Aviso creado'" ariaLabel="Aviso creado" [width]="'min(420px, 92vw)'"
+  [footerClass]="'centered'" (closed)="closeSuccessModal()">
+  <div modal-body class="success-content">
+    <div class="success-icon">✓</div>
+    <p>El aviso se ha creado exitosamente.</p>
+  </div>
+  <div modal-footer>
+    <button type="button" class="modal-btn-guardar" (click)="closeSuccessModal()">Entendido</button>
+  </div>
+</app-modal-shell>
+}

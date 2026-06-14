@@ -1,51 +1,51 @@
 <section class="hero">
-	<div class="hero-text">
-		<p class="eyebrow">Cuenta</p>
-		<h1>Perfil de usuario</h1>
-		<p>Actualiza tu informacion personal para mantener tus datos al dia.</p>
-	</div>
-	<div class="hero-card">
-		<h2>Datos basicos</h2>
-		<p>Solo tu puedes ver y editar esta informacion.</p>
-	</div>
+  <div class="hero-text">
+    <p class="eyebrow">Cuenta</p>
+    <h1>Perfil de usuario</h1>
+    <p>Actualiza tu información personal para mantener tus datos al día.</p>
+  </div>
+  <div class="hero-card">
+    <h2>Datos básicos</h2>
+    <p>Solo tú puedes ver y editar esta información.</p>
+  </div>
 </section>
 
 <form class="profile-form" autocomplete="off">
-	<div class="field">
-		<label for="nombre">Nombre completo</label>
-		<input id="nombre" name="nombre" [(ngModel)]="nombre" placeholder="Nombre y apellidos" />
-	</div>
+  <div class="field">
+    <label for="nombre">Nombre completo</label>
+    <input id="nombre" name="nombre" [(ngModel)]="nombre" placeholder="Nombre y apellidos" />
+  </div>
 
-	<div class="field">
-		<label for="telefono">Telefono</label>
-		<input id="telefono" name="telefono" [(ngModel)]="telefono" placeholder="+57 000 000 0000" />
-	</div>
+  <div class="field">
+    <label for="telefono">Teléfono</label>
+    <input id="telefono" name="telefono" [(ngModel)]="telefono" placeholder="+57 000 000 0000" />
+  </div>
 
-	<div class="actions">
-		<button type="button" (click)="openConfirmModal()">Guardar perfil</button>
-		<span class="hint">Esta informacion se usa para notificaciones internas.</span>
-	</div>
+  <div class="actions">
+    <button type="button" (click)="openConfirmModal()">Guardar perfil</button>
+    <span class="hint">Esta información se usa para notificaciones internas.</span>
+  </div>
 
-	@if (mensaje) {
-		<p class="success-msg">{{ mensaje }}</p>
-	}
+  @if (mensaje) {
+  <p class="success-msg">{{ mensaje }}</p>
+  }
 </form>
 
 @if (showConfirmModal) {
-	<div class="modal-backdrop" (click)="closeConfirmModal()"></div>
-	<div class="modal" role="dialog" aria-modal="true" aria-label="Confirmar cambios">
-		<button class="modal-close" type="button" (click)="closeConfirmModal()" aria-label="Cerrar">
-			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-				stroke-linejoin="round">
-				<line x1="18" y1="6" x2="6" y2="18"></line>
-				<line x1="6" y1="6" x2="18" y2="18"></line>
-			</svg>
-		</button>
-		<h3>Confirmar cambios</h3>
-		<p>Deseas guardar la informacion actualizada?</p>
-		<div class="modal-actions">
-			<button class="btn-primary" type="button" (click)="confirmSave()">Guardar</button>
-			<button class="btn-ghost" type="button" (click)="closeConfirmModal()">Cancelar</button>
-		</div>
-	</div>
+<div class="modal-backdrop" (click)="closeConfirmModal()"></div>
+<div class="modal" role="dialog" aria-modal="true" aria-label="Confirmar cambios">
+  <button class="modal-close" type="button" (click)="closeConfirmModal()" aria-label="Cerrar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+  <h3>Confirmar cambios</h3>
+  <p>¿Deseas guardar la información actualizada?</p>
+  <div class="modal-actions">
+    <button class="btn-primary" type="button" (click)="confirmSave()">Guardar</button>
+    <button class="btn-ghost" type="button" (click)="closeConfirmModal()">Cancelar</button>
+  </div>
+</div>
 }

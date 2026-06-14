@@ -12,8 +12,10 @@
     </div>
 
     <div class="articulo-actions">
-      <a class="btn-primary" [href]="'#'" target="_blank" rel="noopener">Visualizar</a>
-      <a class="btn-secondary" [href]="'#'" download>Descargar</a>
+      <!-- Visualizar podría abrir el PDF en otra pestaña (si es PDF) o simplemente no implementar aún -->
+      <button class="btn-primary" (click)="descargarUltimaVersion(articulo)" [disabled]="descargando.has(articulo.id)">
+        {{ descargando.has(articulo.id) ? 'Cargando...' : 'Descargar' }}
+      </button>
     </div>
   </article>
 </div>

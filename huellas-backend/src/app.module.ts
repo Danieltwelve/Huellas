@@ -19,6 +19,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { RevisoresModule } from './modules/revisores/revisores.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { AvisosModule } from './modules/avisos/avisos.module';
 
 @Module({
   imports: [
@@ -75,6 +76,10 @@ import { join } from 'path';
     }),
     ScheduleModule.forRoot(),
     ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads', 'articulos'),
+      serveRoot: '/uploads/articulos',
+    }),
+    ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads', 'portadas'),
       serveRoot: '/uploads/portadas',
     }),
@@ -89,6 +94,7 @@ import { join } from 'path';
     ObservacionesArchivosModule,
     TemasModule,
     RevisoresModule,
+    AvisosModule,
   ],
   controllers: [MetricsController],
   providers: [

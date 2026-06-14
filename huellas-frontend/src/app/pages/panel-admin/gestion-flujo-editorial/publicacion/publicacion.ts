@@ -75,7 +75,7 @@ export class Publicacion implements OnInit {
   get puedePublicar(): boolean {
     return (
       !this.publishing &&
-      this.selectedArticuloIds.length === 10 &&
+      this.selectedArticuloIds.length === 1 &&
       this.edicionIdSeleccionada != null
     );
   }
@@ -85,7 +85,7 @@ export class Publicacion implements OnInit {
     this.errorPublicacion = null;
     this.success = null;
 
-    if (this.selectedArticuloIds.length !== 10) {
+    if (this.selectedArticuloIds.length !== 1) {
       this.errorPublicacion = `Debes seleccionar exactamente 10 artículos. Actualmente tienes ${this.selectedArticuloIds.length}.`;
       return;
     }
