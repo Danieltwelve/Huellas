@@ -297,9 +297,11 @@ tbody tr:hover {
 }
 
 .titulo-cell {
-  font-weight: 700;
+  font-weight: 600;
   color: #0f172a;
-  max-width: 300px;
+  max-width: 320px;
+  line-height: 1.4;
+  font-size: 0.92rem;
 }
 
 .badge {
@@ -414,15 +416,22 @@ tbody tr:hover {
 .btn-outline-sm {
   background: #fff;
   border: 1px solid #cbd5e1;
-  padding: 0.35rem 0.65rem;
-  border-radius: 0.55rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.625rem;
   font-size: 0.74rem;
-  color: #1f2937;
+  color: #334155;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-outline-sm:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 .btn-correction {
@@ -440,6 +449,10 @@ tbody tr:hover {
 }
 
 .actions-cell {
+  /* standard table cell - vertical-align: middle applies to contents */
+}
+
+.actions-wrapper {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;

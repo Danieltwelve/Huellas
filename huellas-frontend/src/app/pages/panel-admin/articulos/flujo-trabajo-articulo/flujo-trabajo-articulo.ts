@@ -147,9 +147,13 @@ export class FlujoTrabajoArticulo {
   mostrarModalErrorTurnitin = false;
   mensajeErrorTurnitin: string | null = null;
   mostrarModalConfirmacionCorreccion = false;
+  mostrarModalConfirmacionRechazoCorreccion = false;
   mostrarModalConfirmacionCertificado = false;
   registroCorreccionConfirmacion: RegistroFlujo | null = null;
+  registroCorreccionRechazoConfirmacion: RegistroFlujo | null = null;
   comentarioAceptacionCorreccion = '';
+  comentarioRechazoCorreccion = '';
+  rechazandoCorreccionIds = new Set<number>();
 
   rutaEditorialExpandida = false;
 
@@ -661,6 +665,75 @@ export class FlujoTrabajoArticulo {
 
   isAceptandoCorreccion(registroId: number): boolean {
     return this.aceptandoCorreccionIds.has(registroId);
+  }
+
+  get correccionTurnitinPendiente(): RegistroFlujo | null {
+    if (!this.articulo || this.articulo.etapaActual.id !== 3) {
+      return null;
+    }
+    return this.historialObservaciones.find(
+      (registro) => registro.etapaId === 3 && registro.esCorreccionAutor && registro.puedeAceptarCorreccion
+    ) ?? null;
+  }
+
+  confirmarRechazoCorreccion(registro: RegistroFlujo): void {
+    if (!registro.esCorreccionAutor || !registro.puedeAceptarCorreccion) {
+      return;
+    }
+    this.registroCorreccionRechazoConfirmacion = registro;
+    this.comentarioRechazoCorreccion = '';
+    this.mostrarModalConfirmacionRechazoCorreccion = true;
+  }
+
+  cancelarConfirmacionRechazoCorreccion(): void {
+    this.mostrarModalConfirmacionRechazoCorreccion = false;
+    this.registroCorreccionRechazoConfirmacion = null;
+    this.comentarioRechazoCorreccion = '';
+  }
+
+  confirmarRechazoCorreccionModal(): void {
+    const registro = this.registroCorreccionRechazoConfirmacion;
+    if (!registro) {
+      return;
+    }
+    const comentarios = this.comentarioRechazoCorreccion.trim();
+    if (!comentarios) {
+      return;
+    }
+    this.cancelarConfirmacionRechazoCorreccion();
+    this.rechazarCorreccionAutor(registro, comentarios);
+  }
+
+  rechazarCorreccionAutor(registro: RegistroFlujo, comentarios: string): void {
+    if (!this.articulo || !registro.esCorreccionAutor || !registro.puedeAceptarCorreccion) {
+      return;
+    }
+
+    this.rechazandoCorreccionIds.add(registro.id);
+    this.accionError = null;
+    this.accionExitosa = null;
+
+    this.articulosService
+      .agregarObservacion(this.articulo.id, {
+        asunto: 'Solicitud de corrección: Turnitin (Rechazado)',
+        comentarios: comentarios,
+        etapaId: 3,
+      })
+      .subscribe({
+        next: (respuesta) => {
+          this.rechazandoCorreccionIds.delete(registro.id);
+          this.accionExitosa = 'Corrección rechazada correctamente.';
+          this.cargarArticulo(this.articulo!.id);
+        },
+        error: (err) => {
+          this.rechazandoCorreccionIds.delete(registro.id);
+          this.accionError = err?.error?.message ?? 'No se pudo rechazar la corrección.';
+        },
+      });
+  }
+
+  isRechazandoCorreccion(registroId: number): boolean {
+    return this.rechazandoCorreccionIds.has(registroId);
   }
 
   private esAsuntoCorreccionAutor(asunto: string): boolean {
@@ -1500,8 +1573,48 @@ export class FlujoTrabajoArticulo {
     }
 
     // Turnitin (3): se puede mover si ya fue evaluado por Turnitin
+    // Y, si se solicitaron cambios, la última corrección ya fue aceptada
     if (etapaId === 3) {
-      return this.articuloYaEvaluadoPorTurnitin;
+      if (!this.articuloYaEvaluadoPorTurnitin) {
+        return false;
+      }
+
+      const TurnitinRequestAsuntos = [
+        'solicitud',
+        'solicitar cambios',
+        'solicitar correccion',
+        'solicitar corrección',
+        'requiere corrección',
+        'requiere correccion',
+      ];
+
+      const TurnitinAcciones = this.historialVisible.filter((obs) => {
+        if (obs.etapaId !== 3) return false;
+        const asunto = (obs.asunto ?? '').toLowerCase();
+        const esRequest = TurnitinRequestAsuntos.some((a) => asunto.includes(a));
+        const esAutorUpload =
+          asunto === 'corrección enviada por autor' ||
+          asunto === 'correccion enviada por autor' ||
+          obs.esCorreccionAutor === true;
+        const esAceptacion =
+          asunto === 'corrección del autor aceptada' ||
+          asunto === 'correccion del autor aceptada' ||
+          obs.correccionAceptada === true;
+        return esRequest || esAutorUpload || esAceptacion;
+      });
+
+      if (TurnitinAcciones.length > 0) {
+        const TurnitinAccionesSorted = [...TurnitinAcciones].sort((a, b) => b.id - a.id);
+        const ultimaAccion = TurnitinAccionesSorted[0];
+        const asuntoUltima = (ultimaAccion.asunto ?? '').toLowerCase();
+        const esAceptada =
+          asuntoUltima === 'corrección del autor aceptada' ||
+          asuntoUltima === 'correccion del autor aceptada' ||
+          ultimaAccion.correccionAceptada === true;
+        return esAceptada;
+      }
+
+      return true;
     }
 
     // Revisión por pares (4): se puede mover si el revisor emitió criterio y fue 'aceptar'
@@ -1598,6 +1711,12 @@ export class FlujoTrabajoArticulo {
     }
 
     if (!this.puedeMoverPorTerminacion) {
+      if (this.articulo?.etapaActual?.id === 3) {
+        if (!this.articuloYaEvaluadoPorTurnitin) {
+          return 'Debes registrar la evaluación de Turnitin antes de avanzar.';
+        }
+        return 'El artículo tiene correcciones pendientes en Turnitin. El autor debe enviar los cambios y el monitor debe aceptarlos.';
+      }
       if (this.articulo?.etapaActual?.id === 9) {
         return 'Completa todos los ítems de la lista de revisión final antes de avanzar a la etapa de Publicación.';
       }
@@ -1656,6 +1775,8 @@ export class FlujoTrabajoArticulo {
       this.mostrarModalConfirmacionTurnitin ||
       this.mostrarModalExitoTurnitin ||
       this.mostrarModalConfirmacionCertificado ||
+      this.mostrarModalConfirmacionCorreccion ||
+      this.mostrarModalConfirmacionRechazoCorreccion ||
       !!this.archivoObservacion ||
       !!this.archivoTurnitin ||
       !!this.archivoCertificacion ||
@@ -1663,7 +1784,9 @@ export class FlujoTrabajoArticulo {
       this.asuntoObservacion.trim().length > 0 ||
       this.comentarioObservacion.trim().length > 0 ||
       this.observacionTurnitin.trim().length > 0 ||
-      this.observacionComite.trim().length > 0
+      this.observacionComite.trim().length > 0 ||
+      this.comentarioAceptacionCorreccion.trim().length > 0 ||
+      this.comentarioRechazoCorreccion.trim().length > 0
     );
   }
 

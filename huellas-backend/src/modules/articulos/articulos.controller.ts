@@ -466,6 +466,16 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Get('editoriales/notificaciones')
+  async getNotificacionesEditorial(@Req() req: any) {
+    return await this.articulosService.getNotificacionesEditorial(
+      req.user.userId,
+      req.user.roles ?? [],
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('autor')
   @Post(':id/correccion')
   @UseInterceptors(FileInterceptor('archivo', buildArticuloUploadOptions()))

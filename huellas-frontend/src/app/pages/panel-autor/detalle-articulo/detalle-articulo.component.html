@@ -128,25 +128,50 @@
 
         <section class="correccion-box" *ngIf="mostrarFormularioCorreccion">
           <h3>Enviar corrección del artículo</h3>
-          <p>Sube la nueva versión con los ajustes solicitados.</p>
+          <p class="correccion-ayuda">Sube la nueva versión con los ajustes solicitados por el equipo editorial.</p>
 
-          <label for="archivoCorreccion">Archivo de corrección</label>
-          <input id="archivoCorreccion" type="file" accept=".pdf,.doc,.docx" (change)="onArchivoCorreccionSeleccionado($event)" />
-          <small *ngIf="nombreArchivoCorreccion">{{ nombreArchivoCorreccion }}</small>
+          <label class="file-label" for="archivoCorreccion">Añadir corrección</label>
+          <div
+            class="dropzone"
+            [class.is-dragging]="arrastrandoArchivoCorreccion"
+            (dragover)="onDragOverCorreccion($event)"
+            (dragleave)="onDragLeaveCorreccion($event)"
+            (drop)="onDropArchivoCorreccion($event)"
+          >
+            <p class="dropzone-title">Arrastra y suelta el archivo aquí</p>
+            <p class="dropzone-subtitle">o usa el selector manual</p>
+            <input
+              id="archivoCorreccion"
+              class="file-input"
+              type="file"
+              accept=".pdf,.doc,.docx"
+              (change)="onArchivoCorreccionSeleccionado($event)"
+            />
+          </div>
 
-          <label for="comentariosCorreccion">Comentarios (opcional)</label>
+          @if (nombreArchivoCorreccion) {
+            <div class="file-chip">
+              <p class="file-name">{{ nombreArchivoCorreccion }}</p>
+              <button type="button" class="btn-file-remove" (click)="limpiarArchivoCorreccion()">Quitar</button>
+            </div>
+          }
+
+          <label class="file-label" for="comentariosCorreccion">Comentarios (opcional)</label>
           <textarea
             id="comentariosCorreccion"
+            class="input-control"
             rows="4"
             maxlength="2000"
             [(ngModel)]="comentariosCorreccion"
-            placeholder="Describe brevemente los cambios realizados"
+            placeholder="Describe brevemente los cambios realizados..."
           ></textarea>
+
+          <p class="correccion-help-detail">Formatos permitidos: PDF, DOC o DOCX.</p>
 
           <div class="msg ok" *ngIf="mensajeCorreccion">{{ mensajeCorreccion }}</div>
           <div class="msg error" *ngIf="errorCorreccion">{{ errorCorreccion }}</div>
 
-          <button type="button" (click)="enviarCorreccion()" [disabled]="enviandoCorreccion">
+          <button class="btn-submit-correccion" type="button" (click)="enviarCorreccion()" [disabled]="enviandoCorreccion">
             {{ enviandoCorreccion ? 'Enviando...' : 'Enviar corrección' }}
           </button>
         </section>

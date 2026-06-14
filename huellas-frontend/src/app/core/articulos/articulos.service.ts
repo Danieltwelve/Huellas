@@ -434,6 +434,22 @@ export class ArticulosService {
     );
   }
 
+  getNotificacionesEditorial(): Observable<any[]> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa para consultar notificaciones editoriales.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<any[]>(`${environment.apiUrlBackend}/articulos/editoriales/notificaciones`, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        }),
+      ),
+    );
+  }
+
   getArticulosEnPublicacion(): Observable<ArticuloPublicacionBackend[]> {
     const currentUser = this.auth.currentUser;
 

@@ -636,6 +636,68 @@ export class ArticulosService {
       }
 
       if (
+        articulo.etapaActualId === ArticulosService.ETAPA_TURNITIN &&
+        nuevaEtapaId === etapaSiguientePermitida
+      ) {
+        const observacionesTurnitin = (articulo.observaciones ?? []).filter(
+          (obs) => obs.etapaId === ArticulosService.ETAPA_TURNITIN,
+        );
+
+        const tieneEvaluacion = observacionesTurnitin.some((obs) => {
+          const texto = (obs.asunto ?? '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+          return texto.includes('evalu') && texto.includes('turnitin');
+        });
+
+        if (!tieneEvaluacion) {
+          throw new BadRequestException(
+            'Debes registrar la evaluación de Turnitin antes de avanzar.',
+          );
+        }
+
+        const TurnitinRequestAsuntos = [
+          'solicitud',
+          'solicitar cambios',
+          'solicitar correccion',
+          'solicitar corrección',
+          'requiere corrección',
+          'requiere correccion',
+        ];
+
+        const TurnitinAcciones = observacionesTurnitin.filter((obs) => {
+          const asunto = (obs.asunto ?? '').toLowerCase();
+          const esRequest = TurnitinRequestAsuntos.some((a) =>
+            asunto.includes(a),
+          );
+          const esAutorUpload =
+            asunto === ArticulosService.ASUNTO_CORRECCION_AUTOR.toLowerCase();
+          const esAceptacion =
+            asunto ===
+            ArticulosService.ASUNTO_CORRECCION_ACEPTADA.toLowerCase();
+
+          return esRequest || esAutorUpload || esAceptacion;
+        });
+
+        if (TurnitinAcciones.length > 0) {
+          TurnitinAcciones.sort((a, b) => b.id - a.id);
+          const ultimaAccion = TurnitinAcciones[0];
+          const asuntoUltima = (ultimaAccion.asunto ?? '').toLowerCase();
+
+          const esAceptada =
+            asuntoUltima ===
+            ArticulosService.ASUNTO_CORRECCION_ACEPTADA.toLowerCase();
+
+          if (!esAceptada) {
+            throw new BadRequestException(
+              'No puedes avanzar de etapa hasta que el autor envíe las correcciones y estas sean aceptadas por el monitor.',
+            );
+          }
+        }
+      }
+
+      if (
         articulo.etapaActualId === ArticulosService.ETAPA_REVISION_PARES &&
         nuevaEtapaId ===
           this.getSiguienteEtapaPermitida(ArticulosService.ETAPA_REVISION_PARES)
@@ -1937,9 +1999,11 @@ export class ArticulosService {
       etapa_nombre: articulo.etapaActual?.nombre || 'Desconocida',
       fecha_inicio: this.obtenerFechaEnvioArticulo(articulo),
       correccion_pendiente: this.tieneCorreccionPendiente(articulo, userId),
-      fecha_vencimiento_correccion: articulo.fechaVencimientoCorreccion
-        ? articulo.fechaVencimientoCorreccion.toISOString()
-        : null,
+      fecha_vencimiento_correccion:
+        this.tieneCorreccionPendiente(articulo, userId) &&
+        articulo.fechaVencimientoCorreccion
+          ? articulo.fechaVencimientoCorreccion.toISOString()
+          : null,
       solicitud_prorroga_correccion_pendiente:
         articulo.solicitudProrrogaCorreccionPendiente ?? false,
       correccion_vencida: this.correccionEstaVencida(articulo, userId),
@@ -2656,9 +2720,9 @@ export class ArticulosService {
       }
 
       const esRespuestaAutorCorreccion =
-        usuarioObservacionId === userId &&
-        (observacion.asunto ?? '').trim() ===
-          ArticulosService.ASUNTO_CORRECCION_AUTOR;
+        esAutor &&
+        this.normalizarTexto(observacion.asunto ?? '') ===
+          this.normalizarTexto(ArticulosService.ASUNTO_CORRECCION_AUTOR);
 
       if (esRespuestaAutorCorreccion) {
         if (!ultimaRespuestaAutor || fecha > ultimaRespuestaAutor) {
@@ -2743,8 +2807,14 @@ export class ArticulosService {
       }
 
       for (const obs of articulo.observaciones ?? []) {
-        // Evita notificar al autor por observaciones creadas por si mismo.
-        if (obs.usuarioId && obs.usuarioId === userId) {
+        const lowerAsunto = (obs.asunto ?? '').toLowerCase();
+        const esCorreccionAutor = lowerAsunto.includes(
+          ArticulosService.ASUNTO_CORRECCION_AUTOR.toLowerCase(),
+        );
+
+        // Evita notificar al autor por observaciones creadas por si mismo,
+        // a menos que sea una subida de corrección que necesitamos rastrear.
+        if (obs.usuarioId && obs.usuarioId === userId && !esCorreccionAutor) {
           continue;
         }
 
@@ -2793,6 +2863,178 @@ export class ArticulosService {
         fechaVencimientoCorreccion: item.fechaVencimientoCorreccion
           ? item.fechaVencimientoCorreccion.toISOString()
           : undefined,
+      }));
+  }
+
+  async getNotificacionesEditorial(userId: number, userRoles: string[]) {
+    const articulos = await this.articuloRepository.find({
+      relations: [
+        'autores',
+        'etapaActual',
+        'historialEtapas',
+        'historialEtapas.etapa',
+        'historialEtapas.usuario',
+        'observaciones',
+        'observaciones.etapa',
+        'observaciones.usuario',
+      ],
+    });
+
+    const esSoloComite =
+      userRoles.includes('comite-editorial') &&
+      !userRoles.includes('admin') &&
+      !userRoles.includes('director') &&
+      !userRoles.includes('monitor');
+
+    const articulosFiltrados = esSoloComite
+      ? articulos.filter((a) => a.comiteEditorialId === userId)
+      : articulos;
+
+    const notificaciones: Array<{
+      id: string;
+      articuloId: number;
+      codigoArticulo: string;
+      tituloArticulo: string;
+      titulo: string;
+      detalle: string;
+      tipo: 'accion' | 'informacion' | 'exito';
+      fecha: Date;
+      enlace: string;
+    }> = [];
+
+    // Determinar enlace
+    const obtenerEnlace = (articuloId: number) => {
+      return esSoloComite
+        ? `/panel-comite-editorial/articulos/${articuloId}`
+        : `/flujo-trabajo-articulo/${articuloId}`;
+    };
+
+    for (const articulo of articulosFiltrados) {
+      // 1. Historial de etapas (Transiciones y envío inicial)
+      for (const eventoEtapa of articulo.historialEtapas ?? []) {
+        if (eventoEtapa.usuarioId && eventoEtapa.usuarioId === userId) {
+          continue; // Evitar notificaciones de acciones propias
+        }
+
+        const nombreEtapa = eventoEtapa.etapa?.nombre ?? 'Etapa editorial';
+        const esEnvioInicial = eventoEtapa.etapaId === ArticulosService.ETAPA_REVISION_PRELIMINAR || eventoEtapa.etapaId === 2;
+
+        if (esEnvioInicial) {
+          notificaciones.push({
+            id: `etapa-envio-${articulo.id}-${eventoEtapa.id}`,
+            articuloId: articulo.id,
+            codigoArticulo: articulo.codigo,
+            tituloArticulo: articulo.titulo,
+            titulo: 'Nuevo artículo recibido',
+            detalle: `Se ha registrado el artículo ${articulo.codigo} - "${articulo.titulo}".`,
+            tipo: 'accion',
+            fecha: eventoEtapa.fechaInicio,
+            enlace: obtenerEnlace(articulo.id),
+          });
+        } else {
+          notificaciones.push({
+            id: `etapa-cambio-${articulo.id}-${eventoEtapa.id}`,
+            articuloId: articulo.id,
+            codigoArticulo: articulo.codigo,
+            tituloArticulo: articulo.titulo,
+            titulo: `Cambio de estado: ${nombreEtapa}`,
+            detalle: `El artículo ${articulo.codigo} fue movido a ${nombreEtapa.toLowerCase()}.`,
+            tipo: 'informacion',
+            fecha: eventoEtapa.fechaInicio,
+            enlace: obtenerEnlace(articulo.id),
+          });
+        }
+      }
+
+      // 2. Observaciones y comentarios/acciones en el artículo
+      for (const obs of articulo.observaciones ?? []) {
+        if (obs.usuarioId && obs.usuarioId === userId) {
+          continue; // Evitar notificaciones de acciones propias
+        }
+
+        const asunto = obs.asunto ?? '';
+        const comentarios = obs.comentarios ?? '';
+        const lowerAsunto = asunto.toLowerCase();
+        
+        let tituloNotificacion = asunto.trim() || 'Nueva observación';
+        let detalleNotificacion = comentarios.trim() || `Se registró una observación en el artículo ${articulo.codigo}.`;
+        let tipo: 'accion' | 'informacion' | 'exito' = 'informacion';
+
+        if (lowerAsunto.includes(ArticulosService.ASUNTO_CORRECCION_AUTOR.toLowerCase())) {
+          tituloNotificacion = 'Corrección de autor recibida';
+          detalleNotificacion = `El autor subió una corrección para el artículo ${articulo.codigo}.`;
+          tipo = 'accion';
+        } else if (lowerAsunto.includes(ArticulosService.ASUNTO_CORRECCION_PRORROGA_SOLICITADA.toLowerCase())) {
+          tituloNotificacion = 'Solicitud de prórroga: Autor';
+          detalleNotificacion = `El autor solicitó plazo adicional para la corrección del artículo ${articulo.codigo}.`;
+          tipo = 'accion';
+        } else if (lowerAsunto.includes(ArticulosService.ASUNTO_REVISOR_PRORROGA_SOLICITADA.toLowerCase())) {
+          tituloNotificacion = 'Solicitud de prórroga: Revisor';
+          detalleNotificacion = `El revisor solicitó plazo adicional para la revisión del artículo ${articulo.codigo}.`;
+          tipo = 'accion';
+        } else if (lowerAsunto.includes(ArticulosService.ASUNTO_COMITE_PRORROGA_SOLICITADA.toLowerCase())) {
+          tituloNotificacion = 'Solicitud de prórroga: Comité';
+          detalleNotificacion = `Un miembro del comité solicitó plazo adicional para el artículo ${articulo.codigo}.`;
+          tipo = 'accion';
+        } else if (this.esAsuntoRevisionPares(asunto)) {
+          tituloNotificacion = 'Evaluación de Revisor recibida';
+          detalleNotificacion = `El revisor envió la evaluación para el artículo ${articulo.codigo}.`;
+          tipo = 'accion';
+        } else if (this.isAsuntoEvaluacionComite(asunto)) {
+          tituloNotificacion = 'Evaluación de Comité recibida';
+          detalleNotificacion = `El comité editorial registró la evaluación del artículo ${articulo.codigo}.`;
+          tipo = 'informacion';
+        } else if (
+          lowerAsunto.includes(ArticulosService.ASUNTO_CORRECCION_SOLICITADA.toLowerCase()) ||
+          lowerAsunto.includes(ArticulosService.ASUNTO_EVALUACION_TURNITIN_CORRECCION.toLowerCase())
+        ) {
+          tituloNotificacion = 'Corrección solicitada al autor';
+          detalleNotificacion = `Se solicitó corrección al autor en el artículo ${articulo.codigo}.`;
+          tipo = 'informacion';
+        } else if (lowerAsunto.includes(ArticulosService.ASUNTO_CORRECCION_ACEPTADA.toLowerCase())) {
+          tituloNotificacion = 'Corrección del autor aceptada';
+          detalleNotificacion = `Se aceptó la corrección del autor para el artículo ${articulo.codigo}.`;
+          tipo = 'informacion';
+        } else if (lowerAsunto.includes(ArticulosService.ASUNTO_CERTIFICADO_EDITORIAL.toLowerCase())) {
+          tituloNotificacion = 'Certificado editorial cargado';
+          detalleNotificacion = `Se cargó un certificado para el artículo ${articulo.codigo}.`;
+          tipo = 'informacion';
+        }
+
+        notificaciones.push({
+          id: `obs-${articulo.id}-${obs.id}`,
+          articuloId: articulo.id,
+          codigoArticulo: articulo.codigo,
+          tituloArticulo: articulo.titulo,
+          titulo: tituloNotificacion,
+          detalle: detalleNotificacion,
+          tipo,
+          fecha: obs.fechaSubida,
+          enlace: obtenerEnlace(articulo.id),
+        });
+      }
+
+      // 3. Notificación de asignación al miembro de comité editorial (solo si es el asignado)
+      if (esSoloComite && articulo.comiteEditorialId === userId && articulo.fechaAsignacionComite) {
+        notificaciones.push({
+          id: `asignacion-comite-${articulo.id}`,
+          articuloId: articulo.id,
+          codigoArticulo: articulo.codigo,
+          tituloArticulo: articulo.titulo,
+          titulo: 'Nuevo artículo asignado',
+          detalle: `Se te asignó el artículo ${articulo.codigo} para evaluación de comité.`,
+          tipo: 'accion',
+          fecha: new Date(articulo.fechaAsignacionComite),
+          enlace: obtenerEnlace(articulo.id),
+        });
+      }
+    }
+
+    return notificaciones
+      .sort((a, b) => b.fecha.getTime() - a.fecha.getTime())
+      .map((item) => ({
+        ...item,
+        fecha: item.fecha.toISOString(),
       }));
   }
 

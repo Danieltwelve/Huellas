@@ -14,6 +14,7 @@ import {
   NotificacionAutorBackend,
 } from '../../articulos/articulos-autor.service';
 import { NOTIFICACIONES_REVISOR_MOCK } from '../../../pages/panel-revisor/panel-revisor.data';
+import { RevisoresService } from '../../revisores/revisores.service';
 
 interface NavbarNotificacion {
   id: string;
@@ -49,6 +50,7 @@ export class NavbarComponent implements OnInit {
   private router = inject(Router);
   private articulosService = inject(ArticulosService);
   private articulosAutorService = inject(ArticulosAutorService);
+  private revisoresService = inject(RevisoresService);
   private destroy$ = new Subject<void>();
   @ViewChild(NotificationDropdownComponent) notificationDropdown?: NotificationDropdownComponent;
   menuOpen = false;
@@ -320,25 +322,30 @@ export class NavbarComponent implements OnInit {
     this.notificationLoading = true;
     this.notificationError = null;
 
-    const idsLeidos = this.obtenerIdsLeidos();
+    this.revisoresService.getNotificacionesRevisor().subscribe({
+      next: (data) => {
+        const idsLeidos = this.obtenerIdsLeidos();
 
-    this.notifications = NOTIFICACIONES_REVISOR_MOCK
-      .map((item) => ({
-        id: `revisor-${item.id}`,
-        articuloId: 0,
-        codigoArticulo: 'REV',
-        titulo: item.titulo,
-        detalle: item.detalle,
-        fecha: new Date(item.fecha),
-        enlace: '/panel-revisor/notificaciones',
-      }))
-      .map((item) => ({
-        ...item,
-        leida: idsLeidos.has(item.id),
-      }))
-      .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
-
-    this.notificationLoading = false;
+        this.notifications = data
+          .map((item) => ({
+            id: item.id,
+            articuloId: item.articuloId ?? 0,
+            codigoArticulo: item.codigoArticulo ?? 'REV',
+            titulo: item.titulo,
+            detalle: item.detalle,
+            fecha: new Date(item.fecha),
+            enlace: item.enlace || '/panel-revisor/notificaciones',
+            leida: idsLeidos.has(item.id),
+          }))
+          .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+        this.notificationLoading = false;
+      },
+      error: () => {
+        this.notifications = [];
+        this.notificationError = 'No se pudieron cargar tus notificaciones.';
+        this.notificationLoading = false;
+      },
+    });
   }
 
   private cargarNotificacionesAutor(): void {

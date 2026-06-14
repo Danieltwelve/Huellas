@@ -61,6 +61,7 @@ export class DetalleArticuloComponent implements OnInit {
   errorCorreccion: string | null = null;
   mostrarModalConfirmacionCorreccion = false;
   resumenEnvioExpandido = true;
+  arrastrandoArchivoCorreccion = false;
 
   private readonly etapasBase: Array<{ id: number; titulo: string; descripcion: string }> = [
     { id: 1, titulo: 'Revisión preliminar', descripcion: 'Validación editorial inicial del envío' },
@@ -304,15 +305,8 @@ export class DetalleArticuloComponent implements OnInit {
     this.router.navigate(['/panel-autor/mi-panel']);
   }
 
-  onArchivoCorreccionSeleccionado(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const archivo = input.files && input.files.length > 0 ? input.files[0] : null;
-
-    if (!archivo) {
-      return;
-    }
-
-    const extensionValida = /\.(pdf|doc|docx)$/i.test(archivo.name);
+  private setArchivoCorreccion(file: File): void {
+    const extensionValida = /\.(pdf|doc|docx)$/i.test(file.name);
     if (!extensionValida) {
       this.errorCorreccion = 'Formato no permitido. Usa PDF, DOC o DOCX.';
       this.archivoCorreccion = null;
@@ -320,8 +314,47 @@ export class DetalleArticuloComponent implements OnInit {
       return;
     }
 
-    this.archivoCorreccion = archivo;
-    this.nombreArchivoCorreccion = archivo.name;
+    this.archivoCorreccion = file;
+    this.nombreArchivoCorreccion = file.name;
+    this.errorCorreccion = null;
+  }
+
+  onArchivoCorreccionSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files.length > 0 ? input.files[0] : null;
+
+    if (!file) {
+      return;
+    }
+
+    this.setArchivoCorreccion(file);
+  }
+
+  onDragOverCorreccion(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoCorreccion = true;
+  }
+
+  onDragLeaveCorreccion(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoCorreccion = false;
+  }
+
+  onDropArchivoCorreccion(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoCorreccion = false;
+
+    const file = event.dataTransfer?.files?.item(0) ?? null;
+    if (!file) {
+      return;
+    }
+
+    this.setArchivoCorreccion(file);
+  }
+
+  limpiarArchivoCorreccion(): void {
+    this.archivoCorreccion = null;
+    this.nombreArchivoCorreccion = '';
     this.errorCorreccion = null;
   }
 
@@ -475,7 +508,7 @@ export class DetalleArticuloComponent implements OnInit {
   }
 
   formatearFechaHistorial(fechaIso: string): string {
-    return this.formatearFechaExacta(fechaIso) || 'Sin fecha';
+    return this.formatearFechaExacta(fechaIso, false) || 'Sin fecha';
   }
 
   esObservacionTurnitin(obs: ObservacionBackend): boolean {

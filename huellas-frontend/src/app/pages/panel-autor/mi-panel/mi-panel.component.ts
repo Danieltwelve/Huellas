@@ -153,7 +153,7 @@ export class MiPanelComponent implements OnInit {
 
   private actualizarAvisoCorreccion(): void {
     const pendientes = this.articulos
-      .filter((articulo) => articulo.fecha_vencimiento_correccion)
+      .filter((articulo) => articulo.correccion_pendiente && articulo.fecha_vencimiento_correccion && !this.correccionEnRevision(articulo))
       .map((articulo) => ({
         articulo,
         fechaVencimiento: new Date(articulo.fecha_vencimiento_correccion as string),
@@ -218,10 +218,15 @@ export class MiPanelComponent implements OnInit {
     if (articulo.etapa_nombre.toLowerCase().includes('pares')) {
       return articulo.evaluado_pares ? 'Evaluado' : 'En Revision';
     }
+    if (this.correccionEnRevision(articulo)) {
+      return 'Corrección en revisión';
+    }
     const estado = this.getEstadoArticulo(articulo);
     if (estado === 'publicado') return 'Publicado';
     if (articulo.correccion_vencida) return 'Plazo vencido';
-    if (estado === 'correccion') return 'Correccion Pendiente';
+    if (estado === 'correccion') {
+      return 'Correccion Pendiente';
+    }
     return 'En Revision';
   }
 
@@ -270,9 +275,14 @@ export class MiPanelComponent implements OnInit {
     if (articulo.etapa_nombre.toLowerCase().includes('pares') && articulo.evaluado_pares) {
       return 'state-published';
     }
+    if (this.correccionEnRevision(articulo)) {
+      return 'state-review';
+    }
     const estado = this.getEstadoArticulo(articulo);
     if (estado === 'publicado') return 'state-published';
-    if (estado === 'correccion') return 'state-pending';
+    if (estado === 'correccion') {
+      return 'state-pending';
+    }
     return 'state-review';
   }
 
