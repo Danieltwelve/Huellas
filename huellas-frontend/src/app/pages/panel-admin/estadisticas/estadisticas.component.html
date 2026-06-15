@@ -7,7 +7,8 @@
     </div>
     <div class="header-actions" aria-label="Exportar reportes">
       <button type="button" class="btn-report" (click)="descargarReporteEjecutivoCsv()">CSV ejecutivo</button>
-      <button type="button" class="btn-report btn-report--secondary" (click)="descargarReporteTablasCsv()">CSV detallado</button>
+      <button type="button" class="btn-report btn-report--secondary" (click)="descargarReporteTablasCsv()">CSV
+        detallado</button>
       <button type="button" class="btn-report btn-report--pdf" (click)="descargarReportePdf()">PDF profesional</button>
     </div>
   </header>
@@ -32,7 +33,8 @@
     </div>
     <div class="dashboard-strip__item dashboard-strip__item--highlight">
       <span>Estado operativo</span>
-      <strong>{{ estadisticas.articulosEnProceso }} activos y {{ estadisticas.articulosEnPublicacion }} en publicación</strong>
+      <strong>{{ estadisticas.articulosEnProceso }} activos y {{ estadisticas.articulosEnPublicacion }} en
+        publicación</strong>
     </div>
   </section>
 
@@ -150,11 +152,15 @@
           </tr>
         </thead>
         <tbody>
-          @for (articulo of estadisticas.articulosRecientes; track articulo.codigo) {
+          @for (articulo of paginatedArticulosRecientes; track articulo.codigo) {
           <tr>
             <td>{{ articulo.codigo }}</td>
             <td class="title-cell">{{ articulo.titulo }}</td>
-            <td>{{ articulo.etapa }}</td>
+            <td>
+              <span class="stage-pill" [ngClass]="getEtapaClase(articulo.etapa)">
+                {{ articulo.etapa }}
+              </span>
+            </td>
             <td>{{ articulo.fechaEnvio ? (articulo.fechaEnvio | date: 'shortDate') : 'Sin fecha' }}</td>
             <td>{{ articulo.autores }}</td>
             <td>{{ articulo.observaciones }}</td>
@@ -163,6 +169,30 @@
         </tbody>
       </table>
     </div>
+
+    @if (totalPages > 1) {
+    <div class="pagination">
+      <button class="pagination-btn" (click)="prevPage()" [disabled]="currentPage === 1">
+        Anterior
+      </button>
+
+      <div class="pagination-numbers">
+        @for (page of getPageNumbers(); track $index) {
+        @if (page === '...') {
+        <span class="pagination-ellipsis">…</span>
+        } @else {
+        <button class="pagination-number" [class.active]="currentPage === page" (click)="goToPage(page)">
+          {{ page }}
+        </button>
+        }
+        }
+      </div>
+
+      <button class="pagination-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+        Siguiente
+      </button>
+    </div>
+    }
   </section>
   }
 </section>

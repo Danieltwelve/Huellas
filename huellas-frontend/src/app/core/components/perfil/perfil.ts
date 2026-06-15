@@ -5,6 +5,7 @@ import { UsersService } from '../../users/users.service';
 
 @Component({
   selector: 'app-perfil',
+  standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './perfil.html',
   styleUrl: './perfil.css',

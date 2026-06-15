@@ -40,7 +40,20 @@ export class EstadisticasComponent implements OnInit {
   error: string | null = null;
   estadisticas: EstadisticasGeneralesArticulosBackend | null = null;
 
-  readonly palette = ['#0f766e', '#2563eb', '#7c3aed', '#ea580c', '#0891b2', '#16a34a', '#d97706', '#db2777'];
+  readonly palette = [
+    '#0f766e',
+    '#2563eb',
+    '#7c3aed',
+    '#ea580c',
+    '#0891b2',
+    '#16a34a',
+    '#d97706',
+    '#db2777',
+  ];
+
+  currentPage = 1;
+  pageSize = 10;
+  totalPages = 0;
 
   ngOnInit(): void {
     this.cargarEstadisticas();
@@ -52,12 +65,36 @@ export class EstadisticasComponent implements OnInit {
     }
 
     return [
-      { label: 'Artículos totales', value: String(this.estadisticas.totalArticulos), hint: 'Registro histórico del sistema' },
-      { label: 'En publicación', value: String(this.estadisticas.articulosEnPublicacion), hint: 'Listos o próximos a salir' },
-      { label: 'En proceso', value: String(this.estadisticas.articulosEnProceso), hint: 'Flujo editorial activo' },
-      { label: 'Promedio autores', value: `${this.estadisticas.promedioAutores}`, hint: 'Autores por artículo' },
-      { label: 'Promedio temas', value: `${this.estadisticas.promedioTemas}`, hint: 'Temas por artículo' },
-      { label: 'Promedio días', value: `${this.estadisticas.promedioDiasDesdeEnvio}`, hint: 'Desde el primer envío' },
+      {
+        label: 'Artículos totales',
+        value: String(this.estadisticas.totalArticulos),
+        hint: 'Registro histórico del sistema',
+      },
+      {
+        label: 'En publicación',
+        value: String(this.estadisticas.articulosEnPublicacion),
+        hint: 'Listos o próximos a salir',
+      },
+      {
+        label: 'En proceso',
+        value: String(this.estadisticas.articulosEnProceso),
+        hint: 'Flujo editorial activo',
+      },
+      {
+        label: 'Promedio autores',
+        value: `${this.estadisticas.promedioAutores}`,
+        hint: 'Autores por artículo',
+      },
+      {
+        label: 'Promedio temas',
+        value: `${this.estadisticas.promedioTemas}`,
+        hint: 'Temas por artículo',
+      },
+      {
+        label: 'Promedio días',
+        value: `${this.estadisticas.promedioDiasDesdeEnvio}`,
+        hint: 'Desde el primer envío',
+      },
     ];
   }
 
@@ -96,23 +133,43 @@ export class EstadisticasComponent implements OnInit {
         encabezados: ['Métrica', 'Valor', 'Detalle'],
         filas: [
           ['Generado', this.formatearFechaLarga(new Date()), 'Fecha y hora de emisión'],
-          ['Artículos totales', String(this.estadisticas.totalArticulos), 'Base histórica acumulada'],
-          ['En publicación', String(this.estadisticas.articulosEnPublicacion), 'Listos para salir o en edición final'],
+          [
+            'Artículos totales',
+            String(this.estadisticas.totalArticulos),
+            'Base histórica acumulada',
+          ],
+          [
+            'En publicación',
+            String(this.estadisticas.articulosEnPublicacion),
+            'Listos para salir o en edición final',
+          ],
           ['En proceso', String(this.estadisticas.articulosEnProceso), 'Flujo editorial activo'],
           ['Promedio autores', `${this.estadisticas.promedioAutores}`, 'Autores por artículo'],
           ['Promedio temas', `${this.estadisticas.promedioTemas}`, 'Temas por artículo'],
-          ['Promedio días desde envío', `${this.estadisticas.promedioDiasDesdeEnvio}`, 'Tiempo promedio de gestión'],
+          [
+            'Promedio días desde envío',
+            `${this.estadisticas.promedioDiasDesdeEnvio}`,
+            'Tiempo promedio de gestión',
+          ],
         ],
       },
       {
         titulo: 'Distribución por etapa',
         encabezados: ['Etapa', 'Cantidad', 'Participación'],
-        filas: this.circuloEtapas.map((item) => [item.label, String(item.value), `${item.percentage}%`]),
+        filas: this.circuloEtapas.map((item) => [
+          item.label,
+          String(item.value),
+          `${item.percentage}%`,
+        ]),
       },
       {
         titulo: 'Distribución temática',
         encabezados: ['Tema', 'Cantidad', 'Participación'],
-        filas: this.circuloTemas.map((item) => [item.label, String(item.value), `${item.percentage}%`]),
+        filas: this.circuloTemas.map((item) => [
+          item.label,
+          String(item.value),
+          `${item.percentage}%`,
+        ]),
       },
       {
         titulo: 'Ingreso mensual',
@@ -126,7 +183,9 @@ export class EstadisticasComponent implements OnInit {
           articulo.codigo,
           articulo.titulo,
           articulo.etapa,
-          articulo.fechaEnvio ? this.formatearFechaCorta(new Date(articulo.fechaEnvio)) : 'Sin fecha',
+          articulo.fechaEnvio
+            ? this.formatearFechaCorta(new Date(articulo.fechaEnvio))
+            : 'Sin fecha',
           articulo.autores,
           articulo.observaciones,
         ]),
@@ -144,9 +203,24 @@ export class EstadisticasComponent implements OnInit {
 
     const rows = [
       ['Tipo', 'Etiqueta', 'Cantidad', 'Participación'],
-      ...this.circuloEtapas.map((item) => ['Etapa', item.label, String(item.value), `${item.percentage}%`]),
-      ...this.circuloTemas.map((item) => ['Tema', item.label, String(item.value), `${item.percentage}%`]),
-      ...this.mesesTop.map((item) => ['Mes', item.label, String(item.value), `${item.percentage}%`]),
+      ...this.circuloEtapas.map((item) => [
+        'Etapa',
+        item.label,
+        String(item.value),
+        `${item.percentage}%`,
+      ]),
+      ...this.circuloTemas.map((item) => [
+        'Tema',
+        item.label,
+        String(item.value),
+        `${item.percentage}%`,
+      ]),
+      ...this.mesesTop.map((item) => [
+        'Mes',
+        item.label,
+        String(item.value),
+        `${item.percentage}%`,
+      ]),
       ['', '', '', ''],
       ['Resumen de actividad', '', '', ''],
       ['Artículos totales', String(this.estadisticas.totalArticulos), '', ''],
@@ -154,7 +228,9 @@ export class EstadisticasComponent implements OnInit {
       ['Artículos en proceso', String(this.estadisticas.articulosEnProceso), '', ''],
     ];
 
-    const csv = rows.map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const csv = rows
+      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
     this.descargarTexto(csv, 'reporte-tablas-estadisticas', 'text/csv;charset=utf-8;');
   }
 
@@ -198,7 +274,11 @@ export class EstadisticasComponent implements OnInit {
       doc.line(14, pageHeight - 14, pageWidth - 14, pageHeight - 14);
       doc.setTextColor(100, 116, 139);
       doc.setFontSize(8);
-      doc.text('Documento generado automáticamente por el sistema editorial Huellas.', 14, pageHeight - 8);
+      doc.text(
+        'Documento generado automáticamente por el sistema editorial Huellas.',
+        14,
+        pageHeight - 8,
+      );
       doc.text(`Página ${pageNumber}`, pageWidth - 28, pageHeight - 8);
     };
 
@@ -230,11 +310,19 @@ export class EstadisticasComponent implements OnInit {
       head: [['Indicador', 'Valor', 'Detalle']],
       body: [
         ['Artículos totales', String(this.estadisticas.totalArticulos), 'Base histórica acumulada'],
-        ['En publicación', String(this.estadisticas.articulosEnPublicacion), 'Listos o próximos a salir'],
+        [
+          'En publicación',
+          String(this.estadisticas.articulosEnPublicacion),
+          'Listos o próximos a salir',
+        ],
         ['En proceso', String(this.estadisticas.articulosEnProceso), 'Flujo editorial activo'],
         ['Promedio autores', `${this.estadisticas.promedioAutores}`, 'Autores por artículo'],
         ['Promedio temas', `${this.estadisticas.promedioTemas}`, 'Temas por artículo'],
-        ['Promedio días desde envío', `${this.estadisticas.promedioDiasDesdeEnvio}`, 'Tiempo medio de gestión'],
+        [
+          'Promedio días desde envío',
+          `${this.estadisticas.promedioDiasDesdeEnvio}`,
+          'Tiempo medio de gestión',
+        ],
       ],
       theme: 'grid',
       styles: {
@@ -261,14 +349,23 @@ export class EstadisticasComponent implements OnInit {
       },
     });
 
-    let currentY = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 54;
+    let currentY =
+      (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 54;
     currentY += 8;
 
-    currentY = addSectionTitle('Distribución por etapa', 'Participación de los artículos por fase editorial.', currentY);
+    currentY = addSectionTitle(
+      'Distribución por etapa',
+      'Participación de los artículos por fase editorial.',
+      currentY,
+    );
     autoTable(doc, {
       startY: currentY,
       head: [['Etapa', 'Cantidad', 'Participación']],
-      body: this.circuloEtapas.map((item) => [item.label, String(item.value), `${item.percentage}%`]),
+      body: this.circuloEtapas.map((item) => [
+        item.label,
+        String(item.value),
+        `${item.percentage}%`,
+      ]),
       theme: 'striped',
       styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.5 },
       headStyles: { fillColor: accent, textColor: '#ffffff', fontStyle: 'bold' },
@@ -280,14 +377,23 @@ export class EstadisticasComponent implements OnInit {
       },
     });
 
-    currentY = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
+    currentY =
+      (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
     currentY += 8;
 
-    currentY = addSectionTitle('Distribución temática', 'Temas con mayor presencia en el sistema.', currentY);
+    currentY = addSectionTitle(
+      'Distribución temática',
+      'Temas con mayor presencia en el sistema.',
+      currentY,
+    );
     autoTable(doc, {
       startY: currentY,
       head: [['Tema', 'Cantidad', 'Participación']],
-      body: this.circuloTemas.map((item) => [item.label, String(item.value), `${item.percentage}%`]),
+      body: this.circuloTemas.map((item) => [
+        item.label,
+        String(item.value),
+        `${item.percentage}%`,
+      ]),
       theme: 'striped',
       styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.5 },
       headStyles: { fillColor: brand, textColor: '#ffffff', fontStyle: 'bold' },
@@ -299,10 +405,15 @@ export class EstadisticasComponent implements OnInit {
       },
     });
 
-    currentY = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
+    currentY =
+      (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
     currentY += 8;
 
-    currentY = addSectionTitle('Ingreso mensual', 'Volumen de artículos por mes de registro.', currentY);
+    currentY = addSectionTitle(
+      'Ingreso mensual',
+      'Volumen de artículos por mes de registro.',
+      currentY,
+    );
     autoTable(doc, {
       startY: currentY,
       head: [['Mes', 'Cantidad', 'Participación']],
@@ -318,10 +429,15 @@ export class EstadisticasComponent implements OnInit {
       },
     });
 
-    currentY = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
+    currentY =
+      (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
     currentY += 8;
 
-    currentY = addSectionTitle('Últimos artículos registrados', 'Detalle operativo de los registros más recientes.', currentY);
+    currentY = addSectionTitle(
+      'Últimos artículos registrados',
+      'Detalle operativo de los registros más recientes.',
+      currentY,
+    );
     autoTable(doc, {
       startY: currentY,
       head: [['Código', 'Título', 'Etapa', 'Fecha de envío', 'Autores', 'Observaciones']],
@@ -358,10 +474,12 @@ export class EstadisticasComponent implements OnInit {
   private cargarEstadisticas(): void {
     this.loading = true;
     this.error = null;
+    this.currentPage = 1; // Reiniciar página al cargar nuevos datos
 
     this.articulosService.getEstadisticasGeneralesArticulos().subscribe({
       next: (estadisticas) => {
         this.estadisticas = estadisticas;
+        this.totalPages = Math.ceil(estadisticas.articulosRecientes.length / this.pageSize);
         this.loading = false;
       },
       error: (error) => {
@@ -418,11 +536,7 @@ export class EstadisticasComponent implements OnInit {
   }
 
   private serializarSeccionCsv(seccion: ReporteSectionCsv): string {
-    const filas = [
-      [seccion.titulo],
-      seccion.encabezados,
-      ...seccion.filas,
-    ];
+    const filas = [[seccion.titulo], seccion.encabezados, ...seccion.filas];
 
     return filas
       .map((fila) => fila.map((valor) => `"${String(valor ?? '').replace(/"/g, '""')}"`).join(','))
@@ -442,5 +556,80 @@ export class EstadisticasComponent implements OnInit {
       dateStyle: 'full',
       timeStyle: 'short',
     }).format(fecha);
+  }
+
+  get paginatedArticulosRecientes() {
+    if (!this.estadisticas?.articulosRecientes) return [];
+    const start = (this.currentPage - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    return this.estadisticas.articulosRecientes.slice(start, end);
+  }
+
+  goToPage(page: number | string) {
+    const pageNumber = typeof page === 'string' ? parseInt(page, 10) : page;
+    if (isNaN(pageNumber) || pageNumber < 1 || pageNumber > this.totalPages) return;
+    this.currentPage = pageNumber;
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  getPageNumbers(): (number | string)[] {
+    const delta = 2;
+    const range: number[] = [];
+    const rangeWithDots: (number | string)[] = [];
+    let l: number;
+
+    for (let i = 1; i <= this.totalPages; i++) {
+      if (
+        i === 1 ||
+        i === this.totalPages ||
+        (i >= this.currentPage - delta && i <= this.currentPage + delta)
+      ) {
+        range.push(i);
+      }
+    }
+
+    range.forEach((i) => {
+      if (l) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1);
+        } else if (i - l !== 1) {
+          rangeWithDots.push('...');
+        }
+      }
+      rangeWithDots.push(i);
+      l = i;
+    });
+    return rangeWithDots;
+  }
+
+  getEtapaClase(etapa: string): string {
+    if (!etapa) return '';
+
+    const normalizada = etapa
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-');
+
+    if (normalizada.includes('revision-preliminar')) return 'stage--revision-preliminar';
+    if (normalizada.includes('turnitin')) return 'stage--turnitin';
+    if (normalizada.includes('comite-editorial')) return 'stage--comite-editorial';
+    if (normalizada.includes('revision-pares')) return 'stage--revision-pares';
+    if (normalizada.includes('certificacion')) return 'stage--certificacion';
+    if (normalizada.includes('revision-final')) return 'stage--revision-final';
+    if (normalizada.includes('publicacion')) return 'stage--publicacion';
+
+    return '';
   }
 }

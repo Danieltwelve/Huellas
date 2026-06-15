@@ -1081,4 +1081,20 @@ export class UsersService {
 
     return (error as FirebaseAdminError).code === code;
   }
+
+  async findCoAutores(): Promise<{ id: number; nombre: string }[]> {
+    const autores = await this.userRepository
+      .createQueryBuilder('usuario')
+      .innerJoin('usuario.roles', 'rol')
+      .where('rol.rol = :rolNombre', { rolNombre: 'autor' })
+      .andWhere('usuario.estado_cuenta = :activo', { activo: true })
+      .select(['usuario.id', 'usuario.nombre'])
+      .orderBy('usuario.nombre', 'ASC')
+      .getMany();
+
+    return autores.map((user) => ({
+      id: user.id,
+      nombre: user.nombre,
+    }));
+  }
 }

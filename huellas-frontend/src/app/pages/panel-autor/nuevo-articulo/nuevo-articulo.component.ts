@@ -20,10 +20,9 @@ import { Router, RouterModule } from '@angular/router';
 import { ArticulosService, TemaCatalogoBackend } from '../../../core/articulos/articulos.service';
 import { AuthService, AccessClaims } from '../../../core/auth/auth.service';
 import { Observable } from 'rxjs';
+import { CoAutoresComponent } from './co-autores/co-autores';
 
-function resumenLengthValidator(
-  control: AbstractControl
-): ValidationErrors | null {
+function resumenLengthValidator(control: AbstractControl): ValidationErrors | null {
   const val: string = control.value ?? '';
   if (val.length < 100) return { minlength: { requiredLength: 100, actualLength: val.length } };
   if (val.length > 1000) return { maxlength: { requiredLength: 1000, actualLength: val.length } };
@@ -41,7 +40,7 @@ function palabrasClaveValidator(control: AbstractControl): ValidationErrors | nu
 @Component({
   selector: 'app-nuevo-articulo',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, CoAutoresComponent],
   templateUrl: './nuevo-articulo.component.html',
   styleUrl: './nuevo-articulo.component.css',
 })
@@ -67,6 +66,8 @@ export class NuevoArticuloComponent implements OnInit {
   usuarioActualId: number | null = null;
   envioHabilitado = true;
   estadoEnvioCargando = true;
+
+  autoresLista: { id: number; nombre: string }[] = [];
 
   claims$: Observable<AccessClaims> = this.authService.claims$;
 
@@ -175,7 +176,16 @@ export class NuevoArticuloComponent implements OnInit {
     const normalized = nombre.toLowerCase();
 
     if (
-      ['ciencias de la computación', 'ingeniería de sistemas', 'inteligencia artificial', 'redes y telecomunicaciones', 'seguridad informática', 'bases de datos', 'desarrollo de software', 'tecnología'].some((item) => normalized.includes(item))
+      [
+        'ciencias de la computación',
+        'ingeniería de sistemas',
+        'inteligencia artificial',
+        'redes y telecomunicaciones',
+        'seguridad informática',
+        'bases de datos',
+        'desarrollo de software',
+        'tecnología',
+      ].some((item) => normalized.includes(item))
     ) {
       return 'Tecnología y computación';
     }
@@ -184,11 +194,19 @@ export class NuevoArticuloComponent implements OnInit {
       return 'Educación y pedagogía';
     }
 
-    if (['lingüística', 'lengua', 'literatura', 'comunicación'].some((item) => normalized.includes(item))) {
+    if (
+      ['lingüística', 'lengua', 'literatura', 'comunicación'].some((item) =>
+        normalized.includes(item),
+      )
+    ) {
       return 'Lengua y comunicación';
     }
 
-    if (['ciencias naturales', 'salud', 'medio ambiente', 'bioinformática'].some((item) => normalized.includes(item))) {
+    if (
+      ['ciencias naturales', 'salud', 'medio ambiente', 'bioinformática'].some((item) =>
+        normalized.includes(item),
+      )
+    ) {
       return 'Ciencias naturales y salud';
     }
 
@@ -307,18 +325,6 @@ export class NuevoArticuloComponent implements OnInit {
     });
   }
 
-  addCoautor(): void {
-    if (this.usuariosIds.length >= 2) {
-      return;
-    }
-
-    this.usuariosIds.push(this.newCoautor());
-  }
-
-  removeCoautor(i: number): void {
-    this.usuariosIds.removeAt(i);
-  }
-
   onFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.archivoError = '';
@@ -414,7 +420,7 @@ export class NuevoArticuloComponent implements OnInit {
     fd.append('palabras_clave', (v.palabras_clave as string[]).join(','));
     fd.append('asunto', v.asunto);
     fd.append('comentarios', v.comentarios || '');
-    
+
     // Construir array de usuarios_ids: usuario actual + co-autores
     const usuariosIds = [this.usuarioActualId];
     if (this.usuariosIds.length > 0) {
@@ -469,20 +475,43 @@ export class NuevoArticuloComponent implements OnInit {
 
   get resumenEnvio(): Array<{ label: string; value: string }> {
     const value = this.form.value;
-    const autores = [
-      this.usuarioActualId ? `Autor principal: ID ${this.usuarioActualId}` : 'Autor principal no disponible',
-      ...this.usuariosIds.controls
-        .map((control) => Number(control.get('usuario_id')?.value))
-        .filter((id) => Number.isInteger(id) && id > 0)
-        .map((id) => `Co-autor ID ${id}`),
-    ];
+
+    // Obtener nombre del autor principal
+    const autorPrincipal = this.autoresLista.find((a) => a.id === this.usuarioActualId);
+    const autorPrincipalNombre = autorPrincipal
+      ? autorPrincipal.nombre
+      : `ID ${this.usuarioActualId}`;
+
+    // Obtener nombres de los co‑autores
+    const coautoresNombres = this.usuariosIds.controls
+      .map((control) => {
+        const id = Number(control.get('usuario_id')?.value);
+        if (isNaN(id)) return null;
+        const autor = this.autoresLista.find((a) => a.id === id);
+        return autor ? autor.nombre : `ID ${id}`;
+      })
+      .filter((nombre): nombre is string => nombre !== null);
+
+    const autoresTexto = [autorPrincipalNombre, ...coautoresNombres].join(' · ');
 
     return [
       { label: 'Título', value: value.titulo || 'Sin título' },
-      { label: 'Tema', value: this.temas.find((tema) => String(tema.id) === String(value.tema_id))?.nombre ?? 'Sin tema' },
-      { label: 'Palabras clave', value: this.palabrasClave.length > 0 ? this.palabrasClave.join(', ') : 'Sin palabras clave' },
+      {
+        label: 'Tema',
+        value:
+          this.temas.find((tema) => String(tema.id) === String(value.tema_id))?.nombre ??
+          'Sin tema',
+      },
+      {
+        label: 'Palabras clave',
+        value: this.palabrasClave.length > 0 ? this.palabrasClave.join(', ') : 'Sin palabras clave',
+      },
       { label: 'Archivo', value: this.archivoSeleccionado?.name ?? 'Sin archivo' },
-      { label: 'Autores', value: autores.join(' · ') },
+      { label: 'Autores', value: autoresTexto },
     ];
+  }
+
+  onAutoresCargados(lista: { id: number; nombre: string }[]): void {
+    this.autoresLista = lista;
   }
 }

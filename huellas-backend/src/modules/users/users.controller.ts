@@ -52,6 +52,13 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('autor', 'admin', 'director', 'monitor')
+  @Get('autores-lista')
+  async getCoAutores(): Promise<{ id: number; nombre: string }[]> {
+    return this.usersService.findCoAutores();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'director', 'monitor')
   @Get('comite-editorial')
   async getCommitteeMembers(): Promise<User[]> {

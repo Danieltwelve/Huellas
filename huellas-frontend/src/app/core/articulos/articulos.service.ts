@@ -347,10 +347,7 @@ export class ArticulosService {
     );
   }
 
-  solicitarProrrogaComite(
-    articuloId: number,
-    comentarios?: string,
-  ): Observable<any> {
+  solicitarProrrogaComite(articuloId: number, comentarios?: string): Observable<any> {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
@@ -438,7 +435,9 @@ export class ArticulosService {
     const currentUser = this.auth.currentUser;
 
     if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para consultar notificaciones editoriales.'));
+      return throwError(
+        () => new Error('No hay sesión activa para consultar notificaciones editoriales.'),
+      );
     }
 
     return from(currentUser.getIdToken()).pipe(
@@ -1046,6 +1045,73 @@ export class ArticulosService {
           {
             headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
           },
+        ),
+      ),
+    );
+  }
+
+  getAutoresDeArticulo(articuloId: number): Observable<{ id: number; nombre: string }[]> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.get<{ id: number; nombre: string }[]>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/autores`,
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
+        ),
+      ),
+    );
+  }
+
+  agregarAutorArticulo(articuloId: number, autorId: number): Observable<{ message: string }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.post<{ message: string }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/autores`,
+          { autorId },
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
+        ),
+      ),
+    );
+  }
+
+  removerAutorArticulo(articuloId: number, autorId: number): Observable<{ message: string }> {
+    const currentUser = this.auth.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa.'));
+    }
+
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.delete<{ message: string }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}/autores/${autorId}`,
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
+        ),
+      ),
+    );
+  }
+
+  eliminarArticulo(articuloId: number): Observable<{ message: string }> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      return throwError(() => new Error('No hay sesión activa.'));
+    }
+    return from(currentUser.getIdToken()).pipe(
+      switchMap((token) =>
+        this.http.delete<{ message: string }>(
+          `${environment.apiUrlBackend}/articulos/${articuloId}`,
+          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
         ),
       ),
     );

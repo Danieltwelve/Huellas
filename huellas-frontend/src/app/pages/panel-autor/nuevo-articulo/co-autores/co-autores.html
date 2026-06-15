@@ -1,0 +1,48 @@
+<div class="coautores-wrapper">
+  <div class="coautores-header">
+    <label class="field-label">Co-autores <span class="opt">(opcional - máx. {{ maxCoautores }})</span></label>
+    <button type="button" class="btn-add" (click)="abrirSelector()" [disabled]="!canAdd">
+      + Añadir co-autor
+    </button>
+  </div>
+
+  <!-- Lista de chips de co-autores seleccionados -->
+  <div class="coautores-chips">
+    @for (control of coautoresFormArray.controls; track $index) {
+    <div class="coautor-chip">
+      <span class="chip-nombre">{{ obtenerNombreAutor(control.get('usuario_id')?.value) }}</span>
+      <button type="button" class="chip-remove" (click)="eliminarCoAutor($index)">✕</button>
+    </div>
+    }
+  </div>
+
+  <!-- Modal de selección -->
+  @if (showSelector) {
+  <div class="modal-overlay" (click)="cerrarSelector()"></div>
+  <div class="selector-modal">
+    <div class="modal-header">
+      <h3>Seleccionar co-autor</h3>
+      <button class="modal-close" (click)="cerrarSelector()">×</button>
+    </div>
+    <div class="modal-search">
+      <input type="text" placeholder="Buscar por nombre..." [value]="searchTerm"
+        (input)="onSearchChange($any($event.target).value)" />
+    </div>
+    <div class="modal-list">
+      @if (autoresFiltrados.length === 0) {
+      <p class="empty-message">No hay autores disponibles</p>
+      } @else {
+      @for (autor of autoresFiltrados; track autor.id) {
+      <button class="modal-option" (click)="seleccionarAutor(autor.id)">
+        {{ autor.nombre }}
+      </button>
+      }
+      }
+    </div>
+  </div>
+  }
+
+  <p class="field-hint">
+    Solo puedes agregar hasta {{ maxCoautores }} co-autor(es). Total de autores = {{ maxCoautores + 1 }}.
+  </p>
+</div>

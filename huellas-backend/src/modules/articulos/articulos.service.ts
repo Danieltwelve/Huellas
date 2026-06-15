@@ -1899,7 +1899,6 @@ export class ArticulosService {
         const fechaB = b.fechaEnvio?.getTime() ?? 0;
         return fechaB - fechaA;
       })
-      .slice(0, 8)
       .map(({ articulo, fechaEnvio }) => ({
         codigo: articulo.codigo,
         titulo: articulo.titulo,
@@ -2917,7 +2916,9 @@ export class ArticulosService {
         }
 
         const nombreEtapa = eventoEtapa.etapa?.nombre ?? 'Etapa editorial';
-        const esEnvioInicial = eventoEtapa.etapaId === ArticulosService.ETAPA_REVISION_PRELIMINAR || eventoEtapa.etapaId === 2;
+        const esEnvioInicial =
+          eventoEtapa.etapaId === ArticulosService.ETAPA_REVISION_PRELIMINAR ||
+          eventoEtapa.etapaId === 2;
 
         if (esEnvioInicial) {
           notificaciones.push({
@@ -2955,24 +2956,42 @@ export class ArticulosService {
         const asunto = obs.asunto ?? '';
         const comentarios = obs.comentarios ?? '';
         const lowerAsunto = asunto.toLowerCase();
-        
+
         let tituloNotificacion = asunto.trim() || 'Nueva observación';
-        let detalleNotificacion = comentarios.trim() || `Se registró una observación en el artículo ${articulo.codigo}.`;
+        let detalleNotificacion =
+          comentarios.trim() ||
+          `Se registró una observación en el artículo ${articulo.codigo}.`;
         let tipo: 'accion' | 'informacion' | 'exito' = 'informacion';
 
-        if (lowerAsunto.includes(ArticulosService.ASUNTO_CORRECCION_AUTOR.toLowerCase())) {
+        if (
+          lowerAsunto.includes(
+            ArticulosService.ASUNTO_CORRECCION_AUTOR.toLowerCase(),
+          )
+        ) {
           tituloNotificacion = 'Corrección de autor recibida';
           detalleNotificacion = `El autor subió una corrección para el artículo ${articulo.codigo}.`;
           tipo = 'accion';
-        } else if (lowerAsunto.includes(ArticulosService.ASUNTO_CORRECCION_PRORROGA_SOLICITADA.toLowerCase())) {
+        } else if (
+          lowerAsunto.includes(
+            ArticulosService.ASUNTO_CORRECCION_PRORROGA_SOLICITADA.toLowerCase(),
+          )
+        ) {
           tituloNotificacion = 'Solicitud de prórroga: Autor';
           detalleNotificacion = `El autor solicitó plazo adicional para la corrección del artículo ${articulo.codigo}.`;
           tipo = 'accion';
-        } else if (lowerAsunto.includes(ArticulosService.ASUNTO_REVISOR_PRORROGA_SOLICITADA.toLowerCase())) {
+        } else if (
+          lowerAsunto.includes(
+            ArticulosService.ASUNTO_REVISOR_PRORROGA_SOLICITADA.toLowerCase(),
+          )
+        ) {
           tituloNotificacion = 'Solicitud de prórroga: Revisor';
           detalleNotificacion = `El revisor solicitó plazo adicional para la revisión del artículo ${articulo.codigo}.`;
           tipo = 'accion';
-        } else if (lowerAsunto.includes(ArticulosService.ASUNTO_COMITE_PRORROGA_SOLICITADA.toLowerCase())) {
+        } else if (
+          lowerAsunto.includes(
+            ArticulosService.ASUNTO_COMITE_PRORROGA_SOLICITADA.toLowerCase(),
+          )
+        ) {
           tituloNotificacion = 'Solicitud de prórroga: Comité';
           detalleNotificacion = `Un miembro del comité solicitó plazo adicional para el artículo ${articulo.codigo}.`;
           tipo = 'accion';
@@ -2985,17 +3004,29 @@ export class ArticulosService {
           detalleNotificacion = `El comité editorial registró la evaluación del artículo ${articulo.codigo}.`;
           tipo = 'informacion';
         } else if (
-          lowerAsunto.includes(ArticulosService.ASUNTO_CORRECCION_SOLICITADA.toLowerCase()) ||
-          lowerAsunto.includes(ArticulosService.ASUNTO_EVALUACION_TURNITIN_CORRECCION.toLowerCase())
+          lowerAsunto.includes(
+            ArticulosService.ASUNTO_CORRECCION_SOLICITADA.toLowerCase(),
+          ) ||
+          lowerAsunto.includes(
+            ArticulosService.ASUNTO_EVALUACION_TURNITIN_CORRECCION.toLowerCase(),
+          )
         ) {
           tituloNotificacion = 'Corrección solicitada al autor';
           detalleNotificacion = `Se solicitó corrección al autor en el artículo ${articulo.codigo}.`;
           tipo = 'informacion';
-        } else if (lowerAsunto.includes(ArticulosService.ASUNTO_CORRECCION_ACEPTADA.toLowerCase())) {
+        } else if (
+          lowerAsunto.includes(
+            ArticulosService.ASUNTO_CORRECCION_ACEPTADA.toLowerCase(),
+          )
+        ) {
           tituloNotificacion = 'Corrección del autor aceptada';
           detalleNotificacion = `Se aceptó la corrección del autor para el artículo ${articulo.codigo}.`;
           tipo = 'informacion';
-        } else if (lowerAsunto.includes(ArticulosService.ASUNTO_CERTIFICADO_EDITORIAL.toLowerCase())) {
+        } else if (
+          lowerAsunto.includes(
+            ArticulosService.ASUNTO_CERTIFICADO_EDITORIAL.toLowerCase(),
+          )
+        ) {
           tituloNotificacion = 'Certificado editorial cargado';
           detalleNotificacion = `Se cargó un certificado para el artículo ${articulo.codigo}.`;
           tipo = 'informacion';
@@ -3015,7 +3046,11 @@ export class ArticulosService {
       }
 
       // 3. Notificación de asignación al miembro de comité editorial (solo si es el asignado)
-      if (esSoloComite && articulo.comiteEditorialId === userId && articulo.fechaAsignacionComite) {
+      if (
+        esSoloComite &&
+        articulo.comiteEditorialId === userId &&
+        articulo.fechaAsignacionComite
+      ) {
         notificaciones.push({
           id: `asignacion-comite-${articulo.id}`,
           articuloId: articulo.id,
@@ -3664,5 +3699,90 @@ export class ArticulosService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async getAutoresArticulo(
+    articuloId: number,
+  ): Promise<{ id: number; nombre: string }[]> {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['autores'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    return articulo.autores.map((autor) => ({
+      id: autor.id,
+      nombre: autor.nombre,
+    }));
+  }
+
+  async agregarAutorArticulo(
+    articuloId: number,
+    autorId: number,
+  ): Promise<{ message: string }> {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['autores'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    if (articulo.autores.length >= 3) {
+      throw new BadRequestException(
+        'El artículo no puede tener más de 3 autores.',
+      );
+    }
+
+    const autor = await this.userRepository.findOne({ where: { id: autorId } });
+    if (!autor) {
+      throw new NotFoundException('Autor no encontrado');
+    }
+
+    const yaAsociado = articulo.autores.some((a) => a.id === autorId);
+    if (yaAsociado) {
+      throw new BadRequestException(
+        'El autor ya está asociado a este artículo.',
+      );
+    }
+
+    articulo.autores.push(autor);
+    await this.articuloRepository.save(articulo);
+
+    return { message: 'Autor agregado correctamente al artículo.' };
+  }
+
+  async removerAutorArticulo(
+    articuloId: number,
+    autorId: number,
+  ): Promise<{ message: string }> {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      relations: ['autores'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    if (articulo.autores.length <= 1) {
+      throw new BadRequestException(
+        'El artículo debe tener al menos un autor.',
+      );
+    }
+
+    const autorIndex = articulo.autores.findIndex((a) => a.id === autorId);
+    if (autorIndex === -1) {
+      throw new NotFoundException('El autor no está asociado a este artículo.');
+    }
+
+    articulo.autores.splice(autorIndex, 1);
+    await this.articuloRepository.save(articulo);
+
+    return { message: 'Autor removido correctamente del artículo.' };
   }
 }

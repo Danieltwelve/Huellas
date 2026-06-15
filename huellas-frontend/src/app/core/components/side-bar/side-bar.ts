@@ -47,9 +47,9 @@ export class SideBar {
 
   mainItems: MenuItem[] = [
     {
-      label: 'Timeline Editorial',
+      label: 'Gestión Editorial',
       icon: 'clock-history',
-      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      allowedRoles: ['admin', 'director', 'monitor'],
       route: '/gestion-flujo-editorial',
     },
     {
@@ -91,7 +91,7 @@ export class SideBar {
     {
       label: 'Estadísticas',
       icon: 'chart',
-      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      allowedRoles: ['admin', 'director', 'monitor'],
       route: '/estadisticas',
     },
   ];

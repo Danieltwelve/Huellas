@@ -897,4 +897,33 @@ export class ArticulosController {
   async eliminarArticulo(@Param('id', ParseIntPipe) id: number) {
     return await this.articulosService.eliminarArticulo(id);
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Get(':id/autores')
+  async getAutoresArticulo(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ id: number; nombre: string }[]> {
+    return this.articulosService.getAutoresArticulo(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Post(':id/autores')
+  async agregarAutorArticulo(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('autorId', ParseIntPipe) autorId: number,
+  ): Promise<{ message: string }> {
+    return this.articulosService.agregarAutorArticulo(id, autorId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Delete(':id/autores/:autorId')
+  async removerAutorArticulo(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('autorId', ParseIntPipe) autorId: number,
+  ): Promise<{ message: string }> {
+    return this.articulosService.removerAutorArticulo(id, autorId);
+  }
 }

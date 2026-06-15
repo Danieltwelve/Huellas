@@ -6,308 +6,238 @@
     </button>
   </div>
   <div class="form-card">
-      <div class="form-head">
-        <div>
-          <p class="form-kicker">Envio editorial</p>
-          <h1 class="form-title">Nuevo artículo</h1>
-          <p class="form-sub">Complete todos los campos requeridos. El archivo no debe superar 10 MB y debe ser .pdf o .docx.</p>
-        </div>
-        <aside class="form-callout" aria-label="Recomendaciones de envio">
-          <h2>Checklist rápido</h2>
-          <p>Ten listo el resumen, palabras clave y archivo principal antes de enviar.</p>
-        </aside>
+    <div class="form-head">
+      <div>
+        <p class="form-kicker">Envio editorial</p>
+        <h1 class="form-title">Nuevo artículo</h1>
+        <p class="form-sub">Complete todos los campos requeridos. El archivo no debe superar 10 MB y debe ser .pdf o
+          .docx.</p>
       </div>
-
-      @if (errorEnvio) {
-        <div class="alert-error">{{ errorEnvio }}</div>
-      }
-
-      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-
-        <!-- Título -->
-        <div class="field-group">
-          <label class="field-label" for="titulo">Título <span class="req">*</span></label>
-          <input
-            id="titulo"
-            type="text"
-            class="field-input"
-            [class.has-error]="fieldInvalid('titulo')"
-            formControlName="titulo"
-            placeholder="Título completo del artículo"
-          />
-          @if (fieldInvalid('titulo')) {
-            <p class="field-error">El título es requerido (máx. 255 caracteres).</p>
-          }
-        </div>
-
-        <!-- Tema -->
-        <div class="field-group">
-          <label class="field-label" for="tema">Tema <span class="req">*</span></label>
-          <div class="tema-menu-shell" [class.has-error]="fieldInvalid('tema_id')">
-            <button
-              type="button"
-              class="tema-menu-trigger"
-              (click)="abrirCerrarTemaMenu()"
-              [attr.aria-expanded]="temaMenuAbierto"
-              aria-controls="tema-menu-panel"
-            >
-              <span class="tema-menu-trigger__text">{{ temaSeleccionadoTexto }}</span>
-              <span class="tema-menu-trigger__icon">▾</span>
-            </button>
-
-            @if (temaMenuAbierto) {
-              <div id="tema-menu-panel" class="tema-menu-panel">
-                @if (!temas.length) {
-                  <div class="tema-menu-empty">Cargando temas...</div>
-                } @else {
-                  @for (grupo of temasAgrupados; track grupo.grupo) {
-                    <div class="tema-menu-group">
-                      <div class="tema-menu-group__title">{{ grupo.grupo }}</div>
-                      <div class="tema-menu-options">
-                        @for (t of grupo.temas; track t.id) {
-                          <button
-                            type="button"
-                            class="tema-menu-option"
-                            [class.is-active]="temaSeleccionado?.id === t.id"
-                            (click)="seleccionarTema(t.id)"
-                          >
-                            <span class="tema-menu-option__name">{{ t.nombre }}</span>
-                            @if (t.descripcion) {
-                              <span class="tema-menu-option__desc">{{ t.descripcion }}</span>
-                            }
-                          </button>
-                        }
-                      </div>
-                    </div>
-                  }
-                }
-              </div>
-            }
-          </div>
-          @if (fieldInvalid('tema_id')) {
-            <p class="field-error">Seleccione un tema.</p>
-          }
-        </div>
-
-        <!-- Resumen -->
-        <div class="field-group">
-          <label class="field-label" for="resumen">
-            Resumen <span class="req">*</span>
-            <span class="char-count">
-              {{ form.get('resumen')?.value?.length ?? 0 }} / 1000
-            </span>
-          </label>
-          <textarea
-            id="resumen"
-            class="field-input"
-            [class.has-error]="fieldInvalid('resumen')"
-            formControlName="resumen"
-            rows="5"
-            placeholder="Mínimo 100 caracteres, máximo 1000"
-          ></textarea>
-          @if (fieldInvalid('resumen')) {
-            @if (form.get('resumen')?.errors?.['required']) {
-              <p class="field-error">El resumen es requerido.</p>
-            } @else if (form.get('resumen')?.errors?.['minlength']) {
-              <p class="field-error">El resumen debe tener al menos 100 caracteres.</p>
-            } @else if (form.get('resumen')?.errors?.['maxlength']) {
-              <p class="field-error">El resumen no puede superar 1000 caracteres.</p>
-            }
-          }
-        </div>
-
-        <!-- Asunto -->
-        <div class="field-group">
-          <label class="field-label" for="asunto">
-            Asunto de envío <span class="req">*</span>
-          </label>
-          <input
-            id="asunto"
-            type="text"
-            class="field-input"
-            [class.has-error]="fieldInvalid('asunto')"
-            formControlName="asunto"
-            placeholder="Asunto principal del envío"
-          />
-          @if (fieldInvalid('asunto')) {
-            <p class="field-error">El asunto es requerido.</p>
-          }
-        </div>
-
-        <!-- Comentarios -->
-        <div class="field-group">
-          <label class="field-label" for="comentarios">Comentarios adicionales</label>
-          <textarea
-            id="comentarios"
-            class="field-input"
-            formControlName="comentarios"
-            rows="3"
-            placeholder="Comentarios o notas adicionales (opcional)"
-          ></textarea>
-        </div>
-
-        <!-- Palabras clave -->
-        <div class="field-group">
-          <label class="field-label" for="palabras">
-            Palabras clave <span class="req">*</span>
-          </label>
-          <div class="keywords-editor" [class.has-error]="fieldInvalid('palabras_clave')">
-            <div class="keywords-chips" *ngIf="palabrasClave.length > 0">
-              @for (palabra of palabrasClave; track palabra; let i = $index) {
-                <span class="keyword-chip" [ngClass]="getKeywordClass(i)">
-                  {{ palabra }}
-                  <button type="button" class="chip-remove" (click)="removeKeyword(i)" aria-label="Eliminar palabra clave">
-                    ×
-                  </button>
-                </span>
-              }
-            </div>
-
-            <div class="keywords-input-row">
-              <input
-                id="palabras"
-                type="text"
-                class="field-input"
-                [value]="keywordInput"
-                (input)="onKeywordInput($event)"
-                (keydown)="onKeywordKeydown($event)"
-                (paste)="onKeywordPaste($event)"
-                placeholder="Escribe una palabra y presiona Enter o coma"
-              />
-              <button type="button" class="btn-add-keyword" (click)="addKeywordFromInput()">Añadir</button>
-            </div>
-          </div>
-          <p class="field-hint">Añade palabras una por una.</p>
-          @if (fieldInvalid('palabras_clave')) {
-            <p class="field-error">Las palabras clave son requeridas.</p>
-          }
-        </div>
-
-        <!-- Archivo -->
-        <div class="field-group">
-          <label class="field-label" for="archivo">
-            Archivo del artículo <span class="req">*</span>
-          </label>
-          <input
-            id="archivo"
-            type="file"
-            class="field-file"
-            [class.has-error]="archivoTocado && !archivoSeleccionado"
-            accept=".pdf,.doc,.docx"
-            required
-            (change)="onFileChange($event)"
-            #archivoInput
-          />
-          <p class="field-hint">Obligatorio. Solo se permiten archivos .pdf, .doc o .docx de hasta 10 MB.</p>
-          @if (archivoSeleccionado) {
-            <div class="file-selected-row">
-              <p class="file-selected">📄 {{ archivoSeleccionado.name }}</p>
-              <button type="button" class="file-clear-btn" (click)="clearArchivo(archivoInput)">
-                × Quitar archivo
-              </button>
-            </div>
-          }
-          @if (archivoError) {
-            <p class="field-error">{{ archivoError }}</p>
-          }
-        </div>
-
-        <!-- Co-autores -->
-        <div class="field-group">
-          <div class="coautores-header">
-            <label class="field-label">Co-autores <span class="opt">(opcional - máx. 2)</span></label>
-            <button type="button" class="btn-add" (click)="addCoautor()" [disabled]="usuariosIds.length >= 2">+ Añadir co-autor</button>
-          </div>
-
-          <div formArrayName="usuarios_ids">
-            @for (ca of usuariosIds.controls; track $index) {
-              <div [formGroupName]="$index" class="coautor-row">
-                <div class="coautor-row-fields">
-                  <input
-                    type="number"
-                    class="field-input"
-                    formControlName="usuario_id"
-                    placeholder="ID del usuario co-autor"
-                  />
-                  <label class="check-label">
-                    <input type="checkbox" formControlName="es_correspondiente" />
-                    Autor correspondiente
-                  </label>
-                </div>
-                <button type="button" class="btn-remove" (click)="removeCoautor($index)">✕</button>
-              </div>
-            }
-          </div>
-          <p class="field-hint">Introduce el ID numérico del usuario para cada co-autor (máximo 2; total de autores = 3).</p>
-        </div>
-
-        <!-- Acciones -->
-        <div class="form-actions">
-          <p class="envio-desactivado" *ngIf="!estadoEnvioCargando && !envioHabilitado">
-            El envío de artículos está deshabilitado temporalmente por el equipo editorial.
-          </p>
-          <button type="button" class="btn-secondary" (click)="volver()">Cancelar</button>
-          <button type="submit" class="btn-primary" [disabled]="enviando || !envioHabilitado">
-            {{ enviando ? 'Enviando...' : (envioHabilitado ? 'Enviar artículo' : 'Envío deshabilitado') }}
-          </button>
-        </div>
-
-      </form>
+      <aside class="form-callout" aria-label="Recomendaciones de envio">
+        <h2>Checklist rápido</h2>
+        <p>Ten listo el resumen, palabras clave y archivo principal antes de enviar.</p>
+      </aside>
     </div>
 
-  @if (showConfirmationModal) {
-    <div class="modal-backdrop" (click)="cancelarConfirmacion()"></div>
-    <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmar-envio-title" (click)="$event.stopPropagation()">
-      <button type="button" class="modal-close" (click)="cancelarConfirmacion()" aria-label="Cerrar confirmación">
-        ×
-      </button>
+    @if (errorEnvio) {
+    <div class="alert-error">{{ errorEnvio }}</div>
+    }
 
-      <div class="confirm-modal__header">
-        <div class="confirm-modal__icon" aria-hidden="true">!</div>
-        <div>
-          <p class="confirm-modal__eyebrow">Confirmar envío</p>
-          <h3 id="confirmar-envio-title">¿Deseas enviar este artículo?</h3>
-          <p>Revisa el resumen antes de continuar. Una vez enviado, el artículo entrará al flujo editorial.</p>
-        </div>
-      </div>
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
 
-      <div class="confirm-modal__summary">
-        @for (item of resumenEnvio; track item.label) {
-          <div class="confirm-modal__row">
-            <span class="confirm-modal__label">{{ item.label }}</span>
-            <span class="confirm-modal__value">{{ item.value }}</span>
-          </div>
+      <!-- Título -->
+      <div class="field-group">
+        <label class="field-label" for="titulo">Título <span class="req">*</span></label>
+        <input id="titulo" type="text" class="field-input" [class.has-error]="fieldInvalid('titulo')"
+          formControlName="titulo" placeholder="Título completo del artículo" />
+        @if (fieldInvalid('titulo')) {
+        <p class="field-error">El título es requerido (máx. 255 caracteres).</p>
         }
       </div>
 
-      <div class="confirm-modal__footer">
-        <button type="button" class="btn-secondary" (click)="cancelarConfirmacion()" [disabled]="enviando">
-          Regresar
-        </button>
-        <button type="button" class="btn-primary" (click)="confirmarEnvio()" [disabled]="enviando">
-          {{ enviando ? 'Enviando...' : 'Confirmar envío' }}
+      <!-- Tema -->
+      <div class="field-group">
+        <label class="field-label" for="tema">Tema <span class="req">*</span></label>
+        <div class="tema-menu-shell" [class.has-error]="fieldInvalid('tema_id')">
+          <button type="button" class="tema-menu-trigger" (click)="abrirCerrarTemaMenu()"
+            [attr.aria-expanded]="temaMenuAbierto" aria-controls="tema-menu-panel">
+            <span class="tema-menu-trigger__text">{{ temaSeleccionadoTexto }}</span>
+            <span class="tema-menu-trigger__icon">▾</span>
+          </button>
+
+          @if (temaMenuAbierto) {
+          <div id="tema-menu-panel" class="tema-menu-panel">
+            @if (!temas.length) {
+            <div class="tema-menu-empty">Cargando temas...</div>
+            } @else {
+            @for (grupo of temasAgrupados; track grupo.grupo) {
+            <div class="tema-menu-group">
+              <div class="tema-menu-group__title">{{ grupo.grupo }}</div>
+              <div class="tema-menu-options">
+                @for (t of grupo.temas; track t.id) {
+                <button type="button" class="tema-menu-option" [class.is-active]="temaSeleccionado?.id === t.id"
+                  (click)="seleccionarTema(t.id)">
+                  <span class="tema-menu-option__name">{{ t.nombre }}</span>
+                  @if (t.descripcion) {
+                  <span class="tema-menu-option__desc">{{ t.descripcion }}</span>
+                  }
+                </button>
+                }
+              </div>
+            </div>
+            }
+            }
+          </div>
+          }
+        </div>
+        @if (fieldInvalid('tema_id')) {
+        <p class="field-error">Seleccione un tema.</p>
+        }
+      </div>
+
+      <!-- Resumen -->
+      <div class="field-group">
+        <label class="field-label" for="resumen">
+          Resumen <span class="req">*</span>
+          <span class="char-count">
+            {{ form.get('resumen')?.value?.length ?? 0 }} / 1000
+          </span>
+        </label>
+        <textarea id="resumen" class="field-input" [class.has-error]="fieldInvalid('resumen')" formControlName="resumen"
+          rows="5" placeholder="Mínimo 100 caracteres, máximo 1000"></textarea>
+        @if (fieldInvalid('resumen')) {
+        @if (form.get('resumen')?.errors?.['required']) {
+        <p class="field-error">El resumen es requerido.</p>
+        } @else if (form.get('resumen')?.errors?.['minlength']) {
+        <p class="field-error">El resumen debe tener al menos 100 caracteres.</p>
+        } @else if (form.get('resumen')?.errors?.['maxlength']) {
+        <p class="field-error">El resumen no puede superar 1000 caracteres.</p>
+        }
+        }
+      </div>
+
+      <!-- Asunto -->
+      <div class="field-group">
+        <label class="field-label" for="asunto">
+          Asunto de envío <span class="req">*</span>
+        </label>
+        <input id="asunto" type="text" class="field-input" [class.has-error]="fieldInvalid('asunto')"
+          formControlName="asunto" placeholder="Asunto principal del envío" />
+        @if (fieldInvalid('asunto')) {
+        <p class="field-error">El asunto es requerido.</p>
+        }
+      </div>
+
+      <!-- Comentarios -->
+      <div class="field-group">
+        <label class="field-label" for="comentarios">Comentarios adicionales</label>
+        <textarea id="comentarios" class="field-input" formControlName="comentarios" rows="3"
+          placeholder="Comentarios o notas adicionales (opcional)"></textarea>
+      </div>
+
+      <!-- Palabras clave -->
+      <div class="field-group">
+        <label class="field-label" for="palabras">
+          Palabras clave <span class="req">*</span>
+        </label>
+        <div class="keywords-editor" [class.has-error]="fieldInvalid('palabras_clave')">
+          <div class="keywords-chips" *ngIf="palabrasClave.length > 0">
+            @for (palabra of palabrasClave; track palabra; let i = $index) {
+            <span class="keyword-chip" [ngClass]="getKeywordClass(i)">
+              {{ palabra }}
+              <button type="button" class="chip-remove" (click)="removeKeyword(i)" aria-label="Eliminar palabra clave">
+                ×
+              </button>
+            </span>
+            }
+          </div>
+
+          <div class="keywords-input-row">
+            <input id="palabras" type="text" class="field-input" [value]="keywordInput" (input)="onKeywordInput($event)"
+              (keydown)="onKeywordKeydown($event)" (paste)="onKeywordPaste($event)"
+              placeholder="Escribe una palabra y presiona Enter o coma" />
+            <button type="button" class="btn-add-keyword" (click)="addKeywordFromInput()">Añadir</button>
+          </div>
+        </div>
+        <p class="field-hint">Añade palabras una por una.</p>
+        @if (fieldInvalid('palabras_clave')) {
+        <p class="field-error">Las palabras clave son requeridas.</p>
+        }
+      </div>
+
+      <!-- Archivo -->
+      <div class="field-group">
+        <label class="field-label" for="archivo">
+          Archivo del artículo <span class="req">*</span>
+        </label>
+        <input id="archivo" type="file" class="field-file" [class.has-error]="archivoTocado && !archivoSeleccionado"
+          accept=".pdf,.doc,.docx" required (change)="onFileChange($event)" #archivoInput />
+        <p class="field-hint">Obligatorio. Solo se permiten archivos .pdf, .doc o .docx de hasta 10 MB.</p>
+        @if (archivoSeleccionado) {
+        <div class="file-selected-row">
+          <p class="file-selected">📄 {{ archivoSeleccionado.name }}</p>
+          <button type="button" class="file-clear-btn" (click)="clearArchivo(archivoInput)">
+            × Quitar archivo
+          </button>
+        </div>
+        }
+        @if (archivoError) {
+        <p class="field-error">{{ archivoError }}</p>
+        }
+      </div>
+
+      <!-- Co-autores (componente hijo) -->
+      <app-co-autores [coautoresFormArray]="usuariosIds" [maxCoautores]="2" [autorPrincipalId]="usuarioActualId"
+        (autoresCargados)="onAutoresCargados($event)"></app-co-autores>
+
+      <!-- Acciones -->
+      <div class="form-actions">
+        <p class="envio-desactivado" *ngIf="!estadoEnvioCargando && !envioHabilitado">
+          El envío de artículos está deshabilitado temporalmente por el equipo editorial.
+        </p>
+        <button type="button" class="btn-secondary" (click)="volver()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="enviando || !envioHabilitado">
+          {{ enviando ? 'Enviando...' : (envioHabilitado ? 'Enviar artículo' : 'Envío deshabilitado') }}
         </button>
       </div>
+
+    </form>
+  </div>
+
+  @if (showConfirmationModal) {
+  <div class="modal-backdrop" (click)="cancelarConfirmacion()"></div>
+  <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmar-envio-title"
+    (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="cancelarConfirmacion()" aria-label="Cerrar confirmación">
+      ×
+    </button>
+
+    <div class="confirm-modal__header">
+      <div class="confirm-modal__icon" aria-hidden="true">!</div>
+      <div>
+        <p class="confirm-modal__eyebrow">Confirmar envío</p>
+        <h3 id="confirmar-envio-title">¿Deseas enviar este artículo?</h3>
+        <p>Revisa el resumen antes de continuar. Una vez enviado, el artículo entrará al flujo editorial.</p>
+      </div>
     </div>
+
+    <div class="confirm-modal__summary">
+      @for (item of resumenEnvio; track item.label) {
+      <div class="confirm-modal__row">
+        <span class="confirm-modal__label">{{ item.label }}</span>
+        <span class="confirm-modal__value">{{ item.value }}</span>
+      </div>
+      }
+    </div>
+
+    <div class="confirm-modal__footer">
+      <button type="button" class="btn-secondary" (click)="cancelarConfirmacion()" [disabled]="enviando">
+        Regresar
+      </button>
+      <button type="button" class="btn-primary" (click)="confirmarEnvio()" [disabled]="enviando">
+        {{ enviando ? 'Enviando...' : 'Confirmar envío' }}
+      </button>
+    </div>
+  </div>
   }
 
   @if (exito) {
-    <div class="modal-backdrop"></div>
-    <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="exito-envio-title">
-      <div class="confirm-modal__header">
-        <div class="success-modal__icon" aria-hidden="true">✓</div>
-        <div>
-          <p class="confirm-modal__eyebrow">Envío exitoso</p>
-          <h3 id="exito-envio-title">¡Artículo enviado!</h3>
-          <p>Su artículo fue enviado con éxito. En breve será redirigido al panel de autor.</p>
-        </div>
-      </div>
-
-      <div class="confirm-modal__footer">
-        <button type="button" class="btn-primary" (click)="volver()">
-          Ir al panel
-        </button>
+  <div class="modal-backdrop"></div>
+  <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="exito-envio-title">
+    <div class="confirm-modal__header">
+      <div class="success-modal__icon" aria-hidden="true">✓</div>
+      <div>
+        <p class="confirm-modal__eyebrow">Envío exitoso</p>
+        <h3 id="exito-envio-title">¡Artículo enviado!</h3>
+        <p>Su artículo fue enviado con éxito. En breve será redirigido al panel de autor.</p>
       </div>
     </div>
+
+    <div class="confirm-modal__footer">
+      <button type="button" class="btn-primary" (click)="volver()">
+        Ir al panel
+      </button>
+    </div>
+  </div>
   }
 </div>

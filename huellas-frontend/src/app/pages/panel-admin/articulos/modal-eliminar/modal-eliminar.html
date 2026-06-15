@@ -1,0 +1,18 @@
+<div class="modal-overlay" (click)="cancelar()"></div>
+<div class="modal-container">
+  <div class="modal-header">
+    <h3>Eliminar artículo</h3>
+    <button class="modal-close" (click)="cancelar()">×</button>
+  </div>
+  <div class="modal-body">
+    <p>¿Estás seguro de que deseas eliminar el artículo <strong>{{ articulo?.codigo }} - {{ articulo?.titulo
+        }}</strong>?</p>
+    <p class="text-warning">Esta acción no se puede deshacer.</p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-secondary" (click)="cancelar()" [disabled]="eliminando">Cancelar</button>
+    <button class="btn-primary btn-danger" (click)="confirmarEliminacion()" [disabled]="eliminando">
+      {{ eliminando ? 'Eliminando...' : 'Eliminar' }}
+    </button>
+  </div>
+</div>

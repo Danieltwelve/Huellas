@@ -9,7 +9,8 @@ import {
 import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { ModalEditar } from './modal-editar/modal-editar';
+import { ModalEliminar } from './modal-eliminar/modal-eliminar';
 
 type EstadoEvaluacionComite = 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado';
 type EstadoFiltroComite = 'todos' | EstadoEvaluacionComite;
@@ -45,7 +46,7 @@ interface ArticuloListado {
 @Component({
   selector: 'app-articulos',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ModalEditar, ModalEliminar],
   templateUrl: './articulos.html',
   styleUrl: './articulos.css',
 })
@@ -68,6 +69,12 @@ export class Articulos implements OnInit, OnDestroy {
 
   articulos: ArticuloListado[] = [];
   filteredArticulos: ArticuloListado[] = [];
+
+  filtroEtapa: string = 'todas';
+
+  articuloParaEditar: any = null;
+
+  articuloParaEliminar: any = null;
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -92,9 +99,7 @@ export class Articulos implements OnInit, OnDestroy {
       this.applySearch();
     });
 
-    this.pageTitle = this.committeeView
-      ? 'Panel Comité Editorial'
-      : 'Artículos';
+    this.pageTitle = this.committeeView ? 'Panel Comité Editorial' : 'Artículos';
 
     const source$ = this.committeeView
       ? this.articulosService.getArticulosComiteAsignados()
@@ -137,7 +142,6 @@ export class Articulos implements OnInit, OnDestroy {
         this.historialEvaluaciones = [];
       },
     });
-
   }
 
   onSearch(term: string): void {
@@ -167,6 +171,13 @@ export class Articulos implements OnInit, OnDestroy {
       base = base.filter((articulo) => articulo.estadoEvaluacion === this.filtroEstadoComite);
     }
 
+    if (this.filtroEtapa !== 'todas') {
+      base = base.filter((articulo) => {
+        const etapaNormalizada = this.normalizarTexto(articulo.etapaActual);
+        return etapaNormalizada === this.filtroEtapa;
+      });
+    }
+
     const filtrados = !normalizedTerm
       ? base
       : base.filter((articulo) => {
@@ -180,7 +191,6 @@ export class Articulos implements OnInit, OnDestroy {
           ]
             .join(' ')
             .toLowerCase();
-
           return searchableText.includes(normalizedTerm);
         });
 
@@ -190,7 +200,7 @@ export class Articulos implements OnInit, OnDestroy {
   private mapArticulo(articulo: ArticuloResumenBackend, ordenLlegada: number): ArticuloListado {
     const etapaActual = articulo.etapa_nombre?.trim() || 'Desconocida';
     const fechaReferencia = this.committeeView
-      ? articulo.fecha_asignacion ?? articulo.fecha_inicio
+      ? (articulo.fecha_asignacion ?? articulo.fecha_inicio)
       : articulo.fecha_inicio;
     const fecha = this.parseFecha(fechaReferencia);
     const estadoComite = this.mapEstadoComite(articulo.estado_evaluacion);
@@ -254,10 +264,7 @@ export class Articulos implements OnInit, OnDestroy {
   exportarExcel(): void {
     this.articulosService.descargarReporteComiteExcel().subscribe({
       next: (blob) => {
-        this.descargarBlob(
-          blob,
-          `reporte-comite-${new Date().toISOString().slice(0, 10)}.xlsx`,
-        );
+        this.descargarBlob(blob, `reporte-comite-${new Date().toISOString().slice(0, 10)}.xlsx`);
       },
     });
   }
@@ -265,10 +272,7 @@ export class Articulos implements OnInit, OnDestroy {
   exportarPdf(): void {
     this.articulosService.descargarReporteComitePdf().subscribe({
       next: (blob) => {
-        this.descargarBlob(
-          blob,
-          `reporte-comite-${new Date().toISOString().slice(0, 10)}.pdf`,
-        );
+        this.descargarBlob(blob, `reporte-comite-${new Date().toISOString().slice(0, 10)}.pdf`);
       },
     });
   }
@@ -473,11 +477,13 @@ export class Articulos implements OnInit, OnDestroy {
   }
 
   get totalAceptados(): number {
-    return this.articulos.filter((articulo) => articulo.estadoEvaluacion === 'evaluado-aceptado').length;
+    return this.articulos.filter((articulo) => articulo.estadoEvaluacion === 'evaluado-aceptado')
+      .length;
   }
 
   get totalRechazados(): number {
-    return this.articulos.filter((articulo) => articulo.estadoEvaluacion === 'evaluado-rechazado').length;
+    return this.articulos.filter((articulo) => articulo.estadoEvaluacion === 'evaluado-rechazado')
+      .length;
   }
 
   verArticulo(id: number): void {
@@ -487,5 +493,47 @@ export class Articulos implements OnInit, OnDestroy {
     }
 
     this.router.navigate(['/flujo-trabajo-articulo', id]);
+  }
+
+  setFiltroEtapa(valor: string): void {
+    this.filtroEtapa = valor;
+    this.applySearch();
+  }
+
+  editarArticulo(articulo: any): void {
+    this.articuloParaEditar = articulo;
+  }
+
+  cerrarModalEditar(): void {
+    this.articuloParaEditar = null;
+  }
+
+  recargarArticulos(): void {
+    const source$ = this.committeeView
+      ? this.articulosService.getArticulosComiteAsignados()
+      : this.articulosService.getResumenArticulos();
+
+    source$.subscribe({
+      next: (response) => {
+        this.articulos = response.map((articulo, index) => this.mapArticulo(articulo, index));
+        this.applySearch();
+      },
+      error: (error) => {
+        console.error('Error al recargar artículos:', error);
+      },
+    });
+  }
+
+  eliminarArticulo(articulo: any): void {
+    this.articuloParaEliminar = articulo;
+  }
+
+  cerrarModalEliminar(): void {
+    this.articuloParaEliminar = null;
+  }
+
+  confirmarEliminacion(evento: any): void {
+    this.recargarArticulos();
+    this.cerrarModalEliminar();
   }
 }
