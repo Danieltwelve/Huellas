@@ -61,6 +61,8 @@ export class ArticulosService {
     'Evaluación de Turnitin: REQUIERE CORRECCIÓN';
   private static readonly ASUNTO_EVALUACION_TURNITIN_DESCARTADO =
     'Evaluación de Turnitin: DESCARTADO';
+  private static readonly ASUNTO_EVALUACION_TURNITIN_ACEPTADO =
+    'Evaluación de Turnitin: ACEPTADO SIN CAMBIOS';
   private static readonly ASUNTO_EVALUACION_COMITE_APROBADO =
     'Evaluación de comité editorial: ACEPTADO';
   private static readonly ASUNTO_EVALUACION_COMITE_RECHAZADO =
@@ -657,42 +659,44 @@ export class ArticulosService {
           );
         }
 
-        const TurnitinRequestAsuntos = [
-          'solicitud',
-          'solicitar cambios',
-          'solicitar correccion',
-          'solicitar corrección',
-          'requiere corrección',
-          'requiere correccion',
-        ];
+        if (articulo.fechaVencimientoCorreccion) {
+          const TurnitinRequestAsuntos = [
+            'solicitud',
+            'solicitar cambios',
+            'solicitar correccion',
+            'solicitar corrección',
+            'requiere corrección',
+            'requiere correccion',
+          ];
 
-        const TurnitinAcciones = observacionesTurnitin.filter((obs) => {
-          const asunto = (obs.asunto ?? '').toLowerCase();
-          const esRequest = TurnitinRequestAsuntos.some((a) =>
-            asunto.includes(a),
-          );
-          const esAutorUpload =
-            asunto === ArticulosService.ASUNTO_CORRECCION_AUTOR.toLowerCase();
-          const esAceptacion =
-            asunto ===
-            ArticulosService.ASUNTO_CORRECCION_ACEPTADA.toLowerCase();
-
-          return esRequest || esAutorUpload || esAceptacion;
-        });
-
-        if (TurnitinAcciones.length > 0) {
-          TurnitinAcciones.sort((a, b) => b.id - a.id);
-          const ultimaAccion = TurnitinAcciones[0];
-          const asuntoUltima = (ultimaAccion.asunto ?? '').toLowerCase();
-
-          const esAceptada =
-            asuntoUltima ===
-            ArticulosService.ASUNTO_CORRECCION_ACEPTADA.toLowerCase();
-
-          if (!esAceptada) {
-            throw new BadRequestException(
-              'No puedes avanzar de etapa hasta que el autor envíe las correcciones y estas sean aceptadas por el monitor.',
+          const TurnitinAcciones = observacionesTurnitin.filter((obs) => {
+            const asunto = (obs.asunto ?? '').toLowerCase();
+            const esRequest = TurnitinRequestAsuntos.some((a) =>
+              asunto.includes(a),
             );
+            const esAutorUpload =
+              asunto === ArticulosService.ASUNTO_CORRECCION_AUTOR.toLowerCase();
+            const esAceptacion =
+              asunto ===
+              ArticulosService.ASUNTO_CORRECCION_ACEPTADA.toLowerCase();
+
+            return esRequest || esAutorUpload || esAceptacion;
+          });
+
+          if (TurnitinAcciones.length > 0) {
+            TurnitinAcciones.sort((a, b) => b.id - a.id);
+            const ultimaAccion = TurnitinAcciones[0];
+            const asuntoUltima = (ultimaAccion.asunto ?? '').toLowerCase();
+
+            const esAceptada =
+              asuntoUltima ===
+              ArticulosService.ASUNTO_CORRECCION_ACEPTADA.toLowerCase();
+
+            if (!esAceptada) {
+              throw new BadRequestException(
+                'No puedes avanzar de etapa hasta que el autor envíe las correcciones y estas sean aceptadas por el monitor.',
+              );
+            }
           }
         }
       }
@@ -886,6 +890,7 @@ export class ArticulosService {
     porcentaje: number,
     observacion?: string,
     archivo?: Express.Multer.File,
+    decision?: string,
   ) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -908,14 +913,29 @@ export class ArticulosService {
         );
       }
 
-      const evaluacionDescarta = porcentaje >= 65;
-      const asuntoEvaluacion = evaluacionDescarta
-        ? ArticulosService.ASUNTO_EVALUACION_TURNITIN_DESCARTADO
-        : ArticulosService.ASUNTO_EVALUACION_TURNITIN_CORRECCION;
+      const evaluacionDescarta = porcentaje >= 65 || decision === 'rechazado_similitud';
 
-      const comentarioBase = evaluacionDescarta
-        ? `Evaluación de Turnitin: ${porcentaje}% de similitud. El artículo supera el umbral permitido y queda descartado.`
-        : `Evaluación de Turnitin: ${porcentaje}% de similitud. El artículo puede continuar con una única corrección del autor.`;
+      let asuntoEvaluacion = ArticulosService.ASUNTO_EVALUACION_TURNITIN_CORRECCION;
+      if (evaluacionDescarta) {
+        asuntoEvaluacion = ArticulosService.ASUNTO_EVALUACION_TURNITIN_DESCARTADO;
+      } else if (decision === 'aceptado') {
+        asuntoEvaluacion = ArticulosService.ASUNTO_EVALUACION_TURNITIN_ACEPTADO;
+      }
+
+      let comentarioBase = '';
+      if (evaluacionDescarta) {
+        if (porcentaje >= 65) {
+          comentarioBase = `Evaluación de Turnitin: ${porcentaje}% de similitud. El artículo supera el umbral permitido y queda descartado.`;
+        } else {
+          comentarioBase = `Evaluación de Turnitin: ${porcentaje}% de similitud. El artículo queda descartado por similitud.`;
+        }
+      } else {
+        if (decision === 'aceptado') {
+          comentarioBase = `Evaluación de Turnitin: ${porcentaje}% de similitud. El artículo fue aceptado sin cambios.`;
+        } else {
+          comentarioBase = `Evaluación de Turnitin: ${porcentaje}% de similitud. El artículo puede continuar con una única corrección del autor.`;
+        }
+      }
 
       const observacionFinal = observacion?.trim()
         ? `${observacion.trim()}\n\n${comentarioBase}`
@@ -946,12 +966,15 @@ export class ArticulosService {
       articulo.solicitudProrrogaCorreccionPendiente = false;
       await queryRunner.manager.save(articulo);
 
-      if (!evaluacionDescarta) {
+      if (!evaluacionDescarta && decision === 'solicitar_cambios') {
         const fechaVencimientoCorreccion = new Date();
         fechaVencimientoCorreccion.setDate(
           fechaVencimientoCorreccion.getDate() + 5,
         );
         articulo.fechaVencimientoCorreccion = fechaVencimientoCorreccion;
+        await queryRunner.manager.save(articulo);
+      } else {
+        articulo.fechaVencimientoCorreccion = null;
         await queryRunner.manager.save(articulo);
       }
 
@@ -993,13 +1016,20 @@ export class ArticulosService {
 
       await queryRunner.commitTransaction();
 
+      let messageExito = '';
+      if (evaluacionDescarta) {
+        messageExito = 'Artículo descartado por resultado de Turnitin.';
+      } else if (decision === 'aceptado') {
+        messageExito = 'Turnitin aprobado sin cambios. El artículo puede continuar.';
+      } else {
+        messageExito = 'Turnitin aprobado. Se notificó al autor para una única corrección.';
+      }
+
       return {
-        message: evaluacionDescarta
-          ? 'Artículo descartado por resultado de Turnitin.'
-          : 'Turnitin aprobado. Se notificó al autor para una única corrección.',
+        message: messageExito,
         evaluacion: {
           porcentaje,
-          resultado: evaluacionDescarta ? 'descartado' : 'correccion-requerida',
+          resultado: evaluacionDescarta ? 'descartado' : (decision === 'aceptado' ? 'aceptado' : 'correccion-requerida'),
           observacionId: observacionGuardada.id,
         },
         etapaActual: {
@@ -2670,6 +2700,13 @@ export class ArticulosService {
       return false;
     }
 
+    if (
+      articulo.etapaActualId === ArticulosService.ETAPA_TURNITIN &&
+      !articulo.fechaVencimientoCorreccion
+    ) {
+      return false;
+    }
+
     const autoresIds = new Set(
       (articulo.autores ?? []).map((autor) => autor.id),
     );
@@ -2708,8 +2745,13 @@ export class ArticulosService {
         continue;
       }
 
+      const esTurnitinAceptado =
+        observacion.etapaId === ArticulosService.ETAPA_TURNITIN &&
+        (observacion.asunto ?? '').toLowerCase().includes('aceptado sin cambios');
+
       const esSolicitudCorreccion =
         !esAutor &&
+        !esTurnitinAceptado &&
         /(correccion|corrección|ajuste|subsan|pendiente)/.test(texto);
 
       if (esSolicitudCorreccion) {
@@ -3041,6 +3083,14 @@ export class ArticulosService {
   private obtenerEstadoCorreccionDesdeObservacion(
     observacion: Observacion,
   ): 'solicitada' | 'enviada' | 'aceptada' | null {
+    const esTurnitinAceptado =
+      observacion.etapaId === ArticulosService.ETAPA_TURNITIN &&
+      (observacion.asunto ?? '').toLowerCase().includes('aceptado sin cambios');
+
+    if (esTurnitinAceptado) {
+      return null;
+    }
+
     const texto =
       `${observacion.asunto ?? ''} ${observacion.comentarios ?? ''}`.toLowerCase();
 

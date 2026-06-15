@@ -132,6 +132,18 @@ export const routes: Routes = [
       allowedRoles: ['admin', 'director', 'monitor'],
     },
   },
+  {
+    path: 'notificaciones',
+    loadComponent: () =>
+      import('./pages/centro-notificaciones/centro-notificaciones.component').then(
+        (m) => m.CentroNotificacionesComponent,
+      ),
+    canActivate: [claimsGuard],
+    data: {
+      requiredClaim: 'canManageArticulos',
+      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+    },
+  },
 
   {
     path: 'flujo-trabajo-articulo/:id',

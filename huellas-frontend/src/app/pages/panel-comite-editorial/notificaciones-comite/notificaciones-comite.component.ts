@@ -80,9 +80,9 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
         next: ({ articulos, vencimientos }) => {
           console.log('[Notificaciones] ✓ Artículos asignados:', articulos.length, 'items');
           if (articulos.length > 0) {
-            console.table(articulos.map(a => ({ 
-              id: a.id, 
-              codigo: a.codigo, 
+            console.table(articulos.map(a => ({
+              id: a.id,
+              codigo: a.codigo,
               titulo: a.titulo,
               estado: a.estado_evaluacion,
               diasRestantes: a.dias_restantes

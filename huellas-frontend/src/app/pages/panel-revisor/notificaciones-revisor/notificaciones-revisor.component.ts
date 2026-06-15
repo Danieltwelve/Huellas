@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { NOTIFICACIONES_REVISOR_MOCK } from '../panel-revisor.data';
@@ -7,6 +8,7 @@ import { NotificacionRevisorDto, RevisoresService } from '../../../core/revisore
 @Component({
   selector: 'app-notificaciones-revisor',
   standalone: true,
+  imports: [CommonModule],
   templateUrl: './notificaciones-revisor.component.html',
   styleUrls: ['./notificaciones-revisor.component.css'],
 })
@@ -14,19 +16,28 @@ export class NotificacionesRevisorComponent implements OnInit {
   private readonly revisoresService = inject(RevisoresService);
   private readonly router = inject(Router);
 
-  notificaciones: Array<NotificacionRevisorDto & { leida: boolean }> = NOTIFICACIONES_REVISOR_MOCK.map((item) => ({ ...item, leida: false }));
+  notificaciones: Array<NotificacionRevisorDto & { leida: boolean; tipo?: string }> = [];
   filtro: 'todas' | 'no-leidas' = 'todas';
 
   async ngOnInit(): Promise<void> {
     try {
       const idsLeidos = this.obtenerIdsLeidos();
       const data = await firstValueFrom(this.revisoresService.getNotificacionesRevisor());
-      this.notificaciones = data.map((item) => ({
+      
+      this.notificaciones = data.map((item) => {
+        const mockItem = NOTIFICACIONES_REVISOR_MOCK.find(m => m.id === item.id);
+        return {
+          ...item,
+          leida: idsLeidos.has(item.id),
+          tipo: mockItem ? mockItem.tipo : (item.id.startsWith('ASIG') ? 'asignacion' : 'mensaje')
+        };
+      });
+    } catch {
+      const idsLeidos = this.obtenerIdsLeidos();
+      this.notificaciones = NOTIFICACIONES_REVISOR_MOCK.map((item) => ({
         ...item,
         leida: idsLeidos.has(item.id),
       }));
-    } catch {
-      this.notificaciones = NOTIFICACIONES_REVISOR_MOCK.map((item) => ({ ...item, leida: false }));
     }
   }
 
@@ -43,9 +54,14 @@ export class NotificacionesRevisorComponent implements OnInit {
 
   marcarLeida(id: string): void {
     this.notificaciones = this.notificaciones.map((item) =>
-      item.id === id ? { ...item, leida: true } : item,
+      item.id === id ? { ...item, leida: true } : item
     );
     this.guardarIdsLeidos(new Set(this.notificaciones.filter((item) => item.leida).map((item) => item.id)));
+  }
+
+  marcarTodasComoLeidas(): void {
+    this.notificaciones = this.notificaciones.map((item) => ({ ...item, leida: true }));
+    this.guardarIdsLeidos(new Set(this.notificaciones.map((item) => item.id)));
   }
 
   abrirNotificacion(notificacion: NotificacionRevisorDto): void {
@@ -58,6 +74,41 @@ export class NotificacionesRevisorComponent implements OnInit {
     if (typeof notificacion.articuloId === 'number') {
       this.router.navigateByUrl(`/panel-revisor/realizar-revision?articuloId=${notificacion.articuloId}`);
     }
+  }
+
+  getArticuloRef(item: NotificacionRevisorDto): string | null {
+    if (item.codigoArticulo) {
+      return item.codigoArticulo;
+    }
+    const match = item.detalle.match(/(REV-\d+-\d+|FERCH-\d+)/i);
+    if (match) {
+      return match[1];
+    }
+    return null;
+  }
+
+  getTiempoTranscurrido(fechaStr: string): string {
+    const fecha = new Date(fechaStr);
+    if (Number.isNaN(fecha.getTime())) {
+      return '';
+    }
+
+    const diffMs = Date.now() - fecha.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHor = Math.floor(diffMin / 60);
+    const diffDia = Math.floor(diffHor / 24);
+
+    if (diffSec < 60) {
+      return 'Hace unos segundos';
+    }
+    if (diffMin < 60) {
+      return `Hace ${diffMin} min`;
+    }
+    if (diffHor < 24) {
+      return `Hace ${diffHor} h`;
+    }
+    return `Hace ${diffDia} d`;
   }
 
   private obtenerIdsLeidos(): Set<string> {

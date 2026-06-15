@@ -9,29 +9,30 @@
 
   <div class="notify-list">
     @if (loading) {
-      <article class="notify-empty">Cargando notificaciones...</article>
+    <article class="notify-empty">Cargando notificaciones...</article>
     }
 
     @if (!loading && error) {
-      <article class="notify-empty notify-empty--error">{{ error }}</article>
+    <article class="notify-empty notify-empty--error">{{ error }}</article>
     }
 
     @for (item of visibles; track item.titulo + item.fecha) {
-      <article class="notify-item" [class.unread]="!item.leida" (click)="abrirNotificacion(item)">
-        <span class="type" [class.type-action]="item.tipo === 'accion'" [class.type-info]="item.tipo === 'informacion'" [class.type-success]="item.tipo === 'exito'"></span>
-        <div>
-          <h3>{{ item.titulo }}</h3>
-          <p>{{ item.detalle }}</p>
-          <small class="article-ref">{{ item.codigoArticulo }} - {{ item.tituloArticulo }}</small>
-        </div>
-        <span class="date">{{ item.fechaTexto }}</span>
-      </article>
+    <article class="notify-item" [class.unread]="!item.leida" (click)="abrirNotificacion(item)">
+      <span class="type" [class.type-action]="item.tipo === 'accion'" [class.type-info]="item.tipo === 'informacion'"
+        [class.type-success]="item.tipo === 'exito'"></span>
+      <div>
+        <h3>{{ item.titulo }}</h3>
+        <p>{{ item.detalle }}</p>
+        <small class="article-ref">{{ item.codigoArticulo }} - {{ item.tituloArticulo }}</small>
+      </div>
+      <span class="date">{{ item.fechaTexto }}</span>
+    </article>
     }
 
     @if (!loading && !error && visibles.length === 0) {
-      <article class="notify-empty">
-        No hay notificaciones pendientes para este filtro.
-      </article>
+    <article class="notify-empty">
+      No hay notificaciones pendientes para este filtro.
+    </article>
     }
   </div>
 </section>

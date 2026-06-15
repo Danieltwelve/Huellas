@@ -54,7 +54,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'director', 'monitor')
   @Get('comite-editorial')
-  async getCommitteeMembers(): Promise<User[]> {
+  async getCommitteeMembers(): Promise<any[]> {
     return this.usersService.findCommitteeMembers();
   }
 

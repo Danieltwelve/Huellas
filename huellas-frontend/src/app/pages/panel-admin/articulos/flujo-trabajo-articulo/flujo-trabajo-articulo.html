@@ -353,12 +353,12 @@
             <select aria-label="Seleccionar miembro del comité" [(ngModel)]="committeeMemberSeleccionadoId">
               <option [ngValue]="null" disabled>Selecciona un integrante...</option>
               <option *ngFor="let member of committeeMembers" [ngValue]="member.id">
-                {{ member.nombre }}
+                {{ member.nombre }} ({{ member.articulosAsignados ?? 0 }} asignados)
               </option>
             </select>
             <p class="file-name" *ngIf="miembroComiteSeleccionado as seleccionado"
               style="margin-top: 6px; padding-left: 4px;">
-              Correo: {{ seleccionado.correo }}
+              Correo: {{ seleccionado.correo }} | Artículos asignados: {{ seleccionado.articulosAsignados ?? 0 }}
             </p>
           </div>
 

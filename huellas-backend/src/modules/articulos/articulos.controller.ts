@@ -647,6 +647,7 @@ export class ArticulosController {
         porcentaje,
         body.observacion?.trim(),
         archivo,
+        body.decision,
       );
 
       this.logger.log(

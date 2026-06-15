@@ -1,25 +1,39 @@
 :host {
   display: block;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 1.5rem;
 }
 
-.head {
-  margin-bottom: 1.25rem;
+.notify-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.head h1 {
+.notify-header {
+  margin-bottom: 0.5rem;
+}
+
+.header-title-area h1 {
   margin: 0;
   font-size: 2rem;
+  font-weight: 800;
   color: #17243b;
 }
 
-.head p {
+.header-title-area p {
   margin: 0.5rem 0 0;
   color: #4d6279;
   font-size: 1.02rem;
 }
 
 .filters-row {
-  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .filters {
@@ -29,8 +43,8 @@
 
 .filters button {
   border: 1.5px solid #d5dfea;
-  border-radius: 999px;
-  background: #fff;
+  border-radius: 99px;
+  background: #ffffff;
   padding: 0.45rem 1.15rem;
   cursor: pointer;
   font-weight: 700;
@@ -43,23 +57,19 @@
 .filters button:hover {
   background: #f1f5f9;
   border-color: #cbd5e1;
+  color: #17243b;
 }
 
 .filters .active {
   background: #00a39a;
   border-color: #00a39a;
-  color: #fff;
+  color: #ffffff;
 }
 
 .filters .active:hover {
   background: #008f87;
   border-color: #008f87;
-  color: #fff;
-}
-
-/* Botón para marcar todo como leído */
-.mark-all-wrap {
-  margin-bottom: 1.2rem;
+  color: #ffffff;
 }
 
 .btn-mark-all {
@@ -81,7 +91,6 @@
   color: #17243b;
 }
 
-/* Lista de notificaciones */
 .notify-list {
   display: grid;
   gap: 0.8rem;
@@ -89,7 +98,7 @@
 
 /* Tarjeta moderna de notificación */
 .notify-card {
-  border: 1.5px solid #d5dfea; /* Default thin border */
+  border: 1.5px solid #d5dfea;
   border-radius: 14px;
   background: #ffffff;
   padding: 1.1rem 1.25rem;
@@ -115,12 +124,11 @@
   box-shadow: 0 4px 10px rgba(32, 201, 151, 0.05);
 }
 
-/* Columna del indicador dot */
 .indicator-column {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 22px; /* Alineación con h2 */
+  height: 22px;
 }
 
 .indicator-dot {
@@ -142,12 +150,16 @@
   box-shadow: 0 0 0 3px rgba(34, 139, 230, 0.15);
 }
 
+.indicator-dot.green {
+  background-color: #40c057;
+  box-shadow: 0 0 0 3px rgba(64, 192, 87, 0.15);
+}
+
 .indicator-dot.read {
   background-color: transparent;
   box-shadow: none;
 }
 
-/* Columna de contenido */
 .content-column {
   flex-grow: 1;
   display: flex;
@@ -182,7 +194,6 @@
   margin-top: 0.25rem;
 }
 
-/* Columna de tiempo */
 .time-column {
   margin-left: auto;
   align-self: flex-start;
@@ -195,10 +206,20 @@
   font-weight: 500;
 }
 
-/* Tarjeta vacía */
+.loading-state, .error-state {
+  text-align: center;
+  padding: 2rem;
+  font-size: 0.95rem;
+  color: #6d8198;
+}
+
+.error-state {
+  color: #ef4444;
+}
+
 .empty-card {
-  border: 1.5px dashed #ccd8e5;
-  border-radius: 14px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
   background: #ffffff;
   padding: 2rem;
   text-align: center;
@@ -206,11 +227,10 @@
 
 .empty-text {
   margin: 0;
-  color: #6d8198;
-  font-size: 0.95rem;
+  color: #64748b;
+  font-size: 0.88rem;
 }
 
-/* Adaptación responsive */
 @media (max-width: 640px) {
   .notify-card {
     flex-direction: column;

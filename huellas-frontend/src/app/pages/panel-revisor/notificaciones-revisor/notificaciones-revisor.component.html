@@ -1,31 +1,45 @@
 <section class="head">
-  <h1>Notificaciones</h1>
-  <p>Alertas de asignacion, plazos y mensajes editoriales.</p>
+  <h1>Centro de Notificaciones</h1>
+  <p>Alertas de asignación, plazos y mensajes editoriales.</p>
 </section>
 
-<div class="filters">
-  <button type="button" [class.active]="filtro === 'todas'" (click)="setFiltro('todas')">Todas</button>
-  <button type="button" [class.active]="filtro === 'no-leidas'" (click)="setFiltro('no-leidas')">No leidas</button>
+<div class="filters-row">
+  <div class="filters">
+    <button type="button" [class.active]="filtro === 'todas'" (click)="setFiltro('todas')">Todas</button>
+    <button type="button" [class.active]="filtro === 'no-leidas'" (click)="setFiltro('no-leidas')">No leídas</button>
+  </div>
+</div>
+
+<div class="mark-all-wrap">
+  <button type="button" class="btn-mark-all" (click)="marcarTodasComoLeidas()">
+    Marcar todo como leído
+  </button>
 </div>
 
 <div class="notify-list">
   @for (item of visibles; track item.id) {
-    <article class="notify-item" [class.unread]="!item.leida">
-      <div>
-        <h2>{{ item.titulo }}</h2>
-        <p>{{ item.detalle }}</p>
-        <small>{{ item.fecha }}</small>
+    <article class="notify-card" [class.unread]="!item.leida" (click)="abrirNotificacion(item)" tabindex="0" role="button" aria-label="Abrir notificación">
+      <div class="indicator-column">
+        <span class="indicator-dot" [class.orange]="item.tipo === 'plazo' || item.tipo === 'mensaje'" [class.blue]="item.tipo === 'asignacion'" [class.read]="item.leida"></span>
       </div>
-      <div class="notify-actions">
-        <button type="button" (click)="abrirNotificacion(item)">Abrir</button>
-        <button type="button" (click)="marcarLeida(item.id)" [disabled]="item.leida">
-          {{ item.leida ? 'Leida' : 'Marcar leida' }}
-        </button>
+      
+      <div class="content-column">
+        <h2>{{ item.titulo }}</h2>
+        <p class="detail">{{ item.detalle }}</p>
+        @if (getArticuloRef(item); as ref) {
+          <span class="articulo-ref">{{ ref }}</span>
+        }
+      </div>
+
+      <div class="time-column">
+        <small class="relative-time">{{ getTiempoTranscurrido(item.fecha) }}</small>
       </div>
     </article>
   }
 
   @if (visibles.length === 0) {
-    <p class="empty">No hay notificaciones para este filtro.</p>
+    <div class="empty-card">
+      <p class="empty-text">No tienes notificaciones en este momento.</p>
+    </div>
   }
 </div>

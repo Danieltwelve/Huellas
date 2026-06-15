@@ -201,7 +201,7 @@
       <ul class="historial-list">
         @for (h of historialEvaluaciones; track h.articuloId + '-' + h.fechaEvaluacion) {
         <li>
-          <strong>{{ h.codigo }}</strong> - {{ h.decision }} - {{ h.fechaEvaluacion | date: 'short' }}
+          <strong>{{ h.codigo }}</strong> - {{ h.decision }} - {{ h.fechaEvaluacion | date: 'dd/MM/yyyy' }}
           @if (h.diasEvaluacion !== null) {
           <span>({{ h.diasEvaluacion }} días)</span>
           }
