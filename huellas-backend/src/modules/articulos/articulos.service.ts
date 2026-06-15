@@ -913,11 +913,14 @@ export class ArticulosService {
         );
       }
 
-      const evaluacionDescarta = porcentaje >= 65 || decision === 'rechazado_similitud';
+      const evaluacionDescarta =
+        porcentaje >= 65 || decision === 'rechazado_similitud';
 
-      let asuntoEvaluacion = ArticulosService.ASUNTO_EVALUACION_TURNITIN_CORRECCION;
+      let asuntoEvaluacion =
+        ArticulosService.ASUNTO_EVALUACION_TURNITIN_CORRECCION;
       if (evaluacionDescarta) {
-        asuntoEvaluacion = ArticulosService.ASUNTO_EVALUACION_TURNITIN_DESCARTADO;
+        asuntoEvaluacion =
+          ArticulosService.ASUNTO_EVALUACION_TURNITIN_DESCARTADO;
       } else if (decision === 'aceptado') {
         asuntoEvaluacion = ArticulosService.ASUNTO_EVALUACION_TURNITIN_ACEPTADO;
       }
@@ -1020,16 +1023,22 @@ export class ArticulosService {
       if (evaluacionDescarta) {
         messageExito = 'Artículo descartado por resultado de Turnitin.';
       } else if (decision === 'aceptado') {
-        messageExito = 'Turnitin aprobado sin cambios. El artículo puede continuar.';
+        messageExito =
+          'Turnitin aprobado sin cambios. El artículo puede continuar.';
       } else {
-        messageExito = 'Turnitin aprobado. Se notificó al autor para una única corrección.';
+        messageExito =
+          'Turnitin aprobado. Se notificó al autor para una única corrección.';
       }
 
       return {
         message: messageExito,
         evaluacion: {
           porcentaje,
-          resultado: evaluacionDescarta ? 'descartado' : (decision === 'aceptado' ? 'aceptado' : 'correccion-requerida'),
+          resultado: evaluacionDescarta
+            ? 'descartado'
+            : decision === 'aceptado'
+              ? 'aceptado'
+              : 'correccion-requerida',
           observacionId: observacionGuardada.id,
         },
         etapaActual: {
@@ -1108,6 +1117,7 @@ export class ArticulosService {
         );
       }
 
+      // Crear observación de evaluación
       const asuntoEvaluacion =
         decision === 'aceptar'
           ? ArticulosService.ASUNTO_EVALUACION_COMITE_APROBADO
@@ -1135,8 +1145,12 @@ export class ArticulosService {
           archivoPath: archivo.path,
           archivoNombreOriginal: archivo.originalname,
         });
-
         await queryRunner.manager.save(registroArchivo);
+      }
+
+      if (decision === 'rechazar') {
+        articulo.etapaActualId = 7;
+        await queryRunner.manager.save(articulo);
       }
 
       await queryRunner.commitTransaction();
@@ -1145,10 +1159,10 @@ export class ArticulosService {
         message:
           decision === 'aceptar'
             ? 'Evaluación registrada. El equipo editorial puede avanzar el artículo manualmente.'
-            : 'Evaluación registrada como rechazo. El equipo editorial debe definir el siguiente paso.',
+            : 'Artículo rechazado y movido a la etapa DESCARTADO.',
         etapaActual: {
-          id: articulo.etapaActualId,
-          nombre: 'COMITÉ EDITORIAL',
+          id: decision === 'rechazar' ? 7 : articulo.etapaActualId,
+          nombre: decision === 'rechazar' ? 'DESCARTADO' : 'COMITÉ EDITORIAL',
         },
       };
     } catch (error) {
@@ -2746,7 +2760,9 @@ export class ArticulosService {
 
       const esTurnitinAceptado =
         observacion.etapaId === ArticulosService.ETAPA_TURNITIN &&
-        (observacion.asunto ?? '').toLowerCase().includes('aceptado sin cambios');
+        (observacion.asunto ?? '')
+          .toLowerCase()
+          .includes('aceptado sin cambios');
 
       const esSolicitudCorreccion =
         !esAutor &&

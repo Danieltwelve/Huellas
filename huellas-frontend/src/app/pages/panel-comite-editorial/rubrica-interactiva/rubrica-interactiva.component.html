@@ -78,26 +78,16 @@
             <!-- Radio Sí -->
             <td class="td-radio">
               <label class="radio-container">
-                <input
-                  type="radio"
-                  [name]="item.id"
-                  [value]="true"
-                  [(ngModel)]="item.cumple"
-                  (change)="alCambiarSeleccion()"
-                />
+                <input type="radio" [name]="item.id" [value]="true" [(ngModel)]="item.cumple"
+                  (change)="alCambiarSeleccion()" />
                 <span class="radio-checkmark check-yes"></span>
               </label>
             </td>
             <!-- Radio No -->
             <td class="td-radio">
               <label class="radio-container">
-                <input
-                  type="radio"
-                  [name]="item.id"
-                  [value]="false"
-                  [(ngModel)]="item.cumple"
-                  (change)="alCambiarSeleccion()"
-                />
+                <input type="radio" [name]="item.id" [value]="false" [(ngModel)]="item.cumple"
+                  (change)="alCambiarSeleccion()" />
                 <span class="radio-checkmark check-no"></span>
               </label>
             </td>
@@ -107,13 +97,8 @@
             <td colspan="4" class="td-sugerencia">
               <div class="sugerencia-field">
                 <label [for]="'sug-' + cat.id">Sugerencias:</label>
-                <textarea
-                  [id]="'sug-' + cat.id"
-                  rows="2"
-                  [(ngModel)]="cat.sugerencias"
-                  (change)="alCambiarSeleccion()"
-                  placeholder="Detalla correcciones o recomendaciones para esta sección..."
-                ></textarea>
+                <textarea [id]="'sug-' + cat.id" rows="2" [(ngModel)]="cat.sugerencias" (change)="alCambiarSeleccion()"
+                  placeholder="Detalla correcciones o recomendaciones para esta sección..."></textarea>
               </div>
             </td>
           </tr>
@@ -126,29 +111,19 @@
   <div class="observaciones-generales-section">
     <h3>Observaciones generales:</h3>
     <p class="observaciones-subtitle">(Comentarios y sugerencias del evaluador sobre el artículo)</p>
-    <textarea
-      rows="4"
-      [(ngModel)]="observacionesGenerales"
-      (change)="alCambiarSeleccion()"
-      placeholder="Escribe aquí las observaciones generales del artículo..."
-    ></textarea>
+    <textarea rows="4" [(ngModel)]="observacionesGenerales" (change)="alCambiarSeleccion()"
+      placeholder="Escribe aquí las observaciones generales del artículo..."></textarea>
   </div>
 
   <!-- Botones de Acción de la Rúbrica -->
   <div class="rubrica-acciones">
-    <button type="button" class="btn-restaurar" (click)="reiniciar()">
-      🔄 Reiniciar Formulario
+    <button type="button" class="btn-secundario" (click)="reiniciar()">
+      Reiniciar Formulario
     </button>
-    <button
-      type="button"
-      class="btn-confirmar-rubrica"
-      [disabled]="!todoContestado || confirmada"
-      (click)="completarEvaluacion()"
-      [class.btn-ready]="todoContestado && !confirmada"
-      [class.btn-confirmed]="confirmada"
-    >
-      <span *ngIf="!confirmada">💾 Confirmar Rúbrica</span>
-      <span *ngIf="confirmada">✅ Rúbrica Confirmada</span>
+    <button type="button" class="btn-primario" [disabled]="!todoContestado || confirmada"
+      (click)="completarEvaluacion()">
+      <span *ngIf="!confirmada">Confirmar Rúbrica</span>
+      <span *ngIf="confirmada">Generar Rúbrica</span>
     </button>
   </div>
 </div>

@@ -159,6 +159,9 @@ export class FlujoTrabajoArticulo {
 
   tituloArticulo = 'Cargando...';
 
+  private readonly ASUNTO_EVALUACION_TURNITIN_CORRECCION =
+    'Evaluación de Turnitin: REQUIERE CORRECCIÓN';
+
   private readonly ordenEtapasFlujo: number[] = [1, 6, 3, 4, 8, 9, 5];
 
   readonly etapasDisponibles: EtapaFlujo[] = [
@@ -662,9 +665,23 @@ export class FlujoTrabajoArticulo {
     if (!this.articulo || this.articulo.etapaActual.id !== 3) {
       return null;
     }
-    return this.historialObservaciones.find(
-      (registro) => registro.etapaId === 3 && registro.esCorreccionAutor && registro.puedeAceptarCorreccion
-    ) ?? null;
+
+    const correccion = this.historialObservaciones.find(
+      (registro) =>
+        registro.etapaId === 3 && registro.esCorreccionAutor && registro.puedeAceptarCorreccion,
+    );
+
+    if (!correccion) {
+      return null;
+    }
+
+    const hayRechazoPosterior = this.historialObservaciones.some(
+      (registro) =>
+        registro.fechaOrden > correccion.fechaOrden &&
+        registro.asunto === 'Solicitud de corrección: Turnitin (Rechazado)',
+    );
+
+    return hayRechazoPosterior ? null : correccion;
   }
 
   confirmarRechazoCorreccion(registro: RegistroFlujo): void {
@@ -1711,7 +1728,7 @@ export class FlujoTrabajoArticulo {
         if (!this.articuloYaEvaluadoPorTurnitin) {
           return 'Debes registrar la evaluación de Turnitin antes de avanzar.';
         }
-        return 'El artículo tiene correcciones pendientes en Turnitin. El autor debe enviar los cambios y el monitor debe aceptarlos.';
+        return 'El artículo tiene correcciones pendientes en Turnitin. El autor debe enviar los cambios.';
       }
       if (this.articulo?.etapaActual?.id === 9) {
         return 'Completa todos los ítems de la lista de revisión final antes de avanzar a la etapa de Publicación.';
@@ -2126,5 +2143,30 @@ export class FlujoTrabajoArticulo {
     if (this.articuloIdActual) {
       this.cargarArticulo(this.articuloIdActual);
     }
+  }
+
+  get esperandoCorreccionAutor(): boolean {
+    if (!this.articulo || this.articulo.etapaActual.id !== 3) {
+      return false;
+    }
+
+    const solicitudCorreccion = [...this.historialObservaciones]
+      .filter(
+        (obs) => obs.etapaId === 3 && obs.asunto === this.ASUNTO_EVALUACION_TURNITIN_CORRECCION,
+      )
+      .sort((a, b) => b.fechaOrden - a.fechaOrden)[0];
+
+    if (!solicitudCorreccion) {
+      return false;
+    }
+
+    const hayCorreccionPosterior = this.historialObservaciones.some(
+      (obs) =>
+        obs.etapaId === 3 &&
+        obs.esCorreccionAutor &&
+        obs.fechaOrden > solicitudCorreccion.fechaOrden,
+    );
+
+    return !hayCorreccionPosterior;
   }
 }

@@ -287,7 +287,7 @@
                 </svg>
               </button>
               @if (articulo.etapaActual !== 'DESCARTADO') {
-              <button class="view-btn edit-btn" type="button" aria-label="Editar articulo"
+              <button class="view-btn edit-btn" *ngIf="canEdit()" type="button" aria-label="Editar articulo"
                 (click)="editarArticulo(articulo)">
                 <svg viewBox="0 0 24 24" aria-hidden="true" class="edit-icon">
                   <path

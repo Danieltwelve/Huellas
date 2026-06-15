@@ -11,6 +11,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { ModalEditar } from './modal-editar/modal-editar';
 import { ModalEliminar } from './modal-eliminar/modal-eliminar';
+import { AuthService } from '../../../core/auth/auth.service';
 
 type EstadoEvaluacionComite = 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado';
 type EstadoFiltroComite = 'todos' | EstadoEvaluacionComite;
@@ -71,10 +72,10 @@ export class Articulos implements OnInit, OnDestroy {
   filteredArticulos: ArticuloListado[] = [];
 
   filtroEtapa: string = 'todas';
-
   articuloParaEditar: any = null;
-
   articuloParaEliminar: any = null;
+
+  private authService = inject(AuthService);
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -535,5 +536,9 @@ export class Articulos implements OnInit, OnDestroy {
   confirmarEliminacion(evento: any): void {
     this.recargarArticulos();
     this.cerrarModalEliminar();
+  }
+
+  canEdit(): boolean {
+    return this.authService.hasAnyRole(['admin', 'director', 'monitor']);
   }
 }

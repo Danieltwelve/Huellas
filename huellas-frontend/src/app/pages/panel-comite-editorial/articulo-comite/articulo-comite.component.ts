@@ -3,13 +3,11 @@ import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, finalize, takeUntil, timeout } from 'rxjs';
-import {
-  ArticuloFlujo,
-  ArticulosService,
-} from '../../../core/articulos/articulos.service';
+import { ArticuloFlujo, ArticulosService } from '../../../core/articulos/articulos.service';
 import { normalizarNombreArchivo } from '../../../core/utils/filename.utils';
 import { RubricaInteractivaComponent } from '../rubrica-interactiva/rubrica-interactiva.component';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ResumenAutor } from '../../panel-admin/articulos/flujo-trabajo-articulo/resumen-autor/resumen-autor';
 
 interface DocumentoArticulo {
   nombre: string;
@@ -22,12 +20,12 @@ interface DocumentoRubrica {
   archivo: string;
 }
 
-type SeccionDetalle = 'info' | 'rubricas' | 'documentos' | 'decision' | 'rubrica-digital';
+type SeccionDetalle = 'rubricas' | 'documentos' | 'decision' | 'rubrica-digital';
 
 @Component({
   selector: 'app-articulo-comite',
   standalone: true,
-  imports: [CommonModule, FormsModule, RubricaInteractivaComponent],
+  imports: [CommonModule, FormsModule, RubricaInteractivaComponent, ResumenAutor],
   templateUrl: './articulo-comite.component.html',
   styleUrl: './articulo-comite.component.css',
 })
@@ -70,7 +68,6 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
   fechaVencimiento: Date | null = null;
 
   seccionesAbiertas: Record<SeccionDetalle, boolean> = {
-    info: true,
     rubricas: false,
     documentos: true,
     decision: true,
@@ -138,7 +135,7 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
           this.error =
             err?.name === 'TimeoutError'
               ? 'La carga del artículo tardó demasiado. Intenta nuevamente.'
-              : err?.error?.message ?? 'No fue posible cargar el artículo.';
+              : (err?.error?.message ?? 'No fue posible cargar el artículo.');
         },
       });
   }
@@ -151,19 +148,15 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
     const fechaAsignacion = this.articulo.fechaAsignacionComite
       ? new Date(this.articulo.fechaAsignacionComite)
       : this.articulo.historialEtapas
-          ?.filter((h) => h.etapaId === 6)
-          ?.sort(
-            (a, b) =>
-              new Date(a.fechaInicio).getTime() -
-              new Date(b.fechaInicio).getTime(),
-          )?.[0]?.fechaInicio
+            ?.filter((h) => h.etapaId === 6)
+            ?.sort(
+              (a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime(),
+            )?.[0]?.fechaInicio
         ? new Date(
             this.articulo.historialEtapas
               .filter((h) => h.etapaId === 6)
               .sort(
-                (a, b) =>
-                  new Date(a.fechaInicio).getTime() -
-                  new Date(b.fechaInicio).getTime(),
+                (a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime(),
               )[0].fechaInicio,
           )
         : null;
@@ -212,14 +205,19 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
         this.solicitandoProrroga = false;
         this.mensajeOk = null;
         this.mensajeError = null;
-        this.abrirModalExitoComite('Solicitud Enviada', res.message || 'La solicitud de prórroga de 5 días ha sido enviada correctamente.');
+        this.abrirModalExitoComite(
+          'Solicitud Enviada',
+          res.message || 'La solicitud de prórroga de 5 días ha sido enviada correctamente.',
+        );
         this.cargarArticulo(this.articulo!.id);
       },
       error: (err) => {
         this.solicitandoProrroga = false;
         this.mensajeOk = null;
         this.mensajeError = null;
-        this.abrirModalErrorComite(err?.error?.message || 'No se pudo enviar la solicitud de prórroga.');
+        this.abrirModalErrorComite(
+          err?.error?.message || 'No se pudo enviar la solicitud de prórroga.',
+        );
       },
     });
   }
@@ -278,7 +276,8 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
     }
 
     if (!this.rubricaCompletada) {
-      this.mensajeError = 'Debes diligenciar y confirmar obligatoriamente la Rúbrica de Evaluación Digital antes de emitir tu decisión.';
+      this.mensajeError =
+        'Debes diligenciar y confirmar obligatoriamente la Rúbrica de Evaluación Digital antes de emitir tu decisión.';
       this.mensajeOk = null;
       this.modalConfirmarDescarte = false;
       return;
@@ -317,18 +316,19 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
           this.mensajeError = null;
           this.abrirModalExitoComite(
             'Evaluación Registrada',
-            respuesta.message || 'La decisión y la rúbrica han sido registradas correctamente.'
+            respuesta.message || 'La decisión y la rúbrica han sido registradas correctamente.',
           );
-          this.cargarArticulo(this.articulo!.id);
+          if (this.articulo) {
+            this.articulo.evaluacionComiteRealizada = true;
+          }
         },
         error: (err) => {
           this.guardandoEvaluacion = false;
           this.modalConfirmarDescarte = false;
           this.mensajeOk = null;
-          this.mensajeError =
-            err?.error?.message ?? 'No se pudo guardar la evaluación del comité.';
+          this.mensajeError = err?.error?.message ?? 'No se pudo guardar la evaluación del comité.';
           this.abrirModalErrorComite(
-            this.mensajeError || 'No se pudo guardar la evaluación del comité.'
+            this.mensajeError || 'No se pudo guardar la evaluación del comité.',
           );
         },
       });
@@ -343,9 +343,12 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
     if (resultado.completo) {
       this.observacion = resultado.observacionCompilada;
       this.seccionesAbiertas['decision'] = true;
-      
+
       // Limpiar mensaje de error si existía
-      if (this.mensajeError === 'Debes diligenciar y confirmar obligatoriamente la Rúbrica de Evaluación Digital antes de emitir tu decisión.') {
+      if (
+        this.mensajeError ===
+        'Debes diligenciar y confirmar obligatoriamente la Rúbrica de Evaluación Digital antes de emitir tu decisión.'
+      ) {
         this.mensajeError = null;
       }
     } else {
@@ -416,21 +419,6 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
       });
   }
 
-  get autoresTexto(): string {
-    const autores = this.articulo?.autores ?? [];
-    return autores.length ? autores.map((autor) => autor.nombre).join(', ') : 'Sin autores';
-  }
-
-  get temasTexto(): string {
-    const temas = this.articulo?.temas ?? [];
-    return temas.length ? temas.join(', ') : 'Sin temas';
-  }
-
-  get palabrasClaveTexto(): string {
-    const palabrasClave = this.articulo?.palabrasClave ?? [];
-    return palabrasClave.length ? palabrasClave.join(', ') : 'Sin palabras clave';
-  }
-
   get estaEnEtapaComite(): boolean {
     return this.articulo?.etapaActual?.id === 6;
   }
@@ -442,9 +430,7 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
 
     const observaciones = this.articulo?.observaciones ?? [];
 
-    return observaciones.some(
-      (obs) => this.esAsuntoEvaluacionComite(obs.asunto),
-    );
+    return observaciones.some((obs) => this.esAsuntoEvaluacionComite(obs.asunto));
   }
 
   get puedeEvaluarComite(): boolean {
