@@ -254,6 +254,29 @@ export class DetalleArticuloComponent implements OnInit {
     }
 
     if (etapa.includes('turnitin')) {
+      const esAceptadoSinCambios = this.historial.some((obs) => {
+        if (!this.esObservacionTurnitin(obs)) {
+          return false;
+        }
+        const textoObs = this.normalizar(obs.asunto ?? '');
+        return textoObs.includes('aceptado sin cambios');
+      });
+
+      const yaEvaluadoSinCorreccion = !this.resumenAutor?.correccion_pendiente && !this.articulo?.fechaVencimientoCorreccion;
+
+      if (esAceptadoSinCambios || yaEvaluadoSinCorreccion) {
+        return {
+          tipo: 'exito',
+          titulo: 'Evaluación de Turnitin: Aceptado sin cambios',
+          detalle:
+            'Tu artículo fue aceptado sin cambios en la validación de originalidad y similitud de Turnitin. El monitor pronto avanzará el artículo a la siguiente etapa.',
+          acciones: [
+            'Monitorear el avance a la siguiente etapa.',
+            'Verificar notificaciones recientes.',
+          ],
+        };
+      }
+
       return {
         tipo: 'informacion',
         titulo: 'Evaluación de Turnitin en curso',

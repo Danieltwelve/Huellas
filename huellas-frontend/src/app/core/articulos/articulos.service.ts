@@ -279,12 +279,13 @@ export class ArticulosService {
       porcentaje: number;
       observacion?: string;
       archivo?: File | null;
+      decision?: string;
     },
   ): Observable<{
     message: string;
     evaluacion: {
       porcentaje: number;
-      resultado: 'descartado' | 'correccion-requerida';
+      resultado: 'descartado' | 'aceptado' | 'correccion-requerida';
       observacionId: number;
     };
     etapaActual: { id: number; nombre: string };
@@ -304,6 +305,10 @@ export class ArticulosService {
 
     if (payload.archivo) {
       formData.append('archivo', payload.archivo, payload.archivo.name);
+    }
+
+    if (payload.decision) {
+      formData.append('decision', payload.decision);
     }
 
     return from(currentUser.getIdToken()).pipe(

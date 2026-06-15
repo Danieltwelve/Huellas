@@ -364,9 +364,14 @@ export class UsersService {
       return;
     }
 
-    if (strictSmtp) {
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    if (strictSmtp && isProduction) {
       throw new InternalServerErrorException(
         'No fue posible enviar el correo de verificación. Verifica la configuración SMTP.',
+      );
+    } else if (!isProduction) {
+      this.logger.warn(
+        `[SMTP-WARNING] No se pudo enviar el correo de verificación a ${correo} por SMTP, pero se omitió el error por estar en desarrollo. Enlace: ${verificationLink}`,
       );
     }
   }
@@ -390,9 +395,14 @@ export class UsersService {
       return;
     }
 
-    if (strictSmtp) {
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    if (strictSmtp && isProduction) {
       throw new InternalServerErrorException(
         'No fue posible enviar el correo para restablecer el acceso. Verifica la configuración SMTP.',
+      );
+    } else if (!isProduction) {
+      this.logger.warn(
+        `[SMTP-WARNING] No se pudo enviar el correo de restablecimiento de contraseña a ${correo} por SMTP, pero se omitió el error por estar en desarrollo. Enlace: ${resetLink}`,
       );
     }
   }
@@ -702,13 +712,29 @@ export class UsersService {
     return this.rolesRepository.find({ order: { id: 'ASC' } });
   }
 
-  async findCommitteeMembers(): Promise<User[]> {
+  async findCommitteeMembers(): Promise<any[]> {
     const users = await this.userRepository.find({ relations: ['roles'] });
 
-    return users.filter(
+    const filtered = users.filter(
       (user) =>
         user.estado_cuenta === true &&
         user.roles?.some((role) => role.rol === 'comite-editorial'),
+    );
+
+    return Promise.all(
+      filtered.map(async (user) => {
+        const count = await this.articuloRepository.count({
+          where: {
+            comiteEditorialId: user.id,
+            etapaActualId: 6,
+          } as any,
+        });
+
+        return {
+          ...user,
+          articulosAsignados: count,
+        };
+      }),
     );
   }
 

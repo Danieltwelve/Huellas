@@ -215,6 +215,17 @@ export class MiPanelComponent implements OnInit {
   }
 
   getEstadoLabel(articulo: ArticuloAutor): string {
+    const valor = articulo.etapa_nombre.toLowerCase();
+    if (valor.includes('turnitin')) {
+      const notifs = this.notificacionesPorArticulo.get(articulo.id) ?? [];
+      const tieneAceptado = notifs.some((n) =>
+        this.normalizarTexto(n.titulo).includes('aceptado sin cambios'),
+      );
+      if (tieneAceptado) {
+        return 'Aceptado sin cambios';
+      }
+    }
+
     if (articulo.etapa_nombre.toLowerCase().includes('pares')) {
       return articulo.evaluado_pares ? 'Evaluado' : 'En Revision';
     }
@@ -589,6 +600,24 @@ export class MiPanelComponent implements OnInit {
     }
 
     if (etapa.includes('turnitin')) {
+      const tieneNotifAceptado = notificaciones.some((n) =>
+        this.normalizar(n.titulo).includes('aceptado sin cambios'),
+      );
+      const yaEvaluadoSinCorreccion = !articulo.correccion_pendiente && !articulo.fecha_vencimiento_correccion;
+
+      if (tieneNotifAceptado || yaEvaluadoSinCorreccion) {
+        return {
+          tipo: 'exito',
+          titulo: 'Turnitin: Aceptado sin cambios',
+          descripcion:
+            'Tu artículo fue aceptado sin cambios en la evaluación de Turnitin. El equipo editorial avanzará el artículo a la siguiente etapa.',
+          acciones: [
+            'Esperar el avance a la siguiente etapa.',
+            'Revisar notificaciones recientes.',
+          ],
+        };
+      }
+
       return {
         tipo: 'informacion',
         titulo: 'Evaluacion de similitud en Turnitin',

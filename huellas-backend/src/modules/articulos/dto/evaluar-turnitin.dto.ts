@@ -9,4 +9,8 @@ export class EvaluarTurnitinDto {
   @IsString()
   @IsOptional()
   observacion?: string;
+
+  @IsString()
+  @IsOptional()
+  decision?: string;
 }

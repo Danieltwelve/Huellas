@@ -59,7 +59,8 @@ export class AppComponent {
           url.startsWith('/seguimiento') ||
           url.startsWith('/certificados-editoriales') ||
           url.startsWith('/flujo-trabajo-articulo') ||
-          url.startsWith('/estadisticas')
+          url.startsWith('/estadisticas') ||
+          url.startsWith('/notificaciones')
         );
       }),
       startWith(
@@ -70,7 +71,8 @@ export class AppComponent {
           window.location.pathname.startsWith('/seguimiento') ||
           window.location.pathname.startsWith('/certificados-editoriales') ||
           window.location.pathname.startsWith('/flujo-trabajo-articulo') ||
-          window.location.pathname.startsWith('/estadisticas'),
+          window.location.pathname.startsWith('/estadisticas') ||
+          window.location.pathname.startsWith('/notificaciones'),
       ),
     );
 

@@ -65,13 +65,7 @@ export class ResumenAutor {
         const year = Number(match[1]);
         const month = Number(match[2]);
         const day = Number(match[3]);
-        const hour24 = Number(match[4]);
-        const minute = Number(match[5]);
-        const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
-        const periodo = hour24 >= 12 ? 'p. m.' : 'a. m.';
         const dia = String(day).padStart(2, '0');
-        const hora = String(hour12).padStart(2, '0');
-        const minutos = String(minute).padStart(2, '0');
         const meses = [
           'ene',
           'feb',
@@ -86,7 +80,7 @@ export class ResumenAutor {
           'nov',
           'dic',
         ];
-        return `${dia} ${meses[Math.max(0, month - 1)]} ${year}, ${hora}:${minutos} ${periodo}`;
+        return `${dia} ${meses[Math.max(0, month - 1)]} ${year}`;
       }
     }
 
@@ -99,9 +93,6 @@ export class ResumenAutor {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
       timeZone: 'America/Bogota',
     }).format(fecha);
   }

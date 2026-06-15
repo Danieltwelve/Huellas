@@ -1,4 +1,4 @@
-﻿/* You can add global styles to this file, and also import other style files */
+/* You can add global styles to this file, and also import other style files */
 :root {
   --font-app: 'Manrope', sans-serif;
   --color-primary: #00a39a;
@@ -71,4 +71,3 @@ select {
   border-radius: 999px;
   padding: 0.5rem 1rem;
 }
-

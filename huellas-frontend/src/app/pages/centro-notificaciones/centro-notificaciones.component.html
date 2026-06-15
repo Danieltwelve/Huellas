@@ -1,0 +1,56 @@
+<section class="notify-page">
+  <div class="notify-header">
+    <div class="header-title-area">
+      <h1>Centro de Notificaciones</h1>
+      <p>Alertas de asignación, plazos y mensajes editoriales.</p>
+    </div>
+  </div>
+
+  <div class="filters-row">
+    <div class="filters">
+      <button type="button" [class.active]="filtro === 'todas'" (click)="setFiltro('todas')">Todas</button>
+      <button type="button" [class.active]="filtro === 'no-leidas'" (click)="setFiltro('no-leidas')">No leídas</button>
+    </div>
+    <button type="button" class="btn-mark-all" (click)="marcarTodasComoLeidas()">
+      Marcar todo como leído
+    </button>
+  </div>
+
+  <div class="notify-list">
+    @if (loading) {
+      <div class="loading-state">Cargando notificaciones...</div>
+    } @else if (error) {
+      <div class="error-state">{{ error }}</div>
+    } @else {
+      @for (item of visibles; track item.id) {
+        <article class="notify-card" [class.unread]="!item.leida" (click)="abrirNotificacion(item)" tabindex="0" role="button" aria-label="Abrir notificación">
+          <div class="indicator-column">
+            <span class="indicator-dot" 
+                  [class.orange]="item.tipo === 'plazo' || item.tipo === 'mensaje' || item.tipo === 'vencido' || item.tipo === 'proximo-vencer'" 
+                  [class.blue]="item.tipo === 'asignacion' || item.tipo === 'nuevo-articulo'" 
+                  [class.green]="item.tipo === 'exito'"
+                  [class.read]="item.leida"></span>
+          </div>
+          
+          <div class="content-column">
+            <h2>{{ item.titulo }}</h2>
+            <p class="detail">{{ item.detalle }}</p>
+            @if (item.codigoArticulo) {
+              <span class="articulo-ref">{{ item.codigoArticulo }}</span>
+            }
+          </div>
+
+          <div class="time-column">
+            <small class="relative-time">{{ getTiempoTranscurrido(item.fecha) }}</small>
+          </div>
+        </article>
+      }
+
+      @if (visibles.length === 0) {
+        <div class="empty-card">
+          <p class="empty-text">No tienes notificaciones en este momento.</p>
+        </div>
+      }
+    }
+  </div>
+</section>

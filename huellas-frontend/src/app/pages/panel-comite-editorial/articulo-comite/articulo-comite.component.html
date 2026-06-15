@@ -16,7 +16,7 @@
       <div>
         <strong *ngIf="estaVencido">Plazo VENCIDO</strong>
         <strong *ngIf="!estaVencido">{{ diasRestantes }} días para evaluar</strong>
-        <span *ngIf="fechaVencimiento"> - Vence el {{ fechaVencimiento | date: 'short' }}</span>
+        <span *ngIf="fechaVencimiento"> - Vence el {{ fechaVencimiento | date: 'dd/MM/yyyy' }}</span>
         <span *ngIf="articulo?.solicitudProrrogaComitePendiente" style="margin-left: 10px; font-style: italic; font-weight: bold;">(Prórroga de 5 días solicitada y pendiente)</span>
       </div>
       <button

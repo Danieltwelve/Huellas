@@ -132,17 +132,9 @@ export class EstadisticasComponent implements OnInit {
         titulo: 'Resumen ejecutivo',
         encabezados: ['Métrica', 'Valor', 'Detalle'],
         filas: [
-          ['Generado', this.formatearFechaLarga(new Date()), 'Fecha y hora de emisión'],
-          [
-            'Artículos totales',
-            String(this.estadisticas.totalArticulos),
-            'Base histórica acumulada',
-          ],
-          [
-            'En publicación',
-            String(this.estadisticas.articulosEnPublicacion),
-            'Listos para salir o en edición final',
-          ],
+          ['Generado', this.formatearFechaLarga(new Date()), 'Fecha de emisión'],
+          ['Artículos totales', String(this.estadisticas.totalArticulos), 'Base histórica acumulada'],
+          ['En publicación', String(this.estadisticas.articulosEnPublicacion), 'Listos para salir o en edición final'],
           ['En proceso', String(this.estadisticas.articulosEnProceso), 'Flujo editorial activo'],
           ['Promedio autores', `${this.estadisticas.promedioAutores}`, 'Autores por artículo'],
           ['Promedio temas', `${this.estadisticas.promedioTemas}`, 'Temas por artículo'],
@@ -554,7 +546,6 @@ export class EstadisticasComponent implements OnInit {
   private formatearFechaLarga(fecha: Date): string {
     return new Intl.DateTimeFormat('es-ES', {
       dateStyle: 'full',
-      timeStyle: 'short',
     }).format(fecha);
   }
 

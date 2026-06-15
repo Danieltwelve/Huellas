@@ -77,6 +77,12 @@ export class SideBar {
       route: '/seguimiento',
     },
     {
+      label: 'Centro de Notificaciones',
+      icon: 'bell',
+      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      route: '/notificaciones',
+    },
+    {
       label: 'Certificados',
       icon: 'certificate',
       allowedRoles: ['admin', 'director', 'monitor'],

@@ -193,7 +193,7 @@
             <td><span class="badge badge--soft">{{ formatearContexto(certificado.contextoRequerimiento) }}</span></td>
             <td>{{ certificado.etapaReferencia || '-' }}</td>
             <td>{{ certificado.subidoPor }}</td>
-            <td>{{ getFecha(certificado) | date: 'short':'America/Bogota' }}</td>
+            <td>{{ getFecha(certificado) | date: 'dd/MM/yyyy':'America/Bogota' }}</td>
             <td>
               <div class="table-actions">
                 <button class="btn-table btn-table--download" type="button"

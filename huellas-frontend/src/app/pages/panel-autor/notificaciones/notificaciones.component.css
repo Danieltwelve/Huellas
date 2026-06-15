@@ -1,4 +1,4 @@
-﻿.notify-page {
+.notify-page {
   max-width: 980px;
   margin: 0 auto;
 }
@@ -90,9 +90,17 @@
   border-radius: 999px;
 }
 
-.type-action { background: #f59e0b; }
-.type-info { background: #0ea5e9; }
-.type-success { background: #22c55e; }
+.type-action {
+  background: #f59e0b;
+}
+
+.type-info {
+  background: #0ea5e9;
+}
+
+.type-success {
+  background: #22c55e;
+}
 
 .notify-item h3 {
   margin: 0 0 0.2rem;
@@ -132,4 +140,3 @@
     grid-column: 2;
   }
 }
-

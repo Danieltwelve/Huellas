@@ -12,6 +12,7 @@ export interface UsuarioBackend {
   correo_verificado: boolean;
   estado_cuenta: boolean;
   roles: { id: number; rol: string }[];
+  articulosAsignados?: number;
 }
 
 export interface UsersPageMeta {

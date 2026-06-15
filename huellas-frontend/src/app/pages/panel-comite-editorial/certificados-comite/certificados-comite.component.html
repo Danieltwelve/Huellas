@@ -55,7 +55,7 @@
           <td>{{ certificado.contextoRequerimiento }}</td>
           <td>{{ certificado.etapaReferencia || '-' }}</td>
           <td>{{ certificado.subidoPor }}</td>
-          <td>{{ certificado.fechaSubida | date: 'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ certificado.fechaSubida | date: 'dd/MM/yyyy' }}</td>
           <td>
             <button class="btn-download" type="button" (click)="descargar(certificado)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
