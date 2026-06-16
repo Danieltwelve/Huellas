@@ -1,8 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { from, Observable, switchMap } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environments';
-import { Auth } from '@angular/fire/auth';
 
 export interface RequisitoRevista {
   id: number;
@@ -25,12 +24,9 @@ export interface RequisitosPageResponse {
   providedIn: 'root'
 })
 export class RequisitosRevistaService {
-  private auth = inject(Auth);
-
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   findAll(params?: { page?: number; limit?: number }): Observable<RequisitosPageResponse> {
-    const currentUser = this.auth.currentUser;
     const queryParts = new URLSearchParams();
 
     if (typeof params?.page === 'number') {
@@ -43,54 +39,21 @@ export class RequisitosRevistaService {
 
     const queryString = queryParts.toString();
 
-    if (currentUser){
-      return from(currentUser.getIdToken()).pipe(
-        switchMap((token) =>
-          this.http.get<RequisitosPageResponse>(`${environment.apiUrlBackend}/requisitos-revista${queryString ? `?${queryString}` : ''}`, {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          }),
-        ),
-      );
-    } else {
-      return this.http.get<RequisitosPageResponse>(`${environment.apiUrlBackend}/requisitos-revista${queryString ? `?${queryString}` : ''}`);
-    }
+    return this.http.get<RequisitosPageResponse>(
+      `${environment.apiUrlBackend}/requisitos-revista${queryString ? `?${queryString}` : ''}`
+    );
   }
 
   create(requisito: string): Observable<RequisitoRevista> {
-    const currentUser = this.auth.currentUser;
-    if(!currentUser) {
-      throw new Error('No hay sesión activa para crear un requisito.');
-    }
-
-    return from(currentUser.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.post<RequisitoRevista>(
-          `${environment.apiUrlBackend}/requisitos-revista`,
-          { requisito },
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
-      ),
+    return this.http.post<RequisitoRevista>(
+      `${environment.apiUrlBackend}/requisitos-revista`,
+      { requisito },
     );
-
   }
 
   delete(id: number): Observable<void> {
-    const currentUser = this.auth.currentUser;
-    if(!currentUser) {
-      throw new Error('No hay sesión activa para eliminar un requisito.');
-    }
-
-    return from(currentUser.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.delete<void>(
-          `${environment.apiUrlBackend}/requisitos-revista/${id}`,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
-      ),
+    return this.http.delete<void>(
+      `${environment.apiUrlBackend}/requisitos-revista/${id}`
     );
   }
 }

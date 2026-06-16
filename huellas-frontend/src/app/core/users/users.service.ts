@@ -1,7 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Auth } from '@angular/fire/auth';
-import { from, Observable, switchMap, throwError } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environments';
 
 export interface UsuarioBackend {
@@ -58,167 +57,81 @@ export interface PerfilUsuarioUpdatePayload {
 @Injectable({ providedIn: 'root' })
 export class UsersService {
   private http = inject(HttpClient);
-  private auth = inject(Auth);
 
   getAll(params?: {
     page?: number;
     limit?: number;
     search?: string;
   }): Observable<UsersPageResponse> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) => {
-        const queryParts = new URLSearchParams();
+    const queryParts = new URLSearchParams();
 
-        if (typeof params?.page === 'number') {
-          queryParts.set('page', String(params.page));
-        }
+    if (typeof params?.page === 'number') {
+      queryParts.set('page', String(params.page));
+    }
 
-        if (typeof params?.limit === 'number') {
-          queryParts.set('limit', String(params.limit));
-        }
+    if (typeof params?.limit === 'number') {
+      queryParts.set('limit', String(params.limit));
+    }
 
-        if (params?.search) {
-          queryParts.set('search', params.search);
-        }
+    if (params?.search) {
+      queryParts.set('search', params.search);
+    }
 
-        const queryString = queryParts.toString();
+    const queryString = queryParts.toString();
 
-        return this.http.get<UsersPageResponse>(
-          `${environment.apiUrlBackend}/usuarios${queryString ? `?${queryString}` : ''}`,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        );
-      }),
+    return this.http.get<UsersPageResponse>(
+      `${environment.apiUrlBackend}/usuarios${queryString ? `?${queryString}` : ''}`,
     );
   }
 
   getCommitteeMembers(): Observable<UsuarioBackend[]> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.get<UsuarioBackend[]>(`${environment.apiUrlBackend}/usuarios/comite-editorial`, {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-        }),
-      ),
-    );
+    return this.http.get<UsuarioBackend[]>(`${environment.apiUrlBackend}/usuarios/comite-editorial`);
   }
 
   createAdmin(payload: AdminCreateUserPayload): Observable<UsuarioBackend> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.post<UsuarioBackend>(`${environment.apiUrlBackend}/usuarios`, payload, {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-        }),
-      ),
-    );
+    return this.http.post<UsuarioBackend>(`${environment.apiUrlBackend}/usuarios`, payload);
   }
 
   getRoles(): Observable<RolBackend[]> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.get<RolBackend[]>(`${environment.apiUrlBackend}/usuarios/roles`, {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-        }),
-      ),
-    );
+    return this.http.get<RolBackend[]>(`${environment.apiUrlBackend}/usuarios/roles`);
   }
 
   updateUser(id: number, payload: Partial<UsuarioBackend>): Observable<UsuarioBackend> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.put<UsuarioBackend>(`${environment.apiUrlBackend}/usuarios/${id}`, payload, {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-        }),
-      ),
-    );
+    return this.http.put<UsuarioBackend>(`${environment.apiUrlBackend}/usuarios/${id}`, payload);
   }
 
   resendVerificationEmail(id: number): Observable<{ message: string }> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.post<{ message: string }>(
-          `${environment.apiUrlBackend}/usuarios/${id}/reenviar-verificacion`,
-          {},
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
-      ),
+    return this.http.post<{ message: string }>(
+      `${environment.apiUrlBackend}/usuarios/${id}/reenviar-verificacion`,
+      {},
     );
   }
 
   restoreAccess(id: number): Observable<{ message: string }> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.post<{ message: string }>(
-          `${environment.apiUrlBackend}/usuarios/${id}/restablecer-acceso`,
-          {},
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
-      ),
+    return this.http.post<{ message: string }>(
+      `${environment.apiUrlBackend}/usuarios/${id}/restablecer-acceso`,
+      {},
     );
   }
 
   deleteUser(id: number): Observable<{ message: string }> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.delete<{ message: string }>(`${environment.apiUrlBackend}/usuarios/${id}`, {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-        }),
-      ),
-    );
+    return this.http.delete<{ message: string }>(`${environment.apiUrlBackend}/usuarios/${id}`);
   }
 
   getPerfilUsuario(): Observable<PerfilUsuarioResponse> {
-    const currentUser = this.auth.currentUser;
-
-    if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para obtener el perfil.'));
-    }
-
-    return from(currentUser.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.get<PerfilUsuarioResponse>(`${environment.apiUrlBackend}/usuarios/perfil`, {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-        }),
-      ),
-    );
+    return this.http.get<PerfilUsuarioResponse>(`${environment.apiUrlBackend}/usuarios/perfil`);
   }
 
   updatePerfilUsuario(payload: PerfilUsuarioUpdatePayload): Observable<PerfilUsuarioResponse> {
-    const currentUser = this.auth.currentUser;
-
-    if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para actualizar el perfil.'));
-    }
-
-    return from(currentUser.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.put<PerfilUsuarioResponse>(
-          `${environment.apiUrlBackend}/usuarios/perfil`,
-          payload,
-          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
-        ),
-      ),
+    return this.http.put<PerfilUsuarioResponse>(
+      `${environment.apiUrlBackend}/usuarios/perfil`,
+      payload,
     );
   }
 
   getAutoresLista(): Observable<{ id: number; nombre: string }[]> {
-    const currentUser = this.auth.currentUser;
-
-    if (!currentUser) {
-      return throwError(() => new Error('No hay sesión activa para obtener la lista de autores.'));
-    }
-
-    return from(currentUser.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.get<{ id: number; nombre: string }[]>(
-          `${environment.apiUrlBackend}/usuarios/autores-lista`,
-          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
-        ),
-      ),
+    return this.http.get<{ id: number; nombre: string }[]>(
+      `${environment.apiUrlBackend}/usuarios/autores-lista`,
     );
   }
 }

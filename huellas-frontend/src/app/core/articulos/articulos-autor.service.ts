@@ -1,7 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Auth } from '@angular/fire/auth';
-import { from, Observable, switchMap } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environments';
 import { CorrectionState } from './correction-notification.util';
 
@@ -35,45 +34,23 @@ export interface NotificacionAutorBackend {
 @Injectable({ providedIn: 'root' })
 export class ArticulosAutorService {
   private http = inject(HttpClient);
-  private auth = inject(Auth);
 
   getMisArticulos(): Observable<ArticuloAutor[]> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.get<ArticuloAutor[]>(
-          `${environment.apiUrlBackend}/articulos/mis-articulos`,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
-      ),
+    return this.http.get<ArticuloAutor[]>(
+      `${environment.apiUrlBackend}/articulos/mis-articulos`,
     );
   }
 
   crearEnvio(formData: FormData): Observable<any> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.post(
-          `${environment.apiUrlBackend}/articulos/envio`,
-          formData,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
-      ),
+    return this.http.post(
+      `${environment.apiUrlBackend}/articulos/envio`,
+      formData,
     );
   }
 
   getMisNotificaciones(): Observable<NotificacionAutorBackend[]> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.get<NotificacionAutorBackend[]>(
-          `${environment.apiUrlBackend}/articulos/mis-notificaciones`,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
-      ),
+    return this.http.get<NotificacionAutorBackend[]>(
+      `${environment.apiUrlBackend}/articulos/mis-notificaciones`,
     );
   }
 
@@ -89,16 +66,9 @@ export class ArticulosAutorService {
       formData.append('comentarios', comentarios.trim());
     }
 
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.post<{ message: string; observacionId: number }>(
-          `${environment.apiUrlBackend}/articulos/${articuloId}/correccion`,
-          formData,
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
-      ),
+    return this.http.post<{ message: string; observacionId: number }>(
+      `${environment.apiUrlBackend}/articulos/${articuloId}/correccion`,
+      formData,
     );
   }
 
@@ -106,16 +76,9 @@ export class ArticulosAutorService {
     articuloId: number,
     comentarios?: string,
   ): Observable<{ message: string; observacionId: number }> {
-    return from(this.auth.currentUser!.getIdToken()).pipe(
-      switchMap((token) =>
-        this.http.post<{ message: string; observacionId: number }>(
-          `${environment.apiUrlBackend}/articulos/${articuloId}/correccion/prorroga`,
-          { comentarios: comentarios?.trim() || undefined },
-          {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          },
-        ),
-      ),
+    return this.http.post<{ message: string; observacionId: number }>(
+      `${environment.apiUrlBackend}/articulos/${articuloId}/correccion/prorroga`,
+      { comentarios: comentarios?.trim() || undefined },
     );
   }
 }

@@ -1,15 +1,33 @@
-<section class="head">
-  <h1>Guias de revision</h1>
-  <p>Recursos y criterios para mantener evaluaciones claras, justas y accionables.</p>
-</section>
+<div class="recursos-container">
+  <div class="header">
+    <div class="header-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00b09b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <polyline points="10 9 9 9 8 9"></polyline>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>Guías de revisión</h1>
+      <p>Recursos y criterios para mantener evaluaciones claras, justas y accionables.</p>
+    </div>
+  </div>
 
-<div class="guides-grid">
-  @for (guia of guias; track guia.id) {
-    <article class="guide-card">
-      <span class="resource">{{ guia.recurso }}</span>
-      <h2>{{ guia.titulo }}</h2>
-      <p>{{ guia.descripcion }}</p>
-      <button type="button">Abrir guia</button>
-    </article>
-  }
+  <div class="cards-grid">
+    @for (guia of guias; track guia.id) {
+      <div class="doc-card">
+        <div class="card-header">
+          <div class="doc-icon">📋</div>
+          <div class="doc-title-area">
+            <h3>{{ guia.titulo }}</h3>
+            <span class="badge" [ngClass]="guia.recurso === 'PDF' ? 'badge-pdf' : 'badge-docx'">{{ guia.recurso }}</span>
+          </div>
+        </div>
+        <p>{{ guia.descripcion }}</p>
+        <a [href]="guia.url || '#'" download class="btn-download" style="text-decoration: none;">↓ Descargar</a>
+      </div>
+    }
+  </div>
 </div>

@@ -35,6 +35,7 @@ export interface GuiaRevision {
   titulo: string;
   descripcion: string;
   recurso: string;
+  url?: string;
 }
 
 export const ARTICULOS_ASIGNADOS_MOCK: ArticuloRevisor[] = [
@@ -133,20 +134,9 @@ export const NOTIFICACIONES_REVISOR_MOCK: NotificacionRevisor[] = [
 export const GUIAS_REVISION_MOCK: GuiaRevision[] = [
   {
     id: 'G-01',
-    titulo: 'Checklist de revision metodologica',
-    descripcion: 'Criterios minimos para evaluar coherencia entre objetivo, metodo y resultados.',
-    recurso: 'PDF interno',
-  },
-  {
-    id: 'G-02',
-    titulo: 'Guia de redaccion de dictamen',
-    descripcion: 'Plantilla de observaciones accionables para autores y editor.',
-    recurso: 'Plantilla DOCX',
-  },
-  {
-    id: 'G-03',
-    titulo: 'Politica de etica y conflicto de interes',
-    descripcion: 'Lineamientos para declarar conflictos y preservar la imparcialidad.',
-    recurso: 'Politica editorial',
+    titulo: 'Rúbrica Revisor por Pares',
+    descripcion: 'Rúbrica oficial en formato Word utilizada para la evaluación y dictamen de artículos científicos.',
+    recurso: 'DOCX',
+    url: '/RÚBRICA  EVALUACIÓN DE ARTÍCULOS.docx',
   },
 ];
