@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ArticulosAutorService,
@@ -39,12 +39,14 @@ interface ArticuloAutorListado extends ArticuloAutor {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './mi-panel.component.html',
-  styleUrls: ['./mi-panel.component.css']
+  styleUrls: ['./mi-panel.component.css'],
 })
 export class MiPanelComponent implements OnInit {
   private articulosService = inject(ArticulosAutorService);
   private articulosEditorService = inject(ArticulosService);
   private router = inject(Router);
+
+  private cdr = inject(ChangeDetectorRef);
 
   articulos: ArticuloAutorListado[] = [];
   loading = true;
@@ -71,10 +73,18 @@ export class MiPanelComponent implements OnInit {
   envioHabilitado = true;
   cargandoEstadoEnvios = true;
 
-  get totalArticulos() { return this.articulos.length; }
-  get enRevision() { return this.articulos.filter(a => this.getEstadoArticulo(a) === 'revision').length; }
-  get correccionPendiente() { return this.articulos.filter(a => this.getEstadoArticulo(a) === 'correccion').length; }
-  get publicados() { return this.articulos.filter(a => this.getEstadoArticulo(a) === 'publicado').length; }
+  get totalArticulos() {
+    return this.articulos.length;
+  }
+  get enRevision() {
+    return this.articulos.filter((a) => this.getEstadoArticulo(a) === 'revision').length;
+  }
+  get correccionPendiente() {
+    return this.articulos.filter((a) => this.getEstadoArticulo(a) === 'correccion').length;
+  }
+  get publicados() {
+    return this.articulos.filter((a) => this.getEstadoArticulo(a) === 'publicado').length;
+  }
   get proximoVencimiento() {
     const pendientes = this.articulos
       .filter((articulo) => articulo.fecha_vencimiento_correccion)
@@ -115,17 +125,21 @@ export class MiPanelComponent implements OnInit {
   }
 
   private cargarArticulos(): void {
+    this.loading = true;
+
+    this.cdr.detectChanges();
     this.articulosService.getMisArticulos().subscribe({
       next: (data) => {
         this.articulos = data.map((articulo, index) => this.normalizarArticulo(articulo, index));
         this.loading = false;
         this.actualizarAvisoCorreccion();
         this.cargarNotificacionesCorreccion();
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error(err);
         this.loading = false;
-      }
+      },
     });
   }
 
@@ -153,7 +167,12 @@ export class MiPanelComponent implements OnInit {
 
   private actualizarAvisoCorreccion(): void {
     const pendientes = this.articulos
-      .filter((articulo) => articulo.correccion_pendiente && articulo.fecha_vencimiento_correccion && !this.correccionEnRevision(articulo))
+      .filter(
+        (articulo) =>
+          articulo.correccion_pendiente &&
+          articulo.fecha_vencimiento_correccion &&
+          !this.correccionEnRevision(articulo),
+      )
       .map((articulo) => ({
         articulo,
         fechaVencimiento: new Date(articulo.fecha_vencimiento_correccion as string),
@@ -207,7 +226,11 @@ export class MiPanelComponent implements OnInit {
       return 'revision';
     }
 
-    if (articulo.correccion_pendiente || articulo.correccion_vencida || articulo.solicitud_prorroga_correccion_pendiente) {
+    if (
+      articulo.correccion_pendiente ||
+      articulo.correccion_vencida ||
+      articulo.solicitud_prorroga_correccion_pendiente
+    ) {
       return 'correccion';
     }
 
@@ -429,10 +452,7 @@ export class MiPanelComponent implements OnInit {
 
   get notificacionesRecientesVistaAcciones(): NotificacionAutorBackend[] {
     return [...this.notificacionesVistaAcciones]
-      .sort(
-        (a, b) =>
-          new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
-      )
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
       .slice(0, 3);
   }
 
@@ -453,10 +473,7 @@ export class MiPanelComponent implements OnInit {
   }
 
   getAccionPrincipalLabel(articulo: ArticuloAutor): string | null {
-    const escenario = this.construirEscenarioAcciones(
-      articulo,
-      this.notificacionesVistaAcciones,
-    );
+    const escenario = this.construirEscenarioAcciones(articulo, this.notificacionesVistaAcciones);
 
     if (escenario.tipo === 'alerta') {
       return 'Ver notificaciones';
@@ -540,9 +557,7 @@ export class MiPanelComponent implements OnInit {
     notificaciones: NotificacionAutorBackend[],
   ): EscenarioAcciones {
     const textoNotificaciones = this.normalizar(
-      notificaciones
-        .map((item) => `${item.titulo} ${item.detalle}`)
-        .join(' '),
+      notificaciones.map((item) => `${item.titulo} ${item.detalle}`).join(' '),
     );
 
     const etapa = this.normalizar(articulo.etapa_nombre);
@@ -603,7 +618,8 @@ export class MiPanelComponent implements OnInit {
       const tieneNotifAceptado = notificaciones.some((n) =>
         this.normalizar(n.titulo).includes('aceptado sin cambios'),
       );
-      const yaEvaluadoSinCorreccion = !articulo.correccion_pendiente && !articulo.fecha_vencimiento_correccion;
+      const yaEvaluadoSinCorreccion =
+        !articulo.correccion_pendiente && !articulo.fecha_vencimiento_correccion;
 
       if (tieneNotifAceptado || yaEvaluadoSinCorreccion) {
         return {
@@ -797,25 +813,28 @@ export class MiPanelComponent implements OnInit {
     this.mensajeCorreccion = null;
     this.errorCorreccion = null;
     this.errorModalCorreccion = null;
+    this.cdr.detectChanges();
 
     this.articulosService
       .enviarCorreccion(articulo.id, archivo, comentarios || undefined)
       .subscribe({
-      next: () => {
-        this.subiendoCorreccionIds.delete(articulo.id);
-        this.mensajeCorreccion = 'Correccion enviada correctamente.';
-        this.notificacionesCache = null;
-        this.marcarCorreccionComoEnviada(articulo.id);
-        this.cerrarModalCorreccion();
-        this.cargarArticulos();
-      },
-      error: (err) => {
-        console.error('Error enviando correccion:', err);
-        this.subiendoCorreccionIds.delete(articulo.id);
-        const mensaje = err?.error?.message ?? 'No fue posible enviar la correccion.';
-        this.errorCorreccion = mensaje;
-        this.errorModalCorreccion = mensaje;
-      },
+        next: () => {
+          this.subiendoCorreccionIds.delete(articulo.id);
+          this.mensajeCorreccion = 'Correccion enviada correctamente.';
+          this.notificacionesCache = null;
+          this.marcarCorreccionComoEnviada(articulo.id);
+          this.cerrarModalCorreccion();
+          this.cargarArticulos();
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error enviando correccion:', err);
+          this.subiendoCorreccionIds.delete(articulo.id);
+          const mensaje = err?.error?.message ?? 'No fue posible enviar la correccion.';
+          this.errorCorreccion = mensaje;
+          this.errorModalCorreccion = mensaje;
+          this.cdr.detectChanges();
+        },
       });
   }
 
@@ -829,10 +848,7 @@ export class MiPanelComponent implements OnInit {
 
   puedeEnviarCorreccion(articulo: ArticuloAutor): boolean {
     const valor = articulo.etapa_nombre.toLowerCase();
-    if (
-      !valor.includes('preliminar') &&
-      !valor.includes('turnitin')
-    ) {
+    if (!valor.includes('preliminar') && !valor.includes('turnitin')) {
       return false;
     }
     if (!articulo.correccion_pendiente || articulo.correccion_vencida) {

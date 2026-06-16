@@ -32,6 +32,7 @@
     letter-spacing: 1px;
     text-transform: uppercase;
   }
+
   h2 {
     font-size: 1.4rem;
     font-weight: 500;
@@ -56,6 +57,7 @@
     color: #64748b;
     font-weight: 700;
   }
+
   .revista-logo-text {
     font-size: 1.8rem;
     font-weight: 800;
@@ -339,21 +341,22 @@
   }
 }
 
-.radio-container:hover input ~ .radio-checkmark {
+.radio-container:hover input~.radio-checkmark {
   border-color: #1f4e5b;
   background-color: #f1f5f9;
 }
 
-.radio-container input:checked ~ .radio-checkmark {
+.radio-container input:checked~.radio-checkmark {
   background-color: #ffffff;
 }
 
-.radio-container input:checked ~ .radio-checkmark::after {
+.radio-container input:checked~.radio-checkmark::after {
   display: block;
 }
 
 .radio-checkmark.check-yes {
   border-color: #2563eb;
+
   &::after {
     background: #2563eb;
   }
@@ -361,18 +364,19 @@
 
 .radio-checkmark.check-no {
   border-color: #dc2626;
+
   &::after {
     background: #dc2626;
   }
 }
 
-.radio-container input:checked ~ .radio-checkmark.check-yes {
+.radio-container input:checked~.radio-checkmark.check-yes {
   border-color: #2563eb;
   background-color: #eff6ff;
   box-shadow: 0 0 8px rgba(37, 99, 235, 0.3);
 }
 
-.radio-container input:checked ~ .radio-checkmark.check-no {
+.radio-container input:checked~.radio-checkmark.check-no {
   border-color: #dc2626;
   background-color: #fef2f2;
   box-shadow: 0 0 8px rgba(220, 38, 38, 0.3);
@@ -429,6 +433,41 @@
   margin-top: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+.btn-primario,
+.btn-secundario {
+  border: 1px solid #0f766e;
+  border-radius: 10px;
+  padding: 0.5rem 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-primario:hover,
+.btn-secundario:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -16px rgba(15, 118, 110, 0.65);
+}
+
+.btn-primario {
+  background: linear-gradient(180deg, #0f766e 0%, #0d9488 100%);
+  color: #ffffff;
+}
+
+.btn-secundario {
+  background: #ffffff;
+  color: #0f766e;
+}
+
+.btn-primario:disabled {
+  background: #cbd5e1 !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .btn-restaurar {
