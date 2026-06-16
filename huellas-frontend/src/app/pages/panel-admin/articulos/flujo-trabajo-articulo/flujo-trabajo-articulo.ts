@@ -984,17 +984,18 @@ export class FlujoTrabajoArticulo {
       return;
     }
 
-    const numero = Number(valorCrudo.replace(',', '.'));
+    let numero = Number(valorCrudo.replace(',', '.'));
+
     if (!Number.isFinite(numero)) {
       input.value = '';
       this.porcentajeTurnitin = null;
       return;
     }
 
-    const valorAcotado = Math.min(100, Math.max(0, numero));
+    const valorAcotado = Math.round(Math.max(0, Math.min(100, numero)));
     this.porcentajeTurnitin = valorAcotado;
 
-    if (valorAcotado !== numero) {
+    if (valorAcotado !== numero || input.value !== String(valorAcotado)) {
       input.value = String(valorAcotado);
     }
   }
@@ -1846,16 +1847,12 @@ export class FlujoTrabajoArticulo {
 
   private validarFormularioTurnitin(): boolean {
     if (this.porcentajeTurnitin === null || this.porcentajeTurnitin === undefined) {
-      this.abrirModalErrorTurnitin('Debes indicar el porcentaje de Turnitin.');
+      this.abrirModalErrorTurnitin('Debes indicar el porcentaje de similitud.');
       return false;
     }
-
-    if (
-      !Number.isFinite(this.porcentajeTurnitin) ||
-      this.porcentajeTurnitin < 0 ||
-      this.porcentajeTurnitin > 100
-    ) {
-      this.abrirModalErrorTurnitin('El porcentaje de Turnitin debe estar entre 0 y 100%.');
+    const porcentaje = Number(this.porcentajeTurnitin);
+    if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+      this.abrirModalErrorTurnitin('El porcentaje debe ser un número entre 0 y 100.');
       return false;
     }
 
@@ -1900,7 +1897,7 @@ export class FlujoTrabajoArticulo {
     }
     if (!this.validarFormularioTurnitin()) return;
 
-    const porcentaje = this.porcentajeTurnitin!;
+    const porcentaje = Number(this.porcentajeTurnitin);
     const fileToSend = this.archivoTurnitin;
 
     this.cancelarConfirmacionEvaluacionTurnitin();

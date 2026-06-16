@@ -1,0 +1,33 @@
+<div class="modal-overlay" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="modal-close" (click)="cerrarModal()" aria-label="Cerrar">×</button>
+
+    <div class="modal-body" *ngIf="articulo">
+      <!-- Título -->
+      <h1 class="articulo-titulo">{{ articulo.titulo }}</h1>
+
+      <!-- Sección: Datos bibliográficos -->
+      <h2 class="seccion-titulo">DATOS BIBLIOGRÁFICOS &amp; CONTEXTO EDITORIAL</h2>
+      <div class="seccion-contenido">
+        <p><strong>Autores:</strong> {{ autoresTexto }}</p>
+        <p><strong>Temas:</strong> {{ temasTexto }}</p>
+        <p><strong>Palabras clave:</strong> {{ palabrasClaveTexto }}</p>
+      </div>
+
+      <!-- Sección: Datos de publicación -->
+      <h2 class="seccion-titulo">DATOS DE PUBLICACIÓN ACTUAL</h2>
+      <div class="seccion-contenido">
+        <p><strong>Fecha de publicación:</strong> {{ fechaPublicacionTexto }}</p>
+        <p><strong>DOI:</strong> {{ doiTexto }}</p>
+        <p><strong>ISSN:</strong> {{ issnTexto }}</p>
+        <p><strong>Rango de páginas:</strong> {{ paginasTexto }}</p>
+      </div>
+
+      <!-- Sección: Resumen -->
+      <h2 class="seccion-titulo">RESUMEN DEL ARTÍCULO</h2>
+      <div class="seccion-contenido resumen">
+        <p>{{ resumenTexto }}</p>
+      </div>
+    </div>
+  </div>
+</div>

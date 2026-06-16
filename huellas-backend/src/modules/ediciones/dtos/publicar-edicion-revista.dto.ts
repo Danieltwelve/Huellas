@@ -12,7 +12,7 @@ export class PublicarEdicionRevistaDto {
   edicionId!: number;
 
   @IsArray()
-  @ArrayMinSize(10)
+  @ArrayMinSize(1)
   @ArrayMaxSize(10)
   @IsInt({ each: true })
   articuloIds!: number[];

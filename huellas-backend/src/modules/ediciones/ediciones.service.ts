@@ -18,6 +18,7 @@ import { DataSource } from 'typeorm';
 import { PublicarEdicionRevistaDto } from './dtos/publicar-edicion-revista.dto';
 import { join } from 'path';
 import { promises as fs } from 'fs';
+import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
 
 @Injectable()
 export class EdicionesService {
@@ -68,6 +69,8 @@ export class EdicionesService {
     });
   }
 
+  // ediciones.service.ts
+
   async findPublicadas(): Promise<
     Array<{
       id: number;
@@ -77,19 +80,31 @@ export class EdicionesService {
       anio: number;
       fecha_estado: Date;
       numeroArticulos: number;
-      portada: string | null; // 👈 agregar portada
+      portada: string | null;
       articulos: Array<{
         id: number;
         codigo: string;
         titulo: string;
         resumen: string;
         autores: Array<{ id: number; nombre: string; correo: string }>;
+        temas: string[]; // ← nuevo
+        palabrasClave: string; // ← nuevo
+        doi: string | null; // ← nuevo
+        issn: string | null; // ← nuevo
+        paginas: string | null; // ← nuevo
+        fechaPublicacion: string | null; // ← nuevo (ISO string)
       }>;
     }>
   > {
     const ediciones = await this.edicionRepository.find({
       where: { estado_id: { id: EdicionesService.ESTADO_PUBLICADA_ID } as any },
-      relations: ['estado_id', 'articulos', 'articulos.autores'],
+      relations: [
+        'estado_id',
+        'articulos',
+        'articulos.autores',
+        'articulos.temas', // ← agregado
+        'articulos.historialEtapas', // ← agregado
+      ],
       order: {
         fecha_estado: 'DESC',
         anio: 'DESC',
@@ -106,7 +121,7 @@ export class EdicionesService {
       anio: edicion.anio!,
       fecha_estado: edicion.fecha_estado!,
       numeroArticulos: edicion.articulos?.length ?? 0,
-      portada: edicion.portada || null, // 👈 incluir portada
+      portada: edicion.portada || null,
       articulos: (edicion.articulos ?? []).map((articulo) => ({
         id: articulo.id,
         codigo: articulo.codigo,
@@ -117,8 +132,33 @@ export class EdicionesService {
           nombre: autor.nombre,
           correo: autor.correo,
         })),
+        // --- nuevos campos ---
+        temas: (articulo.temas ?? []).map((tema) => tema.nombre),
+        palabrasClave: articulo.palabrasClave || '',
+        doi: articulo.doi || null,
+        issn: articulo.issn || null,
+        paginas: articulo.paginas || null,
+        fechaPublicacion: this.obtenerFechaPublicacion(
+          articulo.historialEtapas,
+        ),
       })),
     }));
+  }
+
+  private obtenerFechaPublicacion(
+    historial: ArticuloHistorialEtapa[] = [],
+  ): string | null {
+    const registroPublicacion = historial
+      .filter((h) => h.etapaId === 5) // etapa de publicación
+      .sort((a, b) => a.fechaInicio.getTime() - b.fechaInicio.getTime())[0];
+
+    if (!registroPublicacion) {
+      return null;
+    }
+
+    const fecha =
+      registroPublicacion.fechaFin ?? registroPublicacion.fechaInicio;
+    return fecha ? fecha.toISOString() : null;
   }
 
   async publicarEdicion(dto: PublicarEdicionRevistaDto) {

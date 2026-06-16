@@ -10,13 +10,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
 import { Articulo } from 'src/modules/articulos/entities/articulo.entity';
 import { Revisores } from './entities/revisores.entity';
 import { GeminiService } from 'src/common/gemini/gemini.service';
 import { User } from 'src/modules/users/user.entity';
 import { Observacion } from 'src/modules/observaciones/entities/observacione.entity';
 import { ObservacionArchivo } from 'src/modules/observaciones-archivos/entities/observaciones-archivo.entity';
+import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
 
 @Injectable()
 export class RevisoresService {
@@ -231,148 +232,199 @@ export class RevisoresService {
     },
     archivo?: Express.Multer.File,
   ) {
-    const revisor = await this.revisoresRepository.findOne({
-      where: { usuarioId },
-      relations: ['usuario'],
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (!revisor) {
-      throw new NotFoundException('Revisor no encontrado');
-    }
-
-    const articulo = await this.articuloRepository.findOne({
-      where: { id: articuloId },
-      relations: ['revisor', 'etapaActual'],
-    });
-
-    if (!articulo) {
-      throw new NotFoundException('Artículo no encontrado');
-    }
-
-    if (articulo.etapaActualId !== RevisoresService.ETAPA_REVISION_PARES) {
-      throw new BadRequestException(
-        'El artículo no está en la etapa de Revisión por pares.',
-      );
-    }
-
-    if (articulo.revisor?.usuarioId !== usuarioId) {
-      throw new ForbiddenException(
-        'No tienes permiso para revisar este artículo porque no está asignado a tu cuenta.',
-      );
-    }
-
-    const observacionesRepo = this.dataSource.getRepository(Observacion);
-    const revisionExistente = await observacionesRepo
-      .createQueryBuilder('observacion')
-      .where(
-        'observacion.articuloId = :articuloId AND observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId',
-        {
-          articuloId,
-          usuarioId,
-          etapaId: RevisoresService.ETAPA_REVISION_PARES,
-        },
-      )
-      .andWhere(
-        '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
-        {
-          aprobado: RevisoresService.ASUNTO_REVISION_PARES_APROBADO,
-          rechazado: RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO,
-          ajustes: RevisoresService.ASUNTO_REVISION_PARES_AJUSTES,
-        },
-      )
-      .getOne();
-
-    if (revisionExistente) {
-      throw new ConflictException(
-        'Ya enviaste una revisión para este artículo.',
-      );
-    }
-
-    const calificacion = Number(data.calificacion);
-    if (
-      !Number.isFinite(calificacion) ||
-      calificacion < 1 ||
-      calificacion > 5
-    ) {
-      throw new BadRequestException('La calificación debe estar entre 1 y 5.');
-    }
-
-    const recomendacion = data.recomendacion;
-    const asunto =
-      recomendacion === 'aceptar'
-        ? RevisoresService.ASUNTO_REVISION_PARES_APROBADO
-        : recomendacion === 'ajustes'
-          ? RevisoresService.ASUNTO_REVISION_PARES_AJUSTES
-          : RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO;
-
-    const observacionBase = [
-      `Calificación: ${calificacion}/5`,
-      `Decisión: ${recomendacion.toUpperCase()}`,
-      data.comentarios?.trim()
-        ? `Comentarios:\n${data.comentarios.trim()}`
-        : '',
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-
-    const observacion = observacionesRepo.create({
-      articuloId,
-      usuarioId,
-      etapaId: RevisoresService.ETAPA_REVISION_PARES,
-      asunto,
-      comentarios: observacionBase,
-    });
-
-    const observacionGuardada = await observacionesRepo.save(observacion);
-
-    if (archivo) {
-      const archivoRepo = this.dataSource.getRepository(ObservacionArchivo);
-      const registroArchivo = archivoRepo.create({
-        observacionesId: observacionGuardada.id,
-        archivoPath: archivo.path,
-        archivoNombreOriginal: archivo.originalname,
+    try {
+      const revisor = await queryRunner.manager.findOne(Revisores, {
+        where: { usuarioId },
+        relations: ['usuario'],
       });
 
-      await archivoRepo.save(registroArchivo);
-    }
+      if (!revisor) {
+        throw new NotFoundException('Revisor no encontrado');
+      }
 
-    // Crear observaciones notificación para autores
-    const articuloConAutores = await this.articuloRepository.findOne({
-      where: { id: articuloId },
-      relations: ['autores'],
-    });
-    const autorIds = articuloConAutores?.autores?.map((a) => a.id) ?? [];
-    const resumenDecision =
-      recomendacion === 'aceptar'
-        ? 'El artículo fue aprobado en la revisión por pares.'
-        : recomendacion === 'ajustes'
-          ? 'El artículo requiere realizar correcciones (ajustes) en la revisión por pares.'
-          : 'El artículo fue rechazado en la revisión por pares.';
+      const articulo = await queryRunner.manager.findOne(Articulo, {
+        where: { id: articuloId },
+        relations: ['revisor', 'etapaActual'],
+      });
 
-    for (const autorId of autorIds) {
-      const notificacionAutor = observacionesRepo.create({
+      if (!articulo) {
+        throw new NotFoundException('Artículo no encontrado');
+      }
+
+      if (articulo.etapaActualId !== RevisoresService.ETAPA_REVISION_PARES) {
+        throw new BadRequestException(
+          'El artículo no está en la etapa de Revisión por pares.',
+        );
+      }
+
+      if (articulo.revisor?.usuarioId !== usuarioId) {
+        throw new ForbiddenException(
+          'No tienes permiso para revisar este artículo porque no está asignado a tu cuenta.',
+        );
+      }
+
+      const observacionesRepo = queryRunner.manager.getRepository(Observacion);
+      const revisionExistente = await observacionesRepo
+        .createQueryBuilder('observacion')
+        .where(
+          'observacion.articuloId = :articuloId AND observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId',
+          {
+            articuloId,
+            usuarioId,
+            etapaId: RevisoresService.ETAPA_REVISION_PARES,
+          },
+        )
+        .andWhere(
+          '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
+          {
+            aprobado: RevisoresService.ASUNTO_REVISION_PARES_APROBADO,
+            rechazado: RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO,
+            ajustes: RevisoresService.ASUNTO_REVISION_PARES_AJUSTES,
+          },
+        )
+        .getOne();
+
+      if (revisionExistente) {
+        throw new ConflictException(
+          'Ya enviaste una revisión para este artículo.',
+        );
+      }
+
+      const calificacion = Number(data.calificacion);
+      if (
+        !Number.isFinite(calificacion) ||
+        calificacion < 1 ||
+        calificacion > 5
+      ) {
+        throw new BadRequestException(
+          'La calificación debe estar entre 1 y 5.',
+        );
+      }
+
+      const recomendacion = data.recomendacion;
+      const asunto =
+        recomendacion === 'aceptar'
+          ? RevisoresService.ASUNTO_REVISION_PARES_APROBADO
+          : recomendacion === 'ajustes'
+            ? RevisoresService.ASUNTO_REVISION_PARES_AJUSTES
+            : RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO;
+
+      const observacionBase = [
+        `Calificación: ${calificacion}/5`,
+        `Decisión: ${recomendacion.toUpperCase()}`,
+        data.comentarios?.trim()
+          ? `Comentarios:\n${data.comentarios.trim()}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
+      const observacion = observacionesRepo.create({
         articuloId,
-        usuarioId: usuarioId,
+        usuarioId,
         etapaId: RevisoresService.ETAPA_REVISION_PARES,
-        asunto: `Revisión por pares completada: ${
-          recomendacion === 'aceptar'
-            ? 'APROBADO'
-            : recomendacion === 'ajustes'
-              ? 'AJUSTES'
-              : 'RECHAZADO'
-        }`,
-        comentarios: `${resumenDecision} Calificación: ${calificacion}/5.`,
+        asunto,
+        comentarios: observacionBase,
       });
-      await observacionesRepo.save(notificacionAutor);
-    }
 
-    return {
-      message: 'Revisión registrada correctamente.',
-      articuloId,
-      observacionId: observacionGuardada.id,
-      recomendacion,
-      calificacion,
-    };
+      const observacionGuardada = await observacionesRepo.save(observacion);
+
+      if (archivo) {
+        const archivoRepo =
+          queryRunner.manager.getRepository(ObservacionArchivo);
+        const registroArchivo = archivoRepo.create({
+          observacionesId: observacionGuardada.id,
+          archivoPath: archivo.path,
+          archivoNombreOriginal: archivo.originalname,
+        });
+        await archivoRepo.save(registroArchivo);
+      }
+
+      // Crear observaciones notificación para autores
+      const articuloConAutores = await queryRunner.manager.findOne(Articulo, {
+        where: { id: articuloId },
+        relations: ['autores'],
+      });
+      const autorIds = articuloConAutores?.autores?.map((a) => a.id) ?? [];
+      const resumenDecision =
+        recomendacion === 'aceptar'
+          ? 'El artículo fue aprobado en la revisión por pares.'
+          : recomendacion === 'ajustes'
+            ? 'El artículo requiere realizar correcciones (ajustes) en la revisión por pares.'
+            : 'El artículo fue rechazado en la revisión por pares.';
+
+      for (const autorId of autorIds) {
+        const notificacionAutor = observacionesRepo.create({
+          articuloId,
+          usuarioId: usuarioId,
+          etapaId: RevisoresService.ETAPA_REVISION_PARES,
+          asunto: `Revisión por pares completada: ${
+            recomendacion === 'aceptar'
+              ? 'APROBADO'
+              : recomendacion === 'ajustes'
+                ? 'AJUSTES'
+                : 'RECHAZADO'
+          }`,
+          comentarios: `${resumenDecision} Calificación: ${calificacion}/5.`,
+        });
+        await observacionesRepo.save(notificacionAutor);
+      }
+
+      // --- LÓGICA PARA MOVER A DESCARTADO SI LA RECOMENDACIÓN ES RECHAZAR ---
+      if (recomendacion === 'rechazar') {
+        // 1. Cerrar el historial activo de la etapa de Revisión por pares
+        const historialAbierto = await queryRunner.manager.findOne(
+          ArticuloHistorialEtapa,
+          {
+            where: {
+              articuloId,
+              etapaId: RevisoresService.ETAPA_REVISION_PARES,
+              fechaFin: IsNull(),
+            },
+            order: { fechaInicio: 'DESC' },
+          },
+        );
+        if (historialAbierto) {
+          historialAbierto.fechaFin = new Date();
+          await queryRunner.manager.save(historialAbierto);
+        }
+
+        await queryRunner.manager.update(Articulo, articuloId, {
+          etapaActualId: 7,
+        });
+
+        // 3. Crear un nuevo registro en el historial para la etapa DESCARTADO
+        const nuevoHistorial = queryRunner.manager.create(
+          ArticuloHistorialEtapa,
+          {
+            articuloId,
+            etapaId: 7,
+            fechaInicio: new Date(),
+            usuarioId, // el revisor que emite el rechazo
+          },
+        );
+        await queryRunner.manager.save(nuevoHistorial);
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        message: 'Revisión registrada correctamente.',
+        articuloId,
+        observacionId: observacionGuardada.id,
+        recomendacion,
+        calificacion,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async getHistorialRevisionRevisor(usuarioId: number) {

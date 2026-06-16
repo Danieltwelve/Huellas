@@ -1,3 +1,4 @@
+import { ModalVisualizar } from './modal-visualizar/modal-visualizar';
 import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -11,12 +12,18 @@ export interface ArticuloDetalle {
   titulo: string;
   resumen: string;
   autores: Array<{ id: number; nombre: string; correo: string }>;
+  temas: string[];
+  palabrasClave: string;
+  doi: string | null;
+  issn: string | null;
+  paginas: string | null;
+  fechaPublicacion: string | null;
 }
 
 @Component({
   selector: 'app-articulos',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ModalVisualizar],
   templateUrl: './articulos.html',
   styleUrls: ['./articulos.css'],
 })
@@ -25,6 +32,9 @@ export class Articulos {
 
   private observacionesService = inject(ObservacionesService);
   public descargando = new Set<number>();
+
+  articuloSeleccionado: ArticuloDetalle | null = null;
+  mostrarModal = false;
 
   descargarUltimaVersion(articulo: ArticuloDetalle): void {
     if (this.descargando.has(articulo.id)) return;
@@ -66,5 +76,15 @@ export class Articulos {
         // Opcional: mostrar un mensaje al usuario (ej. usando un toast)
       },
     });
+  }
+
+  abrirModal(articulo: ArticuloDetalle): void {
+    this.articuloSeleccionado = articulo;
+    this.mostrarModal = true;
+  }
+
+  cerrarModal(): void {
+    this.articuloSeleccionado = null;
+    this.mostrarModal = false;
   }
 }

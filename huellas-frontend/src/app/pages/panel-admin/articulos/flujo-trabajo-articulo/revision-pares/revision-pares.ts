@@ -359,11 +359,17 @@ export class RevisionPares implements OnInit {
   }
 
   get revisoresPaginados(): RevisorPares[] {
+    if (this.tieneRevisorAsignado && this.revisorAsignadoLocal) {
+      return [this.revisorAsignadoLocal];
+    }
     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
     return this.revisores.slice(inicio, inicio + this.itemsPorPagina);
   }
 
   get totalPaginas(): number {
+    if (this.tieneRevisorAsignado) {
+      return 1;
+    }
     return Math.ceil(this.revisores.length / this.itemsPorPagina);
   }
 

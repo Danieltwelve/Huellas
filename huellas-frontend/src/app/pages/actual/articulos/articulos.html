@@ -12,10 +12,16 @@
     </div>
 
     <div class="articulo-actions">
-      <!-- Visualizar podría abrir el PDF en otra pestaña (si es PDF) o simplemente no implementar aún -->
       <button class="btn-primary" (click)="descargarUltimaVersion(articulo)" [disabled]="descargando.has(articulo.id)">
         {{ descargando.has(articulo.id) ? 'Cargando...' : 'Descargar' }}
+      </button>
+      <button class="btn-secondary" (click)="abrirModal(articulo)">
+        Visualizar
       </button>
     </div>
   </article>
 </div>
+
+<!-- Modal de visualización -->
+<app-modal-visualizar *ngIf="mostrarModal" [articulo]="articuloSeleccionado" (cerrar)="cerrarModal()">
+</app-modal-visualizar>

@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EdicionesRevistaService } from '../../core/ediciones-revista/ediciones.revista.service';
-import { Articulos, ArticuloDetalle } from './articulos/articulos'; // Importar el nuevo componente
+import { Articulos, ArticuloDetalle } from './articulos/articulos';
 import { environment } from '../../../environments/environments';
 
 interface EdicionFormateada {
@@ -17,7 +17,7 @@ interface EdicionFormateada {
   portada?: string | null;
   pdf: string;
   enlacePublicacion: string;
-  articulos: ArticuloDetalle[]; // usamos la misma interfaz
+  articulos: ArticuloDetalle[];
 }
 
 @Component({
@@ -41,7 +41,6 @@ export class ActualComponent {
   aniosDisponibles: number[] = [];
 
   edicionSeleccionada: EdicionFormateada | null = null;
-  // No se necesita articulosDeEdicion porque se pasa al hijo
 
   ngOnInit(): void {
     this.cargarEdiciones();
@@ -84,6 +83,12 @@ export class ActualComponent {
       titulo: art.titulo,
       resumen: art.resumen || '',
       autores: art.autores || [],
+      temas: art.temas || [],
+      palabrasClave: art.palabrasClave || '',
+      doi: art.doi ?? null,
+      issn: art.issn ?? null,
+      paginas: art.paginas ?? null,
+      fechaPublicacion: art.fechaPublicacion ?? null,
     }));
 
     let portadaUrl = this.portadaFallback;

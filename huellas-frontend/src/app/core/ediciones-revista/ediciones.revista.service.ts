@@ -42,6 +42,12 @@ export interface EdicionPublicadaBackend {
     resumen: string;
     autores: Array<{ id: number; nombre: string; correo: string }>;
   }>;
+  temas: string[];
+  palabrasClave: string;
+  doi: string | null;
+  issn: string | null;
+  paginas: string | null;
+  fechaPublicacion: string | null;
 }
 
 export interface PublicarEdicionRevistaPayload {
@@ -122,7 +128,7 @@ export class EdicionesRevistaService {
 
   deleteEdicion(id: number): Observable<DeleteEdicionRevistaResponse> {
     return this.http.delete<DeleteEdicionRevistaResponse>(
-      `${environment.apiUrlBackend}/ediciones/${id}/with-message`
+      `${environment.apiUrlBackend}/ediciones/${id}/with-message`,
     );
   }
 
@@ -138,7 +144,7 @@ export class EdicionesRevistaService {
 
   getConteoArticulos(id: number): Observable<GetConteoArticulosResponse> {
     return this.http.get<GetConteoArticulosResponse>(
-      `${environment.apiUrlBackend}/ediciones/${id}/conteo-articulos`
+      `${environment.apiUrlBackend}/ediciones/${id}/conteo-articulos`,
     );
   }
 
@@ -176,7 +182,7 @@ export class EdicionesRevistaService {
 
   deletePortada(id: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(
-      `${environment.apiUrlBackend}/ediciones/${id}/portada`
+      `${environment.apiUrlBackend}/ediciones/${id}/portada`,
     );
   }
 }
