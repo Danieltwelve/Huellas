@@ -76,14 +76,9 @@ export class ArticuloComiteComponent implements OnInit, OnDestroy {
 
   readonly documentosRubrica: DocumentoRubrica[] = [
     {
-      titulo: 'Plantilla de rúbrica de evaluación (PDF)',
-      descripcion: 'Formato oficial para evaluación del artículo por criterio.',
-      archivo: '/rubricas/plantilla-rubrica-evaluacion.pdf',
-    },
-    {
-      titulo: 'Guía de aplicación de rúbrica (Word)',
-      descripcion: 'Instrucciones para diligenciar la rúbrica de evaluación.',
-      archivo: '/rubricas/guia-rubrica-evaluacion.doc',
+      titulo: 'Rúbrica de evaluación - Comité Editorial (Word)',
+      descripcion: 'Formato oficial para la evaluación del Comité Editorial.',
+      archivo: '/rubrica-comite-editorial.docx',
     },
   ];
 

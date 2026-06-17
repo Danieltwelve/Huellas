@@ -533,6 +533,59 @@ export class UsersService {
     }
   }
 
+  async sendEvaluationReminderEmail(
+    correo: string,
+    nombre: string,
+    tituloArticulo: string,
+    rol: string,
+    diasTranscurridos: number,
+  ): Promise<boolean> {
+    const smtpConfig = this.getSmtpConfig();
+
+    if (!smtpConfig) {
+      this.logger.warn('No hay configuración SMTP activa para enviar el recordatorio.');
+      return false;
+    }
+
+    try {
+      const transport = nodemailer.createTransport({
+        host: smtpConfig.host,
+        port: smtpConfig.port,
+        secure: smtpConfig.secure,
+        auth:
+          smtpConfig.user && smtpConfig.pass
+            ? {
+                user: smtpConfig.user,
+                pass: smtpConfig.pass,
+              }
+            : undefined,
+      });
+
+      await transport.sendMail({
+        from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
+        to: correo,
+        subject: `Recordatorio: Evaluación de Artículo Pendiente (${rol})`,
+        html: `
+          <p>Estimado/a <strong>${nombre}</strong>,</p>
+          <p>Le recordamos que tiene asignada la evaluación del artículo titulado: <strong>"${tituloArticulo}"</strong> en calidad de <strong>${rol}</strong>.</p>
+          <p>Han transcurrido <strong>${diasTranscurridos} días</strong> desde la asignación y aún no hemos registrado su evaluación.</p>
+          <p>Por favor, ingrese a la plataforma de Revista Huellas para registrar su criterio y continuar con el flujo editorial.</p>
+          <br>
+          <p>Atentamente,</p>
+          <p><strong>Equipo Editorial - Revista Huellas</strong></p>
+        `,
+      });
+
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Error al enviar correo de recordatorio a ${correo}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
   async create(createUserDto: CreateUserDto): Promise<User> {
     const newUser = this.userRepository.create(createUserDto);
     const defaultRole = await this.rolesRepository.findOne({

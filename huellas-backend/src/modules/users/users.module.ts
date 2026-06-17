@@ -12,6 +12,7 @@ import { Articulo } from '../articulos/entities/articulo.entity';
 import { Observacion } from '../observaciones/entities/observacione.entity';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
 import { Revisores } from '../revisores/entities/revisores.entity';
+import { UsersRemindersJob } from './users-reminders.job';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { Revisores } from '../revisores/entities/revisores.entity';
     JwtAuthGuard,
     RolesGuard,
     UsersVerificationReconcileJob,
+    UsersRemindersJob,
   ],
   exports: [UsersService],
 })
