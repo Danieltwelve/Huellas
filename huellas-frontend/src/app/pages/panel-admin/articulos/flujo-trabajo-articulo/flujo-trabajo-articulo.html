@@ -49,6 +49,85 @@
         [revisorAsignado]="articulo?.revisor ?? null"
         [yaEvaluado]="revisorAsignadoEmitioCriterioActual"></app-revision-pares>
 
+      <!-- Resultado de la Revisión por Pares -->
+      <section class="accion-card card-resultado-pares"
+        [class.card-resultado-pares--aceptar]="decisionRevisionParesCompleto === 'aceptar'"
+        [class.card-resultado-pares--ajustes]="decisionRevisionParesCompleto === 'ajustes'"
+        [class.card-resultado-pares--rechazar]="decisionRevisionParesCompleto === 'rechazar'"
+        *ngIf="puedeMostrarRevisionPares && !estaEnCertificacion && revisorAsignadoEmitioCriterioActual && decisionRevisionParesCompleto as resultado">
+        <div class="resultado-header">
+          <div class="resultado-badge" 
+            [class.resultado-badge--aceptado]="resultado === 'aceptar'"
+            [class.resultado-badge--ajustes]="resultado === 'ajustes'">
+            <svg *ngIf="resultado === 'aceptar'" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <svg *ngIf="resultado === 'ajustes'" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="12" x2="12" y2="16"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <svg *ngIf="resultado === 'rechazar'" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </div>
+          <div>
+            <span class="accion-label">Resultado de la Revisión por Pares</span>
+            <span class="tag-flow-rule" 
+              [class.tag-flow-rule--rechazado]="resultado === 'rechazar'"
+              [style.background-color]="resultado === 'ajustes' ? 'rgba(245, 158, 11, 0.1)' : null"
+              [style.color]="resultado === 'ajustes' ? '#d97706' : null"
+              [style.border-color]="resultado === 'ajustes' ? 'rgba(245, 158, 11, 0.25)' : null">
+              {{ resultado === 'aceptar' ? 'Aprobado' : resultado === 'ajustes' ? 'Ajustes' : 'Rechazado' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="resultado-content">
+          <p class="asignacion-helper" 
+            [class.asignacion-helper--rechazado]="resultado === 'rechazar'"
+            [style.color]="resultado === 'ajustes' ? '#6b5900' : null">
+            {{ mensajeResultadoPares }}
+          </p>
+
+          <div class="archivos-list" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;" *ngIf="evaluacionParesRegistro?.archivos?.length">
+            <div *ngFor="let archivo of evaluacionParesRegistro?.archivos">
+              <button
+                type="button"
+                class="rubrica-archivo-box"
+                (click)="descargarArchivo(archivo.path, archivo.nombre)"
+              >
+                <div class="archivo-info-side">
+                  <div class="pdf-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="pdf-svg">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    <span class="pdf-extension-tag">PDF</span>
+                  </div>
+                  <div class="archivo-meta-details">
+                    <span class="rubrica-box-title">Rúbrica de Evaluación</span>
+                    <span class="rubrica-box-filename">{{ archivo.nombre }}</span>
+                  </div>
+                </div>
+                <div class="descargar-badge">
+                  <span class="descargar-text">Descargar</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="download-icon">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div class="accion-group" *ngIf="puedeMostrarObservacion && !estaEnCertificacion">
         <div class="observacion-header">
           <span class="accion-label">Añadir corrección u observación</span>
@@ -409,6 +488,8 @@
       </section>
 
       <section class="accion-card card-resultado-comite"
+        [class.card-resultado-comite--aceptado]="resultadoEvaluacionComite === 'aceptado'"
+        [class.card-resultado-comite--rechazado]="resultadoEvaluacionComite === 'rechazado'"
         *ngIf="estaEnEtapaComite && resultadoEvaluacionComite as resultado">
         <div class="resultado-header">
           <div class="resultado-badge" [class.resultado-badge--aceptado]="resultado === 'aceptado'">
@@ -434,6 +515,77 @@
           <p class="asignacion-helper" [class.asignacion-helper--rechazado]="resultado === 'rechazado'">
             {{ mensajeResultadoComite }}
           </p>
+
+          <div class="archivos-list" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;" *ngIf="evaluacionComiteRegistro?.archivos?.length">
+            <div *ngFor="let archivo of evaluacionComiteRegistro?.archivos">
+              <button
+                type="button"
+                class="rubrica-archivo-box"
+                (click)="descargarArchivo(archivo.path, archivo.nombre)"
+              >
+                <div class="archivo-info-side">
+                  <div class="pdf-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="pdf-svg">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    <span class="pdf-extension-tag">PDF</span>
+                  </div>
+                  <div class="archivo-meta-details">
+                    <span class="rubrica-box-title">Rúbrica de Evaluación</span>
+                    <span class="rubrica-box-filename">{{ archivo.nombre }}</span>
+                  </div>
+                </div>
+                <div class="descargar-badge">
+                  <span class="descargar-text">Descargar</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="download-icon">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stage 9: Revisión final checklist -->
+      <section class="accion-card card-revision-final" *ngIf="puedeMostrarRevisionFinal">
+        <div class="revision-final-header">
+          <span class="accion-label">Revisión Final</span>
+          <p class="asignacion-helper" style="margin-bottom: 0.5rem;">Verifica que el autor haya cumplido con todos los
+            ajustes solicitados por los revisores.</p>
+        </div>
+
+        <div class="revision-final-inputs">
+          <div class="checklist-container">
+            <label class="checklist-item">
+              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.ajustesRevisores" />
+              <span>Incorporación de observaciones de revisión por pares</span>
+            </label>
+            <label class="checklist-item">
+              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.normasFormato" />
+              <span>Formato cumple con normas de publicación</span>
+            </label>
+            <label class="checklist-item">
+              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.referenciasBibliograficas" />
+              <span>Referencias bibliográficas según normas editoriales</span>
+            </label>
+            <label class="checklist-item">
+              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.redaccionOrtografia" />
+              <span>Redacción y ortografía correctas</span>
+            </label>
+            <label class="checklist-item">
+              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.metadatosInglesEspanol" />
+              <span>Metadatos en inglés y español válidos</span>
+            </label>
+          </div>
+
+          <button class="btn-outline-teal btn-guardar-checklist" type="button" (click)="guardarChecklistFinal()"
+            [disabled]="guardandoChecklist">
+            {{ guardandoChecklist ? 'Guardando...' : 'Guardar lista de chequeo' }}
+          </button>
         </div>
       </section>
 
@@ -503,45 +655,6 @@
               Subir certificado de publicación
             </button>
           </ng-template>
-        </div>
-      </section>
-
-      <!-- Stage 9: Revisión final checklist -->
-      <section class="accion-card card-revision-final" *ngIf="puedeMostrarRevisionFinal">
-        <div class="revision-final-header">
-          <span class="accion-label">Revisión Final</span>
-          <p class="asignacion-helper" style="margin-bottom: 0.5rem;">Verifica que el autor haya cumplido con todos los
-            ajustes solicitados por los revisores.</p>
-        </div>
-
-        <div class="revision-final-inputs">
-          <div class="checklist-container">
-            <label class="checklist-item">
-              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.ajustesRevisores" />
-              <span>Incorporación de observaciones de revisión por pares</span>
-            </label>
-            <label class="checklist-item">
-              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.normasFormato" />
-              <span>Formato cumple con normas de publicación</span>
-            </label>
-            <label class="checklist-item">
-              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.referenciasBibliograficas" />
-              <span>Referencias bibliográficas según normas editoriales</span>
-            </label>
-            <label class="checklist-item">
-              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.redaccionOrtografia" />
-              <span>Redacción y ortografía correctas</span>
-            </label>
-            <label class="checklist-item">
-              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.metadatosInglesEspanol" />
-              <span>Metadatos en inglés y español válidos</span>
-            </label>
-          </div>
-
-          <button class="btn-outline-teal btn-guardar-checklist" type="button" (click)="guardarChecklistFinal()"
-            [disabled]="guardandoChecklist">
-            {{ guardandoChecklist ? 'Guardando...' : 'Guardar lista de chequeo' }}
-          </button>
         </div>
       </section>
 

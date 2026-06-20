@@ -10,7 +10,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { createReadStream, existsSync, promises as fs } from 'fs';
+import { createReadStream, existsSync, promises as fs, mkdirSync } from 'fs';
+import * as path from 'path';
 import {
   DataSource,
   In,
@@ -48,7 +49,7 @@ export class ArticulosService {
   private static readonly ETAPA_TURNITIN = 3;
   private static readonly ETAPA_REVISION_PARES = 4;
   private static readonly ETAPA_COMITE_EDITORIAL = 6;
-  private static readonly ETAPAS_FLUJO_ORDENADO = [1, 6, 3, 4, 8, 9, 5];
+  private static readonly ETAPAS_FLUJO_ORDENADO = [1, 6, 3, 4, 9, 8, 5];
   private static readonly ETAPA_DESCARTADO = 7;
   private static readonly MAX_ARTICULOS_ASIGNADOS_COMITE = 4;
   private static readonly ASUNTO_CORRECCION_AUTOR =
@@ -103,6 +104,315 @@ export class ArticulosService {
     @InjectRepository(Revisores)
     private readonly revisoresRepository: Repository<Revisores>,
   ) {}
+
+  private splitTextIntoLines(
+    text: string,
+    maxWidth: number,
+    font: any,
+    fontSize: number,
+  ): string[] {
+    const lines: string[] = [];
+    const paragraphs = text.split('\n');
+
+    for (const paragraph of paragraphs) {
+      if (paragraph.trim() === '') {
+        lines.push('');
+        continue;
+      }
+
+      const words = paragraph.split(' ');
+      let currentLine = '';
+
+      for (const word of words) {
+        const testLine = currentLine === '' ? word : `${currentLine} ${word}`;
+        const width = font.widthOfTextAtSize(testLine, fontSize);
+        if (width > maxWidth) {
+          if (currentLine !== '') {
+            lines.push(currentLine);
+          }
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine !== '') {
+        lines.push(currentLine);
+      }
+    }
+    return lines;
+  }
+
+  private async generateRubricaPdf(
+    textoRubrica: string,
+    codigoArticulo: string,
+    tituloArticulo: string,
+  ): Promise<Buffer> {
+    try {
+      const pdfDoc = await PDFDocument.create();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+      const fontSize = 10;
+      const titleFontSize = 14;
+      const lineSpacing = 16;
+      const margin = 50;
+      const letterWidth = 612;
+      const letterHeight = 792;
+      const contentWidth = letterWidth - (2 * margin); // 512
+
+      // Parse metadata from text
+      let calificacion = '';
+      let decision = '';
+      let jurado = '';
+      const remainingLines: string[] = [];
+
+      const lines = textoRubrica.split('\n');
+      for (const rawLine of lines) {
+        const line = rawLine.replace('\r', '').trim();
+        if (!line) {
+          remainingLines.push('');
+          continue;
+        }
+
+        const califMatch = line.match(/^calificaci[oó]n:\s*(.*)/i);
+        const decMatch = line.match(/^decisi[oó]n:\s*(.*)/i);
+        const juradoMatch = line.match(/^(jurado\s+evaluador|nombre\s+del\s+evaluador):\s*(.*)/i);
+
+        if (califMatch) {
+          calificacion = califMatch[1].trim();
+        } else if (decMatch) {
+          decision = decMatch[1].trim();
+        } else if (juradoMatch) {
+          jurado = juradoMatch[2].trim();
+        } else {
+          remainingLines.push(line);
+        }
+      }
+
+      let page = pdfDoc.addPage([letterWidth, letterHeight]);
+      let y = letterHeight - margin;
+
+      // 1. Decorative top banner
+      page.drawRectangle({
+        x: margin,
+        y: y - 4,
+        width: contentWidth,
+        height: 6,
+        color: rgb(0, 0.45, 0.45),
+      });
+      y -= 25;
+
+      // 2. Title and Stage
+      page.drawText('REVISTA HUELLAS', {
+        x: margin,
+        y: y,
+        size: titleFontSize,
+        font: fontBold,
+        color: rgb(0, 0.45, 0.45),
+      });
+
+      const typeLabel = decision ? 'REPORTE DE EVALUACIÓN' : 'INFORME DE COMITÉ EDITORIAL';
+      const typeWidth = fontBold.widthOfTextAtSize(typeLabel, 10);
+      page.drawText(typeLabel, {
+        x: letterWidth - margin - typeWidth,
+        y: y + 2,
+        size: 10,
+        font: fontBold,
+        color: rgb(0.4, 0.4, 0.4),
+      });
+      y -= 20;
+
+      // Thin separator
+      page.drawLine({
+        start: { x: margin, y: y },
+        end: { x: letterWidth - margin, y: y },
+        thickness: 0.75,
+        color: rgb(0.8, 0.8, 0.8),
+      });
+      y -= 20;
+
+      // 3. Metadata Table Block
+      const tableHeight = 70;
+      page.drawRectangle({
+        x: margin,
+        y: y - tableHeight,
+        width: contentWidth,
+        height: tableHeight,
+        color: rgb(0.97, 0.97, 0.98),
+        borderColor: rgb(0.88, 0.89, 0.9),
+        borderWidth: 1,
+      });
+
+      const tableContentY = y - 15;
+      page.drawText('Código del Artículo:', { x: margin + 15, y: tableContentY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+      page.drawText(codigoArticulo, { x: margin + 130, y: tableContentY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+
+      const titleLabelY = tableContentY - 15;
+      page.drawText('Título del Artículo:', { x: margin + 15, y: titleLabelY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+      
+      const wrappedTitle = this.splitTextIntoLines(tituloArticulo, contentWidth - 145, font, 9);
+      let titleY = titleLabelY;
+      for (let i = 0; i < Math.min(2, wrappedTitle.length); i++) {
+        page.drawText(wrappedTitle[i], { x: margin + 130, y: titleY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+        titleY -= 11;
+      }
+
+      if (jurado) {
+        const juradoY = tableContentY - 45;
+        page.drawText('Evaluador / Jurado:', { x: margin + 15, y: juradoY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+        page.drawText(jurado, { x: margin + 130, y: juradoY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+      } else {
+        const fechaY = tableContentY - 45;
+        page.drawText('Fecha de Reporte:', { x: margin + 15, y: fechaY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+        page.drawText(new Date().toLocaleDateString('es-ES'), { x: margin + 130, y: fechaY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+      }
+
+      y -= (tableHeight + 20);
+
+      // 4. Decision & Score Callout Box
+      if (decision || calificacion) {
+        const hasAjustes = decision.toLowerCase().includes('ajuste');
+        const hasRechazo = decision.toLowerCase().includes('rechaz') || decision.toLowerCase().includes('rechazo');
+        
+        let cardBg = rgb(0.94, 0.98, 0.98); // teal/green
+        let cardBorder = rgb(0, 0.6, 0.6);
+        let cardText = rgb(0, 0.4, 0.4);
+        let decisionText = 'APROBADO';
+
+        if (hasAjustes) {
+          cardBg = rgb(0.99, 0.98, 0.94); // yellow/orange
+          cardBorder = rgb(0.9, 0.6, 0.1);
+          cardText = rgb(0.7, 0.4, 0);
+          decisionText = 'APROBADO CON AJUSTES';
+        } else if (hasRechazo) {
+          cardBg = rgb(0.99, 0.95, 0.95); // red
+          cardBorder = rgb(0.9, 0.3, 0.3);
+          cardText = rgb(0.7, 0.1, 0.1);
+          decisionText = 'RECHAZADO';
+        }
+
+        const calloutHeight = 45;
+        page.drawRectangle({
+          x: margin,
+          y: y - calloutHeight,
+          width: contentWidth,
+          height: calloutHeight,
+          color: cardBg,
+          borderColor: cardBorder,
+          borderWidth: 1.5,
+        });
+
+        const calloutTextY = y - 27;
+        page.drawText(`DECISIÓN: ${decisionText}`, {
+          x: margin + 20,
+          y: calloutTextY,
+          size: 11,
+          font: fontBold,
+          color: cardText,
+        });
+
+        if (calificacion) {
+          const califText = `Puntaje: ${calificacion}`;
+          const califWidth = fontBold.widthOfTextAtSize(califText, 11);
+          page.drawText(califText, {
+            x: letterWidth - margin - 20 - califWidth,
+            y: calloutTextY,
+            size: 11,
+            font: fontBold,
+            color: rgb(0.2, 0.2, 0.2),
+          });
+        }
+
+        y -= (calloutHeight + 25);
+      }
+
+      // 5. Body Comments Header
+      page.drawText('DETALLES Y EVALUACIÓN DE LA RÚBRICA', {
+        x: margin,
+        y: y,
+        size: 10,
+        font: fontBold,
+        color: rgb(0.3, 0.3, 0.3),
+      });
+      y -= 15;
+
+      page.drawLine({
+        start: { x: margin, y: y },
+        end: { x: letterWidth - margin, y: y },
+        thickness: 0.5,
+        color: rgb(0.85, 0.85, 0.85),
+      });
+      y -= 20;
+
+      // 6. Print comments with auto line wrapping and page breaks
+      for (const line of remainingLines) {
+        if (line.trim() === '') {
+          y -= 10;
+          continue;
+        }
+
+        const wrappedLines = this.splitTextIntoLines(line, contentWidth, font, fontSize);
+
+        for (const subLine of wrappedLines) {
+          if (y < margin + 40) {
+            page = pdfDoc.addPage([letterWidth, letterHeight]);
+            y = letterHeight - margin;
+
+            page.drawRectangle({
+              x: margin,
+              y: y - 4,
+              width: contentWidth,
+              height: 4,
+              color: rgb(0, 0.45, 0.45),
+            });
+            y -= 25;
+          }
+
+          const isSubHeader =
+            subLine.includes('RÚBRICA DE EVALUACIÓN') ||
+            subLine.includes('OBSERVACIONES GENERALES:') ||
+            subLine.includes('CRITERIOS DE EVALUACIÓN:') ||
+            /^\d+\.\s/.test(subLine);
+
+          page.drawText(subLine, {
+            x: margin,
+            y: y,
+            size: fontSize,
+            font: isSubHeader ? fontBold : font,
+            color: isSubHeader ? rgb(0.1, 0.1, 0.1) : rgb(0.2, 0.2, 0.2),
+          });
+
+          y -= lineSpacing;
+        }
+      }
+
+      // 7. Footer page numbers
+      const pageCount = pdfDoc.getPageCount();
+      for (let i = 0; i < pageCount; i++) {
+        const p = pdfDoc.getPage(i);
+        p.drawText(`Página ${i + 1} de ${pageCount}`, {
+          x: letterWidth / 2 - 30,
+          y: 25,
+          size: 8,
+          font: font,
+          color: rgb(0.5, 0.5, 0.5),
+        });
+        p.drawText(`Revista Huellas - Sistema de Gestión Editorial`, {
+          x: margin,
+          y: 25,
+          size: 8,
+          font: font,
+          color: rgb(0.5, 0.5, 0.5),
+        });
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      return Buffer.from(pdfBytes);
+    } catch (error) {
+      this.logger.error('Error generating Rubric PDF:', error);
+      throw error;
+    }
+  }
 
   private isAsuntoEvaluacionComite(asunto?: string): boolean {
     const texto = (asunto ?? '')
@@ -361,7 +671,7 @@ export class ArticulosService {
     }
   }
 
-  async getArticuloFujo(articuloId: number) {
+  async getArticuloFujo(articuloId: number, user?: any) {
     const articulo = await this.articuloRepository.findOne({
       where: { id: articuloId },
       relations: [
@@ -460,34 +770,67 @@ export class ArticulosService {
           fechaFin: historial.fechaFin,
           usuarioId: historial.usuarioId,
         })),
-      observaciones: articulo.observaciones.map((obs) => ({
-        id: obs.id,
-        asunto: obs.asunto,
-        comentarios: obs.comentarios,
-        fechaSubida: obs.fechaSubida,
-        etapa: obs.etapa
-          ? {
-              id: obs.etapa.id,
-              nombre: obs.etapa.nombre,
-            }
-          : null,
-        usuario: obs.usuario
-          ? {
-              id: obs.usuario.id,
-              nombre: obs.usuario.nombre,
-              email: obs.usuario.correo,
-              roles: obs.usuario.roles.map((role) => ({
-                id: role.id,
-                nombre: role.rol,
-              })),
-            }
-          : null,
-        archivos: obs.archivos.map((arch) => ({
-          id: arch.id,
-          archivoPath: arch.archivoPath,
-          archivoNombreOriginal: arch.archivoNombreOriginal,
-        })),
-      })),
+      observaciones: (articulo.observaciones ?? []).map((obs) => {
+        const isComiteObs = this.isAsuntoEvaluacionComite(obs.asunto);
+        const isRevisionParesObs = this.esAsuntoRevisionPares(obs.asunto);
+        const isAutorOnly =
+          user &&
+          !user.roles?.some((r: string) =>
+            ['admin', 'director', 'monitor', 'comite-editorial'].includes(r),
+          );
+
+        let comentarios = obs.comentarios;
+        let archivos = obs.archivos;
+
+        if (isComiteObs && isAutorOnly) {
+          if (this.isAsuntoEvaluacionComiteAprobado(obs.asunto)) {
+            comentarios =
+              'El artículo fue aceptado por el Comité Editorial y se continuará con la siguiente etapa.';
+          } else {
+            comentarios = 'El artículo fue rechazado por el Comité Editorial.';
+          }
+          archivos = [];
+        } else if (isRevisionParesObs && isAutorOnly) {
+          const lowerAsunto = (obs.asunto ?? '').toLowerCase();
+          if (lowerAsunto.includes('aceptar')) {
+            comentarios = 'El artículo fue aprobado en la revisión por pares.';
+          } else if (lowerAsunto.includes('ajustes')) {
+            comentarios = 'El artículo requiere realizar correcciones (ajustes) en la revisión por pares.';
+          } else {
+            comentarios = 'El artículo fue rechazado en la revisión por pares.';
+          }
+          archivos = [];
+        }
+
+        return {
+          id: obs.id,
+          asunto: obs.asunto,
+          comentarios: comentarios,
+          fechaSubida: obs.fechaSubida,
+          etapa: obs.etapa
+            ? {
+                id: obs.etapa.id,
+                nombre: obs.etapa.nombre,
+              }
+            : null,
+          usuario: obs.usuario
+            ? {
+                id: obs.usuario.id,
+                nombre: obs.usuario.nombre,
+                email: obs.usuario.correo,
+                roles: obs.usuario.roles.map((role) => ({
+                  id: role.id,
+                  nombre: role.rol,
+                })),
+              }
+            : null,
+          archivos: archivos.map((arch) => ({
+            id: arch.id,
+            archivoPath: arch.archivoPath,
+            archivoNombreOriginal: arch.archivoNombreOriginal,
+          })),
+        };
+      }),
     };
   }
 
@@ -787,15 +1130,15 @@ export class ArticulosService {
 
         if (!certificadoPublicacion) {
           throw new BadRequestException(
-            'Debes subir el certificado de publicación antes de avanzar a Revisión final.',
+            'Debes subir el certificado de publicación antes de avanzar a Publicación.',
           );
         }
       }
 
-      if (articulo.etapaActualId === 9 && nuevaEtapaId === 5) {
+      if (articulo.etapaActualId === 9 && nuevaEtapaId === 8) {
         if (!articulo.revisionFinalChecklist) {
           throw new BadRequestException(
-            'Debes completar y guardar la lista de chequeo de la Revisión final antes de avanzar a la etapa de Publicación.',
+            'Debes completar y guardar la lista de chequeo de la Revisión final antes de avanzar a la etapa de Certificación.',
           );
         }
 
@@ -1138,6 +1481,29 @@ export class ArticulosService {
       const observacionGuardada = await queryRunner.manager.save(
         observacionEvaluacion,
       );
+
+      // Generar PDF de la rúbrica y guardarlo como archivo adjunto de la observación
+      const textoPdf = observacion?.trim() || observacionEvaluacion.comentarios;
+      const pdfBuffer = await this.generateRubricaPdf(
+        textoPdf,
+        articulo.codigo,
+        articulo.titulo,
+      );
+
+      const uniqueFilename = `rubrica-${articulo.id}-${Date.now()}.pdf`;
+      const uploadDir = path.join(process.cwd(), 'uploads', 'articulos');
+      if (!existsSync(uploadDir)) {
+        mkdirSync(uploadDir, { recursive: true });
+      }
+      const fullPath = path.join(uploadDir, uniqueFilename);
+      await fs.writeFile(fullPath, pdfBuffer);
+
+      const registroPdf = queryRunner.manager.create(ObservacionArchivo, {
+        observacionesId: observacionGuardada.id,
+        archivoPath: path.join('uploads', 'articulos', uniqueFilename),
+        archivoNombreOriginal: `Rubrica_Evaluacion_${articulo.codigo}.pdf`,
+      });
+      await queryRunner.manager.save(registroPdf);
 
       if (archivo) {
         const registroArchivo = queryRunner.manager.create(ObservacionArchivo, {
@@ -1873,9 +2239,11 @@ export class ArticulosService {
         'articulo.solicitudProrrogaComitePendiente',
         'articulo.solicitudProrrogaCorreccionPendiente',
         'articulo.solicitudProrrogaRevisorPendiente',
+        'articulo.revisionFinalChecklist',
       ])
       .innerJoin('articulo.etapaActual', 'etapa')
-      .addSelect(['etapa.nombre'])
+      .addSelect(['etapa.nombre', 'etapa.id'])
+      .leftJoinAndSelect('articulo.observaciones', 'observaciones')
 
       .innerJoin(
         'articulo.historialEtapas',
@@ -1887,19 +2255,68 @@ export class ArticulosService {
       .orderBy('historial.fechaInicio', 'DESC')
       .getMany();
 
-    return articulos.map((articulo) => ({
-      id: articulo.id,
-      codigo: articulo.codigo,
-      titulo: articulo.titulo,
-      etapa_nombre: articulo.etapaActual?.nombre || 'Desconocida',
-      fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
-      solicitudProrrogaComitePendiente:
-        articulo.solicitudProrrogaComitePendiente,
-      solicitudProrrogaCorreccionPendiente:
-        articulo.solicitudProrrogaCorreccionPendiente,
-      solicitudProrrogaRevisorPendiente:
-        articulo.solicitudProrrogaRevisorPendiente,
-    }));
+    return articulos.map((articulo) => {
+      let estado = 'En curso';
+
+      const etapaId = articulo.etapaActual?.id;
+      if (etapaId === 5) {
+        // ETAPA_PUBLICACION = 5
+        estado = 'Aprobado';
+      } else if (etapaId === 7) {
+        // ETAPA_DESCARTADO = 7
+        estado = 'Rechazado';
+      } else if (etapaId === 8) {
+        // ETAPA_CERTIFICACION = 8
+        estado = 'Aprobado';
+      } else if (etapaId === 6) {
+        // ETAPA_COMITE_EDITORIAL = 6
+        const tieneEval = (articulo.observaciones ?? []).some((obs) =>
+          this.isAsuntoEvaluacionComite(obs.asunto),
+        );
+        estado = tieneEval ? 'Evaluado' : 'En curso';
+      } else if (etapaId === 3) {
+        // ETAPA_TURNITIN = 3
+        const tieneEval = (articulo.observaciones ?? []).some((obs) => {
+          const asunto = (obs.asunto ?? '').toLowerCase();
+          return asunto.includes('turnitin');
+        });
+        if (tieneEval) {
+          const tieneCorreccion = (articulo.observaciones ?? []).some((obs) => {
+            const asunto = (obs.asunto ?? '').toLowerCase();
+            return asunto.includes('turnitin') && asunto.includes('correccion');
+          });
+          estado = tieneCorreccion ? 'En corrección' : 'Evaluado';
+        } else {
+          estado = 'En curso';
+        }
+      } else if (etapaId === 4) {
+        // ETAPA_REVISION_PARES = 4
+        const tieneEval = (articulo.observaciones ?? []).some((obs) => {
+          const asunto = (obs.asunto ?? '').toLowerCase();
+          return asunto.includes('revision por pares') || asunto.includes('revisión por pares');
+        });
+        estado = tieneEval ? 'Evaluado' : 'En curso';
+      } else if (etapaId === 9) {
+        // ETAPA_REVISION_FINAL = 9
+        const tieneChecklist = !!articulo.revisionFinalChecklist;
+        estado = tieneChecklist ? 'Evaluado' : 'En curso';
+      }
+
+      return {
+        id: articulo.id,
+        codigo: articulo.codigo,
+        titulo: articulo.titulo,
+        etapa_nombre: articulo.etapaActual?.nombre || 'Desconocida',
+        fecha_inicio: articulo.historialEtapas[0]?.fechaInicio || null,
+        solicitudProrrogaComitePendiente:
+          articulo.solicitudProrrogaComitePendiente,
+        solicitudProrrogaCorreccionPendiente:
+          articulo.solicitudProrrogaCorreccionPendiente,
+        solicitudProrrogaRevisorPendiente:
+          articulo.solicitudProrrogaRevisorPendiente,
+        estado_articulo: estado,
+      };
+    });
   }
 
   async getArticulosEnPublicacion() {
@@ -2876,24 +3293,47 @@ export class ArticulosService {
         }
 
         // Evita notificar la observación detallada de la rúbrica del revisor (muy extensa)
-        if (this.esAsuntoRevisionPares(obs.asunto)) {
-          continue;
-        }
+        // Pero procesa la notificación simplificada
+
 
         const estadoCorreccion =
           this.obtenerEstadoCorreccionDesdeObservacion(obs);
         const tipo = estadoCorreccion ? 'accion' : 'informacion';
 
         const fechaObs = obs.fechaSubida;
+
+        let titulo = obs.asunto?.trim() || 'Nueva observación editorial';
+        let detalle =
+          obs.comentarios?.trim() ||
+          `Se registró una observación sobre tu artículo ${articulo.codigo}.`;
+
+        if (this.isAsuntoEvaluacionComite(obs.asunto)) {
+          titulo = 'Evaluación de Comité Editorial';
+          if (this.isAsuntoEvaluacionComiteAprobado(obs.asunto)) {
+            detalle =
+              'El artículo fue aceptado por el Comité Editorial y se continuará con la siguiente etapa.';
+          } else {
+            detalle = 'El artículo fue rechazado por el Comité Editorial.';
+          }
+        } else if (this.esAsuntoRevisionPares(obs.asunto)) {
+          titulo = 'Revisión por Pares';
+          const lowerAsunto = (obs.asunto ?? '').toLowerCase();
+          if (lowerAsunto.includes('aceptar')) {
+            detalle = 'El artículo fue aprobado en la revisión por pares.';
+          } else if (lowerAsunto.includes('ajustes')) {
+            detalle = 'El artículo requiere realizar correcciones (ajustes) en la revisión por pares.';
+          } else {
+            detalle = 'El artículo fue rechazado en la revisión por pares.';
+          }
+        }
+
         const notificacionBase: any = {
           id: `obs-${articulo.id}-${obs.id}`,
           articuloId: articulo.id,
           codigoArticulo: articulo.codigo,
           tituloArticulo: articulo.titulo,
-          titulo: obs.asunto?.trim() || 'Nueva observación editorial',
-          detalle:
-            obs.comentarios?.trim() ||
-            `Se registró una observación sobre tu artículo ${articulo.codigo}.`,
+          titulo,
+          detalle,
           tipo,
           fecha: obs.fechaSubida,
           origen: 'observacion',
@@ -3058,9 +3498,9 @@ export class ArticulosService {
           detalleNotificacion = `El revisor envió la evaluación para el artículo ${articulo.codigo}.`;
           tipo = 'accion';
         } else if (this.isAsuntoEvaluacionComite(asunto)) {
-          tituloNotificacion = 'Evaluación de Comité recibida';
-          detalleNotificacion = `El comité editorial registró la evaluación del artículo ${articulo.codigo}.`;
-          tipo = 'informacion';
+          tituloNotificacion = 'Evaluación de Comité Editorial';
+          detalleNotificacion = `El miembro del comité editorial realizó la revisión del artículo ${articulo.codigo}.`;
+          tipo = 'accion';
         } else if (
           lowerAsunto.includes(
             ArticulosService.ASUNTO_CORRECCION_SOLICITADA.toLowerCase(),
@@ -3205,6 +3645,17 @@ export class ArticulosService {
     const esComiteEditorial = userRoles.includes('comite-editorial');
     const esAutor =
       articulo.autores?.some((autor) => autor.id === userId) ?? false;
+
+    const esSoloAutor = esAutor && !esAdmin && !esDirector && !esMonitor && !esComiteEditorial;
+    if (esSoloAutor) {
+      const isComiteObs = this.isAsuntoEvaluacionComite(archivo.observacion?.asunto);
+      const isRevisionParesObs = this.esAsuntoRevisionPares(archivo.observacion?.asunto);
+      if (isComiteObs || isRevisionParesObs) {
+        throw new ForbiddenException(
+          'No tienes permiso para descargar este archivo',
+        );
+      }
+    }
 
     if (
       !esAdmin &&

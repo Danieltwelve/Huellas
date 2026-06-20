@@ -24,6 +24,7 @@ export interface ArticuloResumenBackend {
   solicitudProrrogaCorreccionPendiente?: boolean;
   solicitudProrrogaRevisorPendiente?: boolean;
   prorrogaRevisorAceptada?: boolean;
+  estado_articulo?: string;
 }
 
 export interface ArticuloPublicacionBackend extends ArticuloResumenBackend {}

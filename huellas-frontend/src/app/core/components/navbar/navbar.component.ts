@@ -377,54 +377,19 @@ export class NavbarComponent implements OnInit {
     this.notificationLoading = true;
     this.notificationError = null;
 
-    this.articulosService.getResumenArticulos().subscribe({
-      next: (articulos) => {
+    this.articulosService.getNotificacionesEditorial().subscribe({
+      next: (data) => {
         const idsLeidos = this.obtenerIdsLeidos();
-        const list: NavbarNotificacion[] = [];
 
-        for (const item of articulos) {
-          list.push(this.mapearNotificacionEditorial(item));
-
-          if (item.solicitudProrrogaComitePendiente) {
-            list.push({
-              id: `prorroga-comite-${item.id}`,
-              articuloId: item.id,
-              codigoArticulo: item.codigo,
-              titulo: 'Solicitud de prórroga: Comité',
-              detalle: `El miembro de comité solicitó 5 días adicionales para ${item.codigo}.`,
-              fecha: item.fecha_inicio ? new Date(item.fecha_inicio) : new Date(),
-              enlace: this.obtenerEnlaceArticulo(item.id),
-            });
-          }
-
-          if (item.solicitudProrrogaCorreccionPendiente) {
-            list.push({
-              id: `prorroga-autor-${item.id}`,
-              articuloId: item.id,
-              codigoArticulo: item.codigo,
-              titulo: 'Solicitud de prórroga: Autor',
-              detalle: `El autor solicitó 1 día adicional de prórroga para ${item.codigo}.`,
-              fecha: item.fecha_inicio ? new Date(item.fecha_inicio) : new Date(),
-              enlace: this.obtenerEnlaceArticulo(item.id),
-            });
-          }
-
-          if (item.solicitudProrrogaRevisorPendiente) {
-            list.push({
-              id: `prorroga-revisor-${item.id}`,
-              articuloId: item.id,
-              codigoArticulo: item.codigo,
-              titulo: 'Solicitud de prórroga: Revisor',
-              detalle: `El revisor solicitó 15 días adicionales para ${item.codigo}.`,
-              fecha: item.fecha_inicio ? new Date(item.fecha_inicio) : new Date(),
-              enlace: this.obtenerEnlaceArticulo(item.id),
-            });
-          }
-        }
-
-        this.notifications = list
+        this.notifications = data
           .map((item) => ({
-            ...item,
+            id: item.id,
+            articuloId: item.articuloId,
+            codigoArticulo: item.codigoArticulo,
+            titulo: item.titulo,
+            detalle: item.detalle,
+            fecha: new Date(item.fecha),
+            enlace: item.enlace || this.obtenerEnlaceArticulo(item.articuloId),
             leida: idsLeidos.has(item.id),
           }))
           .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
@@ -432,7 +397,7 @@ export class NavbarComponent implements OnInit {
       },
       error: () => {
         this.notifications = [];
-        this.notificationError = 'No se pudieron cargar los nuevos envíos.';
+        this.notificationError = 'No se pudieron cargar las notificaciones.';
         this.notificationLoading = false;
       },
     });

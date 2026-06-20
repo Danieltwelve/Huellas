@@ -79,11 +79,11 @@
               (change)="setFiltroEtapa(stageFilterSelect.value)" aria-label="Filtrar por etapa">
               <option value="todas">Todas las etapas</option>
               <option value="revision-preliminar">Revisión Preliminar</option>
-              <option value="turnitin">Turnitin</option>
               <option value="comite-editorial">Comité Editorial</option>
+              <option value="turnitin">Turnitin</option>
               <option value="revision-pares">Revisión por Pares</option>
-              <option value="certificacion">Certificación</option>
               <option value="revision-final">Revisión Final</option>
+              <option value="certificacion">Certificación</option>
               <option value="publicacion">Publicación</option>
             </select>
 
@@ -235,8 +235,8 @@
             <th>Código</th>
             <th>Título</th>
             <th>Etapa actual</th>
-            @if (committeeView) {
             <th>Estado</th>
+            @if (committeeView) {
             <th>Plazo (30 días)</th>
             }
             <th>Fecha de envío</th>
@@ -258,11 +258,9 @@
               <span class="stage-pill" [ngClass]="articulo.claseEtapa">{{ articulo.etapaActual }}</span>
             </td>
 
-            @if (committeeView) {
             <td>
               <span class="status-pill" [ngClass]="articulo.estadoClase">{{ articulo.estadoEtiqueta }}</span>
             </td>
-            }
 
             @if (committeeView) {
             <td>
@@ -309,7 +307,7 @@
           </tr>
           } @empty {
           <tr>
-            <td [attr.colspan]="committeeView ? 8 : 6" class="empty-state">No hay artículos que coincidan con la
+            <td [attr.colspan]="committeeView ? 8 : 7" class="empty-state">No hay artículos que coincidan con la
               búsqueda.</td>
           </tr>
           }
@@ -329,11 +327,9 @@
 
         <h3>{{ articulo.titulo }}</h3>
 
-        @if (committeeView) {
         <p class="meta">
           <span class="status-pill" [ngClass]="articulo.estadoClase">{{ articulo.estadoEtiqueta }}</span>
         </p>
-        }
 
         @if (committeeView) {
         <p class="meta">

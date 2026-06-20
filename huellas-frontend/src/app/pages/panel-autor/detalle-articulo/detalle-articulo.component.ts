@@ -68,8 +68,8 @@ export class DetalleArticuloComponent implements OnInit {
     { id: 6, titulo: 'Comité Editorial', descripcion: 'Revisión del artículo por un miembro del comité' },
     { id: 3, titulo: 'Turnitin', descripcion: 'Validación de originalidad y similitud' },
     { id: 4, titulo: 'Revisión por pares', descripcion: 'Evaluación por revisores académicos' },
-    { id: 8, titulo: 'Certificación', descripcion: 'Verificación documental y editorial' },
     { id: 9, titulo: 'Revisión final', descripcion: 'Revisión integral previa a publicación' },
+    { id: 8, titulo: 'Certificación', descripcion: 'Verificación documental y editorial' },
     { id: 5, titulo: 'Publicación', descripcion: 'Preparación y salida en volumen activo' },
   ];
 

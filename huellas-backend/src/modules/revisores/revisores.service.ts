@@ -18,6 +18,9 @@ import { User } from 'src/modules/users/user.entity';
 import { Observacion } from 'src/modules/observaciones/entities/observacione.entity';
 import { ObservacionArchivo } from 'src/modules/observaciones-archivos/entities/observaciones-archivo.entity';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import * as path from 'path';
+import { existsSync, promises as fs, mkdirSync } from 'fs';
 
 @Injectable()
 export class RevisoresService {
@@ -222,6 +225,314 @@ export class RevisoresService {
       }));
   }
 
+  private splitTextIntoLines(
+    text: string,
+    maxWidth: number,
+    font: any,
+    fontSize: number,
+  ): string[] {
+    const lines: string[] = [];
+    const paragraphs = text.split('\n');
+
+    for (const paragraph of paragraphs) {
+      if (paragraph.trim() === '') {
+        lines.push('');
+        continue;
+      }
+
+      const words = paragraph.split(' ');
+      let currentLine = '';
+
+      for (const word of words) {
+        const testLine = currentLine === '' ? word : `${currentLine} ${word}`;
+        const width = font.widthOfTextAtSize(testLine, fontSize);
+        if (width > maxWidth) {
+          if (currentLine !== '') {
+            lines.push(currentLine);
+          }
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine !== '') {
+        lines.push(currentLine);
+      }
+    }
+    return lines;
+  }
+
+  private async generateRubricaPdf(
+    textoRubrica: string,
+    codigoArticulo: string,
+    tituloArticulo: string,
+  ): Promise<Buffer> {
+    try {
+      const pdfDoc = await PDFDocument.create();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+      const fontSize = 10;
+      const titleFontSize = 14;
+      const lineSpacing = 16;
+      const margin = 50;
+      const letterWidth = 612;
+      const letterHeight = 792;
+      const contentWidth = letterWidth - (2 * margin); // 512
+
+      // Parse metadata from text
+      let calificacion = '';
+      let decision = '';
+      let jurado = '';
+      const remainingLines: string[] = [];
+
+      const lines = textoRubrica.split('\n');
+      for (const rawLine of lines) {
+        const line = rawLine.replace('\r', '').trim();
+        if (!line) {
+          remainingLines.push('');
+          continue;
+        }
+
+        const califMatch = line.match(/^calificaci[oó]n:\s*(.*)/i);
+        const decMatch = line.match(/^decisi[oó]n:\s*(.*)/i);
+        const juradoMatch = line.match(/^(jurado\s+evaluador|nombre\s+del\s+evaluador):\s*(.*)/i);
+
+        if (califMatch) {
+          calificacion = califMatch[1].trim();
+        } else if (decMatch) {
+          decision = decMatch[1].trim();
+        } else if (juradoMatch) {
+          jurado = juradoMatch[2].trim();
+        } else {
+          remainingLines.push(line);
+        }
+      }
+
+      let page = pdfDoc.addPage([letterWidth, letterHeight]);
+      let y = letterHeight - margin;
+
+      // 1. Decorative top banner
+      page.drawRectangle({
+        x: margin,
+        y: y - 4,
+        width: contentWidth,
+        height: 6,
+        color: rgb(0, 0.45, 0.45),
+      });
+      y -= 25;
+
+      // 2. Title and Stage
+      page.drawText('REVISTA HUELLAS', {
+        x: margin,
+        y: y,
+        size: titleFontSize,
+        font: fontBold,
+        color: rgb(0, 0.45, 0.45),
+      });
+
+      const typeLabel = decision ? 'REPORTE DE EVALUACIÓN' : 'INFORME DE COMITÉ EDITORIAL';
+      const typeWidth = fontBold.widthOfTextAtSize(typeLabel, 10);
+      page.drawText(typeLabel, {
+        x: letterWidth - margin - typeWidth,
+        y: y + 2,
+        size: 10,
+        font: fontBold,
+        color: rgb(0.4, 0.4, 0.4),
+      });
+      y -= 20;
+
+      // Thin separator
+      page.drawLine({
+        start: { x: margin, y: y },
+        end: { x: letterWidth - margin, y: y },
+        thickness: 0.75,
+        color: rgb(0.8, 0.8, 0.8),
+      });
+      y -= 20;
+
+      // 3. Metadata Table Block
+      const tableHeight = 70;
+      page.drawRectangle({
+        x: margin,
+        y: y - tableHeight,
+        width: contentWidth,
+        height: tableHeight,
+        color: rgb(0.97, 0.97, 0.98),
+        borderColor: rgb(0.88, 0.89, 0.9),
+        borderWidth: 1,
+      });
+
+      const tableContentY = y - 15;
+      page.drawText('Código del Artículo:', { x: margin + 15, y: tableContentY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+      page.drawText(codigoArticulo, { x: margin + 130, y: tableContentY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+
+      const titleLabelY = tableContentY - 15;
+      page.drawText('Título del Artículo:', { x: margin + 15, y: titleLabelY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+      
+      const wrappedTitle = this.splitTextIntoLines(tituloArticulo, contentWidth - 145, font, 9);
+      let titleY = titleLabelY;
+      for (let i = 0; i < Math.min(2, wrappedTitle.length); i++) {
+        page.drawText(wrappedTitle[i], { x: margin + 130, y: titleY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+        titleY -= 11;
+      }
+
+      if (jurado) {
+        const juradoY = tableContentY - 45;
+        page.drawText('Evaluador / Jurado:', { x: margin + 15, y: juradoY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+        page.drawText(jurado, { x: margin + 130, y: juradoY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+      } else {
+        const fechaY = tableContentY - 45;
+        page.drawText('Fecha de Reporte:', { x: margin + 15, y: fechaY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+        page.drawText(new Date().toLocaleDateString('es-ES'), { x: margin + 130, y: fechaY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+      }
+
+      y -= (tableHeight + 20);
+
+      // 4. Decision & Score Callout Box
+      if (decision || calificacion) {
+        const hasAjustes = decision.toLowerCase().includes('ajuste');
+        const hasRechazo = decision.toLowerCase().includes('rechaz') || decision.toLowerCase().includes('rechazo');
+        
+        let cardBg = rgb(0.94, 0.98, 0.98); // teal/green
+        let cardBorder = rgb(0, 0.6, 0.6);
+        let cardText = rgb(0, 0.4, 0.4);
+        let decisionText = 'APROBADO';
+
+        if (hasAjustes) {
+          cardBg = rgb(0.99, 0.98, 0.94); // yellow/orange
+          cardBorder = rgb(0.9, 0.6, 0.1);
+          cardText = rgb(0.7, 0.4, 0);
+          decisionText = 'APROBADO CON AJUSTES';
+        } else if (hasRechazo) {
+          cardBg = rgb(0.99, 0.95, 0.95); // red
+          cardBorder = rgb(0.9, 0.3, 0.3);
+          cardText = rgb(0.7, 0.1, 0.1);
+          decisionText = 'RECHAZADO';
+        }
+
+        const calloutHeight = 45;
+        page.drawRectangle({
+          x: margin,
+          y: y - calloutHeight,
+          width: contentWidth,
+          height: calloutHeight,
+          color: cardBg,
+          borderColor: cardBorder,
+          borderWidth: 1.5,
+        });
+
+        const calloutTextY = y - 27;
+        page.drawText(`DECISIÓN: ${decisionText}`, {
+          x: margin + 20,
+          y: calloutTextY,
+          size: 11,
+          font: fontBold,
+          color: cardText,
+        });
+
+        if (calificacion) {
+          const califText = `Puntaje: ${calificacion}`;
+          const califWidth = fontBold.widthOfTextAtSize(califText, 11);
+          page.drawText(califText, {
+            x: letterWidth - margin - 20 - califWidth,
+            y: calloutTextY,
+            size: 11,
+            font: fontBold,
+            color: rgb(0.2, 0.2, 0.2),
+          });
+        }
+
+        y -= (calloutHeight + 25);
+      }
+
+      // 5. Body Comments Header
+      page.drawText('DETALLES Y EVALUACIÓN DE LA RÚBRICA', {
+        x: margin,
+        y: y,
+        size: 10,
+        font: fontBold,
+        color: rgb(0.3, 0.3, 0.3),
+      });
+      y -= 15;
+
+      page.drawLine({
+        start: { x: margin, y: y },
+        end: { x: letterWidth - margin, y: y },
+        thickness: 0.5,
+        color: rgb(0.85, 0.85, 0.85),
+      });
+      y -= 20;
+
+      // 6. Print comments with auto line wrapping and page breaks
+      for (const line of remainingLines) {
+        if (line.trim() === '') {
+          y -= 10;
+          continue;
+        }
+
+        const wrappedLines = this.splitTextIntoLines(line, contentWidth, font, fontSize);
+
+        for (const subLine of wrappedLines) {
+          if (y < margin + 40) {
+            page = pdfDoc.addPage([letterWidth, letterHeight]);
+            y = letterHeight - margin;
+
+            page.drawRectangle({
+              x: margin,
+              y: y - 4,
+              width: contentWidth,
+              height: 4,
+              color: rgb(0, 0.45, 0.45),
+            });
+            y -= 25;
+          }
+
+          const isSubHeader =
+            subLine.includes('RÚBRICA DE EVALUACIÓN') ||
+            subLine.includes('OBSERVACIONES GENERALES:') ||
+            subLine.includes('CRITERIOS DE EVALUACIÓN:') ||
+            /^\d+\.\s/.test(subLine);
+
+          page.drawText(subLine, {
+            x: margin,
+            y: y,
+            size: fontSize,
+            font: isSubHeader ? fontBold : font,
+            color: isSubHeader ? rgb(0.1, 0.1, 0.1) : rgb(0.2, 0.2, 0.2),
+          });
+
+          y -= lineSpacing;
+        }
+      }
+
+      // 7. Footer page numbers
+      const pageCount = pdfDoc.getPageCount();
+      for (let i = 0; i < pageCount; i++) {
+        const p = pdfDoc.getPage(i);
+        p.drawText(`Página ${i + 1} de ${pageCount}`, {
+          x: letterWidth / 2 - 30,
+          y: 25,
+          size: 8,
+          font: font,
+          color: rgb(0.5, 0.5, 0.5),
+        });
+        p.drawText(`Revista Huellas - Sistema de Gestión Editorial`, {
+          x: margin,
+          y: 25,
+          size: 8,
+          font: font,
+          color: rgb(0.5, 0.5, 0.5),
+        });
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      return Buffer.from(pdfBytes);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async registrarRevisionRevisor(
     usuarioId: number,
     articuloId: number,
@@ -269,24 +580,24 @@ export class RevisoresService {
 
       const observacionesRepo = queryRunner.manager.getRepository(Observacion);
       const revisionExistente = await observacionesRepo
-        .createQueryBuilder('observacion')
-        .where(
-          'observacion.articuloId = :articuloId AND observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId',
-          {
-            articuloId,
-            usuarioId,
-            etapaId: RevisoresService.ETAPA_REVISION_PARES,
-          },
-        )
-        .andWhere(
-          '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
-          {
-            aprobado: RevisoresService.ASUNTO_REVISION_PARES_APROBADO,
-            rechazado: RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO,
-            ajustes: RevisoresService.ASUNTO_REVISION_PARES_AJUSTES,
-          },
-        )
-        .getOne();
+         .createQueryBuilder('observacion')
+         .where(
+           'observacion.articuloId = :articuloId AND observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId',
+           {
+             articuloId,
+             usuarioId,
+             etapaId: RevisoresService.ETAPA_REVISION_PARES,
+           },
+         )
+         .andWhere(
+           '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
+           {
+             aprobado: RevisoresService.ASUNTO_REVISION_PARES_APROBADO,
+             rechazado: RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO,
+             ajustes: RevisoresService.ASUNTO_REVISION_PARES_AJUSTES,
+           },
+         )
+         .getOne();
 
       if (revisionExistente) {
         throw new ConflictException(
@@ -333,9 +644,30 @@ export class RevisoresService {
 
       const observacionGuardada = await observacionesRepo.save(observacion);
 
+      // Generar PDF de la rúbrica y guardarlo como archivo adjunto de la observación
+      const pdfBuffer = await this.generateRubricaPdf(
+        observacionBase,
+        articulo.codigo,
+        articulo.titulo,
+      );
+
+      const uniqueFilename = `rubrica-revision-${articulo.id}-${Date.now()}.pdf`;
+      const uploadDir = path.join(process.cwd(), 'uploads', 'articulos');
+      if (!existsSync(uploadDir)) {
+        mkdirSync(uploadDir, { recursive: true });
+      }
+      const fullPath = path.join(uploadDir, uniqueFilename);
+      await fs.writeFile(fullPath, pdfBuffer);
+
+      const archivoRepo = queryRunner.manager.getRepository(ObservacionArchivo);
+      const registroPdf = archivoRepo.create({
+        observacionesId: observacionGuardada.id,
+        archivoPath: path.join('uploads', 'articulos', uniqueFilename),
+        archivoNombreOriginal: `Rubrica_Revision_Pares_${articulo.codigo}.pdf`,
+      });
+      await archivoRepo.save(registroPdf);
+
       if (archivo) {
-        const archivoRepo =
-          queryRunner.manager.getRepository(ObservacionArchivo);
         const registroArchivo = archivoRepo.create({
           observacionesId: observacionGuardada.id,
           archivoPath: archivo.path,

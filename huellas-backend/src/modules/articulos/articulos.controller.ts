@@ -139,8 +139,11 @@ export class ArticulosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'autor', 'director', 'monitor', 'comite-editorial')
   @Get('flujo/:id')
-  async getArticulosFlujo(@Param('id', ParseIntPipe) id: number) {
-    return await this.articulosService.getArticuloFujo(id);
+  async getArticulosFlujo(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
+    return await this.articulosService.getArticuloFujo(id, req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -206,6 +206,23 @@ export class Articulos implements OnInit, OnDestroy {
     const fecha = this.parseFecha(fechaReferencia);
     const estadoComite = this.mapEstadoComite(articulo.estado_evaluacion);
 
+    let estadoEtiqueta = '';
+    let estadoClase = '';
+
+    if (this.committeeView) {
+      estadoEtiqueta = this.getEstadoEtiqueta(estadoComite);
+      estadoClase = this.getEstadoClase(estadoComite);
+    } else {
+      estadoEtiqueta = articulo.estado_articulo || 'En curso';
+      if (estadoEtiqueta === 'Aprobado' || estadoEtiqueta === 'Evaluado') {
+        estadoClase = 'status--aceptado';
+      } else if (estadoEtiqueta === 'Rechazado') {
+        estadoClase = 'status--rechazado';
+      } else {
+        estadoClase = 'status--pendiente';
+      }
+    }
+
     return {
       id: articulo.id,
       codigo: articulo.codigo,
@@ -217,8 +234,8 @@ export class Articulos implements OnInit, OnDestroy {
       ordenLlegada: fecha ? fecha.getTime() : ordenLlegada,
       claseEtapa: this.getClaseEtapa(etapaActual),
       estadoEvaluacion: estadoComite,
-      estadoEtiqueta: this.getEstadoEtiqueta(estadoComite),
-      estadoClase: this.getEstadoClase(estadoComite),
+      estadoEtiqueta,
+      estadoClase,
       fechaAsignacion: this.formatFecha(this.parseFecha(articulo.fecha_asignacion ?? null)),
       fechaVencimiento: this.formatFecha(this.parseFecha(articulo.fecha_vencimiento ?? null)),
       diasRestantes: articulo.dias_restantes ?? null,

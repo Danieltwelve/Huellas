@@ -55,7 +55,7 @@ export class TimelineEditorialComponent implements OnInit {
   etapaDetalleModal: EtapaEditorial | null = null;
   @ViewChild('stageDialog') stageDialog?: ElementRef<HTMLDialogElement>;
 
-  private readonly ordenEtapas: number[] = [1, 6, 3, 4, 8, 9, 5];
+  private readonly ordenEtapas: number[] = [1, 6, 3, 4, 9, 8, 5];
 
   private readonly etapasBase: Array<{
     id: number;
@@ -119,19 +119,6 @@ export class TimelineEditorialComponent implements OnInit {
       resultadoEsperado: 'Conceptos de revision que orientan la siguiente decisión editorial.',
     },
     {
-      id: 8,
-      nombre: 'Certificación',
-      descripcion: 'Verificación documental y editorial antes del cierre',
-      detalle:
-        'Se revisan soportes, versiones finales, autorizaciones y requisitos editoriales para dejar el expediente listo antes del cierre.',
-      objetivos: [
-        'Confirmar documentos obligatorios y autorizaciones.',
-        'Dejar el proceso listo para el cierre documental.',
-      ],
-      puntosClave: ['Soportes firmados', 'Version final', 'Checklist editorial'],
-      resultadoEsperado: 'Expediente certificado para pasar al cierre del flujo.',
-    },
-    {
       id: 9,
       nombre: 'Revisión final',
       descripcion: 'Revisión integral previa a la publicación',
@@ -143,6 +130,19 @@ export class TimelineEditorialComponent implements OnInit {
       ],
       puntosClave: ['Edición final', 'Uniformidad de estilo', 'Ajustes de cierre'],
       resultadoEsperado: 'Aprobación final previa a la publicación.',
+    },
+    {
+      id: 8,
+      nombre: 'Certificación',
+      descripcion: 'Verificación documental y editorial antes del cierre',
+      detalle:
+        'Se revisan soportes, versiones finales, autorizaciones y requisitos editoriales para dejar el expediente listo antes del cierre.',
+      objetivos: [
+        'Confirmar documentos obligatorios y autorizaciones.',
+        'Dejar el proceso listo para el cierre documental.',
+      ],
+      puntosClave: ['Soportes firmados', 'Version final', 'Checklist editorial'],
+      resultadoEsperado: 'Expediente certificado para pasar al cierre del flujo.',
     },
     {
       id: 5,

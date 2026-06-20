@@ -162,15 +162,15 @@ export class FlujoTrabajoArticulo {
   private readonly ASUNTO_EVALUACION_TURNITIN_CORRECCION =
     'Evaluación de Turnitin: REQUIERE CORRECCIÓN';
 
-  private readonly ordenEtapasFlujo: number[] = [1, 6, 3, 4, 8, 9, 5];
+  private readonly ordenEtapasFlujo: number[] = [1, 6, 3, 4, 9, 8, 5];
 
   readonly etapasDisponibles: EtapaFlujo[] = [
     { id: 1, titulo: 'Revisión Preliminar', activa: false },
     { id: 6, titulo: 'Comité Editorial', activa: false },
     { id: 3, titulo: 'Turnitin', activa: false },
     { id: 4, titulo: 'Revisión por pares', activa: false },
-    { id: 8, titulo: 'Certificación', activa: false },
     { id: 9, titulo: 'Revisión final', activa: false },
+    { id: 8, titulo: 'Certificación', activa: false },
     { id: 5, titulo: 'Publicación', activa: false },
   ];
 
@@ -179,8 +179,8 @@ export class FlujoTrabajoArticulo {
     [6, 'Revisión del artículo por un miembro del Comité Editorial'],
     [3, 'Validación de originalidad y similitud (65% o menos)'],
     [4, 'Evaluación por revisores académicos'],
-    [8, 'Verificación de cumplimiento documental y editorial'],
     [9, 'Revisión final de consistencia antes de publicar'],
+    [8, 'Verificación de cumplimiento documental y editorial'],
     [5, 'Preparación y salida en volumen activo'],
   ]);
 
@@ -1449,6 +1449,85 @@ export class FlujoTrabajoArticulo {
     return null;
   }
 
+  get evaluacionComiteRegistro(): RegistroFlujo | null {
+    return this.historialVisible.find((registro) =>
+      this.esAsuntoEvaluacionComite(registro.asunto),
+    ) ?? null;
+  }
+
+  get evaluacionParesRegistro(): RegistroFlujo | null {
+    if (!this.articulo) {
+      return null;
+    }
+
+    if (this.articulo.etapaActual?.id !== FlujoTrabajoArticulo.ETAPA_REVISION_PARES) {
+      return null;
+    }
+
+    const revisorUsuarioId = this.articulo.revisor?.usuarioId;
+    if (!revisorUsuarioId) {
+      return null;
+    }
+
+    const fechaInicioRevisionParesActualMs = this.getFechaInicioRevisionParesActualMs();
+
+    return this.historialVisible.find((registro) => {
+      if (registro.etapaId !== FlujoTrabajoArticulo.ETAPA_REVISION_PARES) {
+        return false;
+      }
+
+      if (registro.usuarioId !== revisorUsuarioId) {
+        return false;
+      }
+
+      if (!this.esAsuntoRevisionPares(registro.asunto)) {
+        return false;
+      }
+
+      if (fechaInicioRevisionParesActualMs === null) {
+        return true;
+      }
+
+      return registro.fechaOrden >= fechaInicioRevisionParesActualMs;
+    }) ?? null;
+  }
+
+  get decisionRevisionParesCompleto(): 'aceptar' | 'ajustes' | 'rechazar' | null {
+    const registro = this.evaluacionParesRegistro;
+    if (!registro) {
+      return null;
+    }
+    const comentario = (registro.comentario ?? '').toLowerCase();
+    if (comentario.includes('decisión: aceptar') || comentario.includes('decision: aceptar')) {
+      return 'aceptar';
+    }
+    if (comentario.includes('decisión: ajustes') || comentario.includes('decision: ajustes')) {
+      return 'ajustes';
+    }
+    if (comentario.includes('decisión: rechazar') || comentario.includes('decision: rechazar')) {
+      return 'rechazar';
+    }
+    const asunto = (registro.asunto ?? '').toLowerCase();
+    if (asunto.includes('rechazar')) {
+      return 'rechazar';
+    }
+    return 'aceptar';
+  }
+
+  get mensajeResultadoPares(): string {
+    const decision = this.decisionRevisionParesCompleto;
+    if (decision === 'aceptar') {
+      return 'El revisor por pares aprobó el artículo. El equipo editorial ya puede moverlo a la siguiente etapa.';
+    }
+    if (decision === 'ajustes') {
+      return 'El revisor por pares indicó que el artículo requiere ajustes. Por favor, solicita las correcciones correspondientes.';
+    }
+    if (decision === 'rechazar') {
+      return 'El revisor por pares rechazó el artículo. El artículo queda descartado y no debe avanzar de etapa.';
+    }
+    return '';
+  }
+
   get resultadoRevisionParesActual(): 'aceptar' | 'rechazar' | null {
     if (!this.articulo) {
       return null;
@@ -1732,7 +1811,7 @@ export class FlujoTrabajoArticulo {
         return 'El artículo tiene correcciones pendientes en Turnitin. El autor debe enviar los cambios.';
       }
       if (this.articulo?.etapaActual?.id === 9) {
-        return 'Completa todos los ítems de la lista de revisión final antes de avanzar a la etapa de Publicación.';
+        return 'Completa todos los ítems de la lista de revisión final antes de avanzar a la etapa de Certificación.';
       }
       if (this.articulo?.etapaActual?.id === FlujoTrabajoArticulo.ETAPA_REVISION_PARES) {
         if (this.resultadoRevisionParesActual === 'rechazar') {

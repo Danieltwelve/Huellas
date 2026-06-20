@@ -217,87 +217,32 @@ export class CentroNotificacionesComponent implements OnInit {
   }
 
   private cargarAdminNotificaciones(): void {
-    this.articulosService.getResumenArticulos().subscribe({
-      next: (articulos) => {
+    this.loading = true;
+    this.error = null;
+
+    this.articulosService.getNotificacionesEditorial().subscribe({
+      next: (data) => {
         const idsLeidos = this.obtenerIdsLeidos();
-        const list: NotificationUI[] = [];
-
-        for (const item of articulos) {
-          const idEtapa = `nuevo-envio-${item.id}`;
-          const etapa = (item.etapa_nombre ?? '').toLowerCase();
-          let tituloEtapa = 'Nuevo artículo recibido';
-          if (etapa.includes('public')) tituloEtapa = 'Artículo publicado';
-          else if (etapa.includes('turnitin')) tituloEtapa = 'Cambio de estado: Turnitin';
-          else if (etapa.includes('comite')) tituloEtapa = 'Cambio de estado: Comité Editorial';
-          else if (etapa.includes('pares')) tituloEtapa = 'Acción pendiente: revisión por pares';
-          else if (etapa.includes('certific')) tituloEtapa = 'Cambio de estado: Certificación';
-          else if (etapa.includes('revision final')) tituloEtapa = 'Cambio de estado: Revisión final';
-
-          list.push({
-            id: idEtapa,
-            articuloId: item.id,
-            codigoArticulo: item.codigo,
-            titulo: tituloEtapa,
-            detalle: `${item.codigo} - ${item.titulo}`,
-            fecha: item.fecha_inicio ? new Date(item.fecha_inicio) : new Date(),
-            enlace: `/flujo-trabajo-articulo/${item.id}`,
-            tipo: 'nuevo-articulo',
-            leida: idsLeidos.has(idEtapa)
-          });
-
-          if (item.solicitudProrrogaComitePendiente) {
-            const idP = `prorroga-comite-${item.id}`;
-            list.push({
-              id: idP,
-              articuloId: item.id,
-              codigoArticulo: item.codigo,
-              titulo: 'Solicitud de prórroga: Comité',
-              detalle: `El miembro de comité solicitó 5 días adicionales para ${item.codigo}.`,
-              fecha: item.fecha_inicio ? new Date(item.fecha_inicio) : new Date(),
-              enlace: `/flujo-trabajo-articulo/${item.id}`,
-              tipo: 'plazo',
-              leida: idsLeidos.has(idP)
-            });
-          }
-
-          if (item.solicitudProrrogaCorreccionPendiente) {
-            const idP = `prorroga-autor-${item.id}`;
-            list.push({
-              id: idP,
-              articuloId: item.id,
-              codigoArticulo: item.codigo,
-              titulo: 'Solicitud de prórroga: Autor',
-              detalle: `El autor solicitó 1 día adicional de prórroga para ${item.codigo}.`,
-              fecha: item.fecha_inicio ? new Date(item.fecha_inicio) : new Date(),
-              enlace: `/flujo-trabajo-articulo/${item.id}`,
-              tipo: 'plazo',
-              leida: idsLeidos.has(idP)
-            });
-          }
-
-          if (item.solicitudProrrogaRevisorPendiente) {
-            const idP = `prorroga-revisor-${item.id}`;
-            list.push({
-              id: idP,
-              articuloId: item.id,
-              codigoArticulo: item.codigo,
-              titulo: 'Solicitud de prórroga: Revisor',
-              detalle: `El revisor solicitó 15 días adicionales para ${item.codigo}.`,
-              fecha: item.fecha_inicio ? new Date(item.fecha_inicio) : new Date(),
-              enlace: `/flujo-trabajo-articulo/${item.id}`,
-              tipo: 'plazo',
-              leida: idsLeidos.has(idP)
-            });
-          }
-        }
-
-        this.notificaciones = list.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+        this.notificaciones = data
+          .map((item) => ({
+            id: item.id,
+            articuloId: item.articuloId,
+            codigoArticulo: item.codigoArticulo,
+            titulo: item.titulo,
+            detalle: item.detalle,
+            fecha: new Date(item.fecha),
+            enlace: item.enlace || `/flujo-trabajo-articulo/${item.articuloId}`,
+            tipo: item.tipo || 'mensaje',
+            leida: idsLeidos.has(item.id),
+          }))
+          .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
         this.loading = false;
       },
       error: () => {
+        this.notificaciones = [];
         this.error = 'No se pudieron cargar las notificaciones.';
         this.loading = false;
-      }
+      },
     });
   }
 
