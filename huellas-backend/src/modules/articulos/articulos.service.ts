@@ -945,9 +945,12 @@ export class ArticulosService {
         );
       }
 
-      if (nuevaEtapaId !== etapaSiguientePermitida) {
+      if (
+        nuevaEtapaId !== etapaSiguientePermitida &&
+        nuevaEtapaId !== ArticulosService.ETAPA_DESCARTADO
+      ) {
         throw new BadRequestException(
-          'Solo puedes avanzar a la siguiente etapa del flujo editorial.',
+          'Solo puedes avanzar a la siguiente etapa del flujo editorial o descartar el artículo.',
         );
       }
 
@@ -1146,6 +1149,9 @@ export class ArticulosService {
           const checklist = JSON.parse(articulo.revisionFinalChecklist);
           const itemsRequeridos = [
             'ajustesRevisores',
+            'cumpleNormativas',
+            'resumenYSecciones',
+            'numeroPaginas',
             'normasFormato',
             'referenciasBibliograficas',
             'redaccionOrtografia',
@@ -1257,7 +1263,7 @@ export class ArticulosService {
       }
 
       const evaluacionDescarta =
-        porcentaje >= 65 || decision === 'rechazado_similitud';
+        porcentaje > 30 || decision === 'rechazado_similitud';
 
       let asuntoEvaluacion =
         ArticulosService.ASUNTO_EVALUACION_TURNITIN_CORRECCION;
@@ -1270,7 +1276,7 @@ export class ArticulosService {
 
       let comentarioBase = '';
       if (evaluacionDescarta) {
-        if (porcentaje >= 65) {
+        if (porcentaje > 30) {
           comentarioBase = `Evaluación de Turnitin: ${porcentaje}% de similitud. El artículo supera el umbral permitido y queda descartado.`;
         } else {
           comentarioBase = `Evaluación de Turnitin: ${porcentaje}% de similitud. El artículo queda descartado por similitud.`;
@@ -1515,8 +1521,37 @@ export class ArticulosService {
       }
 
       if (decision === 'rechazar') {
-        articulo.etapaActualId = 7;
+        const historialAbierto = await queryRunner.manager.findOne(
+          ArticuloHistorialEtapa,
+          {
+            where: {
+              articuloId,
+              fechaFin: IsNull(),
+            },
+            order: { fechaInicio: 'DESC' },
+          },
+        );
+
+        const ahora = new Date();
+
+        if (historialAbierto) {
+          historialAbierto.fechaFin = ahora;
+          await queryRunner.manager.save(historialAbierto);
+        }
+
+        articulo.etapaActualId = 7; // DESCARTADO
         await queryRunner.manager.save(articulo);
+
+        const nuevoHistorial = queryRunner.manager.create(
+          ArticuloHistorialEtapa,
+          {
+            articuloId,
+            etapaId: 7,
+            usuarioId: usuarioComiteId,
+            fechaInicio: ahora,
+          },
+        );
+        await queryRunner.manager.save(nuevoHistorial);
       }
 
       await queryRunner.commitTransaction();
@@ -1539,7 +1574,11 @@ export class ArticulosService {
     }
   }
 
-  async asignarComiteEditorial(articuloId: number, comiteEditorialId: number) {
+  async asignarComiteEditorial(
+    articuloId: number,
+    comiteEditorialId: number,
+    usuarioId: number,
+  ) {
     const articulo = await this.articuloRepository.findOne({
       where: { id: articuloId },
       relations: ['comiteEditorial'],
@@ -1582,12 +1621,22 @@ export class ArticulosService {
       );
     }
 
-    const articulosAsignados = await this.articuloRepository.count({
+    const articles = await this.articuloRepository.find({
       where: {
         comiteEditorialId,
         etapaActualId: ArticulosService.ETAPA_COMITE_EDITORIAL,
       } as any,
+      relations: ['observaciones'],
     });
+
+    const articulosAsignados = articles.filter((a) => {
+      const yaEvaluado = a.observaciones?.some(
+        (obs) =>
+          obs.usuarioId === comiteEditorialId &&
+          this.isAsuntoEvaluacionComite(obs.asunto),
+      );
+      return !yaEvaluado;
+    }).length;
 
     const esMismoAsignado = articulo.comiteEditorialId === comiteEditorialId;
 
@@ -1612,6 +1661,17 @@ export class ArticulosService {
 
     await this.articuloRepository.save(articulo);
 
+    const observacionAsignacion = this.dataSource
+      .getRepository(Observacion)
+      .create({
+        articuloId,
+        usuarioId,
+        etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
+        asunto: 'Asignación de comité editorial',
+        comentarios: 'El artículo fue asignado a un miembro del comité editorial.',
+      });
+    await this.dataSource.getRepository(Observacion).save(observacionAsignacion);
+
     return {
       message: 'Artículo asignado al miembro del Comité Editorial.',
       comiteEditorial: {
@@ -1622,7 +1682,7 @@ export class ArticulosService {
     };
   }
 
-  async asignarRevisor(articuloId: number, revisorId: number) {
+  async asignarRevisor(articuloId: number, revisorId: number, usuarioId: number) {
     const articulo = await this.articuloRepository.findOne({
       where: { id: articuloId },
       relations: ['revisor'],
@@ -1666,6 +1726,17 @@ export class ArticulosService {
     }
 
     await this.articuloRepository.save(articulo);
+
+    const observacionAsignacion = this.dataSource
+      .getRepository(Observacion)
+      .create({
+        articuloId,
+        usuarioId,
+        etapaId: ArticulosService.ETAPA_REVISION_PARES,
+        asunto: 'Asignación de revisor por pares',
+        comentarios: 'El artículo fue asignado al revisor por pares.',
+      });
+    await this.dataSource.getRepository(Observacion).save(observacionAsignacion);
 
     return {
       message: 'Revisor asignado correctamente.',
@@ -3307,7 +3378,10 @@ export class ArticulosService {
           obs.comentarios?.trim() ||
           `Se registró una observación sobre tu artículo ${articulo.codigo}.`;
 
-        if (this.isAsuntoEvaluacionComite(obs.asunto)) {
+        if (lowerAsunto.includes('turnitin (rechazado)')) {
+          titulo = 'Corrección de Turnitin rechazada';
+          detalle = `La corrección que enviaste fue rechazada. Por favor, revisa los comentarios y sube una nueva versión: ${obs.comentarios}`;
+        } else if (this.isAsuntoEvaluacionComite(obs.asunto)) {
           titulo = 'Evaluación de Comité Editorial';
           if (this.isAsuntoEvaluacionComiteAprobado(obs.asunto)) {
             detalle =
@@ -3519,6 +3593,10 @@ export class ArticulosService {
         ) {
           tituloNotificacion = 'Corrección del autor aceptada';
           detalleNotificacion = `Se aceptó la corrección del autor para el artículo ${articulo.codigo}.`;
+          tipo = 'informacion';
+        } else if (lowerAsunto.includes('turnitin (rechazado)')) {
+          tituloNotificacion = 'Corrección de Turnitin rechazada';
+          detalleNotificacion = `Se rechazó la corrección del autor para el artículo ${articulo.codigo}.`;
           tipo = 'informacion';
         } else if (
           lowerAsunto.includes(
@@ -4068,7 +4146,8 @@ export class ArticulosService {
         throw new BadRequestException('La edición seleccionada no existe.');
       }
 
-      articulo.edicionId = dto.edicionId;
+      articulo.edicion = edicion;
+      articulo.edicionId = edicion.id;
       if (dto.doi !== undefined) {
         articulo.doi = dto.doi;
       }

@@ -121,7 +121,7 @@ export class RevisoresService {
 
   async getArticulosAsignadosRevisor(usuarioId: number) {
     const articulos = await this.articuloRepository.find({
-      relations: ['revisor', 'etapaActual', 'historialEtapas', 'temas'],
+      relations: ['revisor', 'etapaActual', 'historialEtapas', 'temas', 'observaciones'],
       order: { id: 'DESC' },
     });
 
@@ -998,6 +998,13 @@ Ejemplo de formato de respuesta:
   }
 
   private obtenerFechaAsignacionRevision(articulo: Articulo): Date | null {
+    const obsAsignacion = (articulo.observaciones ?? []).find(
+      (o) => o.asunto === 'Asignación de revisor por pares',
+    );
+    if (obsAsignacion) {
+      return new Date(obsAsignacion.fechaSubida);
+    }
+
     const historialRevision = (articulo.historialEtapas ?? [])
       .filter(
         (historial) =>

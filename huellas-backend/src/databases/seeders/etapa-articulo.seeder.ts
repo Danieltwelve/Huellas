@@ -84,5 +84,27 @@ export class EtapaArticuloSeeder implements OnModuleInit {
         }
       }
     }
+
+    // Corrección de huso horario para registros históricos de etapas (ejecutado una sola vez)
+    try {
+      const configFix = await this.etapaRepository.query(
+        `SELECT * FROM articulos_configuracion WHERE clave = 'timezone_fix_applied';`
+      );
+      if (!configFix || configFix.length === 0) {
+        console.log('Aplicando corrección de zona horaria para historial de etapas (sumando 5 horas)...');
+        await this.etapaRepository.query(
+          `UPDATE articulos_historial_etapas 
+           SET fecha_inicio = fecha_inicio + INTERVAL '5 hours', 
+               fecha_fin = fecha_fin + INTERVAL '5 hours';`
+        );
+        await this.etapaRepository.query(
+          `INSERT INTO articulos_configuracion (clave, valor_booleano) 
+           VALUES ('timezone_fix_applied', true);`
+        );
+        console.log('Corrección de zona horaria aplicada con éxito.');
+      }
+    } catch (e) {
+      console.error('Error al aplicar corrección de zona horaria:', e);
+    }
   }
 }

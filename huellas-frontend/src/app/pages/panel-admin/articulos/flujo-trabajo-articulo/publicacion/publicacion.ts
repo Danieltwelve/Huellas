@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -14,7 +14,7 @@ import { ArticulosService } from '../../../../../core/articulos/articulos.servic
   templateUrl: './publicacion.html',
   styleUrl: './publicacion.css',
 })
-export class Publicacion implements OnInit {
+export class Publicacion implements OnInit, OnChanges {
   @Input() articuloId: number | null = null;
   @Input() etapaActualTerminada = false;
   @Input() doiInicial = '';
@@ -32,13 +32,34 @@ export class Publicacion implements OnInit {
   issnPublicacion = '';
   paginasPublicacion = '';
   guardandoMetadata = false;
+  mostrarModalConfirmacion = false;
+
+  get datosGuardados(): boolean {
+    return this.edicionIdInicial !== null || this.etapaActualTerminada;
+  }
 
   ngOnInit(): void {
     this.cargarEdiciones();
+    this.sincronizarValoresIniciales();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (
+      changes['edicionIdInicial'] ||
+      changes['doiInicial'] ||
+      changes['issnInicial'] ||
+      changes['paginasInicial'] ||
+      changes['etapaActualTerminada']
+    ) {
+      this.sincronizarValoresIniciales();
+    }
+  }
+
+  private sincronizarValoresIniciales(): void {
     this.edicionSeleccionadaId = this.edicionIdInicial;
-    this.doiPublicacion = this.doiInicial;
-    this.issnPublicacion = this.issnInicial;
-    this.paginasPublicacion = this.paginasInicial;
+    this.doiPublicacion = this.doiInicial || '';
+    this.issnPublicacion = this.issnInicial || '';
+    this.paginasPublicacion = this.paginasInicial || '';
   }
 
   cargarEdiciones(): void {
@@ -58,12 +79,27 @@ export class Publicacion implements OnInit {
       console.warn('Debes seleccionar una edición antes de guardar.');
       return;
     }
+    this.mostrarModalConfirmacion = true;
+  }
+
+  cancelarGuardado(): void {
+    this.mostrarModalConfirmacion = false;
+  }
+
+  confirmarGuardarMetadatos(): void {
+    this.mostrarModalConfirmacion = false;
+    this.guardarMetadatosPublicacionDirecto();
+  }
+
+  private guardarMetadatosPublicacionDirecto(): void {
+    const edicionId = this.edicionSeleccionadaId;
+    if (!this.articuloId || !edicionId) return;
 
     this.guardandoMetadata = true;
 
     this.articulosService
       .guardarMetadataPublicacion(this.articuloId, {
-        edicionId: this.edicionSeleccionadaId,
+        edicionId: edicionId,
         doi: this.doiPublicacion.trim() || undefined,
         issn: this.issnPublicacion.trim() || undefined,
         paginas: this.paginasPublicacion.trim() || undefined,

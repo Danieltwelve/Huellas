@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, NgZone } from '@angular/core';
 import { Auth, authState } from '@angular/fire/auth';
 import {
   AuthCredential,
@@ -48,7 +48,18 @@ interface BackendSyncResponse {
 })
 export class AuthService {
   private auth: Auth = inject(Auth);
-  readonly user$: Observable<User | null> = authState(this.auth);
+  private ngZone = inject(NgZone);
+
+  readonly user$: Observable<User | null> = authState(this.auth).pipe(
+    (source) => new Observable<User | null>(subscriber => {
+      return source.subscribe({
+        next: (user) => this.ngZone.run(() => subscriber.next(user)),
+        error: (err) => this.ngZone.run(() => subscriber.error(err)),
+        complete: () => this.ngZone.run(() => subscriber.complete())
+      });
+    })
+  );
+
   private claimsSubject = new BehaviorSubject<AccessClaims>({});
   readonly claims$ = this.claimsSubject.asObservable();
   private pendingMicrosoftLinkEmail: string | null = null;
@@ -57,12 +68,22 @@ export class AuthService {
   constructor() {
     this.user$.subscribe(async (user) => {
       if (!user) {
-        this.claimsSubject.next({});
+        this.ngZone.run(() => {
+          this.claimsSubject.next({});
+        });
         return;
       }
 
-      const tokenResult = await user.getIdTokenResult();
-      this.claimsSubject.next((tokenResult.claims as AccessClaims) ?? {});
+      try {
+        const tokenResult = await user.getIdTokenResult();
+        this.ngZone.run(() => {
+          this.claimsSubject.next((tokenResult.claims as AccessClaims) ?? {});
+        });
+      } catch (error) {
+        this.ngZone.run(() => {
+          this.claimsSubject.next({});
+        });
+      }
     });
   }
 
@@ -79,75 +100,79 @@ export class AuthService {
    * Inicia sesión con Google usando una ventana emergente
    */
   async loginWithGoogle() {
-    try {
-      this.auth.useDeviceLanguage();
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(this.auth, provider);
-      const idToken = await result.user.getIdToken();
+    return this.ngZone.run(async () => {
+      try {
+        this.auth.useDeviceLanguage();
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(this.auth, provider);
+        const idToken = await result.user.getIdToken();
 
-      const nombre = result.user.displayName || '';
-      const correo = result.user.email || '';
+        const nombre = result.user.displayName || '';
+        const correo = result.user.email || '';
 
-      await this.sendIdTokenToBackend(idToken, {
-        nombre: nombre,
-        correo: correo,
-      });
+        await this.sendIdTokenToBackend(idToken, {
+          nombre: nombre,
+          correo: correo,
+        });
 
-      await result.user.getIdToken(true);
-      const refreshedTokenResult = await result.user.getIdTokenResult();
-      this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
+        await result.user.getIdToken(true);
+        const refreshedTokenResult = await result.user.getIdTokenResult();
+        this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
 
-      console.log('Inicio de sesión exitoso con Google:', result.user);
-      return result.user;
-    } catch (error) {
-      console.error('Error al iniciar sesión con Google:', error);
-      throw error;
-    }
+        console.log('Inicio de sesión exitoso con Google:', result.user);
+        return result.user;
+      } catch (error) {
+        console.error('Error al iniciar sesión con Google:', error);
+        throw error;
+      }
+    });
   }
 
   /**
    * Inicia sesión con Microsoft usando una ventana emergente y vincula cuentas si es necesario
    */
   async loginWithMicrosoft() {
-    try {
-      this.auth.useDeviceLanguage();
-      const provider = new OAuthProvider('microsoft.com');
-      provider.setCustomParameters({ prompt: 'select_account' });
+    return this.ngZone.run(async () => {
+      try {
+        this.auth.useDeviceLanguage();
+        const provider = new OAuthProvider('microsoft.com');
+        provider.setCustomParameters({ prompt: 'select_account' });
 
-      const result = await signInWithPopup(this.auth, provider);
-      const idToken = await result.user.getIdToken();
+        const result = await signInWithPopup(this.auth, provider);
+        const idToken = await result.user.getIdToken();
 
-      const nombre = result.user.displayName || '';
-      const correo = result.user.email || '';
+        const nombre = result.user.displayName || '';
+        const correo = result.user.email || '';
 
-      await this.sendIdTokenToBackend(idToken, {
-        nombre: nombre,
-        correo: correo,
-      });
+        await this.sendIdTokenToBackend(idToken, {
+          nombre: nombre,
+          correo: correo,
+        });
 
-      await result.user.getIdToken(true);
-      const refreshedTokenResult = await result.user.getIdTokenResult();
-      this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
+        await result.user.getIdToken(true);
+        const refreshedTokenResult = await result.user.getIdTokenResult();
+        this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
 
-      console.log('Inicio de sesión exitoso con Microsoft:', result.user);
-      return result.user;
-    } catch (error: any) {
-      if (error.code === 'auth/account-exists-with-different-credential') {
-        const pendingCredential = OAuthProvider.credentialFromError(error);
-        const email = error.customData?.email;
+        console.log('Inicio de sesión exitoso con Microsoft:', result.user);
+        return result.user;
+      } catch (error: any) {
+        if (error.code === 'auth/account-exists-with-different-credential') {
+          const pendingCredential = OAuthProvider.credentialFromError(error);
+          const email = error.customData?.email;
 
-        if (!email || !pendingCredential) {
+          if (!email || !pendingCredential) {
+            throw error;
+          }
+
+          this.pendingMicrosoftLinkEmail = email;
+          this.pendingMicrosoftCredential = pendingCredential;
+          throw new Error('MICROSOFT_LINK_REQUIRED');
+        } else {
+          console.error('Error al iniciar sesión con Microsoft:', error);
           throw error;
         }
-
-        this.pendingMicrosoftLinkEmail = email;
-        this.pendingMicrosoftCredential = pendingCredential;
-        throw new Error('MICROSOFT_LINK_REQUIRED');
-      } else {
-        console.error('Error al iniciar sesión con Microsoft:', error);
-        throw error;
       }
-    }
+    });
   }
 
   getPendingMicrosoftLinkEmail(): string | null {
@@ -160,46 +185,48 @@ export class AuthService {
   }
 
   async linkMicrosoftWithPassword(password: string): Promise<User> {
-    if (!this.pendingMicrosoftLinkEmail || !this.pendingMicrosoftCredential) {
-      throw new Error('MICROSOFT_LINK_NOT_READY');
-    }
-
-    try {
-      const signInResult = await signInWithEmailAndPassword(
-        this.auth,
-        this.pendingMicrosoftLinkEmail,
-        password,
-      );
-
-      await linkWithCredential(signInResult.user, this.pendingMicrosoftCredential);
-
-      const idToken = await signInResult.user.getIdToken();
-      const nombre = signInResult.user.displayName || '';
-      const correo = signInResult.user.email || '';
-
-      await this.sendIdTokenToBackend(idToken, {
-        nombre,
-        correo,
-      });
-
-      await signInResult.user.getIdToken(true);
-      const refreshedTokenResult = await signInResult.user.getIdTokenResult();
-      this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
-      this.clearPendingMicrosoftLink();
-
-      return signInResult.user;
-    } catch (error: any) {
-      if (
-        error?.code === 'auth/wrong-password' ||
-        error?.code === 'auth/invalid-credential' ||
-        error?.code === 'auth/invalid-login-credentials'
-      ) {
-        throw new Error('MICROSOFT_LINK_INVALID_PASSWORD');
+    return this.ngZone.run(async () => {
+      if (!this.pendingMicrosoftLinkEmail || !this.pendingMicrosoftCredential) {
+        throw new Error('MICROSOFT_LINK_NOT_READY');
       }
 
-      console.error('Error al vincular cuenta de Microsoft:', error);
-      throw new Error('MICROSOFT_LINK_FAILED');
-    }
+      try {
+        const signInResult = await signInWithEmailAndPassword(
+          this.auth,
+          this.pendingMicrosoftLinkEmail,
+          password,
+        );
+
+        await linkWithCredential(signInResult.user, this.pendingMicrosoftCredential);
+
+        const idToken = await signInResult.user.getIdToken();
+        const nombre = signInResult.user.displayName || '';
+        const correo = signInResult.user.email || '';
+
+        await this.sendIdTokenToBackend(idToken, {
+          nombre,
+          correo,
+        });
+
+        await signInResult.user.getIdToken(true);
+        const refreshedTokenResult = await signInResult.user.getIdTokenResult();
+        this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
+        this.clearPendingMicrosoftLink();
+
+        return signInResult.user;
+      } catch (error: any) {
+        if (
+          error?.code === 'auth/wrong-password' ||
+          error?.code === 'auth/invalid-credential' ||
+          error?.code === 'auth/invalid-login-credentials'
+        ) {
+          throw new Error('MICROSOFT_LINK_INVALID_PASSWORD');
+        }
+
+        console.error('Error al vincular cuenta de Microsoft:', error);
+        throw new Error('MICROSOFT_LINK_FAILED');
+      }
+    });
   }
 
   async sendIdTokenToBackend(
@@ -243,7 +270,6 @@ export class AuthService {
   ): Promise<void> {
     try {
       const response = await fetch(`${environment.apiUrlBackend}/auth/sync-email`, {
-        // <-- NUEVA RUTA
         method: 'POST',
         body: JSON.stringify({
           idToken,
@@ -289,74 +315,84 @@ export class AuthService {
    * Cierra la sesión actual
    */
   async logout(): Promise<void> {
-    try {
-      await signOut(this.auth);
-      this.claimsSubject.next({});
-      console.log('Sesión cerrada');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      throw error;
-    }
+    return this.ngZone.run(async () => {
+      try {
+        await signOut(this.auth);
+        this.claimsSubject.next({});
+        console.log('Sesión cerrada');
+      } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+        throw error;
+      }
+    });
   }
 
   async sendPasswordResetEmail(email: string): Promise<void> {
-    return sendPasswordResetEmail(this.auth, email);
+    return this.ngZone.run(async () => {
+      return sendPasswordResetEmail(this.auth, email);
+    });
   }
 
   async sendVerificationEmail(user: User): Promise<void> {
-    await sendEmailVerification(user);
+    return this.ngZone.run(async () => {
+      await sendEmailVerification(user);
+    });
   }
 
   async signUpWithEmailAndPassword(
     credential: Credentials,
     registerData: RegisterUserAttributes,
   ): Promise<void> {
-    const userCredential = await createUserWithEmailAndPassword(
-      this.auth,
-      credential.correo,
-      credential.contraseña,
-    );
+    return this.ngZone.run(async () => {
+      const userCredential = await createUserWithEmailAndPassword(
+        this.auth,
+        credential.correo,
+        credential.contraseña,
+      );
 
-    await updateProfile(userCredential.user, {
-      displayName: registerData.nombre.trim(),
+      await updateProfile(userCredential.user, {
+        displayName: registerData.nombre.trim(),
+      });
+
+      await this.sendVerificationEmail(userCredential.user);
+      const idToken = await userCredential.user.getIdToken();
+      await this.sendEmailTokenToBackend(idToken, registerData);
+
+      await signOut(this.auth);
+      this.claimsSubject.next({});
     });
-
-    await this.sendVerificationEmail(userCredential.user);
-    const idToken = await userCredential.user.getIdToken();
-    await this.sendEmailTokenToBackend(idToken, registerData);
-
-    await signOut(this.auth);
-    this.claimsSubject.next({});
   }
 
   async logInWithEmailAndPassword(credential: Credentials): Promise<UserCredential> {
-    const userCredential = await signInWithEmailAndPassword(
-      this.auth,
-      credential.correo,
-      credential.contraseña,
-    );
+    return this.ngZone.run(async () => {
+      const userCredential = await signInWithEmailAndPassword(
+        this.auth,
+        credential.correo,
+        credential.contraseña,
+      );
 
-    if (!userCredential.user.emailVerified) {
-      await signOut(this.auth);
-      this.claimsSubject.next({});
-      throw new Error('EMAIL_NOT_VERIFIED');
-    }
+      if (!userCredential.user.emailVerified) {
+        await signOut(this.auth);
+        this.claimsSubject.next({});
+        throw new Error('EMAIL_NOT_VERIFIED');
+      }
 
-    const correo = userCredential.user.email ?? credential.correo;
-    const fallbackNombre = correo.split('@')[0] || '';
-    const registerData: RegisterUserAttributes = {
-      nombre: userCredential.user.displayName?.trim() || fallbackNombre,
-      correo,
-    };
+      const correo = userCredential.user.email ?? credential.correo;
+      const fallbackNombre = correo.split('@')[0] || '';
+      const registerData: RegisterUserAttributes = {
+        nombre: userCredential.user.displayName?.trim() || fallbackNombre,
+        correo,
+      };
 
-    const idToken = await userCredential.user.getIdToken();
-    await this.sendEmailTokenToBackend(idToken, registerData);
-    await userCredential.user.getIdToken(true);
-    const refreshedTokenResult = await userCredential.user.getIdTokenResult();
-    this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
+      const idToken = await userCredential.user.getIdToken();
+      await this.sendEmailTokenToBackend(idToken, registerData);
+      await userCredential.user.getIdToken(true);
+      const refreshedTokenResult = await userCredential.user.getIdTokenResult();
+      this.claimsSubject.next((refreshedTokenResult.claims as AccessClaims) ?? {});
 
-    console.log('Inicio de sesión exitoso con email y contraseña:', userCredential.user);
-    return userCredential;
+      console.log('Inicio de sesión exitoso con email y contraseña:', userCredential.user);
+      return userCredential;
+    });
   }
 
   getPostLoginRoute(): string {

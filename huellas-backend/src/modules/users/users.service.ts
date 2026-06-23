@@ -776,18 +776,42 @@ export class UsersService {
 
     return Promise.all(
       filtered.map(async (user) => {
-        const count = await this.articuloRepository.count({
+        const articles = await this.articuloRepository.find({
           where: {
             comiteEditorialId: user.id,
             etapaActualId: 6,
           } as any,
+          relations: ['observaciones'],
         });
+
+        const pendingCount = articles.filter((articulo) => {
+          const yaEvaluado = articulo.observaciones?.some(
+            (obs) =>
+              obs.usuarioId === user.id &&
+              this.isAsuntoEvaluacionComite(obs.asunto),
+          );
+          return !yaEvaluado;
+        }).length;
 
         return {
           ...user,
-          articulosAsignados: count,
+          articulosAsignados: pendingCount,
         };
       }),
+    );
+  }
+
+  private isAsuntoEvaluacionComite(asunto?: string): boolean {
+    const texto = (asunto ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    return (
+      texto.includes('evalu') &&
+      texto.includes('comite') &&
+      !texto.includes('prorroga') &&
+      (texto.includes('acept') || texto.includes('rechaz'))
     );
   }
 

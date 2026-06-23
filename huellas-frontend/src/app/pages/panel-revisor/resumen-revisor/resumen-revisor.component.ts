@@ -1,5 +1,4 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
 import { ARTICULOS_ASIGNADOS_MOCK } from '../panel-revisor.data';
 import { ArticuloRevisorDto, RevisoresService } from '../../../core/revisores/revisores.service';
 
@@ -14,12 +13,15 @@ export class ResumenRevisorComponent implements OnInit {
 
   articulos: ArticuloRevisorDto[] = ARTICULOS_ASIGNADOS_MOCK;
 
-  async ngOnInit(): Promise<void> {
-    try {
-      this.articulos = await firstValueFrom(this.revisoresService.getArticulosAsignadosRevisor());
-    } catch {
-      this.articulos = ARTICULOS_ASIGNADOS_MOCK;
-    }
+  ngOnInit(): void {
+    this.revisoresService.getArticulosAsignadosRevisor().subscribe({
+      next: (articulos) => {
+        this.articulos = articulos;
+      },
+      error: () => {
+        this.articulos = ARTICULOS_ASIGNADOS_MOCK;
+      },
+    });
   }
 
   get totalAsignados(): number {
@@ -40,13 +42,14 @@ export class ResumenRevisorComponent implements OnInit {
 
   get proximoVencimiento(): string {
     const proximos = this.articulos
+      .filter((item) => item.estado !== 'evaluado')
       .map((item) => (item.fechaLimite ? new Date(item.fechaLimite) : null))
       .filter((date): date is Date => Boolean(date))
       .filter((date) => !isNaN(date.getTime()))
       .sort((a, b) => a.getTime() - b.getTime());
 
     if (proximos.length === 0) {
-      return 'Sin vencimientos';
+      return 'No hay artículos a evaluar';
     }
 
     return this.formatFecha(proximos[0]);

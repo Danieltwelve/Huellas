@@ -2,7 +2,6 @@ import { Component, OnInit, inject, HostListener } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService, AccessClaims } from '../../../core/auth/auth.service';
 import { NotificationDropdownComponent, NotificationDropdownItem } from '../../../core/components/notification-dropdown/notification-dropdown.component';
-import { firstValueFrom } from 'rxjs';
 import { RevisoresService } from '../../../core/revisores/revisores.service';
 import { NOTIFICACIONES_REVISOR_MOCK } from '../panel-revisor.data';
 import { CommonModule } from '@angular/common';
@@ -27,28 +26,30 @@ export class PanelRevisorLayoutComponent implements OnInit {
   notifications: NotificationDropdownItem[] = this.buildNotifications();
   claims$ = this.authService.claims$;
 
-  async ngOnInit(): Promise<void> {
-    try {
-      const idsLeidos = this.obtenerIdsLeidos();
-      const data = await firstValueFrom(this.revisoresService.getNotificacionesRevisor());
-      this.notifications = data
-        .map((item) => ({
-          id: item.id,
-          articuloId: item.articuloId ?? 0,
-          codigoArticulo: item.codigoArticulo ?? 'REV',
-          titulo: item.titulo,
-          detalle: item.detalle,
-          fecha: new Date(item.fecha),
-          enlace: item.enlace ?? '/panel-revisor/notificaciones',
-          leida: idsLeidos.has(item.id),
-        }))
-        .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
-      this.notificationError = null;
-    } catch (error) {
-      this.notifications = this.buildNotifications();
-      this.notificationError = 'No se pudieron cargar las notificaciones del revisor.';
-      console.error('Error cargando notificaciones del revisor', error);
-    }
+  ngOnInit(): void {
+    const idsLeidos = this.obtenerIdsLeidos();
+    this.revisoresService.getNotificacionesRevisor().subscribe({
+      next: (data) => {
+        this.notifications = data
+          .map((item) => ({
+            id: item.id,
+            articuloId: item.articuloId ?? 0,
+            codigoArticulo: item.codigoArticulo ?? 'REV',
+            titulo: item.titulo,
+            detalle: item.detalle,
+            fecha: new Date(item.fecha),
+            enlace: item.enlace ?? '/panel-revisor/notificaciones',
+            leida: idsLeidos.has(item.id),
+          }))
+          .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+        this.notificationError = null;
+      },
+      error: (error) => {
+        this.notifications = this.buildNotifications();
+        this.notificationError = 'No se pudieron cargar las notificaciones del revisor.';
+        console.error('Error cargando notificaciones del revisor', error);
+      },
+    });
   }
 
   toggleSidebar(): void {

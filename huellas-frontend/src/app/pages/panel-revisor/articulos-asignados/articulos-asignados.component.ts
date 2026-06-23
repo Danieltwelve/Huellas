@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { ARTICULOS_ASIGNADOS_MOCK } from '../panel-revisor.data';
 import { ArticuloRevisorDto, RevisoresService, HistorialRevisionRevisorDto } from '../../../core/revisores/revisores.service';
 import { Router } from '@angular/router';
@@ -39,20 +39,22 @@ export class ArticulosAsignadosComponent implements OnInit {
   filtroEstado: 'todos' | 'pendiente' | 'aceptado' | 'rechazado' = 'todos';
   accionesRapidasContraido: boolean = false;
 
-  async ngOnInit(): Promise<void> {
-    try {
-      const [articulos, historial] = await Promise.all([
-        firstValueFrom(this.revisoresService.getArticulosAsignadosRevisor()),
-        firstValueFrom(this.revisoresService.getHistorialRevisionRevisor()),
-      ]);
-      this.articulosFuente = articulos;
-      this.historialFuente = historial;
-    } catch {
-      this.articulosFuente = ARTICULOS_ASIGNADOS_MOCK;
-      this.historialFuente = [];
-    }
-
-    this.aplicarFiltrosYOrden();
+  ngOnInit(): void {
+    forkJoin([
+      this.revisoresService.getArticulosAsignadosRevisor(),
+      this.revisoresService.getHistorialRevisionRevisor(),
+    ]).subscribe({
+      next: ([articulos, historial]) => {
+        this.articulosFuente = articulos;
+        this.historialFuente = historial;
+        this.aplicarFiltrosYOrden();
+      },
+      error: () => {
+        this.articulosFuente = ARTICULOS_ASIGNADOS_MOCK;
+        this.historialFuente = [];
+        this.aplicarFiltrosYOrden();
+      },
+    });
   }
 
   onOrdenChange(valor: string): void {

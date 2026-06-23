@@ -274,7 +274,7 @@
 
             <!-- Dynamic Feedback Alert -->
             <div class="similitud-feedback" *ngIf="porcentajeTurnitin !== null">
-              <div class="feedback-alert feedback-alert--danger" *ngIf="porcentajeTurnitin >= 65">
+              <div class="feedback-alert feedback-alert--danger" *ngIf="porcentajeTurnitin > 30">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="feedback-icon">
                   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
                   </path>
@@ -282,15 +282,30 @@
                   <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
                 <span><strong>Similitud alta ({{ porcentajeTurnitin }}%)</strong>. El artículo supera el límite
-                  permitido del 65% y será rechazado automáticamente al registrar la evaluación.</span>
+                  permitido del 30% y será rechazado automáticamente al registrar la evaluación.</span>
               </div>
-              <div class="feedback-alert feedback-alert--success" *ngIf="porcentajeTurnitin < 65">
+              <div class="feedback-alert feedback-alert--warning" *ngIf="porcentajeTurnitin >= 25 && porcentajeTurnitin <= 30">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="feedback-icon">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="12" x2="12" y2="16"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span><strong>Requiere revisión ({{ porcentajeTurnitin }}%)</strong>. El reporte se encuentra en el rango del 25% al 30% (máximo permitido). Por favor selecciona una decisión.</span>
+              </div>
+              <div class="feedback-alert feedback-alert--success" *ngIf="porcentajeTurnitin >= 1 && porcentajeTurnitin < 25">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="feedback-icon">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                   <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
-                <span><strong>Similitud aceptable ({{ porcentajeTurnitin }}%)</strong>. El reporte se encuentra dentro
-                  del rango de aceptación. Por favor selecciona una decisión.</span>
+                <span><strong>Similitud aceptable ({{ porcentajeTurnitin }}%)</strong>. El reporte se encuentra dentro del rango de aceptación. Por favor selecciona una decisión.</span>
+              </div>
+              <div class="feedback-alert feedback-alert--info" *ngIf="porcentajeTurnitin === 0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="feedback-icon">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span><strong>Sin texto coincidente (0%)</strong>. No hay texto coincidente en el reporte. Por favor selecciona una decisión.</span>
               </div>
             </div>
           </div>
@@ -328,7 +343,7 @@
             </span>
           </div>
 
-          <div class="turnitin-decision animate-fadeIn" *ngIf="porcentajeTurnitin !== null && porcentajeTurnitin < 65">
+          <div class="turnitin-decision animate-fadeIn" *ngIf="porcentajeTurnitin !== null && porcentajeTurnitin <= 30">
             <label class="accion-label">Decisión</label>
             <div class="decision-options">
               <label class="decision-pill" [class.active-aceptado]="decisionTurnitin === 'aceptado'">
@@ -553,39 +568,231 @@
       <!-- Stage 9: Revisión final checklist -->
       <section class="accion-card card-revision-final" *ngIf="puedeMostrarRevisionFinal">
         <div class="revision-final-header">
-          <span class="accion-label">Revisión Final</span>
-          <p class="asignacion-helper" style="margin-bottom: 0.5rem;">Verifica que el autor haya cumplido con todos los
-            ajustes solicitados por los revisores.</p>
+          <div class="revision-final-title-row">
+            <span class="accion-label">Revisión Final</span>
+            <span class="checklist-badge" [class.badge-completed]="completedChecklistItemsCount === totalChecklistItemsCount">
+              {{ completedChecklistItemsCount }}/{{ totalChecklistItemsCount }} Verificados
+            </span>
+          </div>
+          <p class="asignacion-helper" style="margin-bottom: 0.75rem;">
+            Verifica que el autor haya cumplido con todos los ajustes solicitados por los revisores y las normativas de la revista.
+          </p>
+
+          <!-- Modern Progress Bar -->
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" [style.width.%]="checklistProgressPercentage"></div>
+          </div>
         </div>
 
         <div class="revision-final-inputs">
-          <div class="checklist-container">
-            <label class="checklist-item">
-              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.ajustesRevisores" />
-              <span>Incorporación de observaciones de revisión por pares</span>
-            </label>
-            <label class="checklist-item">
-              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.normasFormato" />
-              <span>Formato cumple con normas de publicación</span>
-            </label>
-            <label class="checklist-item">
-              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.referenciasBibliograficas" />
-              <span>Referencias bibliográficas según normas editoriales</span>
-            </label>
-            <label class="checklist-item">
-              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.redaccionOrtografia" />
-              <span>Redacción y ortografía correctas</span>
-            </label>
-            <label class="checklist-item">
-              <input type="checkbox" [(ngModel)]="checklistRevisionFinal.metadatosInglesEspanol" />
-              <span>Metadatos en inglés y español válidos</span>
-            </label>
+          <div class="checklist-wrapper">
+            <div class="checklist-container">
+              <!-- 1. Ajustes Revisores -->
+              <label class="checklist-item">
+                <div class="custom-checkbox-wrapper">
+                  <input type="checkbox" [(ngModel)]="checklistRevisionFinal.ajustesRevisores" class="real-checkbox" [disabled]="isChecklistLocked" />
+                  <div class="custom-checkbox">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" class="check-icon">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="checklist-text-wrapper">
+                  <span class="checklist-title">Incorporación de observaciones de revisión por pares</span>
+                  <span class="checklist-description">Se ha validado la corrección de cada observación hecha por los revisores académicos.</span>
+                </div>
+              </label>
+
+              <!-- 2. Cumple Normativas [NEW] -->
+              <label class="checklist-item">
+                <div class="custom-checkbox-wrapper">
+                  <input type="checkbox" [(ngModel)]="checklistRevisionFinal.cumpleNormativas" class="real-checkbox" [disabled]="isChecklistLocked" />
+                  <div class="custom-checkbox">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" class="check-icon">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="checklist-text-wrapper">
+                  <span class="checklist-title">Cumple con normativas del artículo</span>
+                  <span class="checklist-description">Alineación estricta con las pautas de publicación, directrices para autores y estructura requerida.</span>
+                </div>
+              </label>
+
+              <!-- 3. Resumen y secciones [NEW] -->
+              <label class="checklist-item">
+                <div class="custom-checkbox-wrapper">
+                  <input type="checkbox" [(ngModel)]="checklistRevisionFinal.resumenYSecciones" class="real-checkbox" [disabled]="isChecklistLocked" />
+                  <div class="custom-checkbox">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" class="check-icon">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="checklist-text-wrapper">
+                  <span class="checklist-title">Resumen y secciones requeridas del artículo</span>
+                  <span class="checklist-description">Verificación de la existencia y coherencia del título, resumen, palabras clave y estructura general.</span>
+                </div>
+              </label>
+
+              <!-- 4. Número de páginas [NEW] -->
+              <label class="checklist-item">
+                <div class="custom-checkbox-wrapper">
+                  <input type="checkbox" [(ngModel)]="checklistRevisionFinal.numeroPaginas" class="real-checkbox" [disabled]="isChecklistLocked" />
+                  <div class="custom-checkbox">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" class="check-icon">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="checklist-text-wrapper">
+                  <span class="checklist-title">Número de páginas and extensión reglamentaria</span>
+                  <span class="checklist-description">El documento cumple con los límites de extensión de páginas establecidos por la editorial.</span>
+                </div>
+              </label>
+
+              <!-- 5. Formato cumple normas -->
+              <label class="checklist-item">
+                <div class="custom-checkbox-wrapper">
+                  <input type="checkbox" [(ngModel)]="checklistRevisionFinal.normasFormato" class="real-checkbox" [disabled]="isChecklistLocked" />
+                  <div class="custom-checkbox">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" class="check-icon">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="checklist-text-wrapper">
+                  <span class="checklist-title">Formato cumple con normas de publicación</span>
+                  <span class="checklist-description">Uso correcto de la tipografía, márgenes, espaciado, y la plantilla general de la revista.</span>
+                </div>
+              </label>
+
+              <!-- 6. Referencias bibliográficas -->
+              <label class="checklist-item">
+                <div class="custom-checkbox-wrapper">
+                  <input type="checkbox" [(ngModel)]="checklistRevisionFinal.referenciasBibliograficas" class="real-checkbox" [disabled]="isChecklistLocked" />
+                  <div class="custom-checkbox">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" class="check-icon">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="checklist-text-wrapper">
+                  <span class="checklist-title">Referencias bibliográficas según normas editoriales</span>
+                  <span class="checklist-description">Todas las citas del cuerpo textual y la lista final están citadas con la norma APA/IEEE requerida.</span>
+                </div>
+              </label>
+
+              <!-- 7. Redacción y ortografía -->
+              <label class="checklist-item">
+                <div class="custom-checkbox-wrapper">
+                  <input type="checkbox" [(ngModel)]="checklistRevisionFinal.redaccionOrtografia" class="real-checkbox" [disabled]="isChecklistLocked" />
+                  <div class="custom-checkbox">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" class="check-icon">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="checklist-text-wrapper">
+                  <span class="checklist-title">Redacción y ortografía correctas</span>
+                  <span class="checklist-description">El texto no presenta errores de tipografía, puntuación, gramática ni incoherencias sintácticas.</span>
+                </div>
+              </label>
+
+              <!-- 8. Metadatos válidos -->
+              <label class="checklist-item">
+                <div class="custom-checkbox-wrapper">
+                  <input type="checkbox" [(ngModel)]="checklistRevisionFinal.metadatosInglesEspanol" class="real-checkbox" [disabled]="isChecklistLocked" />
+                  <div class="custom-checkbox">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" class="check-icon">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="checklist-text-wrapper">
+                  <span class="checklist-title">Metadatos en inglés y español válidos</span>
+                  <span class="checklist-description">Los datos registrados (título, resumen, palabras clave) coinciden fielmente en ambos idiomas.</span>
+                </div>
+              </label>
+            </div>
+
+            <div class="checklist-actions-row">
+              <button class="btn-outline-teal btn-guardar-checklist" type="button" (click)="guardarChecklistFinal()"
+                [disabled]="guardandoChecklist || isChecklistLocked">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="icon-btn" *ngIf="!guardandoChecklist" style="width: 16px; height: 16px; margin-right: 6px; display: inline-block; vertical-align: middle;">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                {{ guardandoChecklist ? 'Guardando...' : 'Guardar lista de chequeo' }}
+              </button>
+            </div>
           </div>
 
-          <button class="btn-outline-teal btn-guardar-checklist" type="button" (click)="guardarChecklistFinal()"
-            [disabled]="guardandoChecklist">
-            {{ guardandoChecklist ? 'Guardando...' : 'Guardar lista de chequeo' }}
-          </button>
+          <!-- Editorial Decision Divider -->
+          <div class="card-separator" *ngIf="!isChecklistLocked"></div>
+
+          <!-- Decision Section -->
+          <div class="decision-editorial-section" *ngIf="!isChecklistLocked">
+            <span class="decision-section-title">Decisión de Revisión Final</span>
+            <p class="decision-section-subtitle">Selecciona el dictamen final para el artículo basado en el cumplimiento del checklist.</p>
+
+            <div class="decision-cards-grid">
+              <!-- Aceptar Card -->
+              <div class="decision-option-card card-aceptar" [class.active]="decisionRevisionFinal === 'aceptar'" (click)="decisionRevisionFinal = 'aceptar'">
+                <div class="option-card-radio">
+                  <span class="radio-dot"></span>
+                </div>
+                <div class="option-card-content">
+                  <div class="option-title-row">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="option-icon text-success" style="width: 18px; height: 18px; color: #10b981; margin-right: 6px; display: inline-block; vertical-align: middle;">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <span class="option-title">Aceptar para Publicación</span>
+                  </div>
+                  <span class="option-description">Aprobar el artículo para que avance a la etapa de certificación y preparación de salida.</span>
+                </div>
+              </div>
+
+              <!-- Rechazar Card -->
+              <div class="decision-option-card card-rechazar" [class.active]="decisionRevisionFinal === 'rechazar'" (click)="decisionRevisionFinal = 'rechazar'">
+                <div class="option-card-radio">
+                  <span class="radio-dot"></span>
+                </div>
+                <div class="option-card-content">
+                  <div class="option-title-row">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="option-icon text-danger" style="width: 18px; height: 18px; color: #ef4444; margin-right: 6px; display: inline-block; vertical-align: middle;">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="15" y1="9" x2="9" y2="15"></line>
+                      <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                    <span class="option-title">Rechazar y Descartar</span>
+                  </div>
+                  <span class="option-description">Descartar el envío de forma definitiva debido a incumplimientos o falta de ajustes requeridos.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Decision Comments Field -->
+            <div class="decision-comments-wrapper" *ngIf="decisionRevisionFinal">
+              <label for="comentariosRevisionFinal" class="comments-label" style="display: block; margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; font-size: 0.88rem;">
+                {{ decisionRevisionFinal === 'aceptar' ? 'Comentarios adicionales (Opcional)' : 'Motivos del rechazo (Obligatorio)' }}
+              </label>
+              <textarea id="comentariosRevisionFinal" rows="3" [(ngModel)]="comentariosRevisionFinal"
+                [placeholder]="decisionRevisionFinal === 'aceptar' ? 'Ingresa algún comentario u observación adicional si lo deseas...' : 'Describe detalladamente los motivos por los cuales el artículo no cumple con los criterios finales...'"
+                style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.75rem; font-family: inherit; font-size: 0.9rem; transition: border-color 0.2s; outline: none; background: #fff; color: #1e293b; resize: vertical; box-sizing: border-box;"></textarea>
+            </div>
+
+            <!-- Execute Button -->
+            <button class="btn-execute-decision" [class.btn-execute-aceptar]="decisionRevisionFinal === 'aceptar'" [class.btn-execute-rechazar]="decisionRevisionFinal === 'rechazar'"
+              *ngIf="decisionRevisionFinal" type="button" (click)="abrirConfirmacionDecisionRevisionFinal()" [disabled]="procesandoRevisionFinal">
+              <span *ngIf="!procesandoRevisionFinal">
+                Confirmar decisión
+              </span>
+              <span *ngIf="procesandoRevisionFinal">Procesando dictamen...</span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -665,7 +872,7 @@
         [edicionIdInicial]="articulo?.edicionId ?? null" (publicacionCompletada)="recargarArticulo()">
       </app-publicacion>
 
-      <section class="accion-card card-mover" *ngIf="!estaEnCertificacion || etapaActualTerminada"
+      <section class="accion-card card-mover" *ngIf="(!estaEnCertificacion || etapaActualTerminada) && (!estaEnRevisionFinal || decisionRevisionFinalGuardada) && articulo?.etapaActual?.id !== 5"
         [class.card-mover--foco]="soloPuedeMoverAComiteEnPreliminar">
 
         <div class="mover-header">
@@ -697,6 +904,42 @@
         </div>
       </section>
 
+      <!-- Card Artículo Publicado (cuando ya se guardaron los datos de publicación) -->
+      <section class="accion-card card-publicado-exito" *ngIf="articulo?.etapaActual?.id === 5 && articulo?.edicionId !== null && articulo?.edicionId !== undefined">
+        <div class="exito-header">
+          <div class="icon-success-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div class="title-success-wrapper">
+            <span class="accion-label success-label">Artículo Publicado Oficialmente</span>
+            <span class="tag-flow-success">Proceso Completado</span>
+          </div>
+        </div>
+        <div class="exito-body">
+          <p>
+            ¡Felicitaciones! Este artículo ha completado con éxito todo el flujo editorial y se encuentra publicado oficialmente en la Revista Huellas.
+          </p>
+          <div class="metadatos-publicados-resumen">
+            <div class="metadato-item" *ngIf="articulo?.doi">
+              <span class="meta-label">DOI:</span>
+              <span class="meta-value">{{ articulo?.doi }}</span>
+            </div>
+            <div class="metadato-item" *ngIf="articulo?.issn">
+              <span class="meta-label">ISSN:</span>
+              <span class="meta-value">{{ articulo?.issn }}</span>
+            </div>
+            <div class="metadato-item" *ngIf="articulo?.paginas">
+              <span class="meta-label">Rango de páginas:</span>
+              <span class="meta-value">{{ articulo?.paginas }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="mensaje-accion mensaje-accion--ok" *ngIf="accionExitosa">{{ accionExitosa }}</div>
       <div class="mensaje-accion mensaje-accion--error" *ngIf="accionError">{{ accionError }}</div>
 
     </aside>
@@ -782,8 +1025,8 @@
 
   <div class="modal-overlay" *ngIf="mostrarModalExitoTurnitin" (click)="cerrarModalExitoTurnitin()">
     <section class="modal-confirmacion modal-confirmacion--turnitin-exito" role="dialog" aria-modal="true"
-      aria-label="Evaluación Turnitin registrada" (click)="$event.stopPropagation()">
-      <span class="modal-turnitin-badge">Evaluación registrada</span>
+      aria-label="Proceso completado" (click)="$event.stopPropagation()">
+      <span class="modal-turnitin-badge">{{ badgeModalExito }}</span>
       <h3>{{ tituloModalExito }}</h3>
       <p>{{ mensajeExitoTurnitin }}</p>
       <div class="modal-acciones">
@@ -923,6 +1166,26 @@
         <button type="button" class="btn-danger-action" (click)="confirmarRechazoCorreccionModal()"
           [disabled]="!comentarioRechazoCorreccion.trim()">
           Sí, rechazar corrección
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarModalConfirmacionRevisionFinal" (click)="cancelarConfirmacionDecisionRevisionFinal()">
+    <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar revisión final"
+      (click)="$event.stopPropagation()">
+      <h3>Confirmar dictamen final</h3>
+      <p *ngIf="decisionRevisionFinal === 'aceptar'">
+        ¿Estás seguro de <strong>aprobar y avanzar</strong> este artículo a la etapa de Certificación?
+      </p>
+      <p *ngIf="decisionRevisionFinal === 'rechazar'">
+        ¿Estás seguro de <strong>rechazar y descartar</strong> este artículo de forma definitiva?
+      </p>
+      <div class="modal-acciones">
+        <button type="button" class="btn-secundario" (click)="cancelarConfirmacionDecisionRevisionFinal()">Cancelar</button>
+        <button type="button" class="btn-primario" [class.btn-danger-action]="decisionRevisionFinal === 'rechazar'" (click)="confirmarDecisionRevisionFinal()"
+          [disabled]="procesandoRevisionFinal">
+          {{ procesandoRevisionFinal ? 'Procesando...' : 'Sí, confirmar' }}
         </button>
       </div>
     </section>

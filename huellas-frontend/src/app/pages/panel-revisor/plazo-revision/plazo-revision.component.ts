@@ -1,5 +1,4 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
 import { ARTICULOS_ASIGNADOS_MOCK } from '../panel-revisor.data';
 import { ArticuloRevisorDto, RevisoresService } from '../../../core/revisores/revisores.service';
 
@@ -55,40 +54,42 @@ export class PlazoRevisionComponent implements OnInit {
   mostrarModalConfirmacion = false;
   articuloSeleccionadoId: number | null = null;
 
-  async ngOnInit(): Promise<void> {
-    try {
-      const data = await firstValueFrom(this.revisoresService.getArticulosAsignadosRevisor());
-      this.articulos = data
-        .filter((articulo) => articulo.estado !== 'evaluado')
-        .map((articulo, index) => ({
-          id: articulo.id,
-          codigo: articulo.codigo,
-          titulo: articulo.titulo,
-          resumen: articulo.resumen,
-          tema: articulo.tema,
-          fechaAsignacion: articulo.fechaAsignacion ?? new Date().toISOString(),
-          fechaLimite: articulo.fechaLimite ?? new Date().toISOString(),
-          estado: articulo.estado,
-          prioridad: articulo.prioridad,
-          ronda: articulo.ronda,
-          solicitudProrrogaRevisorPendiente: articulo.solicitudProrrogaRevisorPendiente,
-          prorrogaRevisorAceptada: articulo.prorrogaRevisorAceptada,
-          ordenLlegada: ((): number => {
-            const ts = new Date(articulo.fechaAsignacion ?? '').getTime();
-            return Number.isNaN(ts) ? index : ts;
-          })(),
-        }));
-    } catch {
-      this.articulos = ARTICULOS_ASIGNADOS_MOCK
-        .filter((a) => a.estado !== 'evaluado')
-        .map((articulo, index) => ({
-          ...articulo,
-          ordenLlegada: ((): number => {
-            const ts = new Date(articulo.fechaAsignacion).getTime();
-            return Number.isNaN(ts) ? index : ts;
-          })(),
-        }));
-    }
+  ngOnInit(): void {
+    this.revisoresService.getArticulosAsignadosRevisor().subscribe({
+      next: (data) => {
+        this.articulos = data
+          .filter((articulo) => articulo.estado !== 'evaluado')
+          .map((articulo, index) => ({
+            id: articulo.id,
+            codigo: articulo.codigo,
+            titulo: articulo.titulo,
+            resumen: articulo.resumen,
+            tema: articulo.tema,
+            fechaAsignacion: articulo.fechaAsignacion ?? new Date().toISOString(),
+            fechaLimite: articulo.fechaLimite ?? new Date().toISOString(),
+            estado: articulo.estado,
+            prioridad: articulo.prioridad,
+            ronda: articulo.ronda,
+            solicitudProrrogaRevisorPendiente: articulo.solicitudProrrogaRevisorPendiente,
+            prorrogaRevisorAceptada: articulo.prorrogaRevisorAceptada,
+            ordenLlegada: ((): number => {
+              const ts = new Date(articulo.fechaAsignacion ?? '').getTime();
+              return Number.isNaN(ts) ? index : ts;
+            })(),
+          }));
+      },
+      error: () => {
+        this.articulos = ARTICULOS_ASIGNADOS_MOCK
+          .filter((a) => a.estado !== 'evaluado')
+          .map((articulo, index) => ({
+            ...articulo,
+            ordenLlegada: ((): number => {
+              const ts = new Date(articulo.fechaAsignacion).getTime();
+              return Number.isNaN(ts) ? index : ts;
+            })(),
+          }));
+      },
+    });
   }
 
   get articulosOrdenados(): ArticuloRevisorListado[] {

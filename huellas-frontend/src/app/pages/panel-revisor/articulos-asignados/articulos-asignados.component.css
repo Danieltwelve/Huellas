@@ -141,16 +141,22 @@ tbody tr:last-child td {
   flex-shrink: 0;
 }
 
-.estado-pill {
-  color: #0f766e;
-  background: #f0fdfa;
-  border-color: rgba(20, 184, 166, 0.25);
+.estado-pill.estado-pendiente {
+  color: #64748b;
+  background: #f8fafc;
+  border-color: rgba(100, 116, 139, 0.25);
 }
 
-.estado-pill.estado-enviado {
-  color: #0891b2;
-  background: #ecfeff;
-  border-color: rgba(6, 182, 212, 0.25);
+.estado-pill.estado-proceso {
+  color: #b45309;
+  background: #fffbeb;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.estado-pill.estado-evaluado {
+  color: #047857;
+  background: #ecfdf5;
+  border-color: rgba(16, 185, 129, 0.25);
 }
 
 .prioridad-pill {

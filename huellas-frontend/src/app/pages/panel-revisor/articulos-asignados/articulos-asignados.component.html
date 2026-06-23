@@ -174,7 +174,10 @@
               <p>{{ articulo.resumen }}</p>
             </td>
             <td>
-              <span class="estado-pill" [class.estado-enviado]="articulo.estado === 'evaluado'">
+              <span class="estado-pill" 
+                [class.estado-pendiente]="articulo.estado === 'pendiente'"
+                [class.estado-proceso]="articulo.estado === 'en-proceso'"
+                [class.estado-evaluado]="articulo.estado === 'evaluado'">
                 {{ getEtiquetaEstado(articulo.estado) }}
               </span>
             </td>

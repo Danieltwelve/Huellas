@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, forkJoin } from 'rxjs';
 import { ARTICULOS_ASIGNADOS_MOCK } from '../panel-revisor.data';
 import {
   ArticuloRevisorDto,
@@ -292,26 +292,27 @@ export class RealizarRevisionComponent implements OnInit {
   errorRevision = '';
   mostrandoConfirmacion = false;
 
-  async ngOnInit(): Promise<void> {
-    try {
-      const [perfil, data, historial] = await Promise.all([
-        firstValueFrom(this.revisoresService.getPerfilRevisor()),
-        firstValueFrom(this.revisoresService.getArticulosAsignadosRevisor()),
-        firstValueFrom(this.revisoresService.getHistorialRevisionRevisor()),
-      ]);
+  ngOnInit(): void {
+    forkJoin([
+      this.revisoresService.getPerfilRevisor(),
+      this.revisoresService.getArticulosAsignadosRevisor(),
+      this.revisoresService.getHistorialRevisionRevisor(),
+    ]).subscribe({
+      next: ([perfil, data, historial]) => {
+        this.juradoEvaluador = perfil.nombre || '';
+        this.articulos = data;
+        this.revisionRegistradaIds = new Set(historial.map((item) => item.articuloId));
 
-      this.juradoEvaluador = perfil.nombre || '';
-      this.articulos = data;
-      this.revisionRegistradaIds = new Set(historial.map((item) => item.articuloId));
-
-      const queryId = Number(this.route.snapshot.queryParamMap.get('articuloId'));
-      this.articuloSeleccionadoId = data.find((item) => item.id === queryId)?.id ?? data[0]?.id ?? null;
-    } catch {
-      this.articulos = ARTICULOS_ASIGNADOS_MOCK;
-      this.articuloSeleccionadoId = this.articulos[0]?.id ?? null;
-    } finally {
-      this.cargandoRevision = false;
-    }
+        const queryId = Number(this.route.snapshot.queryParamMap.get('articuloId'));
+        this.articuloSeleccionadoId = data.find((item) => item.id === queryId)?.id ?? data[0]?.id ?? null;
+        this.cargandoRevision = false;
+      },
+      error: () => {
+        this.articulos = ARTICULOS_ASIGNADOS_MOCK;
+        this.articuloSeleccionadoId = this.articulos[0]?.id ?? null;
+        this.cargandoRevision = false;
+      },
+    });
   }
 
   get articuloSeleccionado() {
@@ -383,6 +384,20 @@ export class RealizarRevisionComponent implements OnInit {
     lineas.push(`Criterios rechazados: ${rechazados}/${criterios.length}`);
     lineas.push(`Decisión final: ${this.recomendacionRubrica.toUpperCase()}`);
     lineas.push(`Se aprueba para publicación: ${this.apruebaPublicacion === 'si' ? 'Sí' : 'No'}`);
+
+    lineas.push('\nCRITERIOS DE EVALUACIÓN:');
+
+    this.rubrica.forEach((seccion) => {
+      lineas.push(`\n${seccion.numero}. ${seccion.titulo.toUpperCase()}`);
+      seccion.criterios.forEach((criterio) => {
+        lineas.push(`  - ${criterio.texto}`);
+        const cumpleSi = criterio.respuesta === 'si' ? '[X] Sí' : '[ ] Sí';
+        const cumpleNo = criterio.respuesta === 'no' ? '[X] No' : '[ ] No';
+        lineas.push(`    Cumple: ${cumpleSi} ${cumpleNo}`);
+        const sugerenciasText = criterio.sugerencias?.trim() || 'Sin observaciones adicionales';
+        lineas.push(`    Sugerencias: ${sugerenciasText}`);
+      });
+    });
 
     return lineas.join('\n');
   }

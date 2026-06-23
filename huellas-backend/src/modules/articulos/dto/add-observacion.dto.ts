@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Min, MaxLength } from 'class-validator';
 
 export class AddObservacionDto {
@@ -9,6 +10,7 @@ export class AddObservacionDto {
   @IsOptional()
   comentarios?: string;
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @IsOptional()

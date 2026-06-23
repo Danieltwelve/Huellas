@@ -673,6 +673,7 @@ export class ArticulosController {
   async asignarComiteEditorial(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { comiteEditorialId: number },
+    @Req() req: any,
   ) {
     if (!body.comiteEditorialId) {
       throw new BadRequestException('Debes seleccionar un miembro del comité.');
@@ -681,6 +682,7 @@ export class ArticulosController {
     return await this.articulosService.asignarComiteEditorial(
       id,
       body.comiteEditorialId,
+      req.user.userId,
     );
   }
 
@@ -690,12 +692,13 @@ export class ArticulosController {
   async asignarRevisor(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { revisorId: number },
+    @Req() req: any,
   ) {
     if (!body.revisorId) {
       throw new BadRequestException('Debes seleccionar un revisor.');
     }
 
-    return await this.articulosService.asignarRevisor(id, body.revisorId);
+    return await this.articulosService.asignarRevisor(id, body.revisorId, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

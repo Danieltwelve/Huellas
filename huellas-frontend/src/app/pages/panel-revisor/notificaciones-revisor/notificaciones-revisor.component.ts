@@ -1,7 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 import { NOTIFICACIONES_REVISOR_MOCK } from '../panel-revisor.data';
 import { NotificacionRevisorDto, RevisoresService } from '../../../core/revisores/revisores.service';
 
@@ -19,26 +18,26 @@ export class NotificacionesRevisorComponent implements OnInit {
   notificaciones: Array<NotificacionRevisorDto & { leida: boolean; tipo?: string }> = [];
   filtro: 'todas' | 'no-leidas' = 'todas';
 
-  async ngOnInit(): Promise<void> {
-    try {
-      const idsLeidos = this.obtenerIdsLeidos();
-      const data = await firstValueFrom(this.revisoresService.getNotificacionesRevisor());
-      
-      this.notificaciones = data.map((item) => {
-        const mockItem = NOTIFICACIONES_REVISOR_MOCK.find(m => m.id === item.id);
-        return {
+  ngOnInit(): void {
+    const idsLeidos = this.obtenerIdsLeidos();
+    this.revisoresService.getNotificacionesRevisor().subscribe({
+      next: (data) => {
+        this.notificaciones = data.map((item) => {
+          const mockItem = NOTIFICACIONES_REVISOR_MOCK.find(m => m.id === item.id);
+          return {
+            ...item,
+            leida: idsLeidos.has(item.id),
+            tipo: mockItem ? mockItem.tipo : (item.id.startsWith('ASIG') ? 'asignacion' : 'mensaje')
+          };
+        });
+      },
+      error: () => {
+        this.notificaciones = NOTIFICACIONES_REVISOR_MOCK.map((item) => ({
           ...item,
           leida: idsLeidos.has(item.id),
-          tipo: mockItem ? mockItem.tipo : (item.id.startsWith('ASIG') ? 'asignacion' : 'mensaje')
-        };
-      });
-    } catch {
-      const idsLeidos = this.obtenerIdsLeidos();
-      this.notificaciones = NOTIFICACIONES_REVISOR_MOCK.map((item) => ({
-        ...item,
-        leida: idsLeidos.has(item.id),
-      }));
-    }
+        }));
+      },
+    });
   }
 
   get visibles() {

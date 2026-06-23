@@ -52,25 +52,27 @@ export class RevisionPares implements OnInit {
 
   private revisoresService = inject(RevisoresService);
 
-  async ngOnInit(): Promise<void> {
-    try {
-      const data = await firstValueFrom(this.revisoresService.getRevisores());
-      this.revisores = (data || []).map((r: RevisorDto) => ({
-        id: r.id,
-        nombre: r.nombre ?? '',
-        correo: r.correo ?? '',
-        iniciales: this.getIniciales(r.nombre ?? ''),
-        relevancia: 'BAJA',
-        cargaActual: r.cargaActual ?? 0,
-        descripcion: r.perfil ?? '',
-        expandido: false,
-      }));
-      this.allRevisores = [...this.revisores];
-      this.sincronizarRevisorAsignado();
-      this.resetearPaginacion();
-    } catch (err) {
-      console.error('Error cargando revisores', err);
-    }
+  ngOnInit(): void {
+    this.revisoresService.getRevisores().subscribe({
+      next: (data) => {
+        this.revisores = (data || []).map((r: RevisorDto) => ({
+          id: r.id,
+          nombre: r.nombre ?? '',
+          correo: r.correo ?? '',
+          iniciales: this.getIniciales(r.nombre ?? ''),
+          relevancia: 'BAJA',
+          cargaActual: r.cargaActual ?? 0,
+          descripcion: r.perfil ?? '',
+          expandido: false,
+        }));
+        this.allRevisores = [...this.revisores];
+        this.sincronizarRevisorAsignado();
+        this.resetearPaginacion();
+      },
+      error: (err) => {
+        console.error('Error cargando revisores', err);
+      },
+    });
   }
 
   async onGenerarPuntaje(): Promise<void> {
