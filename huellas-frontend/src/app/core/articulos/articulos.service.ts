@@ -25,6 +25,8 @@ export interface ArticuloResumenBackend {
   solicitudProrrogaRevisorPendiente?: boolean;
   prorrogaRevisorAceptada?: boolean;
   estado_articulo?: string;
+  archivado?: boolean;
+  edicionId?: number | null;
 }
 
 export interface ArticuloPublicacionBackend extends ArticuloResumenBackend {}
@@ -107,6 +109,16 @@ export interface EstadisticasGeneralesArticulosBackend {
     fechaEnvio: string | null;
     autores: number;
     observaciones: number;
+  }>;
+  usuariosPorProfesion: Array<{ profesion: string; cantidad: number }>;
+  usuariosPorNivelPosgrado: Array<{ nivel: string; cantidad: number }>;
+  estudiantesPosgrado: Array<{ nivel: string; cantidad: number }>;
+  statsRolesYUsuarios: Array<{
+    usuarioId: number;
+    nombre: string;
+    rol: string;
+    asignados: number;
+    evaluados: number;
   }>;
 }
 
@@ -317,8 +329,9 @@ export class ArticulosService {
     );
   }
 
-  getResumenArticulos(): Observable<ArticuloResumenBackend[]> {
-    return this.http.get<ArticuloResumenBackend[]>(`${environment.apiUrlBackend}/articulos/resumen`);
+  getResumenArticulos(archivados?: boolean): Observable<ArticuloResumenBackend[]> {
+    const query = archivados !== undefined ? `?archivados=${archivados}` : '';
+    return this.http.get<ArticuloResumenBackend[]>(`${environment.apiUrlBackend}/articulos/resumen${query}`);
   }
 
   getNotificacionesEditorial(): Observable<any[]> {
@@ -593,6 +606,13 @@ export class ArticulosService {
   eliminarArticulo(articuloId: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(
       `${environment.apiUrlBackend}/articulos/${articuloId}`,
+    );
+  }
+
+  archivarArticulo(articuloId: number, archivado: boolean): Observable<{ message: string; archivado: boolean }> {
+    return this.http.patch<{ message: string; archivado: boolean }>(
+      `${environment.apiUrlBackend}/articulos/${articuloId}/archivar`,
+      { archivado }
     );
   }
 }

@@ -149,8 +149,9 @@ export class ArticulosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'monitor', 'director', 'comite-editorial')
   @Get('resumen')
-  async getResumenArticulos() {
-    return await this.articulosService.getResumenArticulos();
+  async getResumenArticulos(@Query('archivados') archivados?: string) {
+    const showArchived = archivados === 'true';
+    return await this.articulosService.getResumenArticulos(showArchived);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -903,6 +904,19 @@ export class ArticulosController {
   @Delete(':id')
   async eliminarArticulo(@Param('id', ParseIntPipe) id: number) {
     return await this.articulosService.eliminarArticulo(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'director', 'monitor')
+  @Patch(':id/archivar')
+  async archivarArticulo(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('archivado') archivado: boolean,
+  ) {
+    if (typeof archivado !== 'boolean') {
+      throw new BadRequestException('El valor archivado debe ser booleano.');
+    }
+    return await this.articulosService.archivarArticulo(id, archivado);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

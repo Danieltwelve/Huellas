@@ -55,6 +55,12 @@ export class EstadisticasComponent implements OnInit {
   pageSize = 10;
   totalPages = 0;
 
+  // Nuevas propiedades para filtros y paginación de asignación por rol/usuario
+  searchUserText = '';
+  filterRole = '';
+  currentRolePage = 1;
+  rolePageSize = 10;
+
   ngOnInit(): void {
     this.cargarEstadisticas();
   }
@@ -95,6 +101,21 @@ export class EstadisticasComponent implements OnInit {
         value: `${this.estadisticas.promedioDiasDesdeEnvio}`,
         hint: 'Desde el primer envío',
       },
+      {
+        label: 'Graduados posgrado',
+        value: String(this.totalUsuariosConPosgrado),
+        hint: 'Con maestría o doctorado',
+      },
+      {
+        label: 'Estudiantes posgrado',
+        value: String(this.totalEstudiantesPosgrado),
+        hint: 'Cursando actualmente',
+      },
+      {
+        label: 'Profesionales',
+        value: String(this.totalUsuariosConProfesion),
+        hint: 'Con carrera registrada',
+      },
     ];
   }
 
@@ -122,6 +143,86 @@ export class EstadisticasComponent implements OnInit {
     return this.crearConicGradient(this.mesesTop);
   }
 
+  // Métodos de filtrado, búsqueda y formateo de roles
+  onSearchUser(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.searchUserText = target.value ?? '';
+    this.currentRolePage = 1;
+  }
+
+  onFilterRole(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    this.filterRole = target.value ?? '';
+    this.currentRolePage = 1;
+  }
+
+  formatRolLabel(rol: string): string {
+    const mappings: Record<string, string> = {
+      'admin': 'Administrador',
+      'director': 'Director',
+      'monitor': 'Monitor',
+      'comite-editorial': 'Comité Editorial',
+      'revisor': 'Revisor',
+      'autor': 'Autor',
+    };
+    return mappings[rol] ?? rol;
+  }
+
+  calcularPorcentaje(asignados: number, evaluados: number): number {
+    if (!asignados) return 0;
+    return Math.round((evaluados / asignados) * 100);
+  }
+
+  calcularPorcentajeDemografica(cantidad: number, total: number): number {
+    if (!total) return 0;
+    return Math.round((cantidad / total) * 100);
+  }
+
+  get totalUsuariosConProfesion(): number {
+    return this.estadisticas?.usuariosPorProfesion?.reduce((sum, item) => sum + item.cantidad, 0) ?? 0;
+  }
+
+  get totalUsuariosConPosgrado(): number {
+    return this.estadisticas?.usuariosPorNivelPosgrado?.reduce((sum, item) => sum + item.cantidad, 0) ?? 0;
+  }
+
+  get totalEstudiantesPosgrado(): number {
+    return this.estadisticas?.estudiantesPosgrado?.reduce((sum, item) => sum + item.cantidad, 0) ?? 0;
+  }
+
+  get filteredStatsRolesYUsuarios() {
+    if (!this.estadisticas?.statsRolesYUsuarios) return [];
+
+    return this.estadisticas.statsRolesYUsuarios.filter(item => {
+      const matchSearch = !this.searchUserText ||
+        item.nombre.toLowerCase().includes(this.searchUserText.toLowerCase());
+      const matchRole = !this.filterRole || item.rol === this.filterRole;
+      return matchSearch && matchRole;
+    });
+  }
+
+  get paginatedStatsRolesYUsuarios() {
+    const filtered = this.filteredStatsRolesYUsuarios;
+    const start = (this.currentRolePage - 1) * this.rolePageSize;
+    return filtered.slice(start, start + this.rolePageSize);
+  }
+
+  get totalRolePages(): number {
+    return Math.ceil(this.filteredStatsRolesYUsuarios.length / this.rolePageSize) || 1;
+  }
+
+  nextRolePage(): void {
+    if (this.currentRolePage < this.totalRolePages) {
+      this.currentRolePage++;
+    }
+  }
+
+  prevRolePage(): void {
+    if (this.currentRolePage > 1) {
+      this.currentRolePage--;
+    }
+  }
+
   descargarReporteEjecutivoCsv(): void {
     if (!this.estadisticas) {
       return;
@@ -143,6 +244,9 @@ export class EstadisticasComponent implements OnInit {
             `${this.estadisticas.promedioDiasDesdeEnvio}`,
             'Tiempo promedio de gestión',
           ],
+          ['Graduados posgrado', String(this.totalUsuariosConPosgrado), 'Usuarios con maestría o doctorado'],
+          ['Estudiantes posgrado', String(this.totalEstudiantesPosgrado), 'Usuarios cursando posgrado actualmente'],
+          ['Profesionales registrados', String(this.totalUsuariosConProfesion), 'Usuarios con profesión registrada'],
         ],
       },
       {
@@ -167,6 +271,44 @@ export class EstadisticasComponent implements OnInit {
         titulo: 'Ingreso mensual',
         encabezados: ['Mes', 'Cantidad', 'Participación'],
         filas: this.mesesTop.map((item) => [item.label, String(item.value), `${item.percentage}%`]),
+      },
+      {
+        titulo: 'Estadísticas por Rol y Usuario',
+        encabezados: ['Usuario', 'Rol', 'Asignados / Enviados', 'Evaluados / Resueltos', 'Progreso'],
+        filas: this.estadisticas.statsRolesYUsuarios.map((item) => [
+          item.nombre,
+          this.formatRolLabel(item.rol),
+          item.rol === 'admin' || item.rol === 'director' || item.rol === 'monitor' ? '-' : String(item.asignados),
+          String(item.evaluados),
+          item.rol === 'admin' || item.rol === 'director' || item.rol === 'monitor' ? 'N/A' : `${this.calcularPorcentaje(item.asignados, item.evaluados)}%`,
+        ]),
+      },
+      {
+        titulo: 'Distribución de Profesiones de Usuarios',
+        encabezados: ['Profesión', 'Usuarios', 'Porcentaje'],
+        filas: this.estadisticas.usuariosPorProfesion.map((p) => [
+          p.profesion,
+          String(p.cantidad),
+          `${this.calcularPorcentajeDemografica(p.cantidad, this.totalUsuariosConProfesion)}%`,
+        ]),
+      },
+      {
+        titulo: 'Nivel de Posgrado de Usuarios',
+        encabezados: ['Nivel', 'Usuarios', 'Porcentaje'],
+        filas: this.estadisticas.usuariosPorNivelPosgrado.map((n) => [
+          n.nivel,
+          String(n.cantidad),
+          `${this.calcularPorcentajeDemografica(n.cantidad, this.totalUsuariosConPosgrado)}%`,
+        ]),
+      },
+      {
+        titulo: 'Estudiantes Activos de Posgrado',
+        encabezados: ['Nivel / Programa', 'Estudiantes', 'Porcentaje'],
+        filas: this.estadisticas.estudiantesPosgrado.map((e) => [
+          e.nivel,
+          String(e.cantidad),
+          `${this.calcularPorcentajeDemografica(e.cantidad, this.totalEstudiantesPosgrado)}%`,
+        ]),
       },
       {
         titulo: 'Últimos artículos registrados',
@@ -194,7 +336,7 @@ export class EstadisticasComponent implements OnInit {
     }
 
     const rows = [
-      ['Tipo', 'Etiqueta', 'Cantidad', 'Participación'],
+      ['Tipo', 'Etiqueta / Nombre', 'Cantidad / Asignados', 'Participación / Evaluados'],
       ...this.circuloEtapas.map((item) => [
         'Etapa',
         item.label,
@@ -214,10 +356,49 @@ export class EstadisticasComponent implements OnInit {
         `${item.percentage}%`,
       ]),
       ['', '', '', ''],
-      ['Resumen de actividad', '', '', ''],
+      ['Estadísticas por Rol y Usuario', '', '', ''],
+      ['Usuario', 'Rol', 'Asignados / Enviados', 'Evaluados / Resueltos'],
+      ...this.estadisticas.statsRolesYUsuarios.map((item) => [
+        item.nombre,
+        this.formatRolLabel(item.rol),
+        item.rol === 'admin' || item.rol === 'director' || item.rol === 'monitor' ? '-' : String(item.asignados),
+        String(item.evaluados),
+      ]),
+      ['', '', '', ''],
+      ['Distribución de Profesiones', '', '', ''],
+      ['Profesión', 'Usuarios', 'Porcentaje', ''],
+      ...this.estadisticas.usuariosPorProfesion.map((p) => [
+        p.profesion,
+        String(p.cantidad),
+        `${this.calcularPorcentajeDemografica(p.cantidad, this.totalUsuariosConProfesion)}%`,
+        '',
+      ]),
+      ['', '', '', ''],
+      ['Nivel de Posgrado de Usuarios', '', '', ''],
+      ['Nivel', 'Usuarios', 'Porcentaje', ''],
+      ...this.estadisticas.usuariosPorNivelPosgrado.map((n) => [
+        n.nivel,
+        String(n.cantidad),
+        `${this.calcularPorcentajeDemografica(n.cantidad, this.totalUsuariosConPosgrado)}%`,
+        '',
+      ]),
+      ['', '', '', ''],
+      ['Estudiantes Activos de Posgrado', '', '', ''],
+      ['Programa / Nivel', 'Estudiantes', 'Porcentaje', ''],
+      ...this.estadisticas.estudiantesPosgrado.map((e) => [
+        e.nivel,
+        String(e.cantidad),
+        `${this.calcularPorcentajeDemografica(e.cantidad, this.totalEstudiantesPosgrado)}%`,
+        '',
+      ]),
+      ['', '', '', ''],
+      ['Resumen de actividad general', '', '', ''],
       ['Artículos totales', String(this.estadisticas.totalArticulos), '', ''],
       ['Artículos en publicación', String(this.estadisticas.articulosEnPublicacion), '', ''],
       ['Artículos en proceso', String(this.estadisticas.articulosEnProceso), '', ''],
+      ['Graduados posgrado', String(this.totalUsuariosConPosgrado), '', ''],
+      ['Estudiantes posgrado', String(this.totalEstudiantesPosgrado), '', ''],
+      ['Profesionales registrados', String(this.totalUsuariosConProfesion), '', ''],
     ];
 
     const csv = rows
@@ -286,6 +467,16 @@ export class EstadisticasComponent implements OnInit {
       return y + 8;
     };
 
+    let currentY = 34;
+
+    const checkPageBreak = (yNeeded: number): void => {
+      if (currentY + yNeeded > pageHeight - 20) {
+        doc.addPage();
+        drawHeader();
+        currentY = 34;
+      }
+    };
+
     drawHeader();
 
     doc.setTextColor(15, 23, 42);
@@ -315,6 +506,9 @@ export class EstadisticasComponent implements OnInit {
           `${this.estadisticas.promedioDiasDesdeEnvio}`,
           'Tiempo medio de gestión',
         ],
+        ['Graduados posgrado', String(this.totalUsuariosConPosgrado), 'Usuarios con maestría o doctorado'],
+        ['Estudiantes posgrado', String(this.totalEstudiantesPosgrado), 'Usuarios cursando posgrado actualmente'],
+        ['Profesionales registrados', String(this.totalUsuariosConProfesion), 'Usuarios con profesión registrada'],
       ],
       theme: 'grid',
       styles: {
@@ -341,10 +535,11 @@ export class EstadisticasComponent implements OnInit {
       },
     });
 
-    let currentY =
+    currentY =
       (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 54;
     currentY += 8;
 
+    checkPageBreak(30);
     currentY = addSectionTitle(
       'Distribución por etapa',
       'Participación de los artículos por fase editorial.',
@@ -373,6 +568,7 @@ export class EstadisticasComponent implements OnInit {
       (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
     currentY += 8;
 
+    checkPageBreak(30);
     currentY = addSectionTitle(
       'Distribución temática',
       'Temas con mayor presencia en el sistema.',
@@ -401,6 +597,7 @@ export class EstadisticasComponent implements OnInit {
       (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
     currentY += 8;
 
+    checkPageBreak(30);
     currentY = addSectionTitle(
       'Ingreso mensual',
       'Volumen de artículos por mes de registro.',
@@ -421,10 +618,133 @@ export class EstadisticasComponent implements OnInit {
       },
     });
 
+    // NUEVA TABLA: ESTADÍSTICAS POR ROL Y USUARIO
     currentY =
       (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
     currentY += 8;
 
+    checkPageBreak(40);
+    currentY = addSectionTitle(
+      'Estadísticas por Rol y Usuario',
+      'Artículos asignados y evaluados por cada usuario según su rol.',
+      currentY,
+    );
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Usuario', 'Rol', 'Asignados / Enviados', 'Evaluados / Resueltos', 'Progreso']],
+      body: this.estadisticas.statsRolesYUsuarios.map((item) => [
+        item.nombre,
+        this.formatRolLabel(item.rol),
+        item.rol === 'admin' || item.rol === 'director' || item.rol === 'monitor' ? '-' : String(item.asignados),
+        String(item.evaluados),
+        item.rol === 'admin' || item.rol === 'director' || item.rol === 'monitor' ? 'N/A' : `${this.calcularPorcentaje(item.asignados, item.evaluados)}%`,
+      ]),
+      theme: 'striped',
+      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.2 },
+      headStyles: { fillColor: brand, textColor: '#ffffff', fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: '#f8fbfc' },
+      margin: { left: 14, right: 14 },
+      didDrawPage: () => {
+        drawHeader();
+        drawFooter(doc.getCurrentPageInfo().pageNumber);
+      },
+    });
+
+    // NUEVA TABLA: DISTRIBUCIÓN DE PROFESIONES
+    currentY =
+      (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
+    currentY += 8;
+
+    checkPageBreak(40);
+    currentY = addSectionTitle(
+      'Distribución de Profesiones de Usuarios',
+      'Cantidad y porcentaje de usuarios por profesión.',
+      currentY,
+    );
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Profesión', 'Usuarios', 'Porcentaje']],
+      body: this.estadisticas.usuariosPorProfesion.map((p) => [
+        p.profesion,
+        String(p.cantidad),
+        `${this.calcularPorcentajeDemografica(p.cantidad, this.totalUsuariosConProfesion)}%`,
+      ]),
+      theme: 'striped',
+      styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.5 },
+      headStyles: { fillColor: accent, textColor: '#ffffff', fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: '#f8fbfc' },
+      margin: { left: 14, right: 14 },
+      didDrawPage: () => {
+        drawHeader();
+        drawFooter(doc.getCurrentPageInfo().pageNumber);
+      },
+    });
+
+    // NUEVA TABLA: NIVELES DE POSGRADO
+    currentY =
+      (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
+    currentY += 8;
+
+    checkPageBreak(40);
+    currentY = addSectionTitle(
+      'Nivel de Posgrado de Usuarios',
+      'Títulos de posgrado obtenidos por los usuarios registrados.',
+      currentY,
+    );
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Nivel de Posgrado', 'Usuarios', 'Porcentaje']],
+      body: this.estadisticas.usuariosPorNivelPosgrado.map((n) => [
+        n.nivel,
+        String(n.cantidad),
+        `${this.calcularPorcentajeDemografica(n.cantidad, this.totalUsuariosConPosgrado)}%`,
+      ]),
+      theme: 'striped',
+      styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.5 },
+      headStyles: { fillColor: brand, textColor: '#ffffff', fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: '#f8fbfc' },
+      margin: { left: 14, right: 14 },
+      didDrawPage: () => {
+        drawHeader();
+        drawFooter(doc.getCurrentPageInfo().pageNumber);
+      },
+    });
+
+    // NUEVA TABLA: ESTUDIANTES DE POSGRADO
+    currentY =
+      (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
+    currentY += 8;
+
+    checkPageBreak(40);
+    currentY = addSectionTitle(
+      'Estudiantes Activos de Posgrado',
+      'Usuarios que cursan actualmente estudios de posgrado.',
+      currentY,
+    );
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Nivel / Programa', 'Estudiantes', 'Porcentaje']],
+      body: this.estadisticas.estudiantesPosgrado.map((e) => [
+        e.nivel,
+        String(e.cantidad),
+        `${this.calcularPorcentajeDemografica(e.cantidad, this.totalEstudiantesPosgrado)}%`,
+      ]),
+      theme: 'striped',
+      styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.5 },
+      headStyles: { fillColor: accent, textColor: '#ffffff', fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: '#f8fbfc' },
+      margin: { left: 14, right: 14 },
+      didDrawPage: () => {
+        drawHeader();
+        drawFooter(doc.getCurrentPageInfo().pageNumber);
+      },
+    });
+
+    currentY =
+      (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY;
+    currentY += 8;
+
+    checkPageBreak(40);
     currentY = addSectionTitle(
       'Últimos artículos registrados',
       'Detalle operativo de los registros más recientes.',

@@ -11,14 +11,62 @@
 </section>
 
 <form class="profile-form" autocomplete="off">
-  <div class="field">
-    <label for="nombre">Nombre completo</label>
-    <input id="nombre" name="nombre" [(ngModel)]="nombre" placeholder="Nombre y apellidos" />
-  </div>
+  <div class="form-grid">
+    <div class="field">
+      <label for="nombre">Nombre completo</label>
+      <input id="nombre" name="nombre" [(ngModel)]="nombre" placeholder="Nombre y apellidos" />
+    </div>
 
-  <div class="field">
-    <label for="telefono">Teléfono</label>
-    <input id="telefono" name="telefono" [(ngModel)]="telefono" placeholder="+57 000 000 0000" />
+    <div class="field">
+      <label for="telefono">Teléfono</label>
+      <input id="telefono" name="telefono" [(ngModel)]="telefono" placeholder="+57 000 000 0000" />
+    </div>
+
+    <div class="field">
+      <label for="edad">Edad</label>
+      <input id="edad" type="number" name="edad" [(ngModel)]="edad" placeholder="Edad" min="15" max="100" />
+    </div>
+
+    <div class="field">
+      <label for="profesion">Profesión</label>
+      <input id="profesion" name="profesion" [(ngModel)]="profesion" placeholder="Ej. Ingeniero, Abogado" />
+    </div>
+
+    <div class="field">
+      <label for="programa">Carrera o Programa</label>
+      <input id="programa" name="programa" [(ngModel)]="programa" placeholder="Programa académico al que pertenece" />
+    </div>
+
+    <div class="field full-width checkbox-field">
+      <label class="checkbox-label">
+        <input type="checkbox" name="tienePosgrado" [(ngModel)]="tienePosgrado" />
+        <span>¿Tiene estudios de posgrado?</span>
+      </label>
+    </div>
+
+    <div class="field full-width checkbox-field">
+      <label class="checkbox-label">
+        <input type="checkbox" name="estudiantePosgrado" [(ngModel)]="estudiantePosgrado" />
+        <span>¿Es actualmente estudiante de posgrado?</span>
+      </label>
+    </div>
+
+    @if (tienePosgrado || estudiantePosgrado) {
+      <div class="field">
+        <label for="posgradoTipo">Nivel de posgrado</label>
+        <select id="posgradoTipo" name="posgradoTipo" [(ngModel)]="posgradoTipo" class="select-field">
+          <option value="">Selecciona un nivel</option>
+          <option value="maestria">Maestría</option>
+          <option value="doctorado">Doctorado</option>
+          <option value="especializacion">Especialización</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="posgradoDetalle">Programa / ¿De qué es el posgrado?</label>
+        <input id="posgradoDetalle" name="posgradoDetalle" [(ngModel)]="posgradoDetalle" placeholder="Ej. Inteligencia Artificial, Derecho Penal" />
+      </div>
+    }
   </div>
 
   <div class="actions">

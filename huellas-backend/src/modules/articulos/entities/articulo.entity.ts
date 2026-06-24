@@ -106,6 +106,13 @@ export class Articulo {
   })
   prorrogaRevisorAceptada!: boolean;
 
+  @Column({
+    name: 'archivado',
+    type: 'boolean',
+    default: false,
+  })
+  archivado!: boolean;
+
   // Relaciones
   @ManyToOne(() => EtapaArticulo, (etapa) => etapa.articulos)
   @JoinColumn({ name: 'etapa_actual_id' })

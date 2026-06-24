@@ -10,6 +10,8 @@ interface MenuItem {
   allowedRoles?: string[];
   route?: string;
   action?: 'logout';
+  queryParams?: any;
+  routerLinkActiveOptions?: any;
 }
 
 @Component({

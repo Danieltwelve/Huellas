@@ -37,6 +37,17 @@
   <section class="articles-panel">
     <h2>{{ committeeView ? 'Bandeja del comité' : 'Detalles del artículo' }}</h2>
 
+    @if (!committeeView) {
+    <div class="tabs-navigation">
+      <button type="button" class="tab-btn" [class.active]="!mostrarArchivados" (click)="setMostrarArchivados(false)">
+        Flujo de Trabajo
+      </button>
+      <button type="button" class="tab-btn" [class.active]="mostrarArchivados" (click)="setMostrarArchivados(true)">
+        Archivo de Artículos
+      </button>
+    </div>
+    }
+
     <div class="toolbar">
       <label class="search-wrapper" for="article-search">
         <input #searchInput id="article-search" type="text" [value]="searchTerm" (input)="onSearch(searchInput.value)"
@@ -294,6 +305,24 @@
               </button>
               }
 
+              @if (canEdit() && (((articulo.claseEtapa === 'stage--publicacion' || articulo.etapaActual === 'PUBLICACIÓN' || articulo.etapaActual === 'Publicación') && articulo.edicionId) || (articulo.etapaActual === 'DESCARTADO' || articulo.etapaActual === 'Descartado'))) {
+                @if (!articulo.archivado) {
+                <button class="view-btn archive-btn" type="button" aria-label="Archivar artículo"
+                  (click)="archivarArticulo(articulo, true)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="archive-icon">
+                    <path fill="currentColor" d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.2 3 17.5 3H6.5c-.7 0-1.38.21-1.65.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.83 1H5.41l.83-1zM5 19V8h14v11H5zm3-5h8v2H8z"/>
+                  </svg>
+                </button>
+                } @else {
+                <button class="view-btn archive-btn" type="button" aria-label="Desarchivar artículo"
+                  (click)="archivarArticulo(articulo, false)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="archive-icon">
+                    <path fill="currentColor" d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.2 3 17.5 3H6.5c-.7 0-1.38.21-1.65.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.83 1H5.41l.83-1zM5 19V8h14v11H5zm7-7l-4 4h3v3h2v-3h3z"/>
+                  </svg>
+                </button>
+                }
+              }
+
               @if (articulo.etapaActual === 'DESCARTADO') {
               <button class="view-btn delete-btn" type="button" aria-label="Eliminar articulo"
                 (click)="eliminarArticulo(articulo)">
@@ -359,6 +388,24 @@
                 d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
             </svg>
           </button>
+          }
+
+          @if (canEdit() && (((articulo.claseEtapa === 'stage--publicacion' || articulo.etapaActual === 'PUBLICACIÓN' || articulo.etapaActual === 'Publicación') && articulo.edicionId) || (articulo.etapaActual === 'DESCARTADO' || articulo.etapaActual === 'Descartado'))) {
+            @if (!articulo.archivado) {
+            <button class="view-btn archive-btn" type="button" aria-label="Archivar artículo"
+              (click)="archivarArticulo(articulo, true)">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="archive-icon">
+                <path fill="currentColor" d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.2 3 17.5 3H6.5c-.7 0-1.38.21-1.65.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.83 1H5.41l.83-1zM5 19V8h14v11H5zm3-5h8v2H8z"/>
+              </svg>
+            </button>
+            } @else {
+            <button class="view-btn archive-btn" type="button" aria-label="Desarchivar artículo"
+              (click)="archivarArticulo(articulo, false)">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="archive-icon">
+                <path fill="currentColor" d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.2 3 17.5 3H6.5c-.7 0-1.38.21-1.65.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.83 1H5.41l.83-1zM5 19V8h14v11H5zm7-7l-4 4h3v3h2v-3h3z"/>
+              </svg>
+            </button>
+            }
           }
 
           @if (articulo.etapaActual === 'DESCARTADO') {

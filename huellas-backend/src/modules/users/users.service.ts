@@ -696,6 +696,13 @@ export class UsersService {
       correo: user.correo ?? '',
       perfilAcademico: revisor?.perfil ?? '',
       institucion: revisor?.institucion ?? '',
+      profesion: user.profesion ?? '',
+      programa: user.programa ?? '',
+      tienePosgrado: user.tienePosgrado ?? false,
+      posgradoTipo: user.posgradoTipo ?? '',
+      posgradoDetalle: user.posgradoDetalle ?? '',
+      estudiantePosgrado: user.estudiantePosgrado ?? false,
+      edad: user.edad ?? null,
     };
   }
 
@@ -706,6 +713,13 @@ export class UsersService {
       telefono?: string;
       perfilAcademico?: string;
       institucion?: string;
+      profesion?: string;
+      programa?: string;
+      tienePosgrado?: boolean;
+      posgradoTipo?: string;
+      posgradoDetalle?: string;
+      estudiantePosgrado?: boolean;
+      edad?: number | null;
     },
   ) {
     const [user, revisor] = await Promise.all([
@@ -722,7 +736,16 @@ export class UsersService {
     if (typeof data.nombre === 'string') user.nombre = data.nombre;
     if (typeof data.telefono === 'string') user.telefono = data.telefono;
 
-    // Ya no hay cambio de correo
+    // Actualizar nuevos campos
+    if (typeof data.profesion === 'string' || data.profesion === null) user.profesion = data.profesion;
+    if (typeof data.programa === 'string' || data.programa === null) user.programa = data.programa;
+    if (typeof data.tienePosgrado === 'boolean') user.tienePosgrado = data.tienePosgrado;
+    if (typeof data.posgradoTipo === 'string' || data.posgradoTipo === null) user.posgradoTipo = data.posgradoTipo;
+    if (typeof data.posgradoDetalle === 'string' || data.posgradoDetalle === null) user.posgradoDetalle = data.posgradoDetalle;
+    if (typeof data.estudiantePosgrado === 'boolean') user.estudiantePosgrado = data.estudiantePosgrado;
+    if (typeof data.edad === 'number' || data.edad === null) {
+      user.edad = data.edad;
+    }
 
     // Actualizar revisor si es el caso
     const esRevisor = this.hasRoleName(user.roles, 'revisor');
@@ -758,6 +781,13 @@ export class UsersService {
       correo: user.correo ?? '', // se sigue devolviendo pero no se usa para edición
       perfilAcademico: perfilRevisor?.perfil ?? '',
       institucion: perfilRevisor?.institucion ?? '',
+      profesion: user.profesion ?? '',
+      programa: user.programa ?? '',
+      tienePosgrado: user.tienePosgrado ?? false,
+      posgradoTipo: user.posgradoTipo ?? '',
+      posgradoDetalle: user.posgradoDetalle ?? '',
+      estudiantePosgrado: user.estudiantePosgrado ?? false,
+      edad: user.edad ?? null,
     };
   }
 

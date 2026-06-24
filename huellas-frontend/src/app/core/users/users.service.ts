@@ -47,11 +47,25 @@ export interface PerfilUsuarioResponse {
   nombre: string;
   telefono: string;
   correo: string;
+  profesion?: string;
+  programa?: string;
+  tienePosgrado?: boolean;
+  posgradoTipo?: string;
+  posgradoDetalle?: string;
+  estudiantePosgrado?: boolean;
+  edad?: number | null;
 }
 
 export interface PerfilUsuarioUpdatePayload {
   nombre: string;
   telefono: string;
+  profesion?: string;
+  programa?: string;
+  tienePosgrado?: boolean;
+  posgradoTipo?: string;
+  posgradoDetalle?: string;
+  estudiantePosgrado?: boolean;
+  edad?: number | null;
 }
 
 @Injectable({ providedIn: 'root' })

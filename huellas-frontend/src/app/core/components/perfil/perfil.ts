@@ -16,6 +16,13 @@ export class Perfil implements OnInit {
   userId = 0;
   nombre = '';
   telefono = '';
+  profesion = '';
+  programa = '';
+  tienePosgrado = false;
+  posgradoTipo = '';
+  posgradoDetalle = '';
+  estudiantePosgrado = false;
+  edad: number | null = null;
   mensaje = '';
   showConfirmModal = false;
 
@@ -25,6 +32,13 @@ export class Perfil implements OnInit {
         this.userId = perfil.id;
         this.nombre = perfil.nombre ?? '';
         this.telefono = perfil.telefono ?? '';
+        this.profesion = perfil.profesion ?? '';
+        this.programa = perfil.programa ?? '';
+        this.tienePosgrado = perfil.tienePosgrado ?? false;
+        this.posgradoTipo = perfil.posgradoTipo ?? '';
+        this.posgradoDetalle = perfil.posgradoDetalle ?? '';
+        this.estudiantePosgrado = perfil.estudiantePosgrado ?? false;
+        this.edad = perfil.edad ?? null;
       },
       error: (error) => {
         console.error('No se pudo cargar el perfil.', error);
@@ -47,11 +61,25 @@ export class Perfil implements OnInit {
       .updatePerfilUsuario({
         nombre: this.nombre,
         telefono: this.telefono,
+        profesion: this.profesion,
+        programa: this.programa,
+        tienePosgrado: this.tienePosgrado,
+        posgradoTipo: (this.tienePosgrado || this.estudiantePosgrado) ? this.posgradoTipo : '',
+        posgradoDetalle: (this.tienePosgrado || this.estudiantePosgrado) ? this.posgradoDetalle : '',
+        estudiantePosgrado: this.estudiantePosgrado,
+        edad: this.edad,
       })
       .subscribe({
         next: (perfil) => {
           this.nombre = perfil.nombre ?? '';
           this.telefono = perfil.telefono ?? '';
+          this.profesion = perfil.profesion ?? '';
+          this.programa = perfil.programa ?? '';
+          this.tienePosgrado = perfil.tienePosgrado ?? false;
+          this.posgradoTipo = perfil.posgradoTipo ?? '';
+          this.posgradoDetalle = perfil.posgradoDetalle ?? '';
+          this.estudiantePosgrado = perfil.estudiantePosgrado ?? false;
+          this.edad = perfil.edad ?? null;
           this.closeConfirmModal();
           this.mensaje = 'Perfil actualizado correctamente.';
         },

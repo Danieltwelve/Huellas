@@ -32,6 +32,27 @@ export class User {
   @Column({ type: 'boolean', default: true })
   estado_cuenta!: boolean;
 
+  @Column({ type: 'varchar', nullable: true })
+  profesion!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  programa!: string | null;
+
+  @Column({ name: 'tiene_posgrado', type: 'boolean', default: false })
+  tienePosgrado!: boolean;
+
+  @Column({ name: 'posgrado_tipo', type: 'varchar', nullable: true })
+  posgradoTipo!: string | null;
+
+  @Column({ name: 'posgrado_detalle', type: 'varchar', nullable: true })
+  posgradoDetalle!: string | null;
+
+  @Column({ name: 'estudiante_posgrado', type: 'boolean', default: false })
+  estudiantePosgrado!: boolean;
+
+  @Column({ type: 'int', nullable: true })
+  edad!: number | null;
+
   @UpdateDateColumn({ name: 'updated_at' })
   updated_at!: Date;
 

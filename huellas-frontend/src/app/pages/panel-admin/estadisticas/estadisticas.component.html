@@ -130,6 +130,86 @@
       </div>
     </article>
   </section>
+  <!-- Nueva sección: Estadísticas de Gestión por Rol y Usuario -->
+  <section class="table-card">
+    <div class="chart-card__head">
+      <div>
+        <span class="chart-kicker">Desempeño y Asignaciones</span>
+        <h2>Artículos asignados y evaluados por rol y usuario</h2>
+      </div>
+      <div class="table-filters">
+        <input type="text" placeholder="Buscar usuario..." class="filter-input" (input)="onSearchUser($event)">
+        <select class="filter-select" (change)="onFilterRole($event)">
+          <option value="">Todos los roles</option>
+          <option value="comite-editorial">Comité Editorial</option>
+          <option value="revisor">Revisor</option>
+          <option value="autor">Autor</option>
+          <option value="admin">Administrador</option>
+          <option value="director">Director</option>
+          <option value="monitor">Monitor</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th class="text-center">Artículos Asignados / Enviados</th>
+            <th class="text-center">Artículos Evaluados / Resueltos</th>
+            <th>Progreso de Evaluación</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (stat of paginatedStatsRolesYUsuarios; track stat.usuarioId + '-' + stat.rol) {
+          <tr>
+            <td class="font-semibold">{{ stat.nombre }}</td>
+            <td>
+              <span class="role-badge" [ngClass]="'role-badge--' + stat.rol">
+                {{ formatRolLabel(stat.rol) }}
+              </span>
+            </td>
+            <td class="text-center font-medium">{{ stat.rol === 'admin' || stat.rol === 'director' || stat.rol ===
+              'monitor' ? '-' : stat.asignados }}</td>
+            <td class="text-center font-medium">{{ stat.evaluados }}</td>
+            <td>
+              <div class="progress-container">
+                @if (stat.rol === 'admin' || stat.rol === 'director' || stat.rol === 'monitor') {
+                <span class="text-xs text-muted">Gestión general ({{ stat.evaluados }} obs.)</span>
+                } @else {
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" [style.width.%]="calcularPorcentaje(stat.asignados, stat.evaluados)">
+                  </div>
+                </div>
+                <span class="progress-text">{{ calcularPorcentaje(stat.asignados, stat.evaluados) }}%</span>
+                }
+              </div>
+            </td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="5" class="text-center text-muted py-4">No se encontraron registros de usuarios con este filtro.
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalRolePages > 1) {
+    <div class="pagination">
+      <button class="pagination-btn" (click)="prevRolePage()" [disabled]="currentRolePage === 1">
+        Anterior
+      </button>
+      <span class="pagination-info">Página {{ currentRolePage }} de {{ totalRolePages }}</span>
+      <button class="pagination-btn" (click)="nextRolePage()" [disabled]="currentRolePage === totalRolePages">
+        Siguiente
+      </button>
+    </div>
+    }
+  </section>
 
   <section class="table-card">
     <div class="chart-card__head">
@@ -193,6 +273,96 @@
       </button>
     </div>
     }
+  </section>
+
+  <!-- Nueva sección: Estadísticas Demográficas y Académicas -->
+  <section class="charts-grid charts-grid--demographics">
+    <!-- Profesiones -->
+    <article class="chart-card demo-card">
+      <div class="chart-card__head">
+        <div>
+          <span class="chart-kicker text-brand">Perfil de Usuarios</span>
+          <h2>Distribución de Profesiones</h2>
+        </div>
+      </div>
+      <div class="demographics-list">
+        @for (prof of (estadisticas.usuariosPorProfesion || []).slice(0, 5); track prof.profesion) {
+        <div class="demographics-item">
+          <div class="demographics-item__meta">
+            <div class="meta-label">
+              <span class="meta-icon meta-icon--prof"></span>
+              <span class="meta-text">{{ prof.profesion }}</span>
+            </div>
+            <span class="meta-badge meta-badge--prof">{{ prof.cantidad }}</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill progress-bar-fill--profession"
+              [style.width.%]="calcularPorcentajeDemografica(prof.cantidad, totalUsuariosConProfesion)"></div>
+          </div>
+        </div>
+        } @empty {
+        <div class="empty-state-simple">Sin datos de profesiones registrados.</div>
+        }
+      </div>
+    </article>
+
+    <!-- Posgrado Graduados -->
+    <article class="chart-card demo-card">
+      <div class="chart-card__head">
+        <div>
+          <span class="chart-kicker text-accent">Formación Académica</span>
+          <h2>Usuarios Graduados de Posgrado</h2>
+        </div>
+      </div>
+      <div class="demographics-list">
+        @for (nivel of (estadisticas.usuariosPorNivelPosgrado || []); track nivel.nivel) {
+        <div class="demographics-item">
+          <div class="demographics-item__meta">
+            <div class="meta-label">
+              <span class="meta-icon meta-icon--grad"></span>
+              <span class="meta-text">{{ nivel.nivel }}</span>
+            </div>
+            <span class="meta-badge meta-badge--grad">{{ nivel.cantidad }}</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill progress-bar-fill--posgrado"
+              [style.width.%]="calcularPorcentajeDemografica(nivel.cantidad, totalUsuariosConPosgrado)"></div>
+          </div>
+        </div>
+        } @empty {
+        <div class="empty-state-simple">Sin datos de títulos de posgrado registrados.</div>
+        }
+      </div>
+    </article>
+
+    <!-- Estudiantes Posgrado -->
+    <article class="chart-card chart-card--full demo-card">
+      <div class="chart-card__head">
+        <div>
+          <span class="chart-kicker text-warning">Educación Continua</span>
+          <h2>Estudiantes Activos de Posgrado</h2>
+        </div>
+      </div>
+      <div class="demographics-list demographics-list--grid">
+        @for (nivel of (estadisticas.estudiantesPosgrado || []); track nivel.nivel) {
+        <div class="demographics-item">
+          <div class="demographics-item__meta">
+            <div class="meta-label">
+              <span class="meta-icon meta-icon--stud"></span>
+              <span class="meta-text">Estudiantes de {{ nivel.nivel }}</span>
+            </div>
+            <span class="meta-badge meta-badge--stud">{{ nivel.cantidad }}</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill progress-bar-fill--estudiante"
+              [style.width.%]="calcularPorcentajeDemografica(nivel.cantidad, totalEstudiantesPosgrado)"></div>
+          </div>
+        </div>
+        } @empty {
+        <div class="empty-state-simple w-full">Sin estudiantes de posgrado activos registrados actualmente.</div>
+        }
+      </div>
+    </article>
   </section>
   }
 </section>

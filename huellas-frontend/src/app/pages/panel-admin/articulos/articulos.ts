@@ -42,6 +42,8 @@ interface ArticuloListado {
   fechaVencimiento: string;
   diasRestantes: number | null;
   estaVencido: boolean;
+  archivado: boolean;
+  edicionId: number | null;
 }
 
 @Component({
@@ -59,6 +61,7 @@ export class Articulos implements OnInit, OnDestroy {
 
   searchTerm = '';
   committeeView = false;
+  mostrarArchivados = false;
   loading = true;
   pageTitle = 'Artículos';
   filtroEstadoComite: EstadoFiltroComite = 'todos';
@@ -97,28 +100,14 @@ export class Articulos implements OnInit, OnDestroy {
         this.filtroEstadoComite = 'todos';
       }
 
-      this.applySearch();
+      const tabQuery = params.get('tab');
+      this.mostrarArchivados = tabQuery === 'archivo';
+      this.loading = true;
+
+      this.recargarArticulos();
     });
 
     this.pageTitle = this.committeeView ? 'Panel Comité Editorial' : 'Artículos';
-
-    const source$ = this.committeeView
-      ? this.articulosService.getArticulosComiteAsignados()
-      : this.articulosService.getResumenArticulos();
-
-    source$.subscribe({
-      next: (response) => {
-        this.articulos = response.map((articulo, index) => this.mapArticulo(articulo, index));
-        this.loading = false;
-        this.applySearch();
-      },
-      error: (error) => {
-        this.articulos = [];
-        this.filteredArticulos = [];
-        this.loading = false;
-        console.error('Error al cargar el resumen de articulos:', error);
-      },
-    });
 
     if (this.committeeView) {
       this.cargarBloquesComite();
@@ -240,6 +229,8 @@ export class Articulos implements OnInit, OnDestroy {
       fechaVencimiento: this.formatFecha(this.parseFecha(articulo.fecha_vencimiento ?? null)),
       diasRestantes: articulo.dias_restantes ?? null,
       estaVencido: articulo.esta_vencido ?? false,
+      archivado: articulo.archivado ?? false,
+      edicionId: articulo.edicionId ?? null,
     };
   }
 
@@ -423,6 +414,10 @@ export class Articulos implements OnInit, OnDestroy {
       return 'stage--publicacion';
     }
 
+    if (etapaNormalizada.includes('descartado')) {
+      return 'stage--descartado';
+    }
+
     return '';
   }
 
@@ -529,14 +524,18 @@ export class Articulos implements OnInit, OnDestroy {
   recargarArticulos(): void {
     const source$ = this.committeeView
       ? this.articulosService.getArticulosComiteAsignados()
-      : this.articulosService.getResumenArticulos();
+      : this.articulosService.getResumenArticulos(this.mostrarArchivados);
 
     source$.subscribe({
       next: (response) => {
         this.articulos = response.map((articulo, index) => this.mapArticulo(articulo, index));
+        this.loading = false;
         this.applySearch();
       },
       error: (error) => {
+        this.articulos = [];
+        this.filteredArticulos = [];
+        this.loading = false;
         console.error('Error al recargar artículos:', error);
       },
     });
@@ -557,5 +556,25 @@ export class Articulos implements OnInit, OnDestroy {
 
   canEdit(): boolean {
     return this.authService.hasAnyRole(['admin', 'director', 'monitor']);
+  }
+
+  setMostrarArchivados(valor: boolean): void {
+    if (this.mostrarArchivados === valor) {
+      return;
+    }
+    this.router.navigate(['/articulos'], {
+      queryParams: valor ? { tab: 'archivo' } : {},
+    });
+  }
+
+  archivarArticulo(articulo: ArticuloListado, archivado: boolean): void {
+    this.articulosService.archivarArticulo(articulo.id, archivado).subscribe({
+      next: () => {
+        this.recargarArticulos();
+      },
+      error: (err) => {
+        console.error('Error al archivar/desarchivar artículo:', err);
+      },
+    });
   }
 }

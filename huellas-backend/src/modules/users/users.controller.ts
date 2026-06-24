@@ -33,6 +33,13 @@ type PerfilUsuarioUpdateBody = {
   telefono?: string;
   perfilAcademico?: string;
   institucion?: string;
+  profesion?: string;
+  programa?: string;
+  tienePosgrado?: boolean;
+  posgradoTipo?: string;
+  posgradoDetalle?: string;
+  estudiantePosgrado?: boolean;
+  edad?: number;
 };
 
 @Controller('usuarios')

@@ -2300,7 +2300,7 @@ export class ArticulosService {
     return Buffer.from(bytes);
   }
 
-  async getResumenArticulos() {
+  async getResumenArticulos(archivados = false) {
     const articulos = await this.articuloRepository
       .createQueryBuilder('articulo')
       .select([
@@ -2311,6 +2311,8 @@ export class ArticulosService {
         'articulo.solicitudProrrogaCorreccionPendiente',
         'articulo.solicitudProrrogaRevisorPendiente',
         'articulo.revisionFinalChecklist',
+        'articulo.archivado',
+        'articulo.edicionId',
       ])
       .innerJoin('articulo.etapaActual', 'etapa')
       .addSelect(['etapa.nombre', 'etapa.id'])
@@ -2323,6 +2325,7 @@ export class ArticulosService {
         { etapaBuscada: 1 },
       )
       .addSelect(['historial.fechaInicio'])
+      .where('articulo.archivado = :archivados', { archivados })
       .orderBy('historial.fechaInicio', 'DESC')
       .getMany();
 
@@ -2386,6 +2389,8 @@ export class ArticulosService {
         solicitudProrrogaRevisorPendiente:
           articulo.solicitudProrrogaRevisorPendiente,
         estado_articulo: estado,
+        archivado: articulo.archivado,
+        edicionId: articulo.edicionId,
       };
     });
   }
@@ -2409,7 +2414,13 @@ export class ArticulosService {
         'autores',
         'historialEtapas',
         'observaciones',
+        'revisor',
+        'revisor.usuario',
       ],
+    });
+
+    const users = await this.userRepository.find({
+      relations: ['roles'],
     });
 
     const porEtapa = new Map<string, number>();
@@ -2483,6 +2494,128 @@ export class ArticulosService {
       ([mes, cantidad]) => ({ mes, cantidad }),
     );
 
+    // NUEVAS ESTADÍSTICAS DEMOGRÁFICAS
+    const profesionMap = new Map<string, number>();
+    const posgradoObtenidoMap = new Map<string, number>();
+    const posgradoEstudianteMap = new Map<string, number>();
+
+    for (const user of users) {
+      if (user.profesion && user.profesion.trim() !== '') {
+        const prof = user.profesion.trim();
+        profesionMap.set(prof, (profesionMap.get(prof) ?? 0) + 1);
+      }
+      if (user.tienePosgrado && user.posgradoTipo && user.posgradoTipo.trim() !== '') {
+        const tipo = this.capitalizarPosgradoTipo(user.posgradoTipo.trim());
+        posgradoObtenidoMap.set(tipo, (posgradoObtenidoMap.get(tipo) ?? 0) + 1);
+      }
+      if (user.estudiantePosgrado && user.posgradoTipo && user.posgradoTipo.trim() !== '') {
+        const tipo = this.capitalizarPosgradoTipo(user.posgradoTipo.trim());
+        posgradoEstudianteMap.set(tipo, (posgradoEstudianteMap.get(tipo) ?? 0) + 1);
+      }
+    }
+
+    const usuariosPorProfesion = [...profesionMap.entries()]
+      .map(([profesion, cantidad]) => ({ profesion, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+
+    const usuariosPorNivelPosgrado = [...posgradoObtenidoMap.entries()]
+      .map(([nivel, cantidad]) => ({ nivel, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+
+    const estudiantesPosgrado = [...posgradoEstudianteMap.entries()]
+      .map(([nivel, cantidad]) => ({ nivel, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+
+    // NUEVAS ESTADÍSTICAS POR ROL Y USUARIOS
+    const statsRolesYUsuarios: Array<{
+      usuarioId: number;
+      nombre: string;
+      rol: string;
+      asignados: number;
+      evaluados: number;
+    }> = [];
+
+    for (const user of users) {
+      for (const roleEntity of user.roles ?? []) {
+        const rol = roleEntity.rol;
+        let asignados = 0;
+        let evaluados = 0;
+
+        if (rol === 'comite-editorial') {
+          const assignedArticles = articulos.filter((a) => a.comiteEditorialId === user.id);
+          asignados = assignedArticles.length;
+          evaluados = assignedArticles.filter((a) =>
+            (a.observaciones ?? []).some(
+              (obs) =>
+                obs.usuarioId === user.id &&
+                obs.etapaId === 6 &&
+                this.isAsuntoEvaluacionComite(obs.asunto),
+            ),
+          ).length;
+          statsRolesYUsuarios.push({
+            usuarioId: user.id,
+            nombre: user.nombre,
+            rol,
+            asignados,
+            evaluados,
+          });
+        } else if (rol === 'revisor') {
+          const assignedArticles = articulos.filter((a) => a.revisor?.usuarioId === user.id);
+          asignados = assignedArticles.length;
+          evaluados = assignedArticles.filter((a) =>
+            (a.observaciones ?? []).some(
+              (obs) =>
+                obs.usuarioId === user.id &&
+                obs.etapaId === 4 &&
+                this.esAsuntoRevisionPares(obs.asunto),
+            ),
+          ).length;
+          statsRolesYUsuarios.push({
+            usuarioId: user.id,
+            nombre: user.nombre,
+            rol,
+            asignados,
+            evaluados,
+          });
+        } else if (rol === 'autor') {
+          const submittedArticles = articulos.filter((a) =>
+            (a.autores ?? []).some((aut) => aut.id === user.id),
+          );
+          asignados = submittedArticles.length;
+          evaluados = submittedArticles.filter(
+            (a) =>
+              a.etapaActualId === 5 ||
+              a.etapaActualId === 8 ||
+              a.etapaActualId === 7,
+          ).length;
+          statsRolesYUsuarios.push({
+            usuarioId: user.id,
+            nombre: user.nombre,
+            rol,
+            asignados,
+            evaluados,
+          });
+        } else if (rol === 'admin' || rol === 'director' || rol === 'monitor') {
+          const evaluatedArticles = articulos.filter((a) =>
+            (a.observaciones ?? []).some(
+              (obs) =>
+                obs.usuarioId === user.id &&
+                [1, 3, 9].includes(obs.etapaId),
+            ),
+          );
+          asignados = 0;
+          evaluados = evaluatedArticles.length;
+          statsRolesYUsuarios.push({
+            usuarioId: user.id,
+            nombre: user.nombre,
+            rol,
+            asignados,
+            evaluados,
+          });
+        }
+      }
+    }
+
     return {
       totalArticulos: articulos.length,
       promedioAutores: articulos.length
@@ -2508,8 +2641,21 @@ export class ArticulosService {
       temaDistribucion,
       mensualDistribucion,
       articulosRecientes,
+      usuariosPorProfesion,
+      usuariosPorNivelPosgrado,
+      estudiantesPosgrado,
+      statsRolesYUsuarios,
     };
   }
+
+  private capitalizarPosgradoTipo(tipo: string): string {
+    const t = tipo.toLowerCase().trim();
+    if (t === 'maestria') return 'Maestría';
+    if (t === 'doctorado') return 'Doctorado';
+    if (t === 'especializacion') return 'Especialización';
+    return tipo.charAt(0).toUpperCase() + tipo.slice(1);
+  }
+
 
   async getArticulosPorAutor(userId: number) {
     const articulos = await this.articuloRepository
@@ -3381,6 +3527,14 @@ export class ArticulosService {
         if (lowerAsunto.includes('turnitin (rechazado)')) {
           titulo = 'Corrección de Turnitin rechazada';
           detalle = `La corrección que enviaste fue rechazada. Por favor, revisa los comentarios y sube una nueva versión: ${obs.comentarios}`;
+        } else if (
+          obs.etapa?.id === ArticulosService.ETAPA_REVISION_PRELIMINAR &&
+          obs.usuarioId !== userId &&
+          !esCorreccionAutor &&
+          articulo.autores?.some((a) => a.id === obs.usuarioId)
+        ) {
+          titulo = 'Vinculación como coautor';
+          detalle = `Fuiste vinculado como coautor del artículo "${articulo.titulo}" por ${obs.usuario?.nombre || 'el autor principal'}.`;
         } else if (this.isAsuntoEvaluacionComite(obs.asunto)) {
           titulo = 'Evaluación de Comité Editorial';
           if (this.isAsuntoEvaluacionComiteAprobado(obs.asunto)) {
@@ -4147,7 +4301,7 @@ export class ArticulosService {
       }
 
       articulo.edicion = edicion;
-      articulo.edicionId = edicion.id;
+      articulo.edicionId = edicion.id ?? null;
       if (dto.doi !== undefined) {
         articulo.doi = dto.doi;
       }
@@ -4380,5 +4534,39 @@ export class ArticulosService {
     await this.articuloRepository.save(articulo);
 
     return { message: 'Autor removido correctamente del artículo.' };
+  }
+
+  async archivarArticulo(articuloId: number, archivado: boolean) {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    if (archivado) {
+      const isPublicacionValida =
+        articulo.etapaActualId === ArticulosService.ETAPA_PUBLICACION &&
+        !!articulo.edicionId;
+      const isDescartado =
+        articulo.etapaActualId === ArticulosService.ETAPA_DESCARTADO;
+
+      if (!isPublicacionValida && !isDescartado) {
+        throw new BadRequestException(
+          'Solo se pueden archivar artículos que estén publicados (con edición asignada) o que hayan sido rechazados.',
+        );
+      }
+    }
+
+    articulo.archivado = archivado;
+    await this.articuloRepository.save(articulo);
+
+    return {
+      message: archivado
+        ? 'Artículo archivado correctamente'
+        : 'Artículo desarchivado correctamente',
+      archivado: articulo.archivado,
+    };
   }
 }
