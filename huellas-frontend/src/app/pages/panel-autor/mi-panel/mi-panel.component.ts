@@ -252,6 +252,9 @@ export class MiPanelComponent implements OnInit {
     if (articulo.etapa_nombre.toLowerCase().includes('pares')) {
       return articulo.evaluado_pares ? 'Evaluado' : 'En Revision';
     }
+    if (articulo.etapa_nombre.toLowerCase().includes('comite')) {
+      return articulo.evaluado_comite ? 'Evaluado' : 'En Revision';
+    }
     if (this.correccionEnRevision(articulo)) {
       return 'Corrección en revisión';
     }
@@ -307,6 +310,9 @@ export class MiPanelComponent implements OnInit {
 
   getEstadoClass(articulo: ArticuloAutor): string {
     if (articulo.etapa_nombre.toLowerCase().includes('pares') && articulo.evaluado_pares) {
+      return 'state-published';
+    }
+    if (articulo.etapa_nombre.toLowerCase().includes('comite') && articulo.evaluado_comite) {
       return 'state-published';
     }
     if (this.correccionEnRevision(articulo)) {
@@ -696,7 +702,7 @@ export class MiPanelComponent implements OnInit {
         'Tu articulo continua avanzando en el flujo editorial segun la etapa actual registrada.',
       acciones: [
         'Revisar notificaciones recientes del articulo.',
-        'Consultar el timeline editorial para ver trazabilidad completa.',
+        'Consultar el seguimiento editorial para ver trazabilidad completa.',
         'Atender cualquier solicitud del equipo editorial.',
       ],
     };

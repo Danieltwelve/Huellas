@@ -51,7 +51,7 @@ export class ArticulosService {
   private static readonly ETAPA_COMITE_EDITORIAL = 6;
   private static readonly ETAPAS_FLUJO_ORDENADO = [1, 6, 3, 4, 9, 8, 5];
   private static readonly ETAPA_DESCARTADO = 7;
-  private static readonly MAX_ARTICULOS_ASIGNADOS_COMITE = 4;
+  private static readonly MAX_ARTICULOS_ASIGNADOS_COMITE = 10;
   private static readonly ASUNTO_CORRECCION_AUTOR =
     'Corrección enviada por autor';
   private static readonly ASUNTO_CORRECCION_ACEPTADA =
@@ -1645,7 +1645,7 @@ export class ArticulosService {
       articulosAsignados >= ArticulosService.MAX_ARTICULOS_ASIGNADOS_COMITE
     ) {
       throw new BadRequestException(
-        'Este miembro del Comité Editorial ya tiene el máximo de 4 artículos asignados.',
+        `Este miembro del Comité Editorial ya tiene el máximo de ${ArticulosService.MAX_ARTICULOS_ASIGNADOS_COMITE} artículos asignados.`,
       );
     }
 
@@ -2685,6 +2685,7 @@ export class ArticulosService {
         articulo.solicitudProrrogaCorreccionPendiente ?? false,
       correccion_vencida: this.correccionEstaVencida(articulo, userId),
       evaluado_pares: this.estaEvaluadoPorPares(articulo),
+      evaluado_comite: this.estaEvaluadoPorComite(articulo),
     }));
   }
 
@@ -2736,6 +2737,11 @@ export class ArticulosService {
         asunto.includes('revision por pares:')
       );
     });
+  }
+
+  private estaEvaluadoPorComite(articulo: Articulo): boolean {
+    const observaciones = articulo.observaciones ?? [];
+    return observaciones.some((obs) => this.isAsuntoEvaluacionComite(obs.asunto));
   }
 
   async subirCorreccionAutor(
@@ -3918,12 +3924,16 @@ export class ArticulosService {
   }
 
   private validarMetadatosCertificado(payload: {
-    contextoRequerimiento?: 'autor' | 'comite-editorial' | 'editorial';
+    contextoRequerimiento?: 'autor' | 'comite-editorial' | 'editorial' | 'revisor';
     etapaReferencia?: string;
   }) {
     const etapa = payload.etapaReferencia?.trim();
 
-    if (payload.contextoRequerimiento !== 'editorial' && !etapa) {
+    if (
+      payload.contextoRequerimiento !== 'editorial' &&
+      payload.contextoRequerimiento !== 'revisor' &&
+      !etapa
+    ) {
       throw new BadRequestException(
         'Para certificados de autor o comité editorial debes indicar etapa de referencia.',
       );
@@ -3939,6 +3949,7 @@ export class ArticulosService {
       .createQueryBuilder('cert')
       .innerJoinAndSelect('cert.articulo', 'articulo')
       .leftJoinAndSelect('articulo.autores', 'autores')
+      .leftJoinAndSelect('articulo.revisor', 'revisor')
       .where('cert.id = :certificadoId', { certificadoId })
       .getOne();
 
@@ -3953,8 +3964,11 @@ export class ArticulosService {
     const esComiteAsignado =
       userRoles.includes('comite-editorial') &&
       certificado.articulo?.comiteEditorialId === userId;
+    const esRevisorAsignado =
+      userRoles.includes('revisor') &&
+      certificado.articulo?.revisor?.usuarioId === userId;
 
-    if (!puedeGestionar && !esAutor && !esComiteAsignado) {
+    if (!puedeGestionar && !esAutor && !esComiteAsignado && !esRevisorAsignado) {
       throw new ForbiddenException(
         'No tienes permiso para acceder a este certificado.',
       );
@@ -3970,7 +3984,7 @@ export class ArticulosService {
     payload: {
       tipo: string;
       titulo?: string;
-      contextoRequerimiento: 'autor' | 'comite-editorial' | 'editorial';
+      contextoRequerimiento: 'autor' | 'comite-editorial' | 'editorial' | 'revisor';
       etapaReferencia?: string;
     },
     archivo: Express.Multer.File,
@@ -4110,6 +4124,7 @@ export class ArticulosService {
       .createQueryBuilder('cert')
       .innerJoinAndSelect('cert.articulo', 'articulo')
       .leftJoinAndSelect('articulo.autores', 'autores')
+      .leftJoinAndSelect('articulo.revisor', 'revisor')
       .leftJoinAndSelect('cert.subidoPor', 'subidoPor')
       .orderBy('cert.fechaSubida', 'DESC');
 
@@ -4117,6 +4132,9 @@ export class ArticulosService {
       // Sin filtro adicional para roles editoriales de gestión.
     } else if (userRoles.includes('comite-editorial')) {
       qb.andWhere('articulo.comiteEditorialId = :userId', { userId });
+    } else if (userRoles.includes('revisor')) {
+      qb.andWhere('revisor.usuarioId = :userId', { userId })
+        .andWhere('cert.contextoRequerimiento = :ctx', { ctx: 'revisor' });
     } else {
       qb.andWhere('autores.id = :userId', { userId });
     }
@@ -4145,7 +4163,7 @@ export class ArticulosService {
     payload: {
       tipo?: string;
       titulo?: string;
-      contextoRequerimiento?: 'autor' | 'comite-editorial' | 'editorial';
+      contextoRequerimiento?: 'autor' | 'comite-editorial' | 'editorial' | 'revisor';
       etapaReferencia?: string;
     },
   ) {

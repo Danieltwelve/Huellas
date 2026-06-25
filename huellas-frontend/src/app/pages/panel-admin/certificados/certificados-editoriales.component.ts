@@ -12,7 +12,7 @@ import { ModalEliminarCertificado } from './modal-eliminar-certificado/modal-eli
 
 type TipoCertificado = 'evaluacion' | 'publicacion' | 'aceptacion' | 'envio' | 'revision' | 'otro';
 
-type ContextoRequerimiento = 'autor' | 'comite-editorial';
+type ContextoRequerimiento = 'autor' | 'comite-editorial' | 'revisor';
 
 interface UsuarioConArticulos extends UsuarioCertificadosBackend {
   articulos: ArticuloResumenBackend[];
@@ -31,6 +31,7 @@ export class CertificadosEditorialesComponent {
   articulos: ArticuloResumenBackend[] = [];
   autores: UsuarioConArticulos[] = [];
   comiteEditorial: UsuarioConArticulos[] = [];
+  revisores: UsuarioConArticulos[] = [];
   certificados: CertificadoArticuloBackend[] = [];
   loading = true;
   uploading = false;
@@ -84,9 +85,10 @@ export class CertificadosEditorialesComponent {
       articulos: this.articulosService.getResumenArticulos(),
       autores: this.articulosService.getAutoresCertificados(),
       comiteEditorial: this.articulosService.getComiteEditorialCertificados(),
+      revisores: this.articulosService.getRevisoresCertificados(),
       certificados: this.articulosService.listarCertificados(),
     }).subscribe({
-      next: ({ articulos, autores, comiteEditorial, certificados }) => {
+      next: ({ articulos, autores, comiteEditorial, revisores, certificados }) => {
         this.articulos = articulos;
         this.certificados = certificados.map(
           (c) =>
@@ -99,6 +101,7 @@ export class CertificadosEditorialesComponent {
         if (articulos.length === 0) {
           this.autores = [];
           this.comiteEditorial = [];
+          this.revisores = [];
           this.loading = false;
           return;
         }
@@ -129,10 +132,20 @@ export class CertificadosEditorialesComponent {
               }))
               .filter((usuario) => usuario.articulos.length > 0);
 
+            this.revisores = revisores
+              .map((usuario) => ({
+                ...usuario,
+                articulos: detalles
+                  .filter((detalle) => detalle.revisor?.usuarioId === usuario.id)
+                  .map((detalle) => articulosPorId.get(detalle.id))
+                  .filter((articulo): articulo is ArticuloResumenBackend => Boolean(articulo)),
+              }))
+              .filter((usuario) => usuario.articulos.length > 0);
+
             this.loading = false;
           },
           error: () => {
-            this.error = 'No se pudieron cruzar los artículos con autores y comité editorial.';
+            this.error = 'No se pudieron cruzar los artículos con autores, comité editorial y revisores.';
             this.loading = false;
           },
         });
@@ -142,6 +155,7 @@ export class CertificadosEditorialesComponent {
         this.articulos = [];
         this.autores = [];
         this.comiteEditorial = [];
+        this.revisores = [];
         this.certificados = [];
         this.loading = false;
       },
@@ -149,7 +163,13 @@ export class CertificadosEditorialesComponent {
   }
 
   get usuariosDisponibles(): UsuarioConArticulos[] {
-    return this.contextoRequerimiento === 'autor' ? this.autores : this.comiteEditorial;
+    if (this.contextoRequerimiento === 'autor') {
+      return this.autores;
+    } else if (this.contextoRequerimiento === 'comite-editorial') {
+      return this.comiteEditorial;
+    } else {
+      return this.revisores;
+    }
   }
 
   get usuarioSeleccionado(): UsuarioConArticulos | null {
@@ -215,7 +235,7 @@ export class CertificadosEditorialesComponent {
     this.success = null;
 
     if (!this.usuarioIdSeleccionado) {
-      this.error = 'Debes seleccionar un autor o miembro del comité editorial.';
+      this.error = 'Debes seleccionar un destinatario para el certificado.';
       return;
     }
 
@@ -229,7 +249,7 @@ export class CertificadosEditorialesComponent {
       return;
     }
 
-    if (!this.etapaReferencia.trim()) {
+    if (this.contextoRequerimiento !== 'revisor' && !this.etapaReferencia.trim()) {
       this.error = 'Debes indicar la etapa de referencia.';
       return;
     }
@@ -249,7 +269,7 @@ export class CertificadosEditorialesComponent {
       !this.usuarioIdSeleccionado ||
       !this.articuloIdSeleccionado ||
       !this.archivo ||
-      !this.etapaReferencia.trim()
+      (this.contextoRequerimiento !== 'revisor' && !this.etapaReferencia.trim())
     ) {
       this.showUploadConfirmModal = false;
       this.error = 'Completa los campos requeridos antes de subir el certificado.';
@@ -290,8 +310,7 @@ export class CertificadosEditorialesComponent {
     this.certificadoEnEdicionId = certificado.id;
     this.tipo = certificado.tipo;
     this.titulo = certificado.titulo;
-    this.contextoRequerimiento =
-      certificado.contextoRequerimiento === 'comite-editorial' ? 'comite-editorial' : 'autor';
+    this.contextoRequerimiento = certificado.contextoRequerimiento as ContextoRequerimiento;
     this.etapaReferencia = certificado.etapaReferencia ?? '';
     this.usuarioIdSeleccionado = null;
     this.articuloIdSeleccionado = certificado.articuloId;
@@ -335,8 +354,18 @@ export class CertificadosEditorialesComponent {
     return this.comiteEditorial.length;
   }
 
+  get totalRevisores(): number {
+    return this.revisores.length;
+  }
+
   get contextoLabel(): string {
-    return this.contextoRequerimiento === 'autor' ? 'Autor' : 'Comité editorial';
+    if (this.contextoRequerimiento === 'autor') {
+      return 'Autor';
+    } else if (this.contextoRequerimiento === 'comite-editorial') {
+      return 'Comité editorial';
+    } else {
+      return 'Revisor por pares';
+    }
   }
 
   formatearTipo(tipo: TipoCertificado): string {
@@ -361,6 +390,10 @@ export class CertificadosEditorialesComponent {
       return 'Comité editorial';
     }
 
+    if (contexto === 'revisor') {
+      return 'Revisor por pares';
+    }
+
     return 'Editorial';
   }
 
@@ -372,7 +405,7 @@ export class CertificadosEditorialesComponent {
       return;
     }
 
-    if (!this.etapaReferencia.trim()) {
+    if (this.contextoRequerimiento !== 'revisor' && !this.etapaReferencia.trim()) {
       this.error = 'Debes indicar la etapa de referencia.';
       return;
     }

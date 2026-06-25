@@ -103,14 +103,14 @@
               }
             </div>
             <div class="summary-actions">
-              <a [routerLink]="['/panel-autor/timeline']" [queryParams]="{ articuloId: articulo.id }" class="timeline-link">Ver timeline detallado</a>
+              <a [routerLink]="['/panel-autor/timeline']" [queryParams]="{ articuloId: articulo.id }" class="timeline-link">Ver seguimiento detallado</a>
             </div>
           } @else {
             <div class="historial-empty">
               Aún no hay observaciones registradas para este artículo.
             </div>
             <div class="summary-actions">
-              <a [routerLink]="['/panel-autor/timeline']" class="timeline-link">Ver timeline</a>
+              <a [routerLink]="['/panel-autor/timeline']" class="timeline-link">Ver seguimiento</a>
             </div>
           }
         </div>

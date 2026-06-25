@@ -4,7 +4,7 @@
       <div>
         <p class="eyebrow">Gestión documental</p>
         <h1>Certificados editoriales</h1>
-        <p>Sube certificados PDF por artículo para que autores y comité puedan descargarlos.</p>
+        <p>Sube certificados PDF por artículo para que autores, revisores y comité puedan descargarlos.</p>
       </div>
 
       <div class="header-stats">
@@ -19,6 +19,10 @@
         <div class="stat-card">
           <span class="stat-card__value">{{ totalComiteEditorial }}</span>
           <span class="stat-card__label">Comité</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__value">{{ totalRevisores }}</span>
+          <span class="stat-card__label">Revisores</span>
         </div>
       </div>
     </div>
@@ -43,6 +47,7 @@
   <div class="two-columns">
     <!-- Columna izquierda: formulario -->
     <section class="upload-card">
+      <div class="card-header-accent"></div>
       <h2>Cargar certificado</h2>
       <div class="form-area">
         <div class="form-grid">
@@ -51,6 +56,7 @@
             <select [(ngModel)]="contextoRequerimiento" (ngModelChange)="onContextoChange()">
               <option value="autor">Autor</option>
               <option value="comite-editorial">Comité editorial</option>
+              <option value="revisor">Revisor por pares</option>
             </select>
           </label>
 
@@ -58,7 +64,7 @@
             <span>{{ contextoLabel }}</span>
             <select [(ngModel)]="usuarioIdSeleccionado" (ngModelChange)="onUsuarioChange()">
               <option [ngValue]="null">
-                Selecciona {{ contextoRequerimiento === 'autor' ? 'un autor' : 'un miembro del comité' }}
+                Selecciona {{ contextoRequerimiento === 'autor' ? 'un autor' : (contextoRequerimiento === 'comite-editorial' ? 'un miembro del comité' : 'un revisor') }}
               </option>
               @for (usuario of usuariosDisponibles; track usuario.id) {
               <option [ngValue]="usuario.id">{{ usuario.nombre }} ({{ usuario.articulos.length }})</option>
@@ -88,25 +94,35 @@
             </select>
           </label>
 
-          <label>
+          <label *ngIf="contextoRequerimiento !== 'revisor'">
             <span>Etapa de referencia</span>
             <input type="text" [(ngModel)]="etapaReferencia" placeholder="Ejemplo: Evaluación por comité editorial" />
           </label>
 
-          <label class="span-2">
+          <label [class.span-2]="contextoRequerimiento === 'revisor'">
             <span>Título del certificado (opcional)</span>
             <input type="text" [(ngModel)]="titulo" placeholder="Ejemplo: Certificado de evaluación técnica" />
           </label>
 
-          <label class="span-2 file-label">
-            <span>Archivo PDF</span>
-            <div class="file-row">
-              <input #fileInput class="file-input" type="file" accept="application/pdf"
-                (change)="onArchivoSeleccionado($event)" />
-              <button *ngIf="archivo" type="button" class="file-clear" (click)="removeArchivo()"
-                aria-label="Quitar archivo">×</button>
+          <div class="span-2 file-upload-wrapper">
+            <span class="field-label">Archivo PDF</span>
+            <div class="upload-zone" [class.has-file]="archivo">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+              </svg>
+              @if (!archivo) {
+                <span class="upload-text">Arrastra tu archivo aquí o haz clic para buscar</span>
+                <span class="upload-hint">Solo se permiten archivos PDF de hasta 10MB</span>
+              } @else {
+                <div class="uploaded-file-info">
+                  <span class="file-name">{{ archivo.name }}</span>
+                  <span class="file-size">{{ (archivo.size / 1024 / 1024) | number:'1.2-2' }} MB</span>
+                </div>
+              }
+              <input #fileInput class="hidden-file-input" type="file" accept="application/pdf" (change)="onArchivoSeleccionado($event)" />
+              <button *ngIf="archivo" type="button" class="file-clear" (click)="removeArchivo()" aria-label="Quitar archivo">×</button>
             </div>
-          </label>
+          </div>
         </div>
       </div>
     </section>
@@ -114,7 +130,7 @@
     <!-- Columna derecha: resumen (vista previa) -->
     <section class="resumen-card">
       <div class="resumen-card__header">
-        <span class="eyebrow eyebrow--soft">Resumen</span>
+        <span class="eyebrow eyebrow--soft">Vista previa</span>
         <h3>{{ contextoLabel }}</h3>
         <p>Revisa el certificado antes de publicarlo.</p>
       </div>
@@ -124,7 +140,7 @@
         <div class="preview-row"><span class="muted">Usuario:</span> {{ usuarioSeleccionadoDisplay }}</div>
         <div class="preview-row"><span class="muted">Artículo:</span> {{ articuloSeleccionadoDisplay }}</div>
         <div class="preview-row"><span class="muted">Tipo:</span> {{ formatearTipo(tipo) }}</div>
-        <div class="preview-row"><span class="muted">Etapa referencia:</span> {{ etapaReferencia || '-' }}</div>
+        <div class="preview-row" *ngIf="contextoRequerimiento !== 'revisor'"><span class="muted">Etapa ref:</span> {{ etapaReferencia || '-' }}</div>
         <div class="preview-row"><span class="muted">Archivo:</span> {{ archivo ? archivo.name : '-' }}</div>
 
         @if (usuarioSeleccionado) {
@@ -157,11 +173,11 @@
     <p class="list-card__subtitle">Lista ordenada de certificados con acciones rápidas.</p>
 
     @if (loading) {
-    <p>Cargando certificados...</p>
+    <p class="loading-text">Cargando certificados...</p>
     }
 
     @if (!loading && certificados.length === 0) {
-    <p>No hay certificados cargados aún.</p>
+    <p class="empty-text">No hay certificados cargados aún.</p>
     }
 
     @if (!loading && certificados.length > 0) {
@@ -188,18 +204,28 @@
                 <span class="table-article__title">{{ certificado.tituloArticulo }}</span>
               </div>
             </td>
-            <td><span class="badge">{{ formatearTipo(certificado.tipo) }}</span></td>
-            <td>{{ certificado.titulo }}</td>
-            <td><span class="badge badge--soft">{{ formatearContexto(certificado.contextoRequerimiento) }}</span></td>
+            <td><span class="badge badge--tipo">{{ formatearTipo(certificado.tipo) }}</span></td>
+            <td><strong class="table-cert-title">{{ certificado.titulo }}</strong></td>
+            <td><span class="badge badge--contexto" [class.badge--revisor]="certificado.contextoRequerimiento === 'revisor'">{{ formatearContexto(certificado.contextoRequerimiento) }}</span></td>
             <td>{{ certificado.etapaReferencia || '-' }}</td>
-            <td>{{ certificado.subidoPor }}</td>
-            <td>{{ getFecha(certificado) | date: 'dd/MM/yyyy':'America/Bogota' }}</td>
+            <td><span class="table-user-name">{{ certificado.subidoPor }}</span></td>
+            <td><span class="table-date">{{ getFecha(certificado) | date: 'dd/MM/yyyy':'America/Bogota' }}</span></td>
             <td>
               <div class="table-actions">
-                <button class="btn-table btn-table--download" type="button"
-                  (click)="descargar(certificado)">Descargar</button>
-                <button class="btn-table btn-table--delete" type="button"
-                  (click)="abrirModalEliminar(certificado)">Eliminar</button>
+                <button class="btn-table btn-table--download" type="button" (click)="descargar(certificado)" title="Descargar certificado">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                  </svg>
+                  <span>Descargar</span>
+                </button>
+                <button class="btn-table btn-table--delete" type="button" (click)="abrirModalEliminar(certificado)" title="Eliminar certificado">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                  </svg>
+                  <span>Eliminar</span>
+                </button>
               </div>
             </td>
           </tr>

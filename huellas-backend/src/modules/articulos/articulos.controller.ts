@@ -241,7 +241,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'autor', 'comite-editorial')
+  @Roles('admin', 'director', 'monitor', 'autor', 'comite-editorial', 'revisor')
   @Get('certificados')
   async listarCertificados(@Req() req: any) {
     return await this.articulosService.listarCertificadosUsuario(
@@ -251,7 +251,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'autor', 'comite-editorial')
+  @Roles('admin', 'director', 'monitor', 'autor', 'comite-editorial', 'revisor')
   @Get('certificados/:certificadoId/descargar')
   async descargarCertificado(
     @Param('certificadoId', ParseIntPipe) certificadoId: number,

@@ -856,6 +856,17 @@ export class UsersService {
       .getMany();
   }
 
+  async findRevisores(): Promise<Partial<User>[]> {
+    return this.userRepository
+      .createQueryBuilder('usuario')
+      .innerJoin('usuario.roles', 'rol')
+      .where('rol.rol = :nombreRol', { nombreRol: 'revisor' })
+      .andWhere('usuario.estado_cuenta = :activo', { activo: true })
+      .select(['usuario.id', 'usuario.nombre', 'usuario.correo'])
+      .orderBy('usuario.nombre', 'ASC')
+      .getMany();
+  }
+
   async save(user: User): Promise<User> {
     return await this.userRepository.save(user);
   }

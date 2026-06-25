@@ -277,7 +277,7 @@ export class TimelineEditorialComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error al cargar timeline del artículo:', err);
+        console.error('Error al cargar el seguimiento del artículo:', err);
         this.error = 'No fue posible cargar el seguimiento del artículo.';
         this.cargandoFlujo = false;
         this.cdr.detectChanges();

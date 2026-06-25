@@ -78,7 +78,7 @@ export interface CertificadoArticuloBackend {
   tituloArticulo: string;
   tipo: 'evaluacion' | 'publicacion' | 'aceptacion' | 'envio' | 'revision' | 'otro';
   titulo: string;
-  contextoRequerimiento: 'autor' | 'comite-editorial' | 'editorial';
+  contextoRequerimiento: 'autor' | 'comite-editorial' | 'editorial' | 'revisor';
   etapaReferencia: string | null;
   archivoNombreOriginal: string;
   fechaSubida: string;
@@ -356,6 +356,12 @@ export class ArticulosService {
     );
   }
 
+  getRevisoresCertificados(): Observable<UsuarioCertificadosBackend[]> {
+    return this.http.get<UsuarioCertificadosBackend[]>(
+      `${environment.apiUrlBackend}/usuarios/revisores`,
+    );
+  }
+
   getArticulosComiteAsignados(): Observable<ArticuloResumenBackend[]> {
     return this.http.get<ArticuloResumenBackend[]>(
       `${environment.apiUrlBackend}/articulos/comite/asignados`,
@@ -506,7 +512,7 @@ export class ArticulosService {
     payload: {
       tipo: 'evaluacion' | 'publicacion' | 'aceptacion' | 'envio' | 'revision' | 'otro';
       titulo?: string;
-      contextoRequerimiento: 'autor' | 'comite-editorial' | 'editorial';
+      contextoRequerimiento: 'autor' | 'comite-editorial' | 'editorial' | 'revisor';
       etapaReferencia?: string;
       archivo: File;
     },
@@ -542,7 +548,7 @@ export class ArticulosService {
     payload: {
       tipo?: 'evaluacion' | 'publicacion' | 'aceptacion' | 'envio' | 'revision' | 'otro';
       titulo?: string;
-      contextoRequerimiento?: 'autor' | 'comite-editorial' | 'editorial';
+      contextoRequerimiento?: 'autor' | 'comite-editorial' | 'editorial' | 'revisor';
       etapaReferencia?: string;
     },
   ): Observable<{ message: string }> {

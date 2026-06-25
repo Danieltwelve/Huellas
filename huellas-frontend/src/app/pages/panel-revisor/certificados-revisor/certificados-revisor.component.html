@@ -1,8 +1,8 @@
 <div class="certificados-container">
   <div class="header-section">
     <div class="header-titles">
-      <h1>Certificados y Constancias</h1>
-      <p>Descarga documentos de tus artículos publicados</p>
+      <h1>Mis Certificados</h1>
+      <p>Descarga tus certificados de revisión y constancias editoriales</p>
     </div>
     
     <div class="stats-box">
@@ -17,11 +17,9 @@
 
   <div class="filters-bar">
     <button class="filter-btn" [class.active]="activeFilter === 'todos'" (click)="setFilter('todos')">Todos ({{ totalCertificados }})</button>
-    <button class="filter-btn" [class.active]="activeFilter === 'publicacion'" (click)="setFilter('publicacion')">Publicación</button>
-    <button class="filter-btn" [class.active]="activeFilter === 'aceptacion'" (click)="setFilter('aceptacion')">Aceptación</button>
-    <button class="filter-btn" [class.active]="activeFilter === 'envio'" (click)="setFilter('envio')">Envío</button>
-    <button class="filter-btn" [class.active]="activeFilter === 'evaluacion'" (click)="setFilter('evaluacion')">Evaluación</button>
     <button class="filter-btn" [class.active]="activeFilter === 'revision'" (click)="setFilter('revision')">Revisión</button>
+    <button class="filter-btn" [class.active]="activeFilter === 'evaluacion'" (click)="setFilter('evaluacion')">Evaluación</button>
+    <button class="filter-btn" [class.active]="activeFilter === 'aceptacion'" (click)="setFilter('aceptacion')">Aceptación</button>
     <button class="filter-btn" [class.active]="activeFilter === 'otro'" (click)="setFilter('otro')">Otros</button>
   </div>
 
@@ -61,14 +59,6 @@
         <div class="cert-detail">
           <span class="detail-label">Subido por:</span>
           <span class="detail-value text-muted">{{ certificado.subidoPor }}</span>
-        </div>
-        <div class="cert-detail">
-          <span class="detail-label">Contexto:</span>
-          <span class="detail-value text-muted">{{ certificado.contextoRequerimiento }}</span>
-        </div>
-        <div class="cert-detail">
-          <span class="detail-label">Etapa:</span>
-          <span class="detail-value text-muted">{{ certificado.etapaReferencia || '-' }}</span>
         </div>
         <div class="cert-detail">
           <span class="detail-label">Fecha:</span>

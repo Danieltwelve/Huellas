@@ -13,8 +13,8 @@ export class UploadCertificadoDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn(['autor', 'comite-editorial', 'editorial'])
-  contextoRequerimiento!: 'autor' | 'comite-editorial' | 'editorial';
+  @IsIn(['autor', 'comite-editorial', 'editorial', 'revisor'])
+  contextoRequerimiento!: 'autor' | 'comite-editorial' | 'editorial' | 'revisor';
 
   @IsString()
   @IsOptional()

@@ -32,7 +32,7 @@ export class ArticuloCertificado {
     length: 40,
     default: 'editorial',
   })
-  contextoRequerimiento!: 'autor' | 'comite-editorial' | 'editorial';
+  contextoRequerimiento!: 'autor' | 'comite-editorial' | 'editorial' | 'revisor';
 
   @Column({ name: 'etapa_referencia', type: 'varchar', length: 120, nullable: true })
   etapaReferencia!: string | null;
