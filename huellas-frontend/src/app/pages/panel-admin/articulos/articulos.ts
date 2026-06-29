@@ -203,8 +203,10 @@ export class Articulos implements OnInit, OnDestroy {
       estadoClase = this.getEstadoClase(estadoComite);
     } else {
       estadoEtiqueta = articulo.estado_articulo || 'En curso';
-      if (estadoEtiqueta === 'Aprobado' || estadoEtiqueta === 'Evaluado') {
-        estadoClase = 'status--aceptado';
+      if (estadoEtiqueta === 'Aprobado') {
+        estadoClase = 'status--aprobado';
+      } else if (estadoEtiqueta === 'Evaluado') {
+        estadoClase = 'status--evaluado';
       } else if (estadoEtiqueta === 'Rechazado') {
         estadoClase = 'status--rechazado';
       } else {

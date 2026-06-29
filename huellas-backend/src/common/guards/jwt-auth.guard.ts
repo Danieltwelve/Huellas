@@ -39,6 +39,10 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException('Usuario no registrado en el sistema');
       }
 
+      if (user.estado_cuenta === false) {
+        throw new UnauthorizedException('La cuenta de usuario está desactivada');
+      }
+
       const tokenRoles = this.extractRoles(decodedToken);
 
       request['user'] = {

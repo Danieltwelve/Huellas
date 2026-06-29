@@ -65,34 +65,57 @@
   </div>
 
   <div class="table-section">
-    <div class="table-header">
-      <h2>Mis articulos</h2>
-      <div class="table-actions">
-        <div class="status-filters">
-          <button type="button" class="filter-chip" [class.active]="estadoFiltro === 'todos'" (click)="setFiltro('todos')">Todos</button>
-          <button type="button" class="filter-chip" [class.active]="estadoFiltro === 'revision'" (click)="setFiltro('revision')">En revision</button>
-          <button type="button" class="filter-chip" [class.active]="estadoFiltro === 'correccion'" (click)="setFiltro('correccion')">Correccion</button>
-          <button type="button" class="filter-chip" [class.active]="estadoFiltro === 'publicado'" (click)="setFiltro('publicado')">Publicados</button>
-        </div>
+    <div class="table-header" style="flex-direction: column; align-items: stretch; gap: 0.8rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <h2>Mis articulos</h2>
+        <div class="table-actions">
+          <div class="status-filters">
+            <button type="button" class="filter-chip" [class.active]="estadoFiltro === 'todos'" (click)="setFiltro('todos')">Todos</button>
+            <button type="button" class="filter-chip" [class.active]="estadoFiltro === 'revision'" (click)="setFiltro('revision')">En revision</button>
+            <button type="button" class="filter-chip" [class.active]="estadoFiltro === 'correccion'" (click)="setFiltro('correccion')">Correccion</button>
+            <button type="button" class="filter-chip" [class.active]="estadoFiltro === 'publicado'" (click)="setFiltro('publicado')">Publicados</button>
+          </div>
 
-        <div class="sort-panel">
-          <span class="sort-panel__label">Ordenar por</span>
-          <select
-            #sortSelect
-            class="sort-panel__select"
-            [value]="ordenArticulos"
-            (change)="setOrdenArticulos(sortSelect.value)"
-            aria-label="Ordenar artículos"
-          >
-            <option value="llegada-reciente">Orden de llegada: más reciente</option>
-            <option value="llegada-antigua">Orden de llegada: más antiguo</option>
-            <option value="fecha-desc">Fecha: descendente</option>
-            <option value="fecha-asc">Fecha: ascendente</option>
-            <option value="titulo-asc">Título: A - Z</option>
-            <option value="titulo-desc">Título: Z - A</option>
-            <option value="codigo-asc">Código: ascendente</option>
-            <option value="codigo-desc">Código: descendente</option>
-          </select>
+          <div class="sort-panel">
+            <span class="sort-panel__label">Ordenar por</span>
+            <select
+              #sortSelect
+              class="sort-panel__select"
+              [value]="ordenArticulos"
+              (change)="setOrdenArticulos(sortSelect.value)"
+              aria-label="Ordenar artículos"
+            >
+              <option value="llegada-reciente">Orden de llegada: más reciente</option>
+              <option value="llegada-antigua">Orden de llegada: más antiguo</option>
+              <option value="fecha-desc">Fecha: descendente</option>
+              <option value="fecha-asc">Fecha: ascendente</option>
+              <option value="titulo-asc">Título: A - Z</option>
+              <option value="titulo-desc">Título: Z - A</option>
+              <option value="codigo-asc">Código: ascendente</option>
+              <option value="codigo-desc">Código: descendente</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="search-filters-bar">
+        <input
+          type="text"
+          class="search-input"
+          [(ngModel)]="searchText"
+          placeholder="Buscar por título o código de artículo..."
+          aria-label="Buscar artículo"
+        />
+        <div class="date-filters">
+          <div class="date-input-group">
+            <label for="fechaInicio">Desde:</label>
+            <input id="fechaInicio" type="date" [(ngModel)]="fechaInicioFiltro" />
+          </div>
+          <div class="date-input-group">
+            <label for="fechaFin">Hasta:</label>
+            <input id="fechaFin" type="date" [(ngModel)]="fechaFinFiltro" />
+          </div>
+          <button type="button" class="btn-clear-date" (click)="fechaInicioFiltro = ''; fechaFinFiltro = '';" *ngIf="fechaInicioFiltro || fechaFinFiltro">✕ Limpiar</button>
         </div>
       </div>
     </div>
@@ -128,6 +151,7 @@
                     class="state-pill"
                     [class.state-review]="getEstadoClass(articulo) === 'state-review'"
                     [class.state-pending]="getEstadoClass(articulo) === 'state-pending'"
+                    [class.state-evaluado]="getEstadoClass(articulo) === 'state-evaluado'"
                     [class.state-published]="getEstadoClass(articulo) === 'state-published'"
                   >
                     {{ getEstadoLabel(articulo) }}
@@ -190,6 +214,7 @@
                   class="state-pill"
                   [class.state-review]="getEstadoClass(articulo) === 'state-review'"
                   [class.state-pending]="getEstadoClass(articulo) === 'state-pending'"
+                  [class.state-evaluado]="getEstadoClass(articulo) === 'state-evaluado'"
                   [class.state-published]="getEstadoClass(articulo) === 'state-published'"
                 >{{ getEstadoLabel(articulo) }}</span>
               </div>
@@ -226,9 +251,14 @@
           }
         </div>
       } @else {
-        <div class="skeleton-list">
-          @for (item of [1, 2, 3, 4]; track item) {
-            <div class="skeleton-row"></div>
+        <div class="skeleton-grid">
+          @for (item of [1, 2, 3]; track item) {
+            <div class="skeleton-card">
+              <div class="skeleton-shimmer skeleton-text skeleton-text--title"></div>
+              <div class="skeleton-shimmer skeleton-text" style="width: 95%;"></div>
+              <div class="skeleton-shimmer skeleton-text" style="width: 50%;"></div>
+              <div class="skeleton-shimmer skeleton-bar" style="width: 120px; margin-top: 8px;"></div>
+            </div>
           }
         </div>
       }

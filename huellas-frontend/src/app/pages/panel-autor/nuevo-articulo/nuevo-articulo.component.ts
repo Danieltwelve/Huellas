@@ -66,6 +66,8 @@ export class NuevoArticuloComponent implements OnInit {
   usuarioActualId: number | null = null;
   envioHabilitado = true;
   estadoEnvioCargando = true;
+  arrastrandoArchivo = false;
+  progresoSubida = 0;
 
   autoresLista: { id: number; nombre: string }[] = [];
 
@@ -325,30 +327,51 @@ export class NuevoArticuloComponent implements OnInit {
     });
   }
 
-  onFileChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivo = true;
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivo = false;
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivo = false;
+    const file = event.dataTransfer?.files?.[0];
+    if (file) {
+      this.validarYAsignarArchivo(file);
+    }
+  }
+
+  private validarYAsignarArchivo(file: File): void {
     this.archivoError = '';
     this.archivoTocado = true;
-    const file = input.files?.[0];
-    if (!file) {
-      this.archivoSeleccionado = null;
-      this.archivoError = 'El archivo es requerido';
-      return;
-    }
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
     if (!['pdf', 'docx', 'doc'].includes(ext)) {
       this.archivoError = 'Solo se permiten archivos .pdf, .doc o .docx';
-      input.value = '';
       this.archivoSeleccionado = null;
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
       this.archivoError = 'El archivo no debe superar 10 MB';
-      input.value = '';
       this.archivoSeleccionado = null;
       return;
     }
     this.archivoSeleccionado = file;
+  }
+
+  onFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      this.validarYAsignarArchivo(file);
+    } else {
+      this.archivoSeleccionado = null;
+      this.archivoError = 'El archivo es requerido';
+    }
   }
 
   clearArchivo(input: HTMLInputElement): void {
@@ -447,16 +470,23 @@ export class NuevoArticuloComponent implements OnInit {
     });
 
     this.articulosService.crearArticulo(fd).subscribe({
-      next: (response) => {
-        console.log('✅ Artículo enviado correctamente:', response);
-        this.enviando = false;
-        this.exito = true;
-        this.cdr.detectChanges();
-        setTimeout(() => this.router.navigate(['/panel-autor']), 3000);
+      next: (event: any) => {
+        if (event.type === 1) { // HttpEventType.UploadProgress
+          this.progresoSubida = Math.round((100 * event.loaded) / event.total!);
+          this.cdr.detectChanges();
+        } else if (event.type === 4) { // HttpEventType.Response
+          console.log('✅ Artículo enviado correctamente:', event.body);
+          this.enviando = false;
+          this.progresoSubida = 100;
+          this.exito = true;
+          this.cdr.detectChanges();
+          setTimeout(() => this.router.navigate(['/panel-autor']), 3000);
+        }
       },
       error: (err: any) => {
         console.error('❌ Error al enviar artículo:', err);
         this.enviando = false;
+        this.progresoSubida = 0;
         this.errorEnvio =
           err?.error?.message ?? err?.message ?? 'Ocurrió un error al enviar el artículo.';
         this.cdr.detectChanges();

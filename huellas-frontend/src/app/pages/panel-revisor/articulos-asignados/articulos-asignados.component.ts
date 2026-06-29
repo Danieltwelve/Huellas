@@ -90,6 +90,26 @@ export class ArticulosAsignadosComponent implements OnInit {
     return 'Pendiente';
   }
 
+  /**
+   * Returns the display label for the status column.
+   * If the article deadline is past (and not yet evaluated), shows 'Vencido'.
+   */
+  getEtiquetaEstadoVisible(articulo: { estado: string; fechaLimite: string | null }): string {
+    if (articulo.estado !== 'evaluado' && this.esVencido(articulo.fechaLimite)) {
+      return 'Vencido';
+    }
+    return this.getEtiquetaEstado(articulo.estado);
+  }
+
+  /** Returns true if the reviewer can still perform/view the review.
+   * Only blocks when the deadline is past AND the article is NOT yet evaluated. */
+  puedeRevisar(articulo: { estado: string; fechaLimite: string | null }): boolean {
+    // Already evaluated → always allow viewing
+    if (articulo.estado === 'evaluado') return true;
+    // Not evaluated → block if deadline has passed
+    return !this.esVencido(articulo.fechaLimite);
+  }
+
   getEtiquetaPrioridad(prioridad: 'alta' | 'media' | 'baja'): string {
     if (prioridad === 'alta') {
       return 'Alta';

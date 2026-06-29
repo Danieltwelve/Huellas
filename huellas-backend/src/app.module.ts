@@ -76,10 +76,6 @@ import { AvisosModule } from './modules/avisos/avisos.module';
     }),
     ScheduleModule.forRoot(),
     ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads', 'articulos'),
-      serveRoot: '/uploads/articulos',
-    }),
-    ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads', 'portadas'),
       serveRoot: '/uploads/portadas',
     }),

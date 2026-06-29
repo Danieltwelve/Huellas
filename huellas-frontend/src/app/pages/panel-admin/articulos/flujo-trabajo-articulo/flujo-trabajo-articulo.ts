@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription, interval } from 'rxjs';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   ArticuloFlujo,
   ArticulosService,
@@ -133,6 +135,13 @@ export class FlujoTrabajoArticulo {
   committeeMemberSeleccionadoId: number | null = null;
   asignandoComite = false;
 
+  arrastrandoArchivoTurnitin = false;
+  progresoTurnitin = 0;
+  arrastrandoArchivoComite = false;
+  progresoComite = 0;
+  arrastrandoArchivoCertificacion = false;
+  progresoCertificacion = 0;
+
   asuntoObservacion = '';
   comentarioObservacion = '';
   archivoObservacion: File | null = null;
@@ -228,6 +237,127 @@ export class FlujoTrabajoArticulo {
   volverAlListado(): void {
     // Ir al listado de artículos del panel de administración
     this.router.navigate(['/articulos']);
+  }
+
+  exportarHistorialPdf(): void {
+    if (!this.articulo) {
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const brand = '#0f766e';
+    const accent = '#0d9488';
+    const textDark = '#0f172a';
+    const textMuted = '#64748b';
+    const generatedAt = new Intl.DateTimeFormat('es-CO', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date());
+
+    doc.setProperties({
+      title: `Historial de Artículo - ${this.articulo.codigo}`,
+      subject: 'Historial y bitácora del flujo editorial',
+      author: 'Revista Huellas',
+    });
+
+    const drawHeader = (): void => {
+      doc.setFillColor(15, 118, 110);
+      doc.rect(0, 0, pageWidth, 26, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('REVISTA HUELLAS - BITÁCORA EDITORIAL', 14, 11);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(`Código del artículo: ${this.articulo?.codigo ?? 'S/N'}`, 14, 17);
+      doc.setFontSize(8);
+      doc.text(`Reporte generado: ${generatedAt}`, 14, 22);
+    };
+
+    const drawFooter = (pageNumber: number): void => {
+      doc.setDrawColor(224, 231, 240);
+      doc.line(14, pageHeight - 14, pageWidth - 14, pageHeight - 14);
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(8);
+      doc.text(
+        'Este documento es una copia oficial de la bitácora del proceso editorial de la Revista Huellas.',
+        14,
+        pageHeight - 8,
+      );
+      doc.text(`Página ${pageNumber}`, pageWidth - 28, pageHeight - 8);
+    };
+
+    drawHeader();
+    drawFooter(1);
+
+    // Context metadata
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('Resumen del Manuscrito', 14, 34);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [['Campo', 'Detalle']],
+      body: [
+        ['Título', this.articulo.titulo || 'Sin título'],
+        ['Código', this.articulo.codigo || 'Sin código asignado'],
+        ['Etapa Actual', this.articulo.etapaActual?.nombre || 'Desconocida'],
+        ['Temas', (this.articulo.temas || []).join(', ') || 'Sin especificar'],
+        ['Palabras Clave', (this.articulo.palabrasClave || []).join(', ') || 'Sin especificar'],
+        ['Autores', (this.articulo.autores || []).map(a => `${a.nombre} (${a.email})`).join(', ') || 'Sin autores'],
+        ['Fecha de Envío', this.articulo.fechaEnvio ? this.formatearFecha(this.articulo.fechaEnvio) : 'Sin fecha'],
+      ],
+      theme: 'grid',
+      styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.2, textColor: textDark, lineColor: '#cbd5e1' },
+      headStyles: { fillColor: brand, textColor: '#ffffff' },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 35 } },
+      margin: { left: 14, right: 14 }
+    });
+
+    let currentY = (doc as any).lastAutoTable.finalY + 8;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('Historial Cronológico de Cambios y Observaciones', 14, currentY);
+    currentY += 5;
+
+    const bodyHistorial = this.historialObservaciones.map((obs) => [
+      obs.fecha,
+      obs.autor,
+      obs.rol,
+      obs.asunto,
+      this.formatearComentario(obs.comentario) || 'Sin comentarios adicionales.'
+    ]);
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Fecha', 'Autor', 'Rol', 'Acción / Asunto', 'Comentarios']],
+      body: bodyHistorial,
+      theme: 'striped',
+      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.5, textColor: textDark, valign: 'top' },
+      headStyles: { fillColor: accent, textColor: '#ffffff' },
+      alternateRowStyles: { fillColor: '#f8fbfc' },
+      columnStyles: {
+        0: { cellWidth: 24 },
+        1: { cellWidth: 26 },
+        2: { cellWidth: 26 },
+        3: { cellWidth: 42 },
+        4: { cellWidth: 68 }
+      },
+      margin: { left: 14, right: 14, bottom: 20 },
+      didDrawPage: (data) => {
+        drawHeader();
+        drawFooter(doc.getCurrentPageInfo().pageNumber);
+      }
+    });
+
+    doc.save(`historial-articulo-${this.articulo.codigo || this.articulo.id}.pdf`);
   }
 
   toggleRutaEditorial(): void {
@@ -929,70 +1059,153 @@ export class FlujoTrabajoArticulo {
     this.nombreArchivoObservacion = file?.name ?? '';
   }
 
-  onArchivoComiteSeleccionado(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files && input.files.length > 0 ? input.files[0] : null;
+  // Turnitin Drag & Drop
+  onDragOverTurnitin(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoTurnitin = true;
+  }
 
-    this.archivoComite = file;
-    this.nombreArchivoComite = file?.name ?? '';
+  onDragLeaveTurnitin(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoTurnitin = false;
+  }
+
+  onDropTurnitin(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoTurnitin = false;
+    const file = event.dataTransfer?.files?.[0];
+    if (file) {
+      this.validarYAsignarArchivoTurnitin(file);
+    }
+  }
+
+  private validarYAsignarArchivoTurnitin(file: File): void {
+    if (!this.esTamanoArchivoTurnitinValido(file)) {
+      this.archivoTurnitin = null;
+      this.nombreArchivoTurnitin = '';
+      this.abrirModalErrorTurnitin('El archivo de Turnitin no puede superar los 10 MB.');
+      return;
+    }
+    const nombre = file.name.toLowerCase();
+    const ext = nombre.split('.').pop() ?? '';
+    const permitidos = ['pdf', 'docx', 'doc'];
+    if (!permitidos.includes(ext)) {
+      this.archivoTurnitin = null;
+      this.nombreArchivoTurnitin = '';
+      this.abrirModalErrorTurnitin('Solo se permiten archivos PDF, DOC y DOCX válidos.');
+      return;
+    }
+    this.archivoTurnitin = file;
+    this.nombreArchivoTurnitin = file.name;
   }
 
   onArchivoTurnitinSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files && input.files.length > 0 ? input.files[0] : null;
+    if (file) {
+      this.validarYAsignarArchivoTurnitin(file);
+    }
+  }
 
-    if (file && !this.esTamanoArchivoTurnitinValido(file)) {
-      this.archivoTurnitin = null;
-      this.nombreArchivoTurnitin = '';
-      input.value = '';
-      this.abrirModalErrorTurnitin('El archivo de Turnitin no puede superar los 10 MB.');
+  // Committee Drag & Drop
+  onDragOverComite(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoComite = true;
+  }
+
+  onDragLeaveComite(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoComite = false;
+  }
+
+  onDropComite(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoComite = false;
+    const file = event.dataTransfer?.files?.[0];
+    if (file) {
+      this.validarYAsignarArchivoComite(file);
+    }
+  }
+
+  private validarYAsignarArchivoComite(file: File): void {
+    const nombre = file.name.toLowerCase();
+    const ext = nombre.split('.').pop() ?? '';
+    const permitidos = ['pdf', 'docx', 'doc'];
+    if (!permitidos.includes(ext)) {
+      this.archivoComite = null;
+      this.nombreArchivoComite = '';
+      this.accionError = 'Solo se permiten archivos PDF, DOC y DOCX.';
+      this.accionExitosa = null;
       return;
     }
-
-    // Validar tipos permitidos (backend acepta PDF y DOCX)
-    if (file) {
-      const nombre = file.name.toLowerCase();
-      const ext = nombre.split('.').pop() ?? '';
-      const permitidos = ['pdf', 'docx', 'doc'];
-      if (!permitidos.includes(ext)) {
-        this.archivoTurnitin = null;
-        this.nombreArchivoTurnitin = '';
-        input.value = '';
-        this.abrirModalErrorTurnitin('Solo se permiten archivos PDF, DOC y DOCX válidos.');
-        return;
-      }
+    if (file.size > 10 * 1024 * 1024) {
+      this.archivoComite = null;
+      this.nombreArchivoComite = '';
+      this.accionError = 'El archivo de rúbrica no puede superar los 10 MB.';
+      this.accionExitosa = null;
+      return;
     }
+    this.archivoComite = file;
+    this.nombreArchivoComite = file.name;
+    this.accionError = null;
+    this.accionExitosa = null;
+  }
 
-    this.archivoTurnitin = file;
-    this.nombreArchivoTurnitin = file?.name ?? '';
+  onArchivoComiteSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files.length > 0 ? input.files[0] : null;
+    if (file) {
+      this.validarYAsignarArchivoComite(file);
+    }
+  }
+
+  // Certification Drag & Drop
+  onDragOverCertificacion(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoCertificacion = true;
+  }
+
+  onDragLeaveCertificacion(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoCertificacion = false;
+  }
+
+  onDropCertificacion(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastrandoArchivoCertificacion = false;
+    const file = event.dataTransfer?.files?.[0];
+    if (file) {
+      this.validarYAsignarArchivoCertificacion(file);
+    }
+  }
+
+  private validarYAsignarArchivoCertificacion(file: File): void {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      this.archivoCertificacion = null;
+      this.nombreArchivoCertificacion = '';
+      this.accionError = 'Solo se permite subir el certificado de publicación en PDF.';
+      this.accionExitosa = null;
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      this.archivoCertificacion = null;
+      this.nombreArchivoCertificacion = '';
+      this.accionError = 'El archivo de certificación no puede superar los 10 MB.';
+      this.accionExitosa = null;
+      return;
+    }
+    this.archivoCertificacion = file;
+    this.nombreArchivoCertificacion = file.name;
+    this.accionError = null;
+    this.accionExitosa = null;
   }
 
   onArchivoCertificacionSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files && input.files.length > 0 ? input.files[0] : null;
-
-    if (file && file.type !== 'application/pdf') {
-      this.archivoCertificacion = null;
-      this.nombreArchivoCertificacion = '';
-      input.value = '';
-      this.accionError = 'Solo se permite subir el certificado de publicación en PDF.';
-      this.accionExitosa = null;
-      return;
+    if (file) {
+      this.validarYAsignarArchivoCertificacion(file);
     }
-
-    if (file && file.size > 10 * 1024 * 1024) {
-      this.archivoCertificacion = null;
-      this.nombreArchivoCertificacion = '';
-      input.value = '';
-      this.accionError = 'El archivo de certificación no puede superar los 10 MB.';
-      this.accionExitosa = null;
-      return;
-    }
-
-    this.archivoCertificacion = file;
-    this.nombreArchivoCertificacion = file?.name ?? '';
-    this.accionError = null;
-    this.accionExitosa = null;
   }
 
   onPorcentajeTurnitinInput(event: Event): void {
@@ -1061,17 +1274,24 @@ export class FlujoTrabajoArticulo {
         archivo: this.archivoCertificacion,
       })
       .subscribe({
-        next: (respuesta) => {
-          this.subiendoCertificacion = false;
-          this.archivoCertificacion = null;
-          this.nombreArchivoCertificacion = '';
-          this.cargarArticulo(this.articulo!.id, () => {
-            this.accionExitosa =
-              respuesta.message || 'Certificado de publicación cargado correctamente.';
-          });
+        next: (event: any) => {
+          if (event.type === 1) { // HttpEventType.UploadProgress
+            this.progresoCertificacion = Math.round((100 * event.loaded) / event.total!);
+          } else if (event.type === 4) { // HttpEventType.Response
+            const respuesta = event.body;
+            this.subiendoCertificacion = false;
+            this.progresoCertificacion = 0;
+            this.archivoCertificacion = null;
+            this.nombreArchivoCertificacion = '';
+            this.cargarArticulo(this.articulo!.id, () => {
+              this.accionExitosa =
+                respuesta.message || 'Certificado de publicación cargado correctamente.';
+            });
+          }
         },
         error: (err) => {
           this.subiendoCertificacion = false;
+          this.progresoCertificacion = 0;
           this.accionError =
             err?.error?.message ?? 'No se pudo subir el certificado de publicación.';
         },
@@ -1162,16 +1382,23 @@ export class FlujoTrabajoArticulo {
         archivo: this.archivoComite,
       })
       .subscribe({
-        next: (respuesta) => {
-          this.evaluandoComite = false;
-          this.observacionComite = '';
-          this.archivoComite = null;
-          this.nombreArchivoComite = '';
-          this.accionExitosa = respuesta.message || 'Evaluación de comité editorial registrada.';
-          this.cargarArticulo(this.articulo!.id);
+        next: (event: any) => {
+          if (event.type === 1) { // HttpEventType.UploadProgress
+            this.progresoComite = Math.round((100 * event.loaded) / event.total!);
+          } else if (event.type === 4) { // HttpEventType.Response
+            const respuesta = event.body;
+            this.evaluandoComite = false;
+            this.progresoComite = 0;
+            this.observacionComite = '';
+            this.archivoComite = null;
+            this.nombreArchivoComite = '';
+            this.accionExitosa = respuesta.message || 'Evaluación de comité editorial registrada.';
+            this.cargarArticulo(this.articulo!.id);
+          }
         },
         error: (err) => {
           this.evaluandoComite = false;
+          this.progresoComite = 0;
           this.accionError =
             err?.error?.message ?? 'No se pudo registrar la evaluación del comité.';
         },
@@ -2033,40 +2260,47 @@ export class FlujoTrabajoArticulo {
         decision: this.decisionTurnitin || undefined,
       })
       .subscribe({
-        next: (respuesta) => {
-          this.evaluandoTurnitin = false;
-          this.tituloModalExito = 'Turnitin procesado correctamente';
-          this.badgeModalExito = 'Turnitin evaluado';
-          this.mensajeExitoTurnitin = respuesta.message || 'Evaluación registrada.';
-          this.mostrarModalExitoTurnitin = true;
+        next: (event: any) => {
+          if (event.type === 1) { // HttpEventType.UploadProgress
+            this.progresoTurnitin = Math.round((100 * event.loaded) / event.total!);
+          } else if (event.type === 4) { // HttpEventType.Response
+            const respuesta = event.body;
+            this.evaluandoTurnitin = false;
+            this.progresoTurnitin = 0;
+            this.tituloModalExito = 'Turnitin procesado correctamente';
+            this.badgeModalExito = 'Turnitin evaluado';
+            this.mensajeExitoTurnitin = respuesta.message || 'Evaluación registrada.';
+            this.mostrarModalExitoTurnitin = true;
 
-          if (this.decisionTurnitin === 'solicitar_cambios') {
-            const asunto = 'Solicitud de cambios por Turnitin';
-            const comentarios =
-              this.observacionTurnitin.trim() || 'Se solicita corrección por similitud.';
-            this.articulosService
-              .agregarObservacion(this.articulo!.id, {
-                asunto,
-                comentarios,
-                etapaId: 3,
-                archivo: fileToSend,
-              })
-              .subscribe({
-                next: () => {
-                  this.cargarArticulo(this.articulo!.id);
-                  this.resetTurnitinForm();
-                },
-                error: () => {
-                  this.resetTurnitinForm();
-                },
-              });
-          } else {
-            this.cargarArticulo(this.articulo!.id);
-            this.resetTurnitinForm();
+            if (this.decisionTurnitin === 'solicitar_cambios') {
+              const asunto = 'Solicitud de cambios por Turnitin';
+              const comentarios =
+                this.observacionTurnitin.trim() || 'Se solicita corrección por similitud.';
+              this.articulosService
+                .agregarObservacion(this.articulo!.id, {
+                  asunto,
+                  comentarios,
+                  etapaId: 3,
+                  archivo: fileToSend,
+                })
+                .subscribe({
+                  next: () => {
+                    this.cargarArticulo(this.articulo!.id);
+                    this.resetTurnitinForm();
+                  },
+                  error: () => {
+                    this.resetTurnitinForm();
+                  },
+                });
+            } else {
+              this.cargarArticulo(this.articulo!.id);
+              this.resetTurnitinForm();
+            }
           }
         },
         error: (err) => {
           this.evaluandoTurnitin = false;
+          this.progresoTurnitin = 0;
           const mensaje = err?.error?.message ?? 'No se pudo registrar la evaluación de Turnitin.';
           this.abrirModalErrorTurnitin(mensaje);
         },

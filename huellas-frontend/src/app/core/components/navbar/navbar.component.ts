@@ -435,7 +435,10 @@ export class NavbarComponent implements OnInit {
   }
 
   private obtenerTituloEstadoArticulo(articulo: ArticuloResumenBackend): string {
-    const etapa = (articulo.etapa_nombre ?? '').toLowerCase();
+    const etapa = (articulo.etapa_nombre ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
 
     if (etapa.includes('public')) {
       return 'Artículo publicado';

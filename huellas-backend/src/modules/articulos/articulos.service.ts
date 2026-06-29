@@ -3856,7 +3856,7 @@ export class ArticulosService {
 
   async getArticuloFileStream(
     filename: string,
-    userId: number,
+    userId: number | null,
     userRoles: string[],
   ): Promise<NodeJS.ReadableStream> {
     const archivo = await this.dataSource
@@ -3865,6 +3865,7 @@ export class ArticulosService {
       .innerJoinAndSelect('oa.observacion', 'obs')
       .innerJoinAndSelect('obs.articulo', 'articulo')
       .leftJoinAndSelect('articulo.autores', 'autor')
+      .leftJoinAndSelect('articulo.revisor', 'revisor')
       .where('oa.archivoPath LIKE :suffix', { suffix: `%${filename}` })
       .getOne();
 
@@ -3877,12 +3878,31 @@ export class ArticulosService {
       throw new NotFoundException('Artículo asociado no encontrado');
     }
 
+    // Si el artículo ya está publicado, es de acceso público
+    if (articulo.etapaActualId === ArticulosService.ETAPA_PUBLICACION) {
+      const filePath = archivo.archivoPath;
+      if (!existsSync(filePath)) {
+        throw new NotFoundException('El archivo no existe en el servidor');
+      }
+      return createReadStream(filePath);
+    }
+
+    // Si no está publicado, requerimos autenticación
+    if (userId === null) {
+      throw new ForbiddenException(
+        'Debes iniciar sesión para descargar este archivo',
+      );
+    }
+
     const esAdmin = userRoles.includes('admin');
     const esDirector = userRoles.includes('director');
     const esMonitor = userRoles.includes('monitor');
     const esComiteEditorial = userRoles.includes('comite-editorial');
     const esAutor =
       articulo.autores?.some((autor) => autor.id === userId) ?? false;
+    const esRevisorAsignado =
+      userRoles.includes('revisor') &&
+      articulo.revisor?.usuarioId === userId;
 
     const esSoloAutor = esAutor && !esAdmin && !esDirector && !esMonitor && !esComiteEditorial;
     if (esSoloAutor) {
@@ -3900,7 +3920,8 @@ export class ArticulosService {
       !esAutor &&
       !esDirector &&
       !esMonitor &&
-      !esComiteEditorial
+      !esComiteEditorial &&
+      !esRevisorAsignado
     ) {
       throw new ForbiddenException(
         'No tienes permiso para descargar este archivo',

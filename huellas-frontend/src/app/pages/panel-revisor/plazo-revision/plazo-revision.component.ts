@@ -39,15 +39,9 @@ interface EstadoProrroga {
 export class PlazoRevisionComponent implements OnInit {
   private readonly revisoresService = inject(RevisoresService);
 
-  articulos: ArticuloRevisorListado[] = ARTICULOS_ASIGNADOS_MOCK
-    .filter((a) => a.estado !== 'evaluado')
-    .map((articulo, index) => ({
-      ...articulo,
-      ordenLlegada: ((): number => {
-        const ts = new Date(articulo.fechaAsignacion).getTime();
-        return Number.isNaN(ts) ? index : ts;
-      })(),
-    }));
+  // Start empty — filled from API in ngOnInit (mock is only the error fallback)
+  articulos: ArticuloRevisorListado[] = [];
+  cargando = true;
   prorrogasSolicitadas: EstadoProrroga = {};
   mensaje = '';
   ordenArticulos: OrdenArticulos = 'llegada-reciente';
@@ -55,10 +49,16 @@ export class PlazoRevisionComponent implements OnInit {
   articuloSeleccionadoId: number | null = null;
 
   ngOnInit(): void {
+    this.cargando = true;
     this.revisoresService.getArticulosAsignadosRevisor().subscribe({
       next: (data) => {
         this.articulos = data
-          .filter((articulo) => articulo.estado !== 'evaluado')
+          .filter((articulo) => {
+            if (articulo.estado === 'evaluado') return false;
+            const limite = new Date(articulo.fechaLimite ?? '');
+            if (isNaN(limite.getTime())) return false;
+            return limite.getTime() < Date.now();
+          })
           .map((articulo, index) => ({
             id: articulo.id,
             codigo: articulo.codigo,
@@ -77,10 +77,17 @@ export class PlazoRevisionComponent implements OnInit {
               return Number.isNaN(ts) ? index : ts;
             })(),
           }));
+        this.cargando = false;
       },
       error: () => {
+        // Only use mock data as a last-resort fallback when the API is unavailable
         this.articulos = ARTICULOS_ASIGNADOS_MOCK
-          .filter((a) => a.estado !== 'evaluado')
+          .filter((a) => {
+            if (a.estado === 'evaluado') return false;
+            const limite = new Date(a.fechaLimite);
+            if (isNaN(limite.getTime())) return false;
+            return limite.getTime() < Date.now();
+          })
           .map((articulo, index) => ({
             ...articulo,
             ordenLlegada: ((): number => {
@@ -88,6 +95,7 @@ export class PlazoRevisionComponent implements OnInit {
               return Number.isNaN(ts) ? index : ts;
             })(),
           }));
+        this.cargando = false;
       },
     });
   }
@@ -133,6 +141,11 @@ export class PlazoRevisionComponent implements OnInit {
     return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   }
 
+  /** Returns the number of days overdue as a positive number (for display). */
+  diasVencidos(fechaLimite: string): number {
+    return Math.abs(this.diasRestantes(fechaLimite));
+  }
+
   obtenerArticulo(articuloId: number): ArticuloRevisorListado | undefined {
     return this.articulos.find((a) => a.id === articuloId);
   }
@@ -145,6 +158,19 @@ export class PlazoRevisionComponent implements OnInit {
   prorrogasSolicitadasPendientes(articuloId: number): boolean {
     const art = this.obtenerArticulo(articuloId);
     return !!art?.solicitudProrrogaRevisorPendiente;
+  }
+
+  /**
+   * Determines if the review for the given article should be blocked.
+   * Blocking occurs when the deadline has passed (negative days remaining).
+   * The block is applied regardless of any extension request or usage.
+   */
+  isRevisionBloqueada(articuloId: number): boolean {
+    const art = this.obtenerArticulo(articuloId);
+    if (!art) return false;
+    const dias = this.diasRestantes(art.fechaLimite);
+    // Block if deadline passed, ignoring any extension flags.
+    return dias < 0;
   }
 
   solicitarProrroga(articuloId: number): void {

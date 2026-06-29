@@ -55,9 +55,20 @@
   </div>
 
   @if (cargandoLista || cargandoFlujo) {
-    <div class="demo-banner demo-banner--loading">
-      <span class="demo-banner__spinner" aria-hidden="true"></span>
-      <span>Cargando seguimiento del artículo...</span>
+    <div class="skeleton-seguimiento" style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem;">
+      <div class="skeleton-card" style="padding: 1.5rem;">
+        <div class="skeleton-shimmer skeleton-text skeleton-text--title" style="width: 35%;"></div>
+        <div class="skeleton-shimmer skeleton-text" style="width: 75%;"></div>
+        <div class="skeleton-shimmer skeleton-bar" style="height: 12px; margin-top: 1.2rem; border-radius: 99px;"></div>
+      </div>
+      <div class="skeleton-card" style="padding: 1.5rem;">
+        <div class="skeleton-shimmer skeleton-text" style="width: 25%; height: 1.2rem; margin-bottom: 1.2rem;"></div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+          <div class="skeleton-shimmer skeleton-card" style="height: 70px; margin: 0; padding: 0.5rem;"></div>
+          <div class="skeleton-shimmer skeleton-card" style="height: 70px; margin: 0; padding: 0.5rem;"></div>
+          <div class="skeleton-shimmer skeleton-card" style="height: 70px; margin: 0; padding: 0.5rem;"></div>
+        </div>
+      </div>
     </div>
   }
 

@@ -23,6 +23,8 @@ import {
   Query,
   InternalServerErrorException,
   NotFoundException,
+  Inject,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ArticulosService } from './articulos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -38,6 +40,9 @@ import { diskStorage } from 'multer';
 import { validateOrReject, ValidationError } from 'class-validator';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { FIREBASE_AUTH } from 'src/common/firebase/firebase-admin.constants';
+import { Auth as FirebaseAuth } from 'firebase-admin/auth';
+import { UsersService } from 'src/modules/users/users.service';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { createReadStream, promises as fs } from 'fs';
 import { existsSync, mkdirSync } from 'fs';
@@ -134,7 +139,11 @@ function buildCertificadoUploadOptions() {
 export class ArticulosController {
   private readonly logger = new Logger(ArticulosController.name);
 
-  constructor(private readonly articulosService: ArticulosService) {}
+  constructor(
+    private readonly articulosService: ArticulosService,
+    @Inject(FIREBASE_AUTH) private readonly firebaseAuth: FirebaseAuth,
+    private readonly usersService: UsersService,
+  ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'autor', 'director', 'monitor', 'comite-editorial')
@@ -860,21 +869,59 @@ export class ArticulosController {
   @Get('descargar/:filename')
   async descargarArchivo(
     @Param('filename') filename: string,
+    @Req() req: express.Request,
     @Res() res: express.Response,
   ) {
     try {
       // Sanitizar el nombre para evitar path traversal
       const safeName = path.basename(filename);
+
+      let userId: number | null = null;
+      let roles: string[] = [];
+
+      // Extraer y validar el token Bearer si se proporciona
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+          const decodedToken = await this.firebaseAuth.verifyIdToken(token, true);
+          if (decodedToken && decodedToken.email) {
+            const user = await this.usersService.findByEmail(decodedToken.email);
+            if (user && user.estado_cuenta !== false) {
+              userId = user.id;
+              
+              // Extraer roles de la misma manera que en el guard
+              const tokenRoles = decodedToken.roles;
+              if (Array.isArray(tokenRoles)) {
+                roles = tokenRoles.filter((role): role is string => typeof role === 'string');
+              }
+              if (roles.length === 0) {
+                roles = user.roles?.map((r) => r.rol) ?? [];
+              }
+            }
+          }
+        } catch (authError) {
+          this.logger.warn(
+            `Intento de descarga con token inválido/expirado para archivo ${safeName}: ${authError.message}`,
+          );
+          // Si el token es inválido, tratamos como anónimo en lugar de arrojar error inmediatamente,
+          // ya que el recurso podría ser de acceso público.
+        }
+      }
+
+      // Obtener el stream a través del servicio con validación de permisos
+      const stream = await this.articulosService.getArticuloFileStream(
+        safeName,
+        userId,
+        roles,
+      );
+
       const filePath = path.join(
         process.cwd(),
         'uploads',
         'articulos',
         safeName,
       );
-
-      if (!existsSync(filePath)) {
-        throw new NotFoundException('Archivo no encontrado');
-      }
 
       const mimeType = mime.lookup(filePath) || 'application/octet-stream';
       res.setHeader('Content-Type', mimeType);
@@ -883,7 +930,6 @@ export class ArticulosController {
         `attachment; filename="${safeName}"`,
       );
 
-      const stream = createReadStream(filePath);
       stream.pipe(res);
 
       stream.on('error', (err) => {
@@ -894,6 +940,7 @@ export class ArticulosController {
       });
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
+      if (error instanceof ForbiddenException) throw error;
       console.error(error);
       throw new InternalServerErrorException('Error al descargar el archivo');
     }

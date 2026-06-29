@@ -46,6 +46,7 @@ export class ArticulosAutorService {
     return this.http.post(
       `${environment.apiUrlBackend}/articulos/envio`,
       formData,
+      { reportProgress: true, observe: 'events' }
     );
   }
 
@@ -59,7 +60,7 @@ export class ArticulosAutorService {
     articuloId: number,
     archivo: File,
     comentarios?: string,
-  ): Observable<{ message: string; observacionId: number }> {
+  ): Observable<any> {
     const formData = new FormData();
     formData.append('archivo', archivo, archivo.name);
 
@@ -67,9 +68,10 @@ export class ArticulosAutorService {
       formData.append('comentarios', comentarios.trim());
     }
 
-    return this.http.post<{ message: string; observacionId: number }>(
+    return this.http.post(
       `${environment.apiUrlBackend}/articulos/${articuloId}/correccion`,
       formData,
+      { reportProgress: true, observe: 'events' }
     );
   }
 

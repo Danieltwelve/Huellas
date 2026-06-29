@@ -3,6 +3,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { catchError, forkJoin, of } from 'rxjs';
 import {
   ArticuloFlujo,
@@ -326,6 +328,133 @@ export class DetalleArticuloComponent implements OnInit {
   volverAtras(): void {
     // Navegar al listado del autor para mantener la misma experiencia visual
     this.router.navigate(['/panel-autor/mi-panel']);
+  }
+
+  exportarHistorialPdf(): void {
+    if (!this.articulo) {
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const brand = '#0f766e';
+    const accent = '#0d9488';
+    const textDark = '#0f172a';
+    const textMuted = '#64748b';
+    const generatedAt = new Intl.DateTimeFormat('es-CO', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date());
+
+    doc.setProperties({
+      title: `Historial de Artículo - ${this.articulo.codigo}`,
+      subject: 'Historial y bitácora del flujo editorial (Vista Autor)',
+      author: 'Revista Huellas',
+    });
+
+    const drawHeader = (): void => {
+      doc.setFillColor(15, 118, 110);
+      doc.rect(0, 0, pageWidth, 26, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('REVISTA HUELLAS - BITÁCORA EDITORIAL', 14, 11);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(`Código del artículo: ${this.articulo?.codigo ?? 'S/N'}`, 14, 17);
+      doc.setFontSize(8);
+      doc.text(`Reporte generado: ${generatedAt}`, 14, 22);
+    };
+
+    const drawFooter = (pageNumber: number): void => {
+      doc.setDrawColor(224, 231, 240);
+      doc.line(14, pageHeight - 14, pageWidth - 14, pageHeight - 14);
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(8);
+      doc.text(
+        'Este documento es una copia oficial de la bitácora del proceso editorial de la Revista Huellas.',
+        14,
+        pageHeight - 8,
+      );
+      doc.text(`Página ${pageNumber}`, pageWidth - 28, pageHeight - 8);
+    };
+
+    drawHeader();
+    drawFooter(1);
+
+    // Context metadata
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('Resumen del Manuscrito', 14, 34);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [['Campo', 'Detalle']],
+      body: [
+        ['Título', this.articulo.titulo || 'Sin título'],
+        ['Código', this.articulo.codigo || 'Sin código asignado'],
+        ['Etapa Actual', this.articulo.etapaActual?.nombre || 'Desconocida'],
+        ['Temas', (this.articulo.temas || []).join(', ') || 'Sin especificar'],
+        ['Palabras Clave', (this.articulo.palabrasClave || []).join(', ') || 'Sin especificar'],
+        ['Autores', (this.articulo.autores || []).map(a => `${a.nombre} (${a.email})`).join(', ') || 'Sin autores'],
+        ['Fecha de Envío', this.articulo.fechaEnvio ? this.fechaEnvioTexto : 'Sin fecha'],
+      ],
+      theme: 'grid',
+      styles: { font: 'helvetica', fontSize: 9, cellPadding: 2.2, textColor: textDark, lineColor: '#cbd5e1' },
+      headStyles: { fillColor: brand, textColor: '#ffffff' },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 35 } },
+      margin: { left: 14, right: 14 }
+    });
+
+    let currentY = (doc as any).lastAutoTable.finalY + 8;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('Historial Cronológico de Cambios y Observaciones', 14, currentY);
+    currentY += 5;
+
+    const bodyHistorial = this.historial.map((obs) => {
+      const fecha = this.formatearFechaHistorial(obs.fechaSubida);
+      const autor = obs.usuario?.nombre || 'Usuario desconocido';
+      let rolRaw = obs.usuario?.roles?.[0]?.nombre || 'Sin rol';
+      let rol = rolRaw.trim().replace(/-/g, ' ');
+      if (rol.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('comite editorial')) {
+        rol = 'Comité editorial';
+      }
+      const asunto = obs.asunto || 'Sin asunto';
+      const comentario = this.formatearComentario(obs.comentarios) || 'Sin comentarios adicionales.';
+
+      return [fecha, autor, rol, asunto, comentario];
+    });
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Fecha', 'Autor', 'Rol', 'Acción / Asunto', 'Comentarios']],
+      body: bodyHistorial,
+      theme: 'striped',
+      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.5, textColor: textDark, valign: 'top' },
+      headStyles: { fillColor: accent, textColor: '#ffffff' },
+      alternateRowStyles: { fillColor: '#f8fbfc' },
+      columnStyles: {
+        0: { cellWidth: 24 },
+        1: { cellWidth: 26 },
+        2: { cellWidth: 26 },
+        3: { cellWidth: 42 },
+        4: { cellWidth: 68 }
+      },
+      margin: { left: 14, right: 14, bottom: 20 },
+      didDrawPage: (data) => {
+        drawHeader();
+        drawFooter(doc.getCurrentPageInfo().pageNumber);
+      }
+    });
+
+    doc.save(`historial-articulo-${this.articulo.codigo || this.articulo.id}.pdf`);
   }
 
   private setArchivoCorreccion(file: File): void {

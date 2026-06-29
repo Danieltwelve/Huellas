@@ -1,7 +1,7 @@
 <section class="head">
-  <h1>Plazo de revision</h1>
+  <h1>Plazo de revisión vencido</h1>
   <p>
-    El plazo por articulo es de 30 dias. Puedes solicitar una sola prorroga de 15 dias por cada revision.
+    Los artículos que aparecen aquí superaron el plazo de 30 días sin ser evaluados. Puedes solicitar una única prórroga de 15 días. La solicitud es enviada al monitor para su aprobación.
   </p>
 </section>
 
@@ -52,11 +52,16 @@
         </tr>
       </thead>
       <tbody>
+        @if (cargando) {
+          <tr>
+            <td colspan="4" class="loading-row">Cargando artículos...</td>
+          </tr>
+        }
         @for (articulo of articulosOrdenados; track articulo.id) {
           <tr>
             <td>{{ articulo.codigo }} - {{ articulo.titulo }}</td>
             <td>{{ formatearFecha(articulo.fechaLimite) }}</td>
-            <td>{{ diasRestantes(articulo.fechaLimite) }}</td>
+            <td class="dias-vencido">{{ diasVencidos(articulo.fechaLimite) }} días vencido</td>
             <td>
               <button
                 type="button"
@@ -67,13 +72,20 @@
                 [disabled]="tieneProrroga(articulo.id) || prorrogasSolicitadasPendientes(articulo.id)"
               >
                 @if (prorrogasSolicitadasPendientes(articulo.id)) {
-                  Pendiente de aprobación
+                  ⏳ Pendiente de aprobación
                 } @else if (tieneProrroga(articulo.id)) {
-                  Prórroga usada
+                  ✓ Prórroga usada
                 } @else {
                   Solicitar 15 días
                 }
               </button>
+            </td>
+          </tr>
+        }
+        @empty {
+          <tr>
+            <td colspan="4" class="empty-row">
+              ✓ No tienes artículos con el plazo vencido en este momento.
             </td>
           </tr>
         }

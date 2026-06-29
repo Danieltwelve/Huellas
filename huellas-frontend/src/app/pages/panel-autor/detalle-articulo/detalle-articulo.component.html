@@ -1,7 +1,15 @@
 <section class="detalle-page">
   <header class="encabezado" *ngIf="!loading && articulo">
-    <div class="header-actions">
+    <div class="header-actions" style="display: flex; gap: 0.65rem;">
       <button class="btn-outline-teal btn-back" type="button" (click)="volverAtras()">Volver al listado</button>
+      <button class="btn-outline-teal" type="button" (click)="exportarHistorialPdf()" style="padding: 0.6rem 1.1rem; border-radius: 999px; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700; font-size: 0.85rem;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 15px; height: 15px;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Exportar Historial
+      </button>
     </div>
     <div>
       <p class="kicker">Panel autor</p>

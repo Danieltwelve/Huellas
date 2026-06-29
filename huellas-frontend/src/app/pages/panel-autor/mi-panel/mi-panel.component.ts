@@ -73,6 +73,10 @@ export class MiPanelComponent implements OnInit {
   envioHabilitado = true;
   cargandoEstadoEnvios = true;
 
+  searchText = '';
+  fechaInicioFiltro = '';
+  fechaFinFiltro = '';
+
   get totalArticulos() {
     return this.articulos.length;
   }
@@ -98,7 +102,27 @@ export class MiPanelComponent implements OnInit {
   get articulosFiltrados(): ArticuloAutorListado[] {
     const filtrados = this.articulos.filter((articulo) => {
       const estado = this.getEstadoArticulo(articulo);
-      return this.estadoFiltro === 'todos' || estado === this.estadoFiltro;
+      const coincideEstado = this.estadoFiltro === 'todos' || estado === this.estadoFiltro;
+      
+      const coincideTexto = !this.searchText ||
+        articulo.titulo.toLowerCase().includes(this.searchText.toLowerCase()) ||
+        (articulo.codigo && articulo.codigo.toLowerCase().includes(this.searchText.toLowerCase()));
+
+      let coincideFecha = true;
+      if (articulo.fechaReferencia) {
+        const itemFecha = articulo.fechaReferencia;
+        if (this.fechaInicioFiltro) {
+          const fInicio = new Date(this.fechaInicioFiltro);
+          coincideFecha = coincideFecha && itemFecha.getTime() >= fInicio.getTime();
+        }
+        if (this.fechaFinFiltro) {
+          const fFin = new Date(this.fechaFinFiltro);
+          fFin.setHours(23, 59, 59, 999);
+          coincideFecha = coincideFecha && itemFecha.getTime() <= fFin.getTime();
+        }
+      }
+
+      return coincideEstado && coincideTexto && coincideFecha;
     });
 
     return this.ordenarArticulos(filtrados);
@@ -212,7 +236,7 @@ export class MiPanelComponent implements OnInit {
   }
 
   getEstadoArticulo(articulo: ArticuloAutor): 'revision' | 'correccion' | 'publicado' {
-    const valor = articulo.etapa_nombre.toLowerCase();
+    const valor = this.normalizarTexto(articulo.etapa_nombre);
     if (valor.includes('publicado')) {
       return 'publicado';
     }
@@ -238,7 +262,7 @@ export class MiPanelComponent implements OnInit {
   }
 
   getEstadoLabel(articulo: ArticuloAutor): string {
-    const valor = articulo.etapa_nombre.toLowerCase();
+    const valor = this.normalizarTexto(articulo.etapa_nombre);
     if (valor.includes('turnitin')) {
       const notifs = this.notificacionesPorArticulo.get(articulo.id) ?? [];
       const tieneAceptado = notifs.some((n) =>
@@ -249,10 +273,10 @@ export class MiPanelComponent implements OnInit {
       }
     }
 
-    if (articulo.etapa_nombre.toLowerCase().includes('pares')) {
+    if (valor.includes('pares')) {
       return articulo.evaluado_pares ? 'Evaluado' : 'En Revision';
     }
-    if (articulo.etapa_nombre.toLowerCase().includes('comite')) {
+    if (valor.includes('comite')) {
       return articulo.evaluado_comite ? 'Evaluado' : 'En Revision';
     }
     if (this.correccionEnRevision(articulo)) {
@@ -309,10 +333,11 @@ export class MiPanelComponent implements OnInit {
   }
 
   getEstadoClass(articulo: ArticuloAutor): string {
-    if (articulo.etapa_nombre.toLowerCase().includes('pares') && articulo.evaluado_pares) {
+    const valor = this.normalizarTexto(articulo.etapa_nombre);
+    if (valor.includes('pares') && articulo.evaluado_pares) {
       return 'state-published';
     }
-    if (articulo.etapa_nombre.toLowerCase().includes('comite') && articulo.evaluado_comite) {
+    if (valor.includes('comite') && articulo.evaluado_comite) {
       return 'state-published';
     }
     if (this.correccionEnRevision(articulo)) {

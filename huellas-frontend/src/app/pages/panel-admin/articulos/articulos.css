@@ -617,9 +617,9 @@ tbody tr:last-child td {
 }
 
 .stage--comite-editorial {
-  color: #0f766e;
-  background: #f0fdfa;
-  border-color: rgba(20, 184, 166, 0.25);
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: rgba(59, 130, 246, 0.25);
 }
 
 .stage--revision-pares {
@@ -682,10 +682,17 @@ tbody tr:last-child td {
   border-color: rgba(245, 158, 11, 0.25);
 }
 
-.status--aceptado {
+.status--aceptado,
+.status--aprobado {
   color: #047857;
   background: #f0fdf4;
   border-color: rgba(16, 185, 129, 0.25);
+}
+
+.status--evaluado {
+  color: #0f766e;
+  background: #f0fdfa;
+  border-color: rgba(20, 184, 166, 0.25);
 }
 
 .status--rechazado {

@@ -254,15 +254,7 @@ export class ArticulosService {
       archivo?: File | null;
       decision?: string;
     },
-  ): Observable<{
-    message: string;
-    evaluacion: {
-      porcentaje: number;
-      resultado: 'descartado' | 'aceptado' | 'correccion-requerida';
-      observacionId: number;
-    };
-    etapaActual: { id: number; nombre: string };
-  }> {
+  ): Observable<any> {
     const formData = new FormData();
     formData.append('porcentaje', String(payload.porcentaje));
 
@@ -278,15 +270,11 @@ export class ArticulosService {
       formData.append('decision', payload.decision);
     }
 
-    return this.http.post<{
-      message: string;
-      evaluacion: {
-        porcentaje: number;
-        resultado: 'descartado' | 'correccion-requerida';
-        observacionId: number;
-      };
-      etapaActual: { id: number; nombre: string };
-    }>(`${environment.apiUrlBackend}/articulos/${articuloId}/turnitin/evaluacion`, formData);
+    return this.http.post(
+      `${environment.apiUrlBackend}/articulos/${articuloId}/turnitin/evaluacion`,
+      formData,
+      { reportProgress: true, observe: 'events' }
+    );
   }
 
   resolverProrrogaCorreccion(
@@ -440,7 +428,7 @@ export class ArticulosService {
       observacion?: string;
       archivo?: File | null;
     },
-  ): Observable<{ message: string; etapaActual: { id: number; nombre: string } }> {
+  ): Observable<any> {
     const formData = new FormData();
     formData.append('decision', payload.decision);
 
@@ -452,9 +440,10 @@ export class ArticulosService {
       formData.append('archivo', payload.archivo, payload.archivo.name);
     }
 
-    return this.http.post<{ message: string; etapaActual: { id: number; nombre: string } }>(
+    return this.http.post<any>(
       `${environment.apiUrlBackend}/articulos/${articuloId}/comite/evaluacion`,
       formData,
+      { reportProgress: true, observe: 'events' }
     );
   }
 
@@ -516,7 +505,7 @@ export class ArticulosService {
       etapaReferencia?: string;
       archivo: File;
     },
-  ): Observable<{ message: string; certificadoId: number }> {
+  ): Observable<any> {
     const formData = new FormData();
     formData.append('tipo', payload.tipo);
     if (payload.titulo?.trim()) {
@@ -528,9 +517,10 @@ export class ArticulosService {
     }
     formData.append('archivo', payload.archivo, payload.archivo.name);
 
-    return this.http.post<{ message: string; certificadoId: number }>(
+    return this.http.post<any>(
       `${environment.apiUrlBackend}/articulos/${articuloId}/certificados`,
       formData,
+      { reportProgress: true, observe: 'events' }
     );
   }
 

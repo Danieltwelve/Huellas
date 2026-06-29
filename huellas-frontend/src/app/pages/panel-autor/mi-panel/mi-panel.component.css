@@ -342,9 +342,9 @@ tbody tr:hover {
 }
 
 .stage--comite-editorial {
-  color: #0f766e;
-  background: #f0fdfa;
-  border-color: rgba(20, 184, 166, 0.25);
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: rgba(59, 130, 246, 0.25);
 }
 
 .stage--revision-pares {
@@ -411,6 +411,12 @@ tbody tr:hover {
   color: #047857;
   background: #f0fdf4;
   border-color: rgba(16, 185, 129, 0.25);
+}
+
+.state-evaluado {
+  color: #0f766e;
+  background: #f0fdfa;
+  border-color: rgba(20, 184, 166, 0.25);
 }
 
 .btn-outline-sm {
@@ -998,6 +1004,85 @@ tbody tr:hover {
   .acciones-modal {
     border-radius: 0.8rem;
   }
+}
+
+.search-filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 250px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  outline: none;
+  background-color: #ffffff;
+}
+
+.search-input:focus {
+  border-color: #00a39a;
+  box-shadow: 0 0 0 3px rgba(0, 163, 154, 0.12);
+}
+
+.date-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.date-input-group label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.date-input-group input[type='date'] {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  outline: none;
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+.date-input-group input[type='date']:focus {
+  border-color: #00a39a;
+}
+
+.btn-clear-date {
+  border: none;
+  background: transparent;
+  color: #ef4444;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
 }
 
 

@@ -746,3 +746,14 @@ textarea.field-input {
   border: 1px solid rgba(22, 101, 52, 0.18);
 }
 
+.dropzone.is-dragging {
+  border-color: #00a39a !important;
+  background-color: #ecfeff !important;
+  box-shadow: 0 0 0 4px rgba(0, 163, 154, 0.12);
+}
+
+.dropzone:hover {
+  border-color: #00a39a !important;
+  background-color: #f0fdfa !important;
+}
+

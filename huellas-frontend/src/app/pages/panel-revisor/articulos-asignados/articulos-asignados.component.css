@@ -159,6 +159,12 @@ tbody tr:last-child td {
   border-color: rgba(16, 185, 129, 0.25);
 }
 
+.estado-pill.estado-vencido {
+  color: #9f1239;
+  background: #fff1f2;
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
 .prioridad-pill {
   color: #52525b;
   background: #f4f4f5;
@@ -227,6 +233,17 @@ tbody tr:last-child td {
   border: 1px solid #ffc2bc;
 }
 
+/* Artículos evaluados: estilo "completado" en verde neutro */
+.fecha-label.fecha-label-completado {
+  color: #047857;
+}
+
+.fecha-item-vence .fecha-valor.fecha-valor-completado {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
 .btn-ver {
   border: 1px solid #b9c9db;
   background: #fff;
@@ -237,8 +254,21 @@ tbody tr:last-child td {
   cursor: pointer;
 }
 
-.btn-ver:hover {
+.btn-ver:hover:not(:disabled) {
   background: #f4f8fc;
+}
+
+.btn-ver.btn-ver-bloqueado,
+.btn-ver:disabled {
+  background: #fff1f2;
+  border-color: rgba(244, 63, 94, 0.3);
+  color: #9f1239;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+.btn-ver.btn-ver-bloqueado:hover {
+  background: #fff1f2;
 }
 
 .empty-row {

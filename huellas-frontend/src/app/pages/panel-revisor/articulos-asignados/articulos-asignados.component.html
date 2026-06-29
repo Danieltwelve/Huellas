@@ -174,11 +174,12 @@
               <p>{{ articulo.resumen }}</p>
             </td>
             <td>
-              <span class="estado-pill" 
-                [class.estado-pendiente]="articulo.estado === 'pendiente'"
-                [class.estado-proceso]="articulo.estado === 'en-proceso'"
-                [class.estado-evaluado]="articulo.estado === 'evaluado'">
-                {{ getEtiquetaEstado(articulo.estado) }}
+              <span class="estado-pill"
+                [class.estado-pendiente]="articulo.estado === 'pendiente' && !esVencido(articulo.fechaLimite)"
+                [class.estado-proceso]="articulo.estado === 'en-proceso' && !esVencido(articulo.fechaLimite)"
+                [class.estado-evaluado]="articulo.estado === 'evaluado'"
+                [class.estado-vencido]="articulo.estado !== 'evaluado' && esVencido(articulo.fechaLimite)">
+                {{ getEtiquetaEstadoVisible(articulo) }}
               </span>
             </td>
             <td>
@@ -192,18 +193,29 @@
                 <span class="fecha-valor">{{ formatearFecha(articulo.fechaAsignacion) }}</span>
               </div>
               <div class="fecha-item fecha-item-vence">
-                <span class="fecha-label">Vence</span>
+                <span class="fecha-label"
+                  [class.fecha-label-completado]="articulo.estado === 'evaluado'">
+                  {{ articulo.estado === 'evaluado' ? 'Plazo' : 'Vence' }}
+                </span>
                 <span
                   class="fecha-valor"
-                  [class.fecha-valor-vencido]="esVencido(articulo.fechaLimite)"
-                  [class.fecha-valor-proximo]="!esVencido(articulo.fechaLimite) && estaPorVencer(articulo.fechaLimite)">
+                  [class.fecha-valor-completado]="articulo.estado === 'evaluado'"
+                  [class.fecha-valor-vencido]="articulo.estado !== 'evaluado' && esVencido(articulo.fechaLimite)"
+                  [class.fecha-valor-proximo]="articulo.estado !== 'evaluado' && !esVencido(articulo.fechaLimite) && estaPorVencer(articulo.fechaLimite)">
                   {{ formatearFecha(articulo.fechaLimite) }}
                 </span>
               </div>
             </td>
             <td>
-              <button type="button" class="btn-ver" (click)="irARevision(articulo.id)" aria-label="Abrir artículo para revisión">
-                Ver
+              <button
+                type="button"
+                class="btn-ver"
+                [class.btn-ver-bloqueado]="!puedeRevisar(articulo)"
+                (click)="puedeRevisar(articulo) && irARevision(articulo.id)"
+                [disabled]="!puedeRevisar(articulo)"
+                [attr.aria-label]="puedeRevisar(articulo) ? 'Abrir artículo para revisión' : 'Revisión bloqueada: plazo vencido'"
+                [title]="!puedeRevisar(articulo) ? 'El plazo de revisión ha vencido' : ''">
+                {{ puedeRevisar(articulo) ? 'Ver' : 'Bloqueado' }}
               </button>
             </td>
           </tr>
