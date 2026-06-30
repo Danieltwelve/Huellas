@@ -23,6 +23,7 @@ export interface EdicionRevistaBackend {
   anio: number;
   fecha_estado: string;
   estado_id: EstadoEdicionBackend;
+  pdf_completo?: string | null;
 }
 
 export interface EdicionPublicadaBackend {
@@ -34,6 +35,7 @@ export interface EdicionPublicadaBackend {
   anio: number;
   fecha_estado: string;
   portada?: string | null;
+  pdf_completo?: string | null;
   numeroArticulos: number;
   articulos: Array<{
     id: number;
@@ -183,6 +185,13 @@ export class EdicionesRevistaService {
   deletePortada(id: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(
       `${environment.apiUrlBackend}/ediciones/${id}/portada`,
+    );
+  }
+
+  publicarEdicionRapida(formData: FormData): Observable<any> {
+    return this.http.post<any>(
+      `${environment.apiUrlBackend}/ediciones/publicacion-rapida`,
+      formData,
     );
   }
 }

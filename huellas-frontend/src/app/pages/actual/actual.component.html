@@ -74,7 +74,12 @@
 
   <!-- VISTA DETALLE DE UNA EDICIÓN -->
   <div class="edicion-detalle" *ngIf="edicionSeleccionada">
-    <button class="btn-outline-teal btn-back" (click)="volverAListado()">Volver al listado</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;">
+      <button class="btn-outline-teal btn-back" (click)="volverAListado()" style="margin-bottom: 0;">Volver al listado</button>
+      <a *ngIf="edicionSeleccionada.pdf" [href]="edicionSeleccionada.pdf" target="_blank" class="btn-primary" style="text-decoration: none; padding: 12px 20px; flex: initial; display: inline-flex; align-items: center; gap: 0.5rem;">
+        📥 Descargar Revista Completa (PDF)
+      </a>
+    </div>
     <app-articulos [articulos]="edicionSeleccionada.articulos"></app-articulos>
   </div>
 

@@ -35,7 +35,6 @@ export class Articulo {
 
   @Column({ name: 'palabras_clave', type: 'text' })
   palabrasClave!: string;
-
   @Column({ type: 'varchar', nullable: true })
   doi!: string;
 
@@ -44,6 +43,9 @@ export class Articulo {
 
   @Column({ name: 'paginas', type: 'varchar', nullable: true })
   paginas!: string | null;
+
+  @Column({ name: 'nombres_autores_externos', type: 'varchar', length: 500, nullable: true })
+  nombresAutoresExternos!: string | null;
 
   @Column({ name: 'revision_final_checklist', type: 'text', nullable: true })
   revisionFinalChecklist!: string | null;

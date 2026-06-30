@@ -96,6 +96,12 @@ export class ActualComponent {
       portadaUrl = `${environment.apiUrlBackend}/${backendEd.portada}`;
     }
 
+    let pdfUrl = '';
+    if (backendEd.pdf_completo) {
+      const filename = backendEd.pdf_completo.replace(/\\/g, '/').split('/').pop();
+      pdfUrl = `${environment.apiUrlBackend}/ediciones/pdf/${filename}`;
+    }
+
     return {
       id: backendEd.id,
       tituloCompleto,
@@ -105,7 +111,7 @@ export class ActualComponent {
       descripcion: '',
       autores: 0,
       articulosCount: backendEd.numeroArticulos ?? articulosMapeados.length,
-      pdf: '',
+      pdf: pdfUrl,
       portada: portadaUrl,
       enlacePublicacion: '',
       articulos: articulosMapeados,

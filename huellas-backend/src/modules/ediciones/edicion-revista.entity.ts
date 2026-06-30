@@ -32,6 +32,9 @@ export class EdicionRevista {
   @Column({ name: 'portada', type: 'varchar', length: 255, nullable: true })
   portada?: string;
 
+  @Column({ name: 'pdf_completo', type: 'varchar', length: 255, nullable: true })
+  pdf_completo?: string;
+
   @OneToMany(() => Articulo, (articulo) => articulo.edicion)
   articulos!: Articulo[];
 

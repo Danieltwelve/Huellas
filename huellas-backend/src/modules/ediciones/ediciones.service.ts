@@ -19,6 +19,11 @@ import { PublicarEdicionRevistaDto } from './dtos/publicar-edicion-revista.dto';
 import { join } from 'path';
 import { promises as fs } from 'fs';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
+import { FerchContador } from '../articulos/entities/ferch-contador.entity';
+import { User } from '../users/user.entity';
+import { Tema } from '../temas/entities/tema.entity';
+import { Observacion } from '../observaciones/entities/observacione.entity';
+import { ObservacionArchivo } from '../observaciones-archivos/entities/observaciones-archivo.entity';
 
 @Injectable()
 export class EdicionesService {
@@ -127,11 +132,16 @@ export class EdicionesService {
         codigo: articulo.codigo,
         titulo: articulo.titulo,
         resumen: articulo.resumen,
-        autores: (articulo.autores ?? []).map((autor) => ({
-          id: autor.id,
-          nombre: autor.nombre,
-          correo: autor.correo,
-        })),
+        autores: [
+          ...(articulo.autores ?? []).map((autor) => ({
+            id: autor.id,
+            nombre: autor.nombre,
+            correo: autor.correo,
+          })),
+          ...(articulo.nombresAutoresExternos
+            ? [{ id: -1, nombre: articulo.nombresAutoresExternos, correo: '' }]
+            : []),
+        ],
         // --- nuevos campos ---
         temas: (articulo.temas ?? []).map((tema) => tema.nombre),
         palabrasClave: articulo.palabrasClave || '',
@@ -439,4 +449,201 @@ export class EdicionesService {
       await queryRunner.release();
     }
   }
+
+  async crearPublicacionRapida(
+    dto: {
+      titulo: string;
+      volumen: number;
+      numero: number;
+      anio: number;
+      portadaPath?: string;
+      pdfCompletoPath: string;
+      articulos: Array<{
+        titulo: string;
+        autor_id?: string;
+        otros_autores?: string;
+        paginas?: string;
+        doi?: string;
+      }>;
+      articuloFiles: Express.Multer.File[];
+    },
+    usuarioId: number,
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1. Obtener estado PUBLICADA (id = 2)
+      const estadoPublicada = await this.estadoRepository.findOneBy({
+        id: EdicionesService.ESTADO_PUBLICADA_ID,
+      });
+      if (!estadoPublicada) {
+        throw new InternalServerErrorException(
+          'No se encontró el estado PUBLICADA.',
+        );
+      }
+
+      // 2. Crear la nueva edición
+      const nuevaEdicion = queryRunner.manager.create(EdicionRevista, {
+        titulo: dto.titulo,
+        volumen: dto.volumen,
+        numero: dto.numero,
+        anio: dto.anio,
+        fecha_estado: new Date(),
+        portada: dto.portadaPath ?? undefined,
+        pdf_completo: dto.pdfCompletoPath,
+        estado_id: estadoPublicada,
+      });
+      const edicionGuardada = await queryRunner.manager.save(nuevaEdicion);
+
+      // 3. Buscar un tema por defecto para los artículos
+      const defaultTema = await queryRunner.manager.findOne(Tema, { where: {} });
+      if (!defaultTema) {
+        throw new BadRequestException('No hay temas configurados en el sistema.');
+      }
+
+      // 4. Bloquear y leer el contador de artículos
+      const contador = await queryRunner.manager
+        .createQueryBuilder(FerchContador, 'contador')
+        .setLock('pessimistic_write')
+        .where('id = 1')
+        .getOne();
+
+      if (!contador) {
+        throw new InternalServerErrorException(
+          'No se encontró el contador de artículos',
+        );
+      }
+
+      let ultimoNumero = contador.ultimoNumero;
+
+      // 5. Crear cada artículo
+      for (let i = 0; i < dto.articulos.length; i++) {
+        const artDto = dto.articulos[i];
+        const file = dto.articuloFiles[i];
+
+        ultimoNumero++;
+        const codigoArticulo = `FERCH - ${ultimoNumero}`;
+
+        // Crear artículo con valores por defecto para evitar fricción
+        const nuevoArticulo = queryRunner.manager.create(Articulo, {
+          codigoNumero: ultimoNumero,
+          codigo: codigoArticulo,
+          titulo: artDto.titulo || `Artículo ${i + 1}`,
+          resumen: 'Sin resumen disponible',
+          palabrasClave: 'Revista, Huellas',
+          etapaActualId: EdicionesService.ETAPA_PUBLICACION_ID,
+          edicionId: edicionGuardada.id,
+          nombresAutoresExternos: artDto.otros_autores || undefined,
+          paginas: artDto.paginas || undefined,
+          doi: artDto.doi || undefined,
+        });
+        const articuloGuardado = await queryRunner.manager.save(nuevoArticulo);
+
+        // Asociar Tema
+        await queryRunner.manager
+          .createQueryBuilder()
+          .relation(Articulo, 'temas')
+          .of(articuloGuardado.id)
+          .add(defaultTema.id);
+
+        // Asociar Autor (si se proporcionó autor_id y existe, si no, usar el monitor actual)
+        let autorIdToLink = usuarioId;
+        if (artDto.autor_id) {
+          const autorIdNum = parseInt(artDto.autor_id, 10);
+          if (!isNaN(autorIdNum)) {
+            const exists = await queryRunner.manager.findOne(User, {
+              where: { id: autorIdNum },
+              select: ['id'],
+            });
+            if (exists) {
+              autorIdToLink = exists.id;
+            }
+          }
+        }
+        await queryRunner.manager
+          .createQueryBuilder()
+          .relation(Articulo, 'autores')
+          .of(articuloGuardado.id)
+          .add(autorIdToLink);
+
+        // Crear Observación para el historial
+        const nuevaObservacion = queryRunner.manager.create(Observacion, {
+          articulo: { id: articuloGuardado.id } as any,
+          usuario: { id: usuarioId } as any,
+          etapa: { id: EdicionesService.ETAPA_PUBLICACION_ID } as any,
+          asunto: 'Publicación Rápida',
+          comentarios: 'Artículo publicado directamente a través del asistente rápido.',
+        });
+        const observacionGuardada = await queryRunner.manager.save(nuevaObservacion);
+
+        // Registrar Archivo del Artículo
+        const observacionArchivo = queryRunner.manager.create(ObservacionArchivo, {
+          observacionesId: observacionGuardada.id,
+          archivoPath: file.path,
+          archivoNombreOriginal: file.originalname,
+        });
+        await queryRunner.manager.save(observacionArchivo);
+
+        // Registrar Historial de Etapas
+        const ahora = new Date();
+        const historialEtapa = queryRunner.manager.create(ArticuloHistorialEtapa, {
+          articuloId: articuloGuardado.id,
+          etapaId: EdicionesService.ETAPA_PUBLICACION_ID,
+          fechaInicio: ahora,
+          fechaFin: ahora,
+          usuarioId: usuarioId,
+        });
+        await queryRunner.manager.save(historialEtapa);
+      }
+
+      // 6. Actualizar contador en la BD
+      await queryRunner.manager.update(
+        FerchContador,
+        { id: 1 },
+        { ultimoNumero: ultimoNumero },
+      );
+
+      // Confirmar transacción
+      await queryRunner.commitTransaction();
+
+      return {
+        message: 'Edición rápida publicada exitosamente con todos sus artículos.',
+        data: {
+          id: edicionGuardada.id,
+          titulo: edicionGuardada.titulo,
+          volumen: edicionGuardada.volumen,
+          numero: edicionGuardada.numero,
+          anio: edicionGuardada.anio,
+          fecha_estado: edicionGuardada.fecha_estado,
+          portada: edicionGuardada.portada,
+          pdf_completo: edicionGuardada.pdf_completo,
+          numeroArticulos: dto.articulos.length,
+        },
+      };
+    } catch (error) {
+      // Rollback DB
+      await queryRunner.rollbackTransaction();
+
+      // Borrar archivos huérfanos del disco
+      if (dto.portadaPath) {
+        await fs.unlink(dto.portadaPath).catch(() => null);
+      }
+      if (dto.pdfCompletoPath) {
+        await fs.unlink(dto.pdfCompletoPath).catch(() => null);
+      }
+      for (const file of dto.articuloFiles) {
+        if (file.path) {
+          await fs.unlink(file.path).catch(() => null);
+        }
+      }
+
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
 }
+
+
