@@ -26,6 +26,9 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   telefono!: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  institucion!: string;
+
   @Column({ type: 'boolean', default: false })
   correo_verificado!: boolean;
 

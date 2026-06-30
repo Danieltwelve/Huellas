@@ -51,13 +51,13 @@ export class SideBar {
     {
       label: 'Gestión Editorial',
       icon: 'clock-history',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
       route: '/gestion-flujo-editorial',
     },
     {
       label: 'Gestión de Usuarios',
       icon: 'users',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
       route: '/gestion-usuarios',
     },
     {
@@ -69,37 +69,37 @@ export class SideBar {
     {
       label: 'Artículos',
       icon: 'file',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
       route: '/articulos',
     },
     {
       label: 'Seguimiento',
       icon: 'eye',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
       route: '/seguimiento',
     },
     {
       label: 'Centro de Notificaciones',
       icon: 'bell',
-      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      allowedRoles: ['admin', 'comite-editorial'],
       route: '/notificaciones',
     },
     {
       label: 'Certificados',
       icon: 'certificate',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
       route: '/certificados-editoriales',
     },
     {
       label: 'Publicación',
       icon: 'newspaper',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
       route: '/publicacion',
     },
     {
       label: 'Estadísticas',
       icon: 'chart',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
       route: '/estadisticas',
     },
   ];

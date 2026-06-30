@@ -34,6 +34,8 @@ export interface AdminCreateUserPayload {
   correo: string;
   contraseña: string;
   telefono?: string;
+  institucion?: string;
+  perfil?: string,
   rolId: number;
 }
 

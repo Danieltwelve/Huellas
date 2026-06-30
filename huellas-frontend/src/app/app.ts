@@ -91,7 +91,7 @@ export class AppComponent {
       map(([user, claims, isAdminSection, isPerfilSection]) => {
         const roles = Array.isArray(claims?.roles) ? claims.roles : [];
         const canAccessEditorialPanel =
-          roles.some((role) => ['admin', 'director', 'monitor', 'comite-editorial'].includes(role)) ||
+          roles.some((role) => ['admin', 'comite-editorial'].includes(role)) ||
           Boolean(claims?.canManageUsers || claims?.canManageArticulos || claims?.canManageFlujoEditorial);
 
         const canShowAdminSidebar = canAccessEditorialPanel && isAdminSection;

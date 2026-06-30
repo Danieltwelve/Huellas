@@ -1,3 +1,7 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable no-useless-catch */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -75,7 +79,6 @@ export class RevisoresService {
       nombre: revisor.usuario?.nombre ?? '',
       telefono: revisor.usuario?.telefono ?? '',
       perfilAcademico: revisor.perfil ?? '',
-      institucion: revisor.institucion ?? '',
     };
   }
 
@@ -107,10 +110,6 @@ export class RevisoresService {
 
     if (typeof data.perfilAcademico === 'string') {
       revisor.perfil = data.perfilAcademico;
-    }
-
-    if (typeof data.institucion === 'string') {
-      revisor.institucion = data.institucion;
     }
 
     await this.userRepository.save(revisor.usuario);
@@ -318,7 +317,7 @@ export class RevisoresService {
       const margin = 50;
       const letterWidth = 612;
       const letterHeight = 792;
-      const contentWidth = letterWidth - (2 * margin); // 512
+      const contentWidth = letterWidth - 2 * margin; // 512
 
       // Parse metadata from text
       let calificacion = '';
@@ -336,7 +335,9 @@ export class RevisoresService {
 
         const califMatch = line.match(/^calificaci[oó]n:\s*(.*)/i);
         const decMatch = line.match(/^decisi[oó]n:\s*(.*)/i);
-        const juradoMatch = line.match(/^(jurado\s+evaluador|nombre\s+del\s+evaluador):\s*(.*)/i);
+        const juradoMatch = line.match(
+          /^(jurado\s+evaluador|nombre\s+del\s+evaluador):\s*(.*)/i,
+        );
 
         if (califMatch) {
           calificacion = califMatch[1].trim();
@@ -371,7 +372,9 @@ export class RevisoresService {
         color: rgb(0, 0.45, 0.45),
       });
 
-      const typeLabel = decision ? 'REPORTE DE EVALUACIÓN' : 'INFORME DE COMITÉ EDITORIAL';
+      const typeLabel = decision
+        ? 'REPORTE DE EVALUACIÓN'
+        : 'INFORME DE COMITÉ EDITORIAL';
       const typeWidth = fontBold.widthOfTextAtSize(typeLabel, 10);
       page.drawText(typeLabel, {
         x: letterWidth - margin - typeWidth,
@@ -404,36 +407,91 @@ export class RevisoresService {
       });
 
       const tableContentY = y - 15;
-      page.drawText('Código del Artículo:', { x: margin + 15, y: tableContentY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-      page.drawText(codigoArticulo, { x: margin + 130, y: tableContentY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+      page.drawText('Código del Artículo:', {
+        x: margin + 15,
+        y: tableContentY,
+        size: 9,
+        font: fontBold,
+        color: rgb(0.3, 0.3, 0.3),
+      });
+      page.drawText(codigoArticulo, {
+        x: margin + 130,
+        y: tableContentY,
+        size: 9,
+        font: font,
+        color: rgb(0.1, 0.1, 0.1),
+      });
 
       const titleLabelY = tableContentY - 15;
-      page.drawText('Título del Artículo:', { x: margin + 15, y: titleLabelY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-      
-      const wrappedTitle = this.splitTextIntoLines(tituloArticulo, contentWidth - 145, font, 9);
+      page.drawText('Título del Artículo:', {
+        x: margin + 15,
+        y: titleLabelY,
+        size: 9,
+        font: fontBold,
+        color: rgb(0.3, 0.3, 0.3),
+      });
+
+      const wrappedTitle = this.splitTextIntoLines(
+        tituloArticulo,
+        contentWidth - 145,
+        font,
+        9,
+      );
       let titleY = titleLabelY;
       for (let i = 0; i < Math.min(2, wrappedTitle.length); i++) {
-        page.drawText(wrappedTitle[i], { x: margin + 130, y: titleY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+        page.drawText(wrappedTitle[i], {
+          x: margin + 130,
+          y: titleY,
+          size: 9,
+          font: font,
+          color: rgb(0.1, 0.1, 0.1),
+        });
         titleY -= 11;
       }
 
       if (jurado) {
         const juradoY = tableContentY - 45;
-        page.drawText('Evaluador / Jurado:', { x: margin + 15, y: juradoY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-        page.drawText(jurado, { x: margin + 130, y: juradoY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+        page.drawText('Evaluador / Jurado:', {
+          x: margin + 15,
+          y: juradoY,
+          size: 9,
+          font: fontBold,
+          color: rgb(0.3, 0.3, 0.3),
+        });
+        page.drawText(jurado, {
+          x: margin + 130,
+          y: juradoY,
+          size: 9,
+          font: font,
+          color: rgb(0.1, 0.1, 0.1),
+        });
       } else {
         const fechaY = tableContentY - 45;
-        page.drawText('Fecha de Reporte:', { x: margin + 15, y: fechaY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-        page.drawText(new Date().toLocaleDateString('es-ES'), { x: margin + 130, y: fechaY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+        page.drawText('Fecha de Reporte:', {
+          x: margin + 15,
+          y: fechaY,
+          size: 9,
+          font: fontBold,
+          color: rgb(0.3, 0.3, 0.3),
+        });
+        page.drawText(new Date().toLocaleDateString('es-ES'), {
+          x: margin + 130,
+          y: fechaY,
+          size: 9,
+          font: font,
+          color: rgb(0.1, 0.1, 0.1),
+        });
       }
 
-      y -= (tableHeight + 20);
+      y -= tableHeight + 20;
 
       // 4. Decision & Score Callout Box
       if (decision || calificacion) {
         const hasAjustes = decision.toLowerCase().includes('ajuste');
-        const hasRechazo = decision.toLowerCase().includes('rechaz') || decision.toLowerCase().includes('rechazo');
-        
+        const hasRechazo =
+          decision.toLowerCase().includes('rechaz') ||
+          decision.toLowerCase().includes('rechazo');
+
         let cardBg = rgb(0.94, 0.98, 0.98); // teal/green
         let cardBorder = rgb(0, 0.6, 0.6);
         let cardText = rgb(0, 0.4, 0.4);
@@ -483,7 +541,7 @@ export class RevisoresService {
           });
         }
 
-        y -= (calloutHeight + 25);
+        y -= calloutHeight + 25;
       }
 
       // 5. Body Comments Header
@@ -511,7 +569,12 @@ export class RevisoresService {
           continue;
         }
 
-        const wrappedLines = this.splitTextIntoLines(line, contentWidth, font, fontSize);
+        const wrappedLines = this.splitTextIntoLines(
+          line,
+          contentWidth,
+          font,
+          fontSize,
+        );
 
         for (const subLine of wrappedLines) {
           if (y < margin + 40) {
@@ -620,24 +683,24 @@ export class RevisoresService {
 
       const observacionesRepo = queryRunner.manager.getRepository(Observacion);
       const revisionExistente = await observacionesRepo
-         .createQueryBuilder('observacion')
-         .where(
-           'observacion.articuloId = :articuloId AND observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId',
-           {
-             articuloId,
-             usuarioId,
-             etapaId: RevisoresService.ETAPA_REVISION_PARES,
-           },
-         )
-         .andWhere(
-           '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
-           {
-             aprobado: RevisoresService.ASUNTO_REVISION_PARES_APROBADO,
-             rechazado: RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO,
-             ajustes: RevisoresService.ASUNTO_REVISION_PARES_AJUSTES,
-           },
-         )
-         .getOne();
+        .createQueryBuilder('observacion')
+        .where(
+          'observacion.articuloId = :articuloId AND observacion.usuarioId = :usuarioId AND observacion.etapaId = :etapaId',
+          {
+            articuloId,
+            usuarioId,
+            etapaId: RevisoresService.ETAPA_REVISION_PARES,
+          },
+        )
+        .andWhere(
+          '(observacion.asunto = :aprobado OR observacion.asunto = :rechazado OR observacion.asunto = :ajustes)',
+          {
+            aprobado: RevisoresService.ASUNTO_REVISION_PARES_APROBADO,
+            rechazado: RevisoresService.ASUNTO_REVISION_PARES_RECHAZADO,
+            ajustes: RevisoresService.ASUNTO_REVISION_PARES_AJUSTES,
+          },
+        )
+        .getOne();
 
       if (revisionExistente) {
         throw new ConflictException(

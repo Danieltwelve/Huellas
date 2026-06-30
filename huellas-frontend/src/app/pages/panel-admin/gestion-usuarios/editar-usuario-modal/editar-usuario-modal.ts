@@ -52,6 +52,7 @@ export class EditarUsuarioModal implements OnInit, OnChanges {
   resendingVerification = false;
   restoringAccess = false;
   availableRoles: RolBackend[] = [];
+  private userRoleToAssign: string | null = null;
 
   editForm: EditUserForm = {
     nombre: '',
@@ -78,13 +79,49 @@ export class EditarUsuarioModal implements OnInit, OnChanges {
       return;
     }
 
+    this.userRoleToAssign = this.user.rol.split(',')[0]?.trim() || null;
+
     this.editForm = {
       nombre: this.user.nombre,
       correo: this.user.correo,
       telefono: this.user.telefono,
       estado: this.user.estado === 'Inactiva' ? 'Inactiva' : 'Activa',
-      rol: this.normalizeRole(this.user.rol),
+      rol: this.editForm.rol, // valor temporal
     };
+
+    if (this.availableRoles.length > 0) {
+      this.assignUserRole();
+    }
+  }
+
+  private assignUserRole(): void {
+    if (!this.userRoleToAssign) {
+      this.editForm.rol = this.availableRoles[0]?.rol ?? 'autor';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const normalizedUserRole = this.normalizeRoleName(this.userRoleToAssign);
+    const foundRole = this.availableRoles.find(
+      (r) => this.normalizeRoleName(r.rol) === normalizedUserRole,
+    );
+
+    if (foundRole) {
+      this.editForm.rol = foundRole.rol;
+    } else {
+      this.editForm.rol = this.availableRoles[0]?.rol ?? 'autor';
+    }
+
+    this.cdr.detectChanges();
+  }
+
+  private normalizeRoleName(role: string): string {
+    return role
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
   }
 
   closeModal(): void {
@@ -129,7 +166,8 @@ export class EditarUsuarioModal implements OnInit, OnChanges {
           ? error.error.message.join(', ')
           : error?.error?.message;
 
-        this.verificationMessage = backendMessage || 'No se pudo reenviar el correo de verificación.';
+        this.verificationMessage =
+          backendMessage || 'No se pudo reenviar el correo de verificación.';
         this.cdr.detectChanges();
       },
     });
@@ -215,17 +253,6 @@ export class EditarUsuarioModal implements OnInit, OnChanges {
     });
   }
 
-  private resetForm(): void {
-    this.editForm = {
-      nombre: '',
-      correo: '',
-      telefono: '',
-      estado: 'Activa',
-      rol: 'autor',
-    };
-    this.errorMessage = '';
-  }
-
   private isValidEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
@@ -235,6 +262,10 @@ export class EditarUsuarioModal implements OnInit, OnChanges {
       return 'Comité editorial';
     }
 
+    if (role.trim().toLowerCase() === 'admin') {
+      return 'Administrador';
+    }
+
     return role
       .replace(/[_-]+/g, ' ')
       .trim()
@@ -242,27 +273,11 @@ export class EditarUsuarioModal implements OnInit, OnChanges {
       .replace(/\b\w/g, (char) => char.toUpperCase());
   }
 
-  private normalizeRole(role: string): string {
-    const firstRole = role.split(',')[0]?.trim().toLowerCase();
-
-    if (this.availableRoles.some((availableRole) => availableRole.rol === firstRole)) {
-      return firstRole;
-    }
-
-    return this.availableRoles[0]?.rol ?? 'autor';
-  }
-
   private loadRoles(): void {
     this.usersService.getRoles().subscribe({
       next: (roles) => {
         this.availableRoles = roles;
-
-        if (this.user) {
-          this.editForm.rol = this.normalizeRole(this.user.rol);
-        } else if (!roles.some((role) => role.rol === this.editForm.rol)) {
-          this.editForm.rol = roles[0]?.rol ?? 'autor';
-        }
-
+        this.assignUserRole();
         this.cdr.detectChanges();
       },
       error: () => {
@@ -270,5 +285,17 @@ export class EditarUsuarioModal implements OnInit, OnChanges {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  private resetForm(): void {
+    this.editForm = {
+      nombre: '',
+      correo: '',
+      telefono: '',
+      estado: 'Activa',
+      rol: 'autor',
+    };
+    this.userRoleToAssign = null;
+    this.errorMessage = '';
   }
 }

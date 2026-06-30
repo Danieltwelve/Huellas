@@ -44,19 +44,41 @@
     </div>
 
     <div class="field-group">
-      <label for="telefono">Teléfono</label>
-      <input id="telefono" type="tel" placeholder="Ingresa un número telefónico" [(ngModel)]="createForm.telefono" name="telefono" required
-        #telField="ngModel" />
+      <label for="telefono">Teléfono (opcional)</label>
+      <input id="telefono" type="tel" placeholder="Ingresa un número telefónico" [(ngModel)]="createForm.telefono"
+        name="telefono" #telField="ngModel" />
       @if (telField.touched && !isValidPhone()) {
       <span class="validation-error">Solo se permiten números.</span>
       }
     </div>
 
+    <div class="field-group">
+      <label for="institucion">Institución (opcional)</label>
+      <input id="institucion" type="text" placeholder="Ingresa una institución" [(ngModel)]="createForm.institucion"
+        name="institucion" #telField="ngModel" />
+    </div>
+
+    @if (isRevisorSelected) {
+    <div class="field-group full-width">
+      <label for="perfil">Perfil (opcional)</label>
+      <textarea id="perfil" rows="6" placeholder="Describe el perfil del revisor" [(ngModel)]="createForm.perfil"
+        name="perfil"></textarea>
+    </div>
+    }
+
     <div class="field-group full-width">
       <label for="roles">Roles</label>
-      <select id="roles" [(ngModel)]="createForm.rol" name="rol">
+      <select id="roles" [ngModel]="createForm.rol" (ngModelChange)="onRolChange($event)" name="rol">
         @for (role of availableRoles; track role.id) {
-        <option [value]="role.id">{{ role.rol === 'comite-editorial' ? 'Comité editorial' : role.rol }}</option>
+        <option [value]="role.id">
+          {{
+          role.rol === 'comite-editorial' ? 'Comité editorial' :
+          role.rol === 'admin' ? 'Administrador' :
+          role.rol === 'revisor' ? 'Revisor' :
+          role.rol === 'autor' ? 'Autor' :
+          role.rol
+          }}
+        </option>
         }
       </select>
     </div>

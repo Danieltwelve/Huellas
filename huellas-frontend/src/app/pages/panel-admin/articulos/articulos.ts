@@ -574,7 +574,11 @@ export class Articulos implements OnInit, OnDestroy {
   }
 
   canEdit(): boolean {
-    return this.authService.hasAnyRole(['admin', 'director', 'monitor']);
+    return this.authService.hasAnyRole(['admin']);
+  }
+
+  canDelete(): boolean {
+    return this.authService.hasAnyRole(['admin']);
   }
 
   setMostrarArchivados(valor: boolean): void {

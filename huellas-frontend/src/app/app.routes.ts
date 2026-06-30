@@ -56,7 +56,7 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageUsers',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
     },
   },
   {
@@ -77,7 +77,7 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageArticulos',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
     },
   },
 
@@ -90,7 +90,7 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageArticulos',
-      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      allowedRoles: ['admin', 'comite-editorial'],
     },
   },
 
@@ -103,7 +103,7 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageArticulos',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
     },
   },
 
@@ -116,7 +116,7 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageArticulos',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
     },
   },
   {
@@ -129,7 +129,7 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageArticulos',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
     },
   },
   {
@@ -141,7 +141,7 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageArticulos',
-      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      allowedRoles: ['admin', 'comite-editorial'],
     },
   },
 
@@ -154,7 +154,7 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageArticulos',
-      allowedRoles: ['admin', 'director', 'monitor'],
+      allowedRoles: ['admin'],
     },
   },
 
@@ -167,7 +167,7 @@ export const routes: Routes = [
     canActivate: [claimsGuard],
     data: {
       requiredClaim: 'canManageFlujoEditorial',
-      allowedRoles: ['admin', 'director', 'monitor', 'comite-editorial'],
+      allowedRoles: ['admin', 'comite-editorial'],
     },
   },
   {
@@ -175,14 +175,14 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./pages/panel-autor/panel-autor.routes').then((m) => m.PANEL_AUTOR_ROUTES),
     canActivate: [claimsGuard],
-    data: { requiredClaim: 'roles', allowedRoles: ['autor', 'admin'] },
+    data: { requiredClaim: 'roles', allowedRoles: ['autor'] },
   },
   {
     path: 'panel-revisor',
     loadChildren: () =>
       import('./pages/panel-revisor/panel-revisor.routes').then((m) => m.PANEL_REVISOR_ROUTES),
     canActivate: [claimsGuard],
-    data: { requiredClaim: 'roles', allowedRoles: ['revisor', 'admin'] },
+    data: { requiredClaim: 'roles', allowedRoles: ['revisor'] },
   },
   {
     path: 'perfil',

@@ -1,6 +1,4 @@
 import {
-  BadRequestException,
-  NotFoundException,
   Body,
   Controller,
   Delete,
@@ -12,12 +10,9 @@ import {
   Patch,
   Post,
   Put,
-  Res,
   UploadedFile,
-  UploadedFiles,
   UseGuards,
   UseInterceptors,
-  Req,
 } from '@nestjs/common';
 import { CreateEdicionRevistaDto } from './dtos/create-edicion-revista.dto';
 import { EdicionesService } from './ediciones.service';
@@ -26,10 +21,10 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UpdateEdicionRevistaDto } from './dtos/update-edicion-revista.dto';
 import { PublicarEdicionRevistaDto } from './dtos/publicar-edicion-revista.dto';
-import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, basename, join } from 'path';
-import { promises as fs, existsSync, mkdirSync, createReadStream } from 'fs';
+import { extname } from 'path';
+import { promises as fs } from 'fs';
 
 const portadaStorage = diskStorage({
   destination: './uploads/portadas',
@@ -98,7 +93,7 @@ export class EdicionesController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Post('publicar')
   @HttpCode(HttpStatus.CREATED)
   async publicar(@Body() body: PublicarEdicionRevistaDto) {
@@ -107,7 +102,7 @@ export class EdicionesController {
 
   @Delete(':id/with-message')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   async removeWithMessage(@Param('id', ParseIntPipe) id: number) {
     await this.edicionService.remove(id);
     return {
@@ -163,115 +158,9 @@ export class EdicionesController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
-  @Post('publicacion-rapida')
-  @UseInterceptors(
-    FileFieldsInterceptor(
-      [
-        { name: 'portada', maxCount: 1 },
-        { name: 'pdfCompleto', maxCount: 1 },
-        { name: 'archivosArticulos', maxCount: 30 },
-      ],
-      {
-        storage: diskStorage({
-          destination: (req, file, cb) => {
-            let dest = './uploads/ediciones/pdfs';
-            if (file.fieldname === 'portada') {
-              dest = './uploads/portadas';
-            } else if (file.fieldname === 'archivosArticulos') {
-              dest = './uploads/articulos';
-            }
-            if (!existsSync(dest)) {
-              mkdirSync(dest, { recursive: true });
-            }
-            cb(null, dest);
-          },
-          filename: (req, file, cb) => {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-            const ext = extname(file.originalname).toLowerCase();
-            cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-          },
-        }),
-      },
-    ),
-  )
-  async publicacionRapida(
-    @Body() body: any,
-    @Req() req: any,
-    @UploadedFiles()
-    files: {
-      portada?: Express.Multer.File[];
-      pdfCompleto?: Express.Multer.File[];
-      archivosArticulos?: Express.Multer.File[];
-    },
-  ) {
-    if (!files.pdfCompleto || files.pdfCompleto.length === 0) {
-      throw new BadRequestException('El PDF completo de la edición es obligatorio.');
-    }
-    if (!files.archivosArticulos || files.archivosArticulos.length < 10) {
-      throw new BadRequestException('Se requieren al menos 10 artículos para la publicación.');
-    }
-
-    const titulo = body.titulo;
-    const volumen = parseInt(body.volumen, 10);
-    const numero = parseInt(body.numero, 10);
-    const anio = parseInt(body.anio, 10);
-
-    if (!titulo || isNaN(volumen) || isNaN(numero) || isNaN(anio)) {
-      throw new BadRequestException('Los datos de la edición son inválidos.');
-    }
-
-    let articulosData: any[];
-    try {
-      articulosData = JSON.parse(body.articulos);
-    } catch (e) {
-      throw new BadRequestException('El formato de los artículos es inválido.');
-    }
-
-    if (!Array.isArray(articulosData) || articulosData.length < 10) {
-      throw new BadRequestException('Se deben proporcionar al menos 10 artículos.');
-    }
-
-    if (articulosData.length !== files.archivosArticulos.length) {
-      throw new BadRequestException('La cantidad de artículos y archivos de artículos no coincide.');
-    }
-
-    const user = req.user;
-    if (!user || !user.userId) {
-      throw new BadRequestException('No se pudo identificar al usuario que realiza la acción.');
-    }
-
-    return await this.edicionService.crearPublicacionRapida(
-      {
-        titulo,
-        volumen,
-        numero,
-        anio,
-        portadaPath: files.portada?.[0]?.path,
-        pdfCompletoPath: files.pdfCompleto[0].path,
-        articulos: articulosData,
-        articuloFiles: files.archivosArticulos,
-      },
-      user.userId,
-    );
-  }
-
-  @Get('pdf/:filename')
-  async descargarPdf(
-    @Param('filename') filename: string,
-    @Res() res: any,
-  ) {
-    try {
-      const safeName = basename(filename);
-      const filePath = join(process.cwd(), 'uploads', 'ediciones', 'pdfs', safeName);
-      if (!existsSync(filePath)) {
-        throw new NotFoundException('Archivo no encontrado');
-      }
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
-      createReadStream(filePath).pipe(res);
-    } catch (error) {
-      res.status(HttpStatus.NOT_FOUND).json({ message: 'Archivo no encontrado' });
-    }
+  @Roles('admin')
+  @Patch(':id/unpublish')
+  async unpublish(@Param('id', ParseIntPipe) id: number) {
+    return await this.edicionService.unpublishEdicion(id);
   }
 }

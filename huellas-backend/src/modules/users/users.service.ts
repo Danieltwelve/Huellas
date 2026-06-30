@@ -1,3 +1,6 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   BadRequestException,
   ConflictException,
@@ -9,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { User } from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, In, Repository } from 'typeorm';
+import { Brackets, DataSource, In, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create.users.dto';
 import { Role } from '../roles/roles.entity';
 import { AdminCreateUserDto } from './dto/admin.create.users.dto';
@@ -58,6 +61,7 @@ export class UsersService {
   private static readonly ARTICULO_ETAPAS_TERMINALES = [5, 7];
 
   constructor(
+    private dataSource: DataSource,
     @InjectRepository(User)
     private userRepository: Repository<User>,
     @InjectRepository(Role)
@@ -75,6 +79,7 @@ export class UsersService {
   ) {}
 
   async createWithAdmin(adminCreateDto: AdminCreateUserDto): Promise<User> {
+    // 1. Validaciones previas (email y rol)
     const existingUser = await this.findByEmail(adminCreateDto.correo);
     if (existingUser) {
       throw new BadRequestException('El correo ya está registrado');
@@ -83,31 +88,54 @@ export class UsersService {
     const role = await this.rolesRepository.findOne({
       where: { id: adminCreateDto.rolId },
     });
-
     if (!role) {
       throw new NotFoundException('Rol no encontrado');
     }
 
+    // 2. Crear usuario en Firebase
     const firebaseUid = await this.createFirebaseUserAndSendVerification(
       adminCreateDto.correo,
       adminCreateDto.contraseña,
     );
 
+    // 3. Iniciar transacción en la base de datos
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
+      // 4. Crear y guardar el usuario
       const newUser = this.userRepository.create({
         nombre: adminCreateDto.nombre,
         correo: adminCreateDto.correo,
         telefono: adminCreateDto.telefono ?? '',
+        institucion: adminCreateDto.institucion ?? '',
       });
-
       newUser.roles = [role];
-      const savedUser = await this.userRepository.save(newUser);
+      const savedUser = await queryRunner.manager.save(newUser);
+
+      // 5. Si el rol es 'revisor' y se proporcionó un perfil, crear registro en Revisores
+      if (role.rol === 'revisor' && adminCreateDto.perfil) {
+        const revisor = this.revisoresRepository.create({
+          usuarioId: savedUser.id,
+          perfil: adminCreateDto.perfil,
+          cargaActual: 0, // valor por defecto
+        });
+        await queryRunner.manager.save(revisor);
+      }
+
+      // 6. Confirmar transacción
+      await queryRunner.commitTransaction();
       return savedUser;
-    } catch {
+    } catch (error) {
+      // 7. Revertir transacción y eliminar usuario de Firebase
+      await queryRunner.rollbackTransaction();
       await this.deleteFirebaseUserSilently(firebaseUid);
       throw new InternalServerErrorException(
         'No fue posible guardar el usuario en la base de datos.',
       );
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -339,11 +367,6 @@ export class UsersService {
     return { canDelete: true, reason: '' };
   }
 
-  private async hasPendingArticleWork(userId: number): Promise<boolean> {
-    const validationResult = await this.validateUserDeletion(userId);
-    return !validationResult.canDelete;
-  }
-
   private async sendVerificationEmail(
     correo: string,
     strictSmtp: boolean,
@@ -364,7 +387,8 @@ export class UsersService {
       return;
     }
 
-    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
     if (strictSmtp && isProduction) {
       throw new InternalServerErrorException(
         'No fue posible enviar el correo de verificación. Verifica la configuración SMTP.',
@@ -395,7 +419,8 @@ export class UsersService {
       return;
     }
 
-    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
     if (strictSmtp && isProduction) {
       throw new InternalServerErrorException(
         'No fue posible enviar el correo para restablecer el acceso. Verifica la configuración SMTP.',
@@ -543,7 +568,9 @@ export class UsersService {
     const smtpConfig = this.getSmtpConfig();
 
     if (!smtpConfig) {
-      this.logger.warn('No hay configuración SMTP activa para enviar el recordatorio.');
+      this.logger.warn(
+        'No hay configuración SMTP activa para enviar el recordatorio.',
+      );
       return false;
     }
 
@@ -645,7 +672,7 @@ export class UsersService {
         .distinct(true)
         .innerJoin('usuario.roles', 'rol')
         .where('LOWER(rol.rol) IN (:...roles)', {
-          roles: ['comite-editorial', 'admin', 'director', 'monitor'],
+          roles: ['comite-editorial'],
         })
         .getCount(),
     ]);
@@ -695,7 +722,6 @@ export class UsersService {
       telefono: user.telefono ?? '',
       correo: user.correo ?? '',
       perfilAcademico: revisor?.perfil ?? '',
-      institucion: revisor?.institucion ?? '',
       profesion: user.profesion ?? '',
       programa: user.programa ?? '',
       tienePosgrado: user.tienePosgrado ?? false,
@@ -759,12 +785,9 @@ export class UsersService {
           usuarioId,
           perfil: '',
           cargaActual: 0,
-          institucion: '',
         });
       if (typeof data.perfilAcademico === 'string')
         revisorActual.perfil = data.perfilAcademico;
-      if (typeof data.institucion === 'string')
-        revisorActual.institucion = data.institucion;
       await this.revisoresRepository.save(revisorActual);
     }
 
@@ -778,9 +801,8 @@ export class UsersService {
       id: user.id,
       nombre: user.nombre ?? '',
       telefono: user.telefono ?? '',
-      correo: user.correo ?? '', // se sigue devolviendo pero no se usa para edición
+      correo: user.correo ?? '',
       perfilAcademico: perfilRevisor?.perfil ?? '',
-      institucion: perfilRevisor?.institucion ?? '',
       profesion: user.profesion ?? '',
       programa: user.programa ?? '',
       tienePosgrado: user.tienePosgrado ?? false,
@@ -950,20 +972,15 @@ export class UsersService {
         );
         const roleNames: string[] = savedUser.roles?.map((r) => r.rol) ?? [];
 
-        const editorialManagers = [
-          'admin',
-          'director',
-          'monitor',
-          'comite-editorial',
-        ];
-        const userManagers = ['admin', 'director', 'monitor'];
+        const editorialManagers = ['comite-editorial'];
+        const userManagers = ['admin'];
 
         const canViewArchivos = roleNames.some((rol) =>
           [...editorialManagers, 'revisor'].includes(rol),
         );
 
         const canSubmitEnvios = roleNames.some((rol) =>
-          ['admin', 'autor'].includes(rol),
+          ['autor'].includes(rol),
         );
 
         const canManageUsers = roleNames.some((rol) =>
@@ -1058,7 +1075,6 @@ export class UsersService {
       usuarioId: userId,
       perfil: '',
       cargaActual: 0,
-      institucion: '',
     });
 
     await this.revisoresRepository.save(newRevisor);

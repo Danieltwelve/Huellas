@@ -102,8 +102,8 @@ export class AuthService {
   private buildCustomClaims(user: User): CustomClaims {
     const roleNames: string[] = user.roles?.map((r) => r.rol) ?? [];
 
-    const editorialManagers = ['admin', 'director', 'monitor', 'comite-editorial'];
-    const userManagers = ['admin', 'director', 'monitor'];
+    const editorialManagers = ['admin', 'comite-editorial'];
+    const userManagers = ['admin'];
 
     const canViewArchivos = roleNames.some((rol) =>
       [...editorialManagers, 'revisor'].includes(rol),

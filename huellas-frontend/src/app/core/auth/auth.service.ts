@@ -398,7 +398,7 @@ export class AuthService {
   getPostLoginRoute(): string {
     const claims = this.claimsSubject.value;
     if (
-      this.hasAnyRole(['admin', 'director', 'monitor']) ||
+      this.hasAnyRole(['admin']) ||
       claims.canManageUsers
     ) {
       return '/gestion-usuarios';

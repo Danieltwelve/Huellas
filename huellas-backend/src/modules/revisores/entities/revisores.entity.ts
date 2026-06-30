@@ -17,14 +17,11 @@ export class Revisores {
   @Column({ name: 'usuario_id' })
   usuarioId!: number;
 
-  @Column({ name: 'perfil', type: 'text' })
+  @Column({ name: 'perfil', type: 'text', nullable: true })
   perfil!: string;
 
   @Column({ name: 'carga_actual', type: 'int' })
   cargaActual!: number;
-
-  @Column({ name: 'institucion', type: 'varchar' })
-  institucion!: string;
 
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'usuario_id' })

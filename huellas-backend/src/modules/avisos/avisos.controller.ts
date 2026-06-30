@@ -21,7 +21,7 @@ export class AvisosController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   create(@Body() createAvisoDto: CreateAvisoDto) {
     return this.avisosService.create(createAvisoDto);
   }
@@ -38,14 +38,14 @@ export class AvisosController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   update(@Param('id') id: string, @Body() updateAvisoDto: UpdateAvisoDto) {
     return this.avisosService.update(+id, updateAvisoDto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   remove(@Param('id') id: string) {
     return this.avisosService.remove(+id);
   }

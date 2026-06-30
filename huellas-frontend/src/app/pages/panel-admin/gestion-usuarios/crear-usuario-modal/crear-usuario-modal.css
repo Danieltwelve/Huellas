@@ -2,11 +2,14 @@
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(2px); /* Efecto de desenfoque moderno */
+  backdrop-filter: blur(2px);
+  /* Efecto de desenfoque moderno */
   z-index: 3000;
 }
 
 .modal {
+  max-height: 90vh;
+  overflow-y: auto;
   position: fixed;
   top: 50%;
   left: 50%;
@@ -59,7 +62,10 @@
     color: #0f172a;
   }
 
-  svg { width: 20px; height: 20px; }
+  svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .modal-form {
@@ -83,7 +89,8 @@
     color: #1e293b;
   }
 
-  input, select {
+  input,
+  select {
     height: 40px;
     border-radius: 8px;
     border: 1px solid #cbd5e1;
@@ -99,7 +106,9 @@
       box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.15);
     }
 
-    &::placeholder { color: #94a3b8; }
+    &::placeholder {
+      color: #94a3b8;
+    }
   }
 }
 
@@ -123,11 +132,13 @@
   gap: 1rem;
   margin-top: 1rem;
   padding-top: 1.25rem;
-  border-top: 1px solid #f1f5f9; /* Línea divisoria sutil */
+  border-top: 1px solid #f1f5f9;
+  /* Línea divisoria sutil */
 }
 
 .btn-save {
-  background: #44b2a9; /* Teal principal */
+  background: #44b2a9;
+  /* Teal principal */
   color: white;
   border: none;
   border-radius: 8px;
@@ -178,17 +189,30 @@
 
 /* Responsive */
 @media (max-width: 600px) {
-  .modal { padding: 1.5rem; }
-  .modal-form { grid-template-columns: 1fr; }
-  .actions { flex-direction: column-reverse; }
-  .btn-save, .btn-cancel { width: 100%; }
+  .modal {
+    padding: 1.5rem;
+  }
+
+  .modal-form {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .btn-save,
+  .btn-cancel {
+    width: 100%;
+  }
 }
 
 /* --- ESTILOS DEL MODAL DE ÉXITO --- */
 
 .success-modal {
   text-align: center;
-  max-width: 500px; /* Un poco más compacto */
+  max-width: 500px;
+  /* Un poco más compacto */
 }
 
 .success-content {
@@ -203,8 +227,10 @@
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background: #ecfdf5; /* Verde muy claro */
-  color: #10b981; /* Verde esmeralda */
+  background: #ecfdf5;
+  /* Verde muy claro */
+  color: #10b981;
+  /* Verde esmeralda */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -235,7 +261,8 @@
 }
 
 .btn-success {
-  background: #44b2a9; /* Teal de tu aplicación */
+  background: #44b2a9;
+  /* Teal de tu aplicación */
   color: white;
   border: none;
   border-radius: 8px;
@@ -256,9 +283,12 @@
 
 /* --- MENSAJES DE ERROR DEL SERVIDOR --- */
 .request-error {
-  grid-column: 1 / -1; /* Ocupa las dos columnas del grid */
-  background-color: #fef2f2; /* Rojo muy suave */
-  color: #dc2626; /* Rojo alerta */
+  grid-column: 1 / -1;
+  /* Ocupa las dos columnas del grid */
+  background-color: #fef2f2;
+  /* Rojo muy suave */
+  color: #dc2626;
+  /* Rojo alerta */
   padding: 0.85rem 1rem;
   border-radius: 8px;
   border: 1px solid #fee2e2;
@@ -286,9 +316,12 @@
 
 /* --- MENSAJES DE ERROR DEL SERVIDOR --- */
 .request-error {
-  grid-column: 1 / -1; /* Ocupa las dos columnas del grid */
-  background-color: #fef2f2; /* Rojo muy suave */
-  color: #dc2626; /* Rojo alerta */
+  grid-column: 1 / -1;
+  /* Ocupa las dos columnas del grid */
+  background-color: #fef2f2;
+  /* Rojo muy suave */
+  color: #dc2626;
+  /* Rojo alerta */
   padding: 0.85rem 1rem;
   border-radius: 8px;
   border: 1px solid #fee2e2;
@@ -348,7 +381,9 @@
   align-items: center;
   margin-bottom: 0.75rem;
 
-  &:last-child { margin-bottom: 0; }
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .detail-label {
@@ -375,8 +410,43 @@
 
 /* Ajuste de botones en el footer de confirmación */
 .modal .actions {
-  justify-content: center; /* Centrados para confirmación se ve más balanceado */
+  justify-content: center;
+  /* Centrados para confirmación se ve más balanceado */
   gap: 1.5rem;
-  border-top: none; /* Quitamos la línea para que sea más fluido */
+  border-top: none;
+  /* Quitamos la línea para que sea más fluido */
   margin-top: 1.5rem;
+}
+
+/* Estilos para el textarea - consistente con inputs */
+.field-group textarea {
+  width: 100%;
+  min-height: 80px;
+  max-height: 150px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #0f172a;
+  resize: vertical;
+  transition: all 0.2s;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.field-group textarea:focus {
+  outline: none;
+  border-color: #44b2a9;
+  box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.15);
+}
+
+.field-group textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Estilo para cuando el textarea está vacío */
+.field-group textarea:placeholder-shown {
+  color: #0f172a;
 }

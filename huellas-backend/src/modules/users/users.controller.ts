@@ -59,28 +59,28 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Get('revisores')
   async getRevisores() {
     return this.usersService.findRevisores();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('autor', 'admin', 'director', 'monitor')
+  @Roles('autor', 'admin')
   @Get('autores-lista')
   async getCoAutores(): Promise<{ id: number; nombre: string }[]> {
     return this.usersService.findCoAutores();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Get('comite-editorial')
   async getCommitteeMembers(): Promise<any[]> {
     return this.usersService.findCommitteeMembers();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Get('roles')
   async findAvailableRoles(): Promise<Role[]> {
     return this.usersService.findAvailableRoles();
@@ -113,7 +113,7 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Post()
   async createAdmin(
     @Body() adminCreateDto: AdminCreateUserDto,
@@ -127,7 +127,7 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Put(':id')
   async updateUser(
     @Param('id') id: number,
@@ -142,7 +142,7 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Post(':id/reenviar-verificacion')
   async resendVerificationEmail(
     @Param('id', ParseIntPipe) id: number,
@@ -156,7 +156,7 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Post(':id/restablecer-acceso')
   async restoreAccess(
     @Param('id', ParseIntPipe) id: number,
@@ -170,7 +170,7 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Delete(':id')
   async deleteUser(
     @Param('id', ParseIntPipe) id: number,

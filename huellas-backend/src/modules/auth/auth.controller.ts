@@ -1,4 +1,13 @@
-import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import {
+  Body,
+  Controller,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Post,
+  Req,
+} from '@nestjs/common';
 import { AuthService, AuthSyncResponse } from './auth.service';
 
 const AUTH_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
@@ -12,12 +21,18 @@ function registerAuthAttempt(ip: string, action: string): void {
   const current = authRequestState.get(key);
 
   if (!current || current.resetAt <= now) {
-    authRequestState.set(key, { count: 1, resetAt: now + AUTH_RATE_LIMIT_WINDOW_MS });
+    authRequestState.set(key, {
+      count: 1,
+      resetAt: now + AUTH_RATE_LIMIT_WINDOW_MS,
+    });
     return;
   }
 
   if (current.count >= AUTH_RATE_LIMIT_MAX_ATTEMPTS) {
-    throw new HttpException('Demasiados intentos. Intenta nuevamente más tarde.', HttpStatus.TOO_MANY_REQUESTS);
+    throw new HttpException(
+      'Demasiados intentos. Intenta nuevamente más tarde.',
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
   }
 
   current.count += 1;
@@ -39,13 +54,21 @@ export class AuthController {
       nombre?: string;
     },
   ): Promise<AuthSyncResponse> {
-    registerAuthAttempt(req.ip ?? req.headers['x-forwarded-for'] ?? 'unknown', 'social');
+    registerAuthAttempt(
+      req.ip ?? req.headers['x-forwarded-for'] ?? 'unknown',
+      'social',
+    );
 
-    const result = await this.authService.loginWithSocialProvider(body.idToken, {
-      nombre: body.nombre,
-    });
+    const result = await this.authService.loginWithSocialProvider(
+      body.idToken,
+      {
+        nombre: body.nombre,
+      },
+    );
 
-    this.logger.log(`Sincronizacion social completada desde ${req.ip ?? 'unknown'}`);
+    this.logger.log(
+      `Sincronizacion social completada desde ${req.ip ?? 'unknown'}`,
+    );
 
     return result;
   }
@@ -56,11 +79,19 @@ export class AuthController {
     @Body('idToken') idToken: string,
     @Body('nombre') nombre?: string,
   ): Promise<AuthSyncResponse> {
-    registerAuthAttempt(req.ip ?? req.headers['x-forwarded-for'] ?? 'unknown', 'sync-email');
+    registerAuthAttempt(
+      req.ip ?? req.headers['x-forwarded-for'] ?? 'unknown',
+      'sync-email',
+    );
 
-    const result = await this.authService.registerWithEmailAndPassword(idToken, { nombre });
+    const result = await this.authService.registerWithEmailAndPassword(
+      idToken,
+      { nombre },
+    );
 
-    this.logger.log(`Sincronizacion email completada desde ${req.ip ?? 'unknown'}`);
+    this.logger.log(
+      `Sincronizacion email completada desde ${req.ip ?? 'unknown'}`,
+    );
 
     return result;
   }

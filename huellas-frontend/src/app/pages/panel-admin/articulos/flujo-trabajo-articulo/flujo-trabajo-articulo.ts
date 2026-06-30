@@ -403,7 +403,7 @@ export class FlujoTrabajoArticulo {
   }
 
   private loadCommitteeMembers(): void {
-    if (!this.authService.hasAnyRole(['admin', 'director', 'monitor'])) {
+    if (!this.authService.hasAnyRole(['admin'])) {
       return;
     }
 
@@ -1582,7 +1582,7 @@ export class FlujoTrabajoArticulo {
   }
 
   get esAdminEditorial(): boolean {
-    return this.authService.hasAnyRole(['admin', 'director', 'monitor']);
+    return this.authService.hasAnyRole(['admin']);
   }
 
   get soloPuedeMoverAComiteEnPreliminar(): boolean {
@@ -1610,7 +1610,7 @@ export class FlujoTrabajoArticulo {
   }
 
   get puedeAsignarComite(): boolean {
-    return this.authService.hasAnyRole(['admin', 'director', 'monitor']);
+    return this.authService.hasAnyRole(['admin']);
   }
 
   get puedeMostrarObservacion(): boolean {
@@ -1624,7 +1624,7 @@ export class FlujoTrabajoArticulo {
 
   get puedeMostrarTurnitin(): boolean {
     const etapaActualId = this.articulo?.etapaActual?.id ?? null;
-    return etapaActualId === 3 && this.authService.hasAnyRole(['admin', 'director', 'monitor']);
+    return etapaActualId === 3 && this.authService.hasAnyRole(['admin']);
   }
 
   get estaEnCertificacion(): boolean {

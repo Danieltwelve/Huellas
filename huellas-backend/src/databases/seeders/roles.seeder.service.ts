@@ -17,14 +17,7 @@ export class RolesSeederService implements OnApplicationBootstrap {
   }
 
   private async seedRoles() {
-    const rolesNecesarios = [
-      'admin',
-      'director',
-      'monitor',
-      'comite-editorial',
-      'revisor',
-      'autor',
-    ];
+    const rolesNecesarios = ['admin', 'comite-editorial', 'revisor', 'autor'];
 
     for (const nombreRol of rolesNecesarios) {
       const rolExiste = await this.rolesRepository.findOne({

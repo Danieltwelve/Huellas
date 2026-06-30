@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -158,7 +159,7 @@ export class ArticulosService {
       const margin = 50;
       const letterWidth = 612;
       const letterHeight = 792;
-      const contentWidth = letterWidth - (2 * margin); // 512
+      const contentWidth = letterWidth - 2 * margin; // 512
 
       // Parse metadata from text
       let calificacion = '';
@@ -176,7 +177,9 @@ export class ArticulosService {
 
         const califMatch = line.match(/^calificaci[oó]n:\s*(.*)/i);
         const decMatch = line.match(/^decisi[oó]n:\s*(.*)/i);
-        const juradoMatch = line.match(/^(jurado\s+evaluador|nombre\s+del\s+evaluador):\s*(.*)/i);
+        const juradoMatch = line.match(
+          /^(jurado\s+evaluador|nombre\s+del\s+evaluador):\s*(.*)/i,
+        );
 
         if (califMatch) {
           calificacion = califMatch[1].trim();
@@ -211,7 +214,9 @@ export class ArticulosService {
         color: rgb(0, 0.45, 0.45),
       });
 
-      const typeLabel = decision ? 'REPORTE DE EVALUACIÓN' : 'INFORME DE COMITÉ EDITORIAL';
+      const typeLabel = decision
+        ? 'REPORTE DE EVALUACIÓN'
+        : 'INFORME DE COMITÉ EDITORIAL';
       const typeWidth = fontBold.widthOfTextAtSize(typeLabel, 10);
       page.drawText(typeLabel, {
         x: letterWidth - margin - typeWidth,
@@ -244,36 +249,91 @@ export class ArticulosService {
       });
 
       const tableContentY = y - 15;
-      page.drawText('Código del Artículo:', { x: margin + 15, y: tableContentY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-      page.drawText(codigoArticulo, { x: margin + 130, y: tableContentY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+      page.drawText('Código del Artículo:', {
+        x: margin + 15,
+        y: tableContentY,
+        size: 9,
+        font: fontBold,
+        color: rgb(0.3, 0.3, 0.3),
+      });
+      page.drawText(codigoArticulo, {
+        x: margin + 130,
+        y: tableContentY,
+        size: 9,
+        font: font,
+        color: rgb(0.1, 0.1, 0.1),
+      });
 
       const titleLabelY = tableContentY - 15;
-      page.drawText('Título del Artículo:', { x: margin + 15, y: titleLabelY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-      
-      const wrappedTitle = this.splitTextIntoLines(tituloArticulo, contentWidth - 145, font, 9);
+      page.drawText('Título del Artículo:', {
+        x: margin + 15,
+        y: titleLabelY,
+        size: 9,
+        font: fontBold,
+        color: rgb(0.3, 0.3, 0.3),
+      });
+
+      const wrappedTitle = this.splitTextIntoLines(
+        tituloArticulo,
+        contentWidth - 145,
+        font,
+        9,
+      );
       let titleY = titleLabelY;
       for (let i = 0; i < Math.min(2, wrappedTitle.length); i++) {
-        page.drawText(wrappedTitle[i], { x: margin + 130, y: titleY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+        page.drawText(wrappedTitle[i], {
+          x: margin + 130,
+          y: titleY,
+          size: 9,
+          font: font,
+          color: rgb(0.1, 0.1, 0.1),
+        });
         titleY -= 11;
       }
 
       if (jurado) {
         const juradoY = tableContentY - 45;
-        page.drawText('Evaluador / Jurado:', { x: margin + 15, y: juradoY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-        page.drawText(jurado, { x: margin + 130, y: juradoY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+        page.drawText('Evaluador / Jurado:', {
+          x: margin + 15,
+          y: juradoY,
+          size: 9,
+          font: fontBold,
+          color: rgb(0.3, 0.3, 0.3),
+        });
+        page.drawText(jurado, {
+          x: margin + 130,
+          y: juradoY,
+          size: 9,
+          font: font,
+          color: rgb(0.1, 0.1, 0.1),
+        });
       } else {
         const fechaY = tableContentY - 45;
-        page.drawText('Fecha de Reporte:', { x: margin + 15, y: fechaY, size: 9, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-        page.drawText(new Date().toLocaleDateString('es-ES'), { x: margin + 130, y: fechaY, size: 9, font: font, color: rgb(0.1, 0.1, 0.1) });
+        page.drawText('Fecha de Reporte:', {
+          x: margin + 15,
+          y: fechaY,
+          size: 9,
+          font: fontBold,
+          color: rgb(0.3, 0.3, 0.3),
+        });
+        page.drawText(new Date().toLocaleDateString('es-ES'), {
+          x: margin + 130,
+          y: fechaY,
+          size: 9,
+          font: font,
+          color: rgb(0.1, 0.1, 0.1),
+        });
       }
 
-      y -= (tableHeight + 20);
+      y -= tableHeight + 20;
 
       // 4. Decision & Score Callout Box
       if (decision || calificacion) {
         const hasAjustes = decision.toLowerCase().includes('ajuste');
-        const hasRechazo = decision.toLowerCase().includes('rechaz') || decision.toLowerCase().includes('rechazo');
-        
+        const hasRechazo =
+          decision.toLowerCase().includes('rechaz') ||
+          decision.toLowerCase().includes('rechazo');
+
         let cardBg = rgb(0.94, 0.98, 0.98); // teal/green
         let cardBorder = rgb(0, 0.6, 0.6);
         let cardText = rgb(0, 0.4, 0.4);
@@ -323,7 +383,7 @@ export class ArticulosService {
           });
         }
 
-        y -= (calloutHeight + 25);
+        y -= calloutHeight + 25;
       }
 
       // 5. Body Comments Header
@@ -351,7 +411,12 @@ export class ArticulosService {
           continue;
         }
 
-        const wrappedLines = this.splitTextIntoLines(line, contentWidth, font, fontSize);
+        const wrappedLines = this.splitTextIntoLines(
+          line,
+          contentWidth,
+          font,
+          fontSize,
+        );
 
         for (const subLine of wrappedLines) {
           if (y < margin + 40) {
@@ -776,7 +841,7 @@ export class ArticulosService {
         const isAutorOnly =
           user &&
           !user.roles?.some((r: string) =>
-            ['admin', 'director', 'monitor', 'comite-editorial'].includes(r),
+            ['admin', 'comite-editorial'].includes(r),
           );
 
         let comentarios = obs.comentarios;
@@ -795,7 +860,8 @@ export class ArticulosService {
           if (lowerAsunto.includes('aceptar')) {
             comentarios = 'El artículo fue aprobado en la revisión por pares.';
           } else if (lowerAsunto.includes('ajustes')) {
-            comentarios = 'El artículo requiere realizar correcciones (ajustes) en la revisión por pares.';
+            comentarios =
+              'El artículo requiere realizar correcciones (ajustes) en la revisión por pares.';
           } else {
             comentarios = 'El artículo fue rechazado en la revisión por pares.';
           }
@@ -1689,9 +1755,12 @@ export class ArticulosService {
         usuarioId,
         etapaId: ArticulosService.ETAPA_COMITE_EDITORIAL,
         asunto: 'Asignación de comité editorial',
-        comentarios: 'El artículo fue asignado a un miembro del comité editorial.',
+        comentarios:
+          'El artículo fue asignado a un miembro del comité editorial.',
       });
-    await this.dataSource.getRepository(Observacion).save(observacionAsignacion);
+    await this.dataSource
+      .getRepository(Observacion)
+      .save(observacionAsignacion);
 
     return {
       message: 'Artículo asignado al miembro del Comité Editorial.',
@@ -1703,7 +1772,11 @@ export class ArticulosService {
     };
   }
 
-  async asignarRevisor(articuloId: number, revisorId: number, usuarioId: number) {
+  async asignarRevisor(
+    articuloId: number,
+    revisorId: number,
+    usuarioId: number,
+  ) {
     const articulo = await this.articuloRepository.findOne({
       where: { id: articuloId },
       relations: ['revisor'],
@@ -1757,7 +1830,9 @@ export class ArticulosService {
         asunto: 'Asignación de revisor por pares',
         comentarios: 'El artículo fue asignado al revisor por pares.',
       });
-    await this.dataSource.getRepository(Observacion).save(observacionAsignacion);
+    await this.dataSource
+      .getRepository(Observacion)
+      .save(observacionAsignacion);
 
     return {
       message: 'Revisor asignado correctamente.',
@@ -2357,7 +2432,10 @@ export class ArticulosService {
       const etapaId = articulo.etapaActual?.id;
       if (etapaId === 5) {
         // ETAPA_PUBLICACION = 5
-        estado = (articulo.edicionId !== null && articulo.edicionId !== undefined) ? 'Aprobado' : 'En curso';
+        estado =
+          articulo.edicionId !== null && articulo.edicionId !== undefined
+            ? 'Aprobado'
+            : 'En curso';
       } else if (etapaId === 7) {
         // ETAPA_DESCARTADO = 7
         estado = 'Rechazado';
@@ -2457,10 +2535,8 @@ export class ArticulosService {
         const tieneEval = (articulo.observaciones ?? []).some((obs) => {
           const asunto = (obs.asunto ?? '').toLowerCase();
           return (
-            (asunto.includes('revision por pares') ||
-              asunto.includes('revisión por pares')) &&
-            !asunto.includes('prorroga') &&
-            !asunto.includes('prórroga')
+            asunto.includes('revision por pares') ||
+            asunto.includes('revisión por pares')
           );
         });
         estado = tieneEval ? 'Evaluado' : 'En curso';
@@ -2603,13 +2679,24 @@ export class ArticulosService {
         const prof = user.profesion.trim();
         profesionMap.set(prof, (profesionMap.get(prof) ?? 0) + 1);
       }
-      if (user.tienePosgrado && user.posgradoTipo && user.posgradoTipo.trim() !== '') {
+      if (
+        user.tienePosgrado &&
+        user.posgradoTipo &&
+        user.posgradoTipo.trim() !== ''
+      ) {
         const tipo = this.capitalizarPosgradoTipo(user.posgradoTipo.trim());
         posgradoObtenidoMap.set(tipo, (posgradoObtenidoMap.get(tipo) ?? 0) + 1);
       }
-      if (user.estudiantePosgrado && user.posgradoTipo && user.posgradoTipo.trim() !== '') {
+      if (
+        user.estudiantePosgrado &&
+        user.posgradoTipo &&
+        user.posgradoTipo.trim() !== ''
+      ) {
         const tipo = this.capitalizarPosgradoTipo(user.posgradoTipo.trim());
-        posgradoEstudianteMap.set(tipo, (posgradoEstudianteMap.get(tipo) ?? 0) + 1);
+        posgradoEstudianteMap.set(
+          tipo,
+          (posgradoEstudianteMap.get(tipo) ?? 0) + 1,
+        );
       }
     }
 
@@ -2641,7 +2728,9 @@ export class ArticulosService {
         let evaluados = 0;
 
         if (rol === 'comite-editorial') {
-          const assignedArticles = articulos.filter((a) => a.comiteEditorialId === user.id);
+          const assignedArticles = articulos.filter(
+            (a) => a.comiteEditorialId === user.id,
+          );
           asignados = assignedArticles.length;
           evaluados = assignedArticles.filter((a) =>
             (a.observaciones ?? []).some(
@@ -2659,7 +2748,9 @@ export class ArticulosService {
             evaluados,
           });
         } else if (rol === 'revisor') {
-          const assignedArticles = articulos.filter((a) => a.revisor?.usuarioId === user.id);
+          const assignedArticles = articulos.filter(
+            (a) => a.revisor?.usuarioId === user.id,
+          );
           asignados = assignedArticles.length;
           evaluados = assignedArticles.filter((a) =>
             (a.observaciones ?? []).some(
@@ -2698,8 +2789,7 @@ export class ArticulosService {
           const evaluatedArticles = articulos.filter((a) =>
             (a.observaciones ?? []).some(
               (obs) =>
-                obs.usuarioId === user.id &&
-                [1, 3, 9].includes(obs.etapaId),
+                obs.usuarioId === user.id && [1, 3, 9].includes(obs.etapaId),
             ),
           );
           asignados = 0;
@@ -2754,7 +2844,6 @@ export class ArticulosService {
     if (t === 'especializacion') return 'Especialización';
     return tipo.charAt(0).toUpperCase() + tipo.slice(1);
   }
-
 
   async getArticulosPorAutor(userId: number) {
     const articulos = await this.articuloRepository
@@ -2843,7 +2932,9 @@ export class ArticulosService {
 
   private estaEvaluadoPorComite(articulo: Articulo): boolean {
     const observaciones = articulo.observaciones ?? [];
-    return observaciones.some((obs) => this.isAsuntoEvaluacionComite(obs.asunto));
+    return observaciones.some((obs) =>
+      this.isAsuntoEvaluacionComite(obs.asunto),
+    );
   }
 
   async subirCorreccionAutor(
@@ -3620,7 +3711,6 @@ export class ArticulosService {
         // Evita notificar la observación detallada de la rúbrica del revisor (muy extensa)
         // Pero procesa la notificación simplificada
 
-
         let estadoCorreccion =
           this.obtenerEstadoCorreccionDesdeObservacion(obs);
         if (lowerAsunto.includes('(rechazado)')) {
@@ -3660,7 +3750,8 @@ export class ArticulosService {
           if (lowerAsunto.includes('aceptar')) {
             detalle = 'El artículo fue aprobado en la revisión por pares.';
           } else if (lowerAsunto.includes('ajustes')) {
-            detalle = 'El artículo requiere realizar correcciones (ajustes) en la revisión por pares.';
+            detalle =
+              'El artículo requiere realizar correcciones (ajustes) en la revisión por pares.';
           } else {
             detalle = 'El artículo fue rechazado en la revisión por pares.';
           }
@@ -3717,10 +3808,7 @@ export class ArticulosService {
     });
 
     const esSoloComite =
-      userRoles.includes('comite-editorial') &&
-      !userRoles.includes('admin') &&
-      !userRoles.includes('director') &&
-      !userRoles.includes('monitor');
+      userRoles.includes('comite-editorial') && !userRoles.includes('admin');
 
     const articulosFiltrados = esSoloComite
       ? articulos.filter((a) => a.comiteEditorialId === userId)
@@ -4000,19 +4088,20 @@ export class ArticulosService {
     }
 
     const esAdmin = userRoles.includes('admin');
-    const esDirector = userRoles.includes('director');
-    const esMonitor = userRoles.includes('monitor');
     const esComiteEditorial = userRoles.includes('comite-editorial');
     const esAutor =
       articulo.autores?.some((autor) => autor.id === userId) ?? false;
     const esRevisorAsignado =
-      userRoles.includes('revisor') &&
-      articulo.revisor?.usuarioId === userId;
+      userRoles.includes('revisor') && articulo.revisor?.usuarioId === userId;
 
-    const esSoloAutor = esAutor && !esAdmin && !esDirector && !esMonitor && !esComiteEditorial;
+    const esSoloAutor = esAutor && !esAdmin && !esComiteEditorial;
     if (esSoloAutor) {
-      const isComiteObs = this.isAsuntoEvaluacionComite(archivo.observacion?.asunto);
-      const isRevisionParesObs = this.esAsuntoRevisionPares(archivo.observacion?.asunto);
+      const isComiteObs = this.isAsuntoEvaluacionComite(
+        archivo.observacion?.asunto,
+      );
+      const isRevisionParesObs = this.esAsuntoRevisionPares(
+        archivo.observacion?.asunto,
+      );
       if (isComiteObs || isRevisionParesObs) {
         throw new ForbiddenException(
           'No tienes permiso para descargar este archivo',
@@ -4020,14 +4109,7 @@ export class ArticulosService {
       }
     }
 
-    if (
-      !esAdmin &&
-      !esAutor &&
-      !esDirector &&
-      !esMonitor &&
-      !esComiteEditorial &&
-      !esRevisorAsignado
-    ) {
+    if (!esAdmin && !esAutor && !esComiteEditorial && !esRevisorAsignado) {
       throw new ForbiddenException(
         'No tienes permiso para descargar este archivo',
       );
@@ -4042,15 +4124,15 @@ export class ArticulosService {
   }
 
   private usuarioPuedeGestionarCertificados(userRoles: string[]): boolean {
-    return (
-      userRoles.includes('admin') ||
-      userRoles.includes('director') ||
-      userRoles.includes('monitor')
-    );
+    return userRoles.includes('admin');
   }
 
   private validarMetadatosCertificado(payload: {
-    contextoRequerimiento?: 'autor' | 'comite-editorial' | 'editorial' | 'revisor';
+    contextoRequerimiento?:
+      | 'autor'
+      | 'comite-editorial'
+      | 'editorial'
+      | 'revisor';
     etapaReferencia?: string;
   }) {
     const etapa = payload.etapaReferencia?.trim();
@@ -4094,7 +4176,12 @@ export class ArticulosService {
       userRoles.includes('revisor') &&
       certificado.articulo?.revisor?.usuarioId === userId;
 
-    if (!puedeGestionar && !esAutor && !esComiteAsignado && !esRevisorAsignado) {
+    if (
+      !puedeGestionar &&
+      !esAutor &&
+      !esComiteAsignado &&
+      !esRevisorAsignado
+    ) {
       throw new ForbiddenException(
         'No tienes permiso para acceder a este certificado.',
       );
@@ -4110,15 +4197,17 @@ export class ArticulosService {
     payload: {
       tipo: string;
       titulo?: string;
-      contextoRequerimiento: 'autor' | 'comite-editorial' | 'editorial' | 'revisor';
+      contextoRequerimiento:
+        | 'autor'
+        | 'comite-editorial'
+        | 'editorial'
+        | 'revisor';
       etapaReferencia?: string;
     },
     archivo: Express.Multer.File,
   ) {
     if (!this.usuarioPuedeGestionarCertificados(userRoles)) {
-      throw new ForbiddenException(
-        'Solo admin, director o monitor pueden subir certificados.',
-      );
+      throw new ForbiddenException('Solo admin puede subir certificados.');
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -4259,8 +4348,10 @@ export class ArticulosService {
     } else if (userRoles.includes('comite-editorial')) {
       qb.andWhere('articulo.comiteEditorialId = :userId', { userId });
     } else if (userRoles.includes('revisor')) {
-      qb.andWhere('revisor.usuarioId = :userId', { userId })
-        .andWhere('cert.contextoRequerimiento = :ctx', { ctx: 'revisor' });
+      qb.andWhere('revisor.usuarioId = :userId', { userId }).andWhere(
+        'cert.contextoRequerimiento = :ctx',
+        { ctx: 'revisor' },
+      );
     } else {
       qb.andWhere('autores.id = :userId', { userId });
     }
@@ -4289,14 +4380,16 @@ export class ArticulosService {
     payload: {
       tipo?: string;
       titulo?: string;
-      contextoRequerimiento?: 'autor' | 'comite-editorial' | 'editorial' | 'revisor';
+      contextoRequerimiento?:
+        | 'autor'
+        | 'comite-editorial'
+        | 'editorial'
+        | 'revisor';
       etapaReferencia?: string;
     },
   ) {
     if (!this.usuarioPuedeGestionarCertificados(userRoles)) {
-      throw new ForbiddenException(
-        'Solo admin, director o monitor pueden editar certificados.',
-      );
+      throw new ForbiddenException('Solo admin puede editar certificados.');
     }
 
     const certificado = await this.validarPermisoCertificado(
@@ -4339,9 +4432,7 @@ export class ArticulosService {
     userRoles: string[],
   ) {
     if (!this.usuarioPuedeGestionarCertificados(userRoles)) {
-      throw new ForbiddenException(
-        'Solo admin, director o monitor pueden eliminar certificados.',
-      );
+      throw new ForbiddenException('Solo admin puede eliminar certificados.');
     }
 
     const certificado = await this.validarPermisoCertificado(

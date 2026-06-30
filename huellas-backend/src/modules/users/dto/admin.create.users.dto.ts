@@ -21,6 +21,14 @@ export class AdminCreateUserDto {
   @IsOptional()
   telefono?: string;
 
+  @IsString()
+  @IsOptional()
+  institucion?: string;
+
+  @IsOptional()
+  @IsString()
+  perfil?: string;
+
   @IsNumber()
   rolId!: number;
 }

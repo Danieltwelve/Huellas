@@ -306,7 +306,7 @@ export class NavbarComponent implements OnInit {
     }
 
     if (
-      this.authService.hasAnyRole(['admin', 'director', 'monitor', 'comite-editorial']) ||
+      this.authService.hasAnyRole(['admin', 'comite-editorial']) ||
       claims.canManageArticulos ||
       claims.canManageFlujoEditorial
     ) {
@@ -515,8 +515,6 @@ export class NavbarComponent implements OnInit {
 
     if (
       this.hasRole('admin') ||
-      this.hasRole('director') ||
-      this.hasRole('monitor') ||
       this.currentClaims?.canManageArticulos
     ) {
       if (!tieneIdValido) {

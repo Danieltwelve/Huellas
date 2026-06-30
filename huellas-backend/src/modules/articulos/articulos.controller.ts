@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -44,7 +43,7 @@ import { FIREBASE_AUTH } from 'src/common/firebase/firebase-admin.constants';
 import { Auth as FirebaseAuth } from 'firebase-admin/auth';
 import { UsersService } from 'src/modules/users/users.service';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { createReadStream, promises as fs } from 'fs';
+import { promises as fs } from 'fs';
 import { existsSync, mkdirSync } from 'fs';
 import express from 'express';
 import * as mime from 'mime-types';
@@ -146,7 +145,7 @@ export class ArticulosController {
   ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'autor', 'director', 'monitor', 'comite-editorial', 'revisor')
+  @Roles('admin', 'autor', 'comite-editorial')
   @Get('flujo/:id')
   async getArticulosFlujo(
     @Param('id', ParseIntPipe) id: number,
@@ -156,7 +155,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'monitor', 'director', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   @Get('resumen')
   async getResumenArticulos(@Query('archivados') archivados?: string) {
     const showArchived = archivados === 'true';
@@ -164,14 +163,14 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Get('publicacion/candidatos')
   async getArticulosEnPublicacion() {
     return await this.articulosService.getArticulosEnPublicacion();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'monitor', 'director', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   @Get('estadisticas')
   async getEstadisticasGenerales() {
     return await this.articulosService.getEstadisticasGenerales();
@@ -219,7 +218,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Post(':id/certificados')
   @UseInterceptors(FileInterceptor('archivo', buildCertificadoUploadOptions()))
   async subirCertificado(
@@ -250,7 +249,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'autor', 'comite-editorial', 'revisor')
+  @Roles('admin', 'autor', 'comite-editorial', 'revisor')
   @Get('certificados')
   async listarCertificados(@Req() req: any) {
     return await this.articulosService.listarCertificadosUsuario(
@@ -260,7 +259,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'autor', 'comite-editorial', 'revisor')
+  @Roles('admin', 'autor', 'comite-editorial', 'revisor')
   @Get('certificados/:certificadoId/descargar')
   async descargarCertificado(
     @Param('certificadoId', ParseIntPipe) certificadoId: number,
@@ -282,7 +281,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Patch('certificados/:certificadoId')
   async actualizarCertificado(
     @Param('certificadoId', ParseIntPipe) certificadoId: number,
@@ -298,7 +297,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Delete('certificados/:certificadoId')
   async eliminarCertificado(
     @Param('certificadoId', ParseIntPipe) certificadoId: number,
@@ -443,14 +442,14 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial', 'autor')
+  @Roles('admin', 'comite-editorial', 'autor')
   @Get('configuracion/envios')
   async getEstadoEnviosArticulos() {
     return await this.articulosService.getEstadoEnviosArticulos();
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   @Patch('configuracion/envios')
   async actualizarEstadoEnviosArticulos(@Body() body: { habilitado: boolean }) {
     if (typeof body?.habilitado !== 'boolean') {
@@ -479,7 +478,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   @Get('editoriales/notificaciones')
   async getNotificacionesEditorial(@Req() req: any) {
     return await this.articulosService.getNotificacionesEditorial(
@@ -526,7 +525,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   @Post(':id/correcciones/:observacionId/aceptar')
   async aceptarCorreccionAutor(
     @Param('id', ParseIntPipe) id: number,
@@ -543,7 +542,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   @Post(':id/observaciones')
   @UseInterceptors(FileInterceptor('archivo', buildArticuloUploadOptions()))
   async agregarObservacion(
@@ -587,7 +586,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   @Patch(':id/etapa')
   async cambiarEtapa(
     @Param('id', ParseIntPipe) id: number,
@@ -602,7 +601,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   @Patch(':id/revision-final-checklist')
   async guardarChecklist(
     @Param('id', ParseIntPipe) id: number,
@@ -617,7 +616,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Patch(':id/publicar-metadata')
   async guardarMetadata(
     @Param('id', ParseIntPipe) id: number,
@@ -632,7 +631,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Post(':id/turnitin/evaluacion')
   @UseInterceptors(FileInterceptor('archivo', buildArticuloUploadOptions()))
   async evaluarTurnitin(
@@ -678,7 +677,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Post(':id/asignar-comite')
   async asignarComiteEditorial(
     @Param('id', ParseIntPipe) id: number,
@@ -697,7 +696,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Post(':id/asignar-revisor')
   async asignarRevisor(
     @Param('id', ParseIntPipe) id: number,
@@ -708,11 +707,15 @@ export class ArticulosController {
       throw new BadRequestException('Debes seleccionar un revisor.');
     }
 
-    return await this.articulosService.asignarRevisor(id, body.revisorId, req.user.userId);
+    return await this.articulosService.asignarRevisor(
+      id,
+      body.revisorId,
+      req.user.userId,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Delete(':id/asignar-revisor')
   async revocarRevisor(@Param('id', ParseIntPipe) id: number) {
     return await this.articulosService.revocarRevisor(id);
@@ -777,7 +780,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Patch(':id/correccion/prorroga')
   async resolverProrrogaCorreccion(
     @Param('id', ParseIntPipe) id: number,
@@ -812,7 +815,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Patch(':id/comite/prorroga')
   async resolverProrrogaComite(
     @Param('id', ParseIntPipe) id: number,
@@ -847,7 +850,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Patch(':id/revisor/prorroga')
   async resolverProrrogaRevisor(
     @Param('id', ParseIntPipe) id: number,
@@ -884,16 +887,23 @@ export class ArticulosController {
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         try {
-          const decodedToken = await this.firebaseAuth.verifyIdToken(token, true);
+          const decodedToken = await this.firebaseAuth.verifyIdToken(
+            token,
+            true,
+          );
           if (decodedToken && decodedToken.email) {
-            const user = await this.usersService.findByEmail(decodedToken.email);
+            const user = await this.usersService.findByEmail(
+              decodedToken.email,
+            );
             if (user && user.estado_cuenta !== false) {
               userId = user.id;
-              
+
               // Extraer roles de la misma manera que en el guard
               const tokenRoles = decodedToken.roles;
               if (Array.isArray(tokenRoles)) {
-                roles = tokenRoles.filter((role): role is string => typeof role === 'string');
+                roles = tokenRoles.filter(
+                  (role): role is string => typeof role === 'string',
+                );
               }
               if (roles.length === 0) {
                 roles = user.roles?.map((r) => r.rol) ?? [];
@@ -976,7 +986,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Post(':id/autores')
   async agregarAutorArticulo(
     @Param('id', ParseIntPipe) id: number,
@@ -986,7 +996,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin')
   @Delete(':id/autores/:autorId')
   async removerAutorArticulo(
     @Param('id', ParseIntPipe) id: number,

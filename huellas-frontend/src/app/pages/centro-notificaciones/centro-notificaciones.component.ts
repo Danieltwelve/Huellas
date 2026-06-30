@@ -25,7 +25,7 @@ interface NotificationUI {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './centro-notificaciones.component.html',
-  styleUrls: ['./centro-notificaciones.component.css']
+  styleUrls: ['./centro-notificaciones.component.css'],
 })
 export class CentroNotificacionesComponent implements OnInit {
   private readonly authService = inject(AuthService);
@@ -42,7 +42,7 @@ export class CentroNotificacionesComponent implements OnInit {
   userRole: string | null = null;
 
   ngOnInit(): void {
-    this.authService.claims$.subscribe(claims => {
+    this.authService.claims$.subscribe((claims) => {
       const roles = claims?.roles || [];
       if (roles.includes('revisor')) {
         this.userRole = 'revisor';
@@ -50,8 +50,6 @@ export class CentroNotificacionesComponent implements OnInit {
         this.userRole = 'autor';
       } else if (roles.includes('comite-editorial')) {
         this.userRole = 'comite-editorial';
-      } else if (roles.some((r: string) => ['admin', 'director', 'monitor'].includes(r))) {
-        this.userRole = 'admin';
       }
       this.cargarNotificaciones();
     });
@@ -68,7 +66,7 @@ export class CentroNotificacionesComponent implements OnInit {
 
   get visibles(): NotificationUI[] {
     if (this.filtro === 'no-leidas') {
-      return this.notificaciones.filter(n => !n.leida);
+      return this.notificaciones.filter((n) => !n.leida);
     }
     return this.notificaciones;
   }
@@ -97,23 +95,25 @@ export class CentroNotificacionesComponent implements OnInit {
     this.revisoresService.getNotificacionesRevisor().subscribe({
       next: (data) => {
         const idsLeidos = this.obtenerIdsLeidos();
-        this.notificaciones = data.map(item => ({
-          id: item.id,
-          articuloId: item.articuloId,
-          codigoArticulo: item.codigoArticulo || this.extractCode(item.detalle),
-          titulo: item.titulo,
-          detalle: item.detalle,
-          fecha: new Date(item.fecha),
-          enlace: item.enlace || `/panel-revisor/realizar-revision?articuloId=${item.articuloId}`,
-          tipo: item.id.startsWith('ASIG') ? 'asignacion' : 'mensaje',
-          leida: idsLeidos.has(item.id)
-        })).sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+        this.notificaciones = data
+          .map((item) => ({
+            id: item.id,
+            articuloId: item.articuloId,
+            codigoArticulo: item.codigoArticulo || this.extractCode(item.detalle),
+            titulo: item.titulo,
+            detalle: item.detalle,
+            fecha: new Date(item.fecha),
+            enlace: item.enlace || `/panel-revisor/realizar-revision?articuloId=${item.articuloId}`,
+            tipo: item.id.startsWith('ASIG') ? 'asignacion' : 'mensaje',
+            leida: idsLeidos.has(item.id),
+          }))
+          .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
         this.loading = false;
       },
       error: () => {
         this.error = 'No se pudieron cargar las notificaciones.';
         this.loading = false;
-      }
+      },
     });
   }
 
@@ -121,34 +121,40 @@ export class CentroNotificacionesComponent implements OnInit {
     this.articulosAutorService.getMisNotificaciones().subscribe({
       next: (data) => {
         const idsLeidos = this.obtenerIdsLeidos();
-        this.notificaciones = data.map(item => {
-          const texto = `${item.titulo ?? ''} ${item.detalle ?? ''}`.toLowerCase();
-          const esCertificado = /certific/i.test(texto);
-          return {
-            id: item.id,
-            articuloId: item.articuloId,
-            codigoArticulo: item.codigoArticulo,
-            titulo: item.titulo,
-            detalle: item.detalle,
-            fecha: new Date(item.fecha),
-            enlace: esCertificado ? '/panel-autor/certificados' : `/panel-autor/timeline?articuloId=${item.articuloId}`,
-            tipo: item.tipo,
-            leida: idsLeidos.has(item.id)
-          };
-        }).sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+        this.notificaciones = data
+          .map((item) => {
+            const texto = `${item.titulo ?? ''} ${item.detalle ?? ''}`.toLowerCase();
+            const esCertificado = /certific/i.test(texto);
+            return {
+              id: item.id,
+              articuloId: item.articuloId,
+              codigoArticulo: item.codigoArticulo,
+              titulo: item.titulo,
+              detalle: item.detalle,
+              fecha: new Date(item.fecha),
+              enlace: esCertificado
+                ? '/panel-autor/certificados'
+                : `/panel-autor/timeline?articuloId=${item.articuloId}`,
+              tipo: item.tipo,
+              leida: idsLeidos.has(item.id),
+            };
+          })
+          .sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
         this.loading = false;
       },
       error: () => {
         this.error = 'No se pudieron cargar las notificaciones.';
         this.loading = false;
-      }
+      },
     });
   }
 
   private cargarComiteNotificaciones(): void {
     forkJoin({
       articulos: this.articulosService.getArticulosComiteAsignados().pipe(catchError(() => of([]))),
-      vencimientos: this.articulosService.getNotificacionesVencimientoComite().pipe(catchError(() => of([])))
+      vencimientos: this.articulosService
+        .getNotificacionesVencimientoComite()
+        .pipe(catchError(() => of([]))),
     }).subscribe({
       next: ({ articulos, vencimientos }) => {
         const idsLeidos = this.obtenerIdsLeidos();
@@ -157,10 +163,10 @@ export class CentroNotificacionesComponent implements OnInit {
         // Nuevos
         const key = 'comite-notificaciones-vistos';
         const rawVistos = localStorage.getItem(key);
-        const vistos = rawVistos ? JSON.parse(rawVistos) as number[] : [];
-        const nuevos = articulos.filter(a => !vistos.includes(a.id));
+        const vistos = rawVistos ? (JSON.parse(rawVistos) as number[]) : [];
+        const nuevos = articulos.filter((a) => !vistos.includes(a.id));
 
-        nuevos.forEach(articulo => {
+        nuevos.forEach((articulo) => {
           list.push({
             id: `nuevo-${articulo.id}`,
             articuloId: articulo.id,
@@ -170,12 +176,12 @@ export class CentroNotificacionesComponent implements OnInit {
             fecha: new Date(),
             enlace: `/panel-comite-editorial/articulos/${articulo.id}`,
             tipo: 'nuevo-articulo',
-            leida: idsLeidos.has(`nuevo-${articulo.id}`)
+            leida: idsLeidos.has(`nuevo-${articulo.id}`),
           });
         });
 
         // Recordatorios vencimiento
-        vencimientos.forEach(v => {
+        vencimientos.forEach((v) => {
           const id = `rev-${v.articuloId}-${v.tipo}`;
           list.push({
             id: id,
@@ -186,25 +192,32 @@ export class CentroNotificacionesComponent implements OnInit {
             fecha: new Date(),
             enlace: `/panel-comite-editorial/articulos/${v.articuloId}`,
             tipo: v.tipo, // 'vencido' | 'proximo-vencer'
-            leida: idsLeidos.has(id)
+            leida: idsLeidos.has(id),
           });
         });
 
         // Sin revisar
-        articulos.filter(a => a.estado_evaluacion === 'pendiente' && typeof a.dias_restantes === 'number' && a.dias_restantes > 5).forEach(articulo => {
-          const id = `sin-revisar-${articulo.id}`;
-          list.push({
-            id: id,
-            articuloId: articulo.id,
-            codigoArticulo: articulo.codigo,
-            titulo: 'Artículo pendiente de revisión',
-            detalle: `${articulo.codigo}: ${articulo.titulo} - Vence en ${articulo.dias_restantes} días`,
-            fecha: new Date(),
-            enlace: `/panel-comite-editorial/articulos/${articulo.id}`,
-            tipo: 'sin-revisar',
-            leida: idsLeidos.has(id)
+        articulos
+          .filter(
+            (a) =>
+              a.estado_evaluacion === 'pendiente' &&
+              typeof a.dias_restantes === 'number' &&
+              a.dias_restantes > 5,
+          )
+          .forEach((articulo) => {
+            const id = `sin-revisar-${articulo.id}`;
+            list.push({
+              id: id,
+              articuloId: articulo.id,
+              codigoArticulo: articulo.codigo,
+              titulo: 'Artículo pendiente de revisión',
+              detalle: `${articulo.codigo}: ${articulo.titulo} - Vence en ${articulo.dias_restantes} días`,
+              fecha: new Date(),
+              enlace: `/panel-comite-editorial/articulos/${articulo.id}`,
+              tipo: 'sin-revisar',
+              leida: idsLeidos.has(id),
+            });
           });
-        });
 
         this.notificaciones = list.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
         this.loading = false;
@@ -212,7 +225,7 @@ export class CentroNotificacionesComponent implements OnInit {
       error: () => {
         this.error = 'No se pudieron cargar las notificaciones.';
         this.loading = false;
-      }
+      },
     });
   }
 
@@ -247,7 +260,7 @@ export class CentroNotificacionesComponent implements OnInit {
   }
 
   marcarLeida(id: string): void {
-    this.notificaciones = this.notificaciones.map(n => n.id === id ? { ...n, leida: true } : n);
+    this.notificaciones = this.notificaciones.map((n) => (n.id === id ? { ...n, leida: true } : n));
     const ids = this.obtenerIdsLeidos();
     ids.add(id);
     this.guardarIdsLeidos(ids);
@@ -255,8 +268,8 @@ export class CentroNotificacionesComponent implements OnInit {
   }
 
   marcarTodasComoLeidas(): void {
-    this.notificaciones = this.notificaciones.map(n => ({ ...n, leida: true }));
-    const ids = new Set(this.notificaciones.map(n => n.id));
+    this.notificaciones = this.notificaciones.map((n) => ({ ...n, leida: true }));
+    const ids = new Set(this.notificaciones.map((n) => n.id));
     this.guardarIdsLeidos(ids);
     window.dispatchEvent(new CustomEvent('huellas-notifications-updated'));
   }
@@ -298,7 +311,7 @@ export class CentroNotificacionesComponent implements OnInit {
       const raw = localStorage.getItem(this.storageKey);
       if (!raw) return new Set<string>();
       const parsed = JSON.parse(raw) as string[];
-      return new Set(parsed.filter(id => typeof id === 'string'));
+      return new Set(parsed.filter((id) => typeof id === 'string'));
     } catch {
       return new Set<string>();
     }

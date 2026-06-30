@@ -24,7 +24,7 @@ export class RequisitosRevistaController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   create(@Body() createRequisitosRevistaDto: CreateRequisitosRevistaDto) {
     return this.requisitosRevistaService.create(createRequisitosRevistaDto);
   }
@@ -41,7 +41,7 @@ export class RequisitosRevistaController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   update(
     @Param('id') id: string,
     @Body() updateRequisitosRevistaDto: UpdateRequisitosRevistaDto,
@@ -54,7 +54,7 @@ export class RequisitosRevistaController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor', 'comite-editorial')
+  @Roles('admin', 'comite-editorial')
   remove(@Param('id') id: string) {
     return this.requisitosRevistaService.remove(+id);
   }

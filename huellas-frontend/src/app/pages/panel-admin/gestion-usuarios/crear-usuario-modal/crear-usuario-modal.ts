@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, inject, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, inject, Output, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RolBackend, UsersService } from '../../../../core/users/users.service';
 
@@ -7,6 +7,8 @@ interface CreateUserForm {
   correo: string;
   contrasena: string;
   telefono: string;
+  institucion: string;
+  perfil: '';
   rol: number;
 }
 
@@ -19,6 +21,7 @@ interface CreateUserForm {
 })
 export class CrearUsuarioModal implements OnInit {
   private usersService = inject(UsersService);
+  private cdr = inject(ChangeDetectorRef);
 
   @Output() closed = new EventEmitter<void>();
   @Output() created = new EventEmitter<void>();
@@ -29,12 +32,15 @@ export class CrearUsuarioModal implements OnInit {
   creatingUser = false;
   requestError = '';
   availableRoles: RolBackend[] = [];
+  revisorRoleId: number | null = null;
 
   createForm: CreateUserForm = {
     nombre: '',
     correo: '',
     contrasena: '',
     telefono: '',
+    institucion: '',
+    perfil: '',
     rol: 1,
   };
 
@@ -74,7 +80,7 @@ export class CrearUsuarioModal implements OnInit {
 
   isValidPhone(): boolean {
     const phone = this.createForm.telefono.trim();
-    return /^\d+$/.test(phone);
+    return phone === '' || /^\d+$/.test(phone);
   }
 
   isValidPassword(): boolean {
@@ -85,21 +91,23 @@ export class CrearUsuarioModal implements OnInit {
     return (
       this.isValidName() &&
       this.isValidEmail() &&
-      this.isValidPhone() &&
       this.isValidPassword() &&
+      this.isValidPhone() &&
       this.createForm.rol > 0
     );
   }
 
   getSelectedRoleName(): string {
-    const roleName = this.availableRoles.find((role) => role.id === this.createForm.rol)?.rol ?? '';
-    return this.getRoleLabel(roleName);
+    const role = this.availableRoles.find((r) => r.id == this.createForm.rol);
+    return role ? this.getRoleLabel(role.rol) : 'Rol no asignado';
   }
 
   private loadRoles(): void {
     this.usersService.getRoles().subscribe({
       next: (roles) => {
         this.availableRoles = roles;
+        const revisor = roles.find((r) => r.rol === 'revisor');
+        this.revisorRoleId = revisor ? revisor.id : null;
         if (roles.length > 0) {
           const selectedExists = roles.some((role) => role.id === this.createForm.rol);
           this.createForm.rol = selectedExists ? this.createForm.rol : roles[0].id;
@@ -109,6 +117,11 @@ export class CrearUsuarioModal implements OnInit {
         this.requestError = 'No fue posible cargar los roles disponibles.';
       },
     });
+  }
+
+  onRolChange(nuevoRol: number): void {
+    this.createForm.rol = nuevoRol;
+    this.cdr.markForCheck();
   }
 
   private getRoleLabel(role: string): string {
@@ -137,34 +150,41 @@ export class CrearUsuarioModal implements OnInit {
     this.creatingUser = true;
     this.requestError = '';
 
-    this.usersService
-      .createAdmin({
-        nombre: this.createForm.nombre.trim(),
-        correo: this.createForm.correo.trim(),
-        contraseña: this.createForm.contrasena,
-        telefono: this.createForm.telefono.trim(),
-        rolId: this.createForm.rol,
-      })
-      .subscribe({
-        next: () => {
-          this.creatingUser = false;
-          this.showConfirmationModal = false;
-          this.showSuccessModal = true;
-          this.created.emit();
-        },
-        error: (error) => {
-          this.creatingUser = false;
-          this.showConfirmationModal = false;
-          this.showForm = true;
+    const payload: any = {
+      nombre: this.createForm.nombre.trim(),
+      correo: this.createForm.correo.trim(),
+      contraseña: this.createForm.contrasena,
+      telefono: this.createForm.telefono.trim(),
+      institucion: this.createForm.institucion.trim(),
+      rolId: Number(this.createForm.rol),
+    };
 
-          const backendMessage = Array.isArray(error?.error?.message)
-            ? error.error.message.join(', ')
-            : error?.error?.message;
+    const selectedRole = this.availableRoles.find((r) => r.id === this.createForm.rol);
+    if (selectedRole?.rol === 'revisor') {
+      payload.perfil = this.createForm.perfil?.trim() || '';
+    }
 
-          this.requestError =
-            backendMessage || 'No se pudo crear el usuario. Verifica los datos e intenta de nuevo.';
-        },
-      });
+    console.log('Payload final:', payload);
+    this.usersService.createAdmin(payload).subscribe({
+      next: () => {
+        this.creatingUser = false;
+        this.showConfirmationModal = false;
+        this.showSuccessModal = true;
+        this.created.emit();
+      },
+      error: (error) => {
+        this.creatingUser = false;
+        this.showConfirmationModal = false;
+        this.showForm = true;
+
+        const backendMessage = Array.isArray(error?.error?.message)
+          ? error.error.message.join(', ')
+          : error?.error?.message;
+
+        this.requestError =
+          backendMessage || 'No se pudo crear el usuario. Verifica los datos e intenta de nuevo.';
+      },
+    });
   }
 
   private resetForm(): void {
@@ -173,7 +193,13 @@ export class CrearUsuarioModal implements OnInit {
       correo: '',
       contrasena: '',
       telefono: '',
+      perfil: '',
+      institucion: '',
       rol: this.availableRoles[0]?.id ?? 1,
     };
+  }
+
+  get isRevisorSelected(): boolean {
+    return this.createForm.rol == this.revisorRoleId;
   }
 }
