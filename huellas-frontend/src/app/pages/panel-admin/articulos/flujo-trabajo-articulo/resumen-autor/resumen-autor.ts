@@ -1,6 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ArticuloFlujo } from '../../../../../core/articulos/articulos.service';
+import { ArticuloFlujo, ArticulosService } from '../../../../../core/articulos/articulos.service';
+import { normalizarNombreArchivo } from '../../../../../core/utils/filename.utils';
 
 @Component({
   selector: 'app-resumen-autor',
@@ -10,6 +11,8 @@ import { ArticuloFlujo } from '../../../../../core/articulos/articulos.service';
   styleUrl: './resumen-autor.css',
 })
 export class ResumenAutor {
+  private readonly articulosService = inject(ArticulosService);
+
   @Input() articulo: ArticuloFlujo | null = null;
 
   resumenEnvioExpandido = true;
@@ -95,5 +98,53 @@ export class ResumenAutor {
       year: 'numeric',
       timeZone: 'America/Bogota',
     }).format(fecha);
+  }
+
+  get documentoArticuloInicial(): { nombre: string; path: string } | null {
+    if (!this.articulo || !this.articulo.observaciones || this.articulo.observaciones.length === 0) {
+      return null;
+    }
+
+    const observacionesOrdenadas = [...this.articulo.observaciones].sort(
+      (a, b) => new Date(a.fechaSubida).getTime() - new Date(b.fechaSubida).getTime()
+    );
+
+    const primeraObsConArchivos = observacionesOrdenadas.find(
+      (obs) => obs.archivos && obs.archivos.length > 0
+    );
+
+    if (!primeraObsConArchivos || !primeraObsConArchivos.archivos || primeraObsConArchivos.archivos.length === 0) {
+      return null;
+    }
+
+    const archivo = primeraObsConArchivos.archivos[0];
+    return {
+      nombre: normalizarNombreArchivo(archivo.archivoNombreOriginal),
+      path: archivo.archivoPath
+    };
+  }
+
+  descargarDocumento(path: string, nombreOriginal: string): void {
+    const filename = path.split(/[\\/]/).pop() || '';
+
+    if (!filename) {
+      return;
+    }
+
+    this.articulosService.descargarArchivo(filename).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = normalizarNombreArchivo(nombreOriginal);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Error descargando el archivo:', err);
+      },
+    });
   }
 }

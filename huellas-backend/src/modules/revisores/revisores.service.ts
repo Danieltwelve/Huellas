@@ -203,18 +203,31 @@ export class RevisoresService {
 
   async getNotificacionesRevisor(usuarioId: number) {
     const articulos = await this.getArticulosAsignadosRevisor(usuarioId);
+    if (articulos.length === 0) {
+      return [];
+    }
 
-    return articulos
-      .sort((a, b) => {
-        const fechaA = a.fechaAsignacion
-          ? new Date(a.fechaAsignacion).getTime()
-          : 0;
-        const fechaB = b.fechaAsignacion
-          ? new Date(b.fechaAsignacion).getTime()
-          : 0;
-        return fechaB - fechaA;
-      })
-      .map((articulo) => ({
+    const articuloIds = articulos.map((a) => a.id);
+
+    // Obtener observaciones de prórroga para estos artículos
+    const observacionesRepo = this.dataSource.getRepository(Observacion);
+    const observacionesProrroga = await observacionesRepo
+      .createQueryBuilder('observacion')
+      .where('observacion.articuloId IN (:...articuloIds)', { articuloIds })
+      .andWhere(
+        '(observacion.asunto = :aceptada OR observacion.asunto = :rechazada)',
+        {
+          aceptada: 'Revisión por pares: prórroga aceptada',
+          rechazada: 'Revisión por pares: prórroga rechazada',
+        },
+      )
+      .getMany();
+
+    const notificaciones: any[] = [];
+
+    // Agregar notificaciones de asignación
+    for (const articulo of articulos) {
+      notificaciones.push({
         id: `ASIG-${articulo.id}`,
         articuloId: articulo.id,
         codigoArticulo: articulo.codigo,
@@ -222,7 +235,34 @@ export class RevisoresService {
         detalle: `Se asignó ${articulo.codigo} para revisión por pares.`,
         fecha: articulo.fechaAsignacion ?? new Date().toISOString(),
         enlace: articulo.enlace,
-      }));
+      });
+    }
+
+    // Agregar notificaciones de prórroga
+    for (const obs of observacionesProrroga) {
+      const articulo = articulos.find((a) => a.id === obs.articuloId);
+      if (articulo) {
+        const esAceptada = obs.asunto === 'Revisión por pares: prórroga aceptada';
+        notificaciones.push({
+          id: `PRORR-${obs.id}`,
+          articuloId: obs.articuloId,
+          codigoArticulo: articulo.codigo,
+          titulo: esAceptada ? 'Prórroga aprobada' : 'Prórroga rechazada',
+          detalle: esAceptada
+            ? `Tu solicitud de prórroga para ${articulo.codigo} fue aprobada. Plazo extendido 15 días.`
+            : `Tu solicitud de prórroga para ${articulo.codigo} fue rechazada.`,
+          fecha: obs.fechaSubida?.toISOString() ?? new Date().toISOString(),
+          enlace: articulo.enlace,
+        });
+      }
+    }
+
+    // Ordenar de más reciente a más antigua
+    return notificaciones.sort((a, b) => {
+      const fechaA = new Date(a.fecha).getTime();
+      const fechaB = new Date(b.fecha).getTime();
+      return fechaB - fechaA;
+    });
   }
 
   private splitTextIntoLines(

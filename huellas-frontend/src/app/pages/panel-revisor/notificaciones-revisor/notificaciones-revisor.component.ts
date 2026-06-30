@@ -27,7 +27,7 @@ export class NotificacionesRevisorComponent implements OnInit {
           return {
             ...item,
             leida: idsLeidos.has(item.id),
-            tipo: mockItem ? mockItem.tipo : (item.id.startsWith('ASIG') ? 'asignacion' : 'mensaje')
+            tipo: mockItem ? mockItem.tipo : (item.id.startsWith('ASIG') ? 'asignacion' : (item.id.startsWith('PRORR') ? 'plazo' : 'mensaje'))
           };
         });
       },

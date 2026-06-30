@@ -57,13 +57,48 @@ export class PanelComiteEditorialLayoutComponent {
       .subscribe({
         next: ({ articulos, vencimientos }) => {
           const idsActuales = articulos.map((a) => a.id);
-          const key = 'comite-notificaciones-vistos';
-          const idsPrevios = this.getIdsGuardados(key);
-          const nuevosAsignados = idsPrevios.length
-            ? idsActuales.filter((id) => !idsPrevios.includes(id)).length
-            : 0;
+          const keyVistos = 'comite-notificaciones-vistos';
+          const vistosRaw = localStorage.getItem(keyVistos);
+          const vistos = vistosRaw ? this.getIdsGuardados(keyVistos) : [];
 
-          localStorage.setItem(key, JSON.stringify(idsActuales));
+          // Cargar historial
+          const keyHistorial = 'comite-historial-notificaciones-nuevos';
+          const historialRaw = localStorage.getItem(keyHistorial);
+          let historial: any[] = [];
+          if (historialRaw) {
+            try {
+              historial = JSON.parse(historialRaw);
+            } catch {
+              historial = [];
+            }
+          }
+
+          // Identificar nuevos: si el historial está vacío, poblamos con todos los artículos actuales como estado inicial
+          const nuevos = (vistosRaw && historial.length > 0)
+            ? articulos.filter((a) => !vistos.includes(a.id))
+            : articulos;
+          let nuevosAsignados = 0;
+
+          if (nuevos.length > 0) {
+            nuevosAsignados = nuevos.length;
+            const nuevasNotifs = nuevos.map((articulo) => ({
+              id: `nuevo-${articulo.id}`,
+              articuloId: articulo.id,
+              codigoArticulo: articulo.codigo,
+              titulo: 'Nuevo artículo asignado',
+              detalle: `Se te asignó ${articulo.codigo}: ${articulo.titulo}`,
+              fecha: new Date().toISOString(),
+              enlace: `/panel-comite-editorial/articulos/${articulo.id}`,
+              leida: false,
+            }));
+            historial.push(...nuevasNotifs);
+            localStorage.setItem(keyHistorial, JSON.stringify(historial));
+
+            const vistosActualizados = Array.from(new Set([...vistos, ...idsActuales]));
+            localStorage.setItem(keyVistos, JSON.stringify(vistosActualizados));
+          } else if (vistos.length === 0 && idsActuales.length > 0) {
+            localStorage.setItem(keyVistos, JSON.stringify(idsActuales));
+          }
 
           const items = [
             ...this.construirNotificacionesRecordatorio(vencimientos),
@@ -131,24 +166,21 @@ export class PanelComiteEditorialLayoutComponent {
   }
 
   private construirNotificacionesNuevosArticulos(articulos: any[]): NotificationDropdownItem[] {
-    const idsPrevios = this.getIdsGuardados('comite-notificaciones-vistos');
-
-    if (!idsPrevios.length) {
-      return [];
+    const keyHistorial = 'comite-historial-notificaciones-nuevos';
+    const historialRaw = localStorage.getItem(keyHistorial);
+    let historial: any[] = [];
+    if (historialRaw) {
+      try {
+        historial = JSON.parse(historialRaw);
+      } catch {
+        historial = [];
+      }
     }
 
-    return articulos
-      .filter((articulo) => !idsPrevios.includes(articulo.id))
-      .map((articulo) => ({
-        id: `nuevo-${articulo.id}`,
-        articuloId: articulo.id,
-        codigoArticulo: articulo.codigo,
-        titulo: 'Nuevo artículo asignado',
-        detalle: `Se te asignó ${articulo.codigo}: ${articulo.titulo}`,
-        fecha: new Date(),
-        enlace: `/panel-comite-editorial/articulos/${articulo.id}`,
-        leida: false,
-      }));
+    return historial.map((n: any) => ({
+      ...n,
+      fecha: new Date(n.fecha),
+    }));
   }
 
   private construirNotificacionesSinRevisar(articulos: any[]): NotificationDropdownItem[] {

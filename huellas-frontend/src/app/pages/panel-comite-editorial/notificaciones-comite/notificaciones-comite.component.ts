@@ -96,19 +96,61 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
             console.table(vencimientos);
           }
 
+          const idsActuales = articulos.map((a) => a.id);
+          const keyVistos = 'comite-notificaciones-vistos';
+          const keyHistorial = 'comite-historial-notificaciones-nuevos';
+
+          const vistosRaw = localStorage.getItem(keyVistos);
+          const vistos = vistosRaw ? this.parseIds(vistosRaw) : [];
+
+          // Cargar historial
+          const historialRaw = localStorage.getItem(keyHistorial);
+          let historial: any[] = [];
+          if (historialRaw) {
+            try {
+              historial = JSON.parse(historialRaw);
+            } catch {
+              historial = [];
+            }
+          }
+
+          // Identificar nuevos: si el historial está vacío, poblamos con todos los artículos actuales como estado inicial
+          const nuevos = (vistosRaw && historial.length > 0)
+            ? articulos.filter((a) => !vistos.includes(a.id))
+            : articulos;
+
+          if (nuevos.length > 0) {
+            const nuevasNotifs = nuevos.map((articulo) => ({
+              id: `nuevo-${articulo.id}`,
+              tipo: 'nuevo-articulo',
+              titulo: 'Nuevo artículo asignado',
+              mensaje: `Se te asignó ${articulo.codigo}: ${articulo.titulo}`,
+              articuloId: articulo.id,
+              codigo: articulo.codigo,
+              fecha: new Date().toISOString(),
+            }));
+            historial.push(...nuevasNotifs);
+            localStorage.setItem(keyHistorial, JSON.stringify(historial));
+
+            const vistosActualizados = Array.from(new Set([...vistos, ...idsActuales]));
+            localStorage.setItem(keyVistos, JSON.stringify(vistosActualizados));
+          } else if (vistos.length === 0 && idsActuales.length > 0) {
+            localStorage.setItem(keyVistos, JSON.stringify(idsActuales));
+          }
+
           // Construir notificaciones
-          const nuevos = this.construirNotificacionesNuevosArticulos(articulos);
+          const nuevosNotifs = this.construirNotificacionesNuevosArticulos(articulos);
           const sinRevisar = this.construirNotificacionesSinRevisar(articulos);
           const recordatorios = this.construirNotificacionesRecordatorio(vencimientos);
 
           console.log('[Notificaciones] Categorías:', {
-            nuevos: nuevos.length,
+            nuevos: nuevosNotifs.length,
             sinRevisar: sinRevisar.length,
             recordatorios: recordatorios.length,
           });
 
           // Combinar todas las notificaciones
-          this.notificaciones = [...recordatorios, ...nuevos, ...sinRevisar].sort(
+          this.notificaciones = [...recordatorios, ...nuevosNotifs, ...sinRevisar].sort(
             (a, b) => b.fecha.getTime() - a.fecha.getTime(),
           );
 
@@ -127,28 +169,20 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
   }
 
   private construirNotificacionesNuevosArticulos(articulos: ArticuloResumenBackend[]): NotificacionUI[] {
-    const idsActuales = articulos.map((a) => a.id);
-    const key = 'comite-notificaciones-vistos';
-    const vistosRaw = localStorage.getItem(key);
-    const vistos = vistosRaw ? this.parseIds(vistosRaw) : [];
-
-    // En el primer ingreso solo registramos estado base para evitar falsos "nuevos".
-    if (!vistosRaw) {
-      localStorage.setItem(key, JSON.stringify(idsActuales));
-      return [];
+    const keyHistorial = 'comite-historial-notificaciones-nuevos';
+    const historialRaw = localStorage.getItem(keyHistorial);
+    let historial: any[] = [];
+    if (historialRaw) {
+      try {
+        historial = JSON.parse(historialRaw);
+      } catch {
+        historial = [];
+      }
     }
 
-    const nuevos = articulos.filter((a) => !vistos.includes(a.id));
-    localStorage.setItem(key, JSON.stringify(idsActuales));
-
-    return nuevos.map((articulo) => ({
-      id: `nuevo-${articulo.id}`,
-      tipo: 'nuevo-articulo',
-      titulo: 'Nuevo artículo asignado',
-      mensaje: `Se te asignó ${articulo.codigo}: ${articulo.titulo}`,
-      articuloId: articulo.id,
-      codigo: articulo.codigo,
-      fecha: new Date(),
+    return historial.map((n: any) => ({
+      ...n,
+      fecha: new Date(n.fecha),
     }));
   }
 

@@ -8,9 +8,22 @@ import {
   ArticuloRevisorDto,
   RevisoresService,
 } from '../../../core/revisores/revisores.service';
-import { ArticulosService } from '../../../core/articulos/articulos.service';
+import { ArticuloFlujo, ArticulosService } from '../../../core/articulos/articulos.service';
+import { normalizarNombreArchivo } from '../../../core/utils/filename.utils';
 
 type RespuestaRubrica = 'si' | 'no' | null;
+
+export interface DocumentoArticulo {
+  nombre: string;
+  path: string;
+  asunto?: string;
+}
+
+export interface DocumentoRubrica {
+  titulo: string;
+  descripcion: string;
+  archivo: string;
+}
 
 interface CriterioRubrica {
   texto: string;
@@ -276,6 +289,23 @@ export class RealizarRevisionComponent implements OnInit {
     (acumulado, seccion) => ({ ...acumulado, [seccion.numero]: true }),
     {},
   );
+  articuloDetalle: ArticuloFlujo | null = null;
+  readonly documentosRubrica: DocumentoRubrica[] = [
+    {
+      titulo: 'Rúbrica de evaluación - Revisor por Pares (Word)',
+      descripcion: 'Formato oficial para la evaluación de revisión por pares.',
+      archivo: '/RÚBRICA  EVALUACIÓN DE ARTÍCULOS.docx',
+    },
+  ];
+  seccionesAbiertasRevision: {
+    documentos: boolean;
+    rubricas: boolean;
+  } = {
+    documentos: true,
+    rubricas: true,
+  };
+  cargandoDetalle = false;
+
   articulos: ArticuloRevisorDto[] = ARTICULOS_ASIGNADOS_MOCK;
   revisionRegistradaIds = new Set<number>();
   articuloSeleccionadoId: number | null = null;
@@ -305,11 +335,17 @@ export class RealizarRevisionComponent implements OnInit {
 
         const queryId = Number(this.route.snapshot.queryParamMap.get('articuloId'));
         this.articuloSeleccionadoId = data.find((item) => item.id === queryId)?.id ?? data[0]?.id ?? null;
+        if (this.articuloSeleccionadoId) {
+          this.cargarDetalleArticulo(this.articuloSeleccionadoId);
+        }
         this.cargandoRevision = false;
       },
       error: () => {
         this.articulos = ARTICULOS_ASIGNADOS_MOCK;
         this.articuloSeleccionadoId = this.articulos[0]?.id ?? null;
+        if (this.articuloSeleccionadoId) {
+          this.cargarDetalleArticulo(this.articuloSeleccionadoId);
+        }
         this.cargandoRevision = false;
       },
     });
@@ -317,6 +353,14 @@ export class RealizarRevisionComponent implements OnInit {
 
   get articuloSeleccionado() {
     return this.articulos.find((item) => item.id === this.articuloSeleccionadoId) ?? null;
+  }
+
+  get totalItemsCount(): number {
+    return this.rubrica.reduce((acc, sec) => acc + sec.criterios.length, 0);
+  }
+
+  get respondidosCount(): number {
+    return this.totalItemsCount - this.criteriosPendientesCount;
   }
 
   get isRevisionEnviada(): boolean {
@@ -528,5 +572,75 @@ export class RealizarRevisionComponent implements OnInit {
 
     this.archivoRevision = archivo;
     this.nombreArchivoRevision = archivo?.name ?? '';
+  }
+
+  cargarDetalleArticulo(id: number): void {
+    this.cargandoDetalle = true;
+    this.articulosService.getArticuloFlujo(id).subscribe({
+      next: (data) => {
+        this.articuloDetalle = data;
+        this.cargandoDetalle = false;
+      },
+      error: (err) => {
+        console.error('Error cargando detalle del artículo:', err);
+        this.cargandoDetalle = false;
+      }
+    });
+  }
+
+  descargarDocumentoArticulo(path: string, nombreOriginal: string): void {
+    const filename = path.split(/[\\/]/).pop() || '';
+
+    if (!filename) {
+      this.errorRevision = 'No se pudo descargar el documento seleccionado.';
+      return;
+    }
+
+    this.articulosService.descargarArchivo(filename).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = normalizarNombreArchivo(nombreOriginal);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.errorRevision = 'No se pudo descargar el documento.';
+      },
+    });
+  }
+
+  toggleSeccionRevision(seccion: 'documentos' | 'rubricas'): void {
+    this.seccionesAbiertasRevision[seccion] = !this.seccionesAbiertasRevision[seccion];
+  }
+
+  get documentosArticulo(): DocumentoArticulo[] {
+    if (!this.articuloDetalle || !this.articuloDetalle.observaciones || this.articuloDetalle.observaciones.length === 0) {
+      return [];
+    }
+
+    // Ordenar observaciones por fecha de subida (las más antiguas primero)
+    const observacionesOrdenadas = [...this.articuloDetalle.observaciones].sort(
+      (a, b) => new Date(a.fechaSubida).getTime() - new Date(b.fechaSubida).getTime()
+    );
+
+    // Buscar la primera observación que contenga archivos
+    const primeraObsConArchivos = observacionesOrdenadas.find(
+      (obs) => obs.archivos && obs.archivos.length > 0
+    );
+
+    if (!primeraObsConArchivos) {
+      return [];
+    }
+
+    // Retornar los archivos de esta primera observación (el manuscrito inicial)
+    return primeraObsConArchivos.archivos.map((archivo) => ({
+      nombre: normalizarNombreArchivo(archivo.archivoNombreOriginal),
+      path: archivo.archivoPath,
+      asunto: 'Artículo',
+    }));
   }
 }

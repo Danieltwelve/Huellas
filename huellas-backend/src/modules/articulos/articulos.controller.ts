@@ -146,7 +146,7 @@ export class ArticulosController {
   ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'autor', 'director', 'monitor', 'comite-editorial')
+  @Roles('admin', 'autor', 'director', 'monitor', 'comite-editorial', 'revisor')
   @Get('flujo/:id')
   async getArticulosFlujo(
     @Param('id', ParseIntPipe) id: number,

@@ -470,18 +470,13 @@ export class NuevoArticuloComponent implements OnInit {
     });
 
     this.articulosService.crearArticulo(fd).subscribe({
-      next: (event: any) => {
-        if (event.type === 1) { // HttpEventType.UploadProgress
-          this.progresoSubida = Math.round((100 * event.loaded) / event.total!);
-          this.cdr.detectChanges();
-        } else if (event.type === 4) { // HttpEventType.Response
-          console.log('✅ Artículo enviado correctamente:', event.body);
-          this.enviando = false;
-          this.progresoSubida = 100;
-          this.exito = true;
-          this.cdr.detectChanges();
-          setTimeout(() => this.router.navigate(['/panel-autor']), 3000);
-        }
+      next: (res: any) => {
+        console.log('✅ Artículo enviado correctamente:', res);
+        this.enviando = false;
+        this.progresoSubida = 100;
+        this.exito = true;
+        this.cdr.detectChanges();
+        setTimeout(() => this.router.navigate(['/panel-autor']), 3000);
       },
       error: (err: any) => {
         console.error('❌ Error al enviar artículo:', err);

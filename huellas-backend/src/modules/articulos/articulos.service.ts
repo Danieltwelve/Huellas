@@ -2367,7 +2367,12 @@ export class ArticulosService {
         // ETAPA_REVISION_PARES = 4
         const tieneEval = (articulo.observaciones ?? []).some((obs) => {
           const asunto = (obs.asunto ?? '').toLowerCase();
-          return asunto.includes('revision por pares') || asunto.includes('revisión por pares');
+          return (
+            (asunto.includes('revision por pares') ||
+              asunto.includes('revisión por pares')) &&
+            !asunto.includes('prorroga') &&
+            !asunto.includes('prórroga')
+          );
         });
         estado = tieneEval ? 'Evaluado' : 'En curso';
       } else if (etapaId === 9) {
@@ -2730,6 +2735,9 @@ export class ArticulosService {
         return false;
       }
       const asunto = (obs.asunto ?? '').toLowerCase();
+      if (asunto.includes('prorroga') || asunto.includes('prórroga')) {
+        return false;
+      }
       return (
         asunto.includes('revisión por pares completada') ||
         asunto.includes('revision por pares completada') ||
