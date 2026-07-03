@@ -23,7 +23,7 @@ export class Articulos implements OnInit {
   loading = true;
   error = '';
 
-  readonly MAX_SELECCION = 1;
+  readonly MAX_SELECCION = 10;
 
   ngOnInit(): void {
     this.cargarArtículos();

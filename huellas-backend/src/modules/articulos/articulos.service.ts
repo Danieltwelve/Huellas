@@ -893,6 +893,27 @@ export class ArticulosService {
         .save(registroArchivo);
     }
 
+    if (
+      payload.asunto &&
+      payload.asunto.toLowerCase().includes('(rechazado)')
+    ) {
+      articulo.etapaActualId = ArticulosService.ETAPA_DESCARTADO;
+      await this.articuloRepository.save(articulo);
+
+      const ahora = new Date();
+      const nuevoHistorial = this.dataSource
+        .getRepository(ArticuloHistorialEtapa)
+        .create({
+          articuloId,
+          etapaId: ArticulosService.ETAPA_DESCARTADO,
+          usuarioId,
+          fechaInicio: ahora,
+        });
+      await this.dataSource
+        .getRepository(ArticuloHistorialEtapa)
+        .save(nuevoHistorial);
+    }
+
     return {
       message: 'Observación registrada correctamente',
       observacionId: observacionGuardada.id,
@@ -1913,6 +1934,7 @@ export class ArticulosService {
             : null,
           esta_vencido: estaVencido ?? false,
           dias_restantes: diasRestantes ?? null,
+          archivado: articulo.archivado ?? false,
         };
       })
       .filter((item) => item !== null) as any[];
@@ -2335,13 +2357,19 @@ export class ArticulosService {
       const etapaId = articulo.etapaActual?.id;
       if (etapaId === 5) {
         // ETAPA_PUBLICACION = 5
-        estado = 'Aprobado';
+        estado = (articulo.edicionId !== null && articulo.edicionId !== undefined) ? 'Aprobado' : 'En curso';
       } else if (etapaId === 7) {
         // ETAPA_DESCARTADO = 7
         estado = 'Rechazado';
       } else if (etapaId === 8) {
         // ETAPA_CERTIFICACION = 8
-        estado = 'Aprobado';
+        const tieneCertificado = (articulo.observaciones ?? []).some((obs) => {
+          return (
+            obs.etapaId === 8 &&
+            (obs.asunto ?? '').toLowerCase().includes('certificado')
+          );
+        });
+        estado = tieneCertificado ? 'Aprobado' : 'En curso';
       } else if (etapaId === 6) {
         // ETAPA_COMITE_EDITORIAL = 6
         const tieneEval = (articulo.observaciones ?? []).some((obs) =>
@@ -2350,16 +2378,77 @@ export class ArticulosService {
         estado = tieneEval ? 'Evaluado' : 'En curso';
       } else if (etapaId === 3) {
         // ETAPA_TURNITIN = 3
-        const tieneEval = (articulo.observaciones ?? []).some((obs) => {
-          const asunto = (obs.asunto ?? '').toLowerCase();
+        const obsList = articulo.observaciones ?? [];
+        const tieneEval = obsList.some((obs) => {
+          const asunto = this.normalizarTexto(obs.asunto);
           return asunto.includes('turnitin');
         });
+
         if (tieneEval) {
-          const tieneCorreccion = (articulo.observaciones ?? []).some((obs) => {
-            const asunto = (obs.asunto ?? '').toLowerCase();
-            return asunto.includes('turnitin') && asunto.includes('correccion');
-          });
-          estado = tieneCorreccion ? 'En corrección' : 'Evaluado';
+          // Buscar si alguna evaluación de Turnitin solicitó corrección
+          let ultimaSolicitud: Date | null = null;
+          for (const obs of obsList) {
+            const asunto = this.normalizarTexto(obs.asunto);
+            if (
+              asunto.includes('turnitin') &&
+              (asunto.includes('correccion') ||
+                asunto.includes('ajuste') ||
+                asunto.includes('pendiente'))
+            ) {
+              const fecha = new Date(obs.fechaSubida);
+              if (!ultimaSolicitud || fecha > ultimaSolicitud) {
+                ultimaSolicitud = fecha;
+              }
+            }
+          }
+
+          if (ultimaSolicitud) {
+            // Se solicitó una corrección. Verifiquemos si el autor ya respondió y si fue aprobada.
+            let ultimaCorreccionAutor: Date | null = null;
+            let ultimaAceptacion: Date | null = null;
+
+            for (const obs of obsList) {
+              const asunto = this.normalizarTexto(obs.asunto);
+              const fecha = new Date(obs.fechaSubida);
+
+              if (
+                asunto ===
+                this.normalizarTexto(ArticulosService.ASUNTO_CORRECCION_AUTOR)
+              ) {
+                if (!ultimaCorreccionAutor || fecha > ultimaCorreccionAutor) {
+                  ultimaCorreccionAutor = fecha;
+                }
+              }
+
+              if (
+                asunto.includes('correccion aceptada') ||
+                asunto.includes('corrección aceptada') ||
+                asunto.includes('correccion aprobada') ||
+                asunto.includes('corrección aprobada')
+              ) {
+                if (!ultimaAceptacion || fecha > ultimaAceptacion) {
+                  ultimaAceptacion = fecha;
+                }
+              }
+            }
+
+            if (ultimaAceptacion && ultimaAceptacion >= ultimaSolicitud) {
+              // La corrección ya fue aceptada
+              estado = 'Evaluado';
+            } else if (
+              ultimaCorreccionAutor &&
+              ultimaCorreccionAutor > ultimaSolicitud
+            ) {
+              // El autor envió la corrección y está en curso / revisión por el editor
+              estado = 'En curso';
+            } else {
+              // El autor tiene pendiente subir la corrección
+              estado = 'En corrección';
+            }
+          } else {
+            // Hubo Turnitin pero no se solicitó corrección (Aprobado sin cambios)
+            estado = 'Evaluado';
+          }
         } else {
           estado = 'En curso';
         }
@@ -2401,13 +2490,18 @@ export class ArticulosService {
   }
 
   async getArticulosEnPublicacion() {
-    const articulos = await this.articuloRepository.find({
-      where: {
-        etapaActualId: ArticulosService.ETAPA_PUBLICACION,
-        edicionId: IsNull(), // ← Agregar esta línea
-      },
-      select: ['id', 'codigo', 'titulo'],
-    });
+    const articulos = await this.articuloRepository
+      .createQueryBuilder('articulo')
+      .innerJoin('articulo.edicion', 'edicion')
+      .innerJoin('edicion.estado_id', 'estado')
+      .where('articulo.etapaActualId = :etapaId', {
+        etapaId: ArticulosService.ETAPA_PUBLICACION,
+      })
+      .andWhere('estado.id != :estadoPublicadaId', {
+        estadoPublicadaId: 2, // 2 is ESTADO_PUBLICADA_ID
+      })
+      .select(['articulo.id', 'articulo.codigo', 'articulo.titulo'])
+      .getMany();
     return articulos;
   }
 
@@ -3527,8 +3621,11 @@ export class ArticulosService {
         // Pero procesa la notificación simplificada
 
 
-        const estadoCorreccion =
+        let estadoCorreccion =
           this.obtenerEstadoCorreccionDesdeObservacion(obs);
+        if (lowerAsunto.includes('(rechazado)')) {
+          estadoCorreccion = null;
+        }
         const tipo = estadoCorreccion ? 'accion' : 'informacion';
 
         const fechaObs = obs.fechaSubida;
@@ -3539,8 +3636,8 @@ export class ArticulosService {
           `Se registró una observación sobre tu artículo ${articulo.codigo}.`;
 
         if (lowerAsunto.includes('turnitin (rechazado)')) {
-          titulo = 'Corrección de Turnitin rechazada';
-          detalle = `La corrección que enviaste fue rechazada. Por favor, revisa los comentarios y sube una nueva versión: ${obs.comentarios}`;
+          titulo = 'Artículo descartado (Turnitin)';
+          detalle = `La corrección que enviaste en la etapa de Turnitin fue rechazada y el artículo ha sido descartado del proceso editorial. Motivo: ${obs.comentarios}`;
         } else if (
           obs.etapa?.id === ArticulosService.ETAPA_REVISION_PRELIMINAR &&
           obs.usuarioId !== userId &&
@@ -4586,6 +4683,7 @@ export class ArticulosService {
   async archivarArticulo(articuloId: number, archivado: boolean) {
     const articulo = await this.articuloRepository.findOne({
       where: { id: articuloId },
+      relations: ['observaciones'],
     });
 
     if (!articulo) {
@@ -4598,10 +4696,13 @@ export class ArticulosService {
         !!articulo.edicionId;
       const isDescartado =
         articulo.etapaActualId === ArticulosService.ETAPA_DESCARTADO;
+      const tieneEvaluacionComite = (articulo.observaciones ?? []).some((obs) =>
+        this.isAsuntoEvaluacionComite(obs.asunto),
+      );
 
-      if (!isPublicacionValida && !isDescartado) {
+      if (!isPublicacionValida && !isDescartado && !tieneEvaluacionComite) {
         throw new BadRequestException(
-          'Solo se pueden archivar artículos que estén publicados (con edición asignada) o que hayan sido rechazados.',
+          'Solo se pueden archivar artículos que estén publicados (con edición asignada), rechazados, o evaluados por el comité editorial.',
         );
       }
     }

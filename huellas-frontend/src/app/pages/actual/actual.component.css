@@ -283,8 +283,42 @@
   background: #f8fafc;
 }
 
+.btn-download {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .25s ease;
+  text-align: center;
+  text-decoration: none;
+  background: #ffffff;
+  color: #334155;
+}
+
+.btn-download:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.btn-download svg {
+  flex-shrink: 0;
+}
+
 .btn-primary {
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 12px 14px;
   border-radius: 8px;
   border: none;
@@ -301,6 +335,11 @@
 .btn-primary:hover {
   transform: translateY(-2px);
   background: #00938c;
+  box-shadow: 0 6px 16px rgba(0, 178, 169, 0.3);
+}
+
+.btn-primary svg {
+  flex-shrink: 0;
 }
 
 .btn-back {
@@ -326,6 +365,68 @@
   border-radius: 14px;
   padding: 24px;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+}
+
+.detalle-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-back-detalle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.btn-back-detalle:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.btn-back-detalle svg {
+  flex-shrink: 0;
+}
+
+.btn-download-detalle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 10px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all .25s ease;
+}
+
+.btn-download-detalle:hover {
+  transform: translateY(-2px);
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.btn-download-detalle svg {
+  flex-shrink: 0;
 }
 
 .btn-volver {
@@ -378,6 +479,16 @@
 
   .card-actions {
     flex-direction: column;
+  }
+
+  .detalle-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-back-detalle,
+  .btn-download-detalle {
+    justify-content: center;
   }
 }
 

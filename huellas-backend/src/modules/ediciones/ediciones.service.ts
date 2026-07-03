@@ -127,6 +127,7 @@ export class EdicionesService {
       fecha_estado: edicion.fecha_estado!,
       numeroArticulos: edicion.articulos?.length ?? 0,
       portada: edicion.portada || null,
+      pdf_completo: edicion.pdf_completo || null,
       articulos: (edicion.articulos ?? []).map((articulo) => ({
         id: articulo.id,
         codigo: articulo.codigo,
@@ -176,7 +177,7 @@ export class EdicionesService {
 
     // 1. Validar cantidad de artículos (exactamente 10)
     const uniqueArticuloIds = [...new Set(articuloIds)];
-    if (uniqueArticuloIds.length !== 1) {
+    if (uniqueArticuloIds.length !== 10) {
       throw new BadRequestException(
         'Debes seleccionar exactamente 10 artículos.',
       );

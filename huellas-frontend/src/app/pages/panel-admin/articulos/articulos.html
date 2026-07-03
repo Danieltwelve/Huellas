@@ -129,6 +129,10 @@
           (click)="setFiltroEstadoComite('evaluado-rechazado')">
           Rechazados
         </button>
+        <button type="button" class="filter-pill" [class.active]="filtroEstadoComite === 'archivado'"
+          (click)="setFiltroEstadoComite('archivado')">
+          Archivados
+        </button>
       </div>
 
       <div class="quick-actions-panel" [class.quick-actions-panel--collapsed]="!mostrarAccionesRapidas"
@@ -323,6 +327,25 @@
                 }
               }
 
+              <!-- Archivar/Desarchivar para Comité Editorial -->
+              @if (committeeView && articulo.estadoEvaluacion !== 'pendiente') {
+                @if (!articulo.archivado) {
+                <button class="view-btn archive-btn" type="button" aria-label="Archivar artículo"
+                  (click)="archivarArticulo(articulo, true)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="archive-icon">
+                    <path fill="currentColor" d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.2 3 17.5 3H6.5c-.7 0-1.38.21-1.65.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.83 1H5.41l.83-1zM5 19V8h14v11H5zm3-5h8v2H8z"/>
+                  </svg>
+                </button>
+                } @else {
+                <button class="view-btn archive-btn" type="button" aria-label="Desarchivar artículo"
+                  (click)="archivarArticulo(articulo, false)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="archive-icon">
+                    <path fill="currentColor" d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.2 3 17.5 3H6.5c-.7 0-1.38.21-1.65.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.83 1H5.41l.83-1zM5 19V8h14v11H5zm7-7l-4 4h3v3h2v-3h3z"/>
+                  </svg>
+                </button>
+                }
+              }
+
               @if (articulo.etapaActual === 'DESCARTADO') {
               <button class="view-btn delete-btn" type="button" aria-label="Eliminar articulo"
                 (click)="eliminarArticulo(articulo)">
@@ -408,6 +431,25 @@
             }
           }
 
+          <!-- Archivar/Desarchivar para Comité Editorial -->
+          @if (committeeView && articulo.estadoEvaluacion !== 'pendiente') {
+            @if (!articulo.archivado) {
+            <button class="view-btn archive-btn" type="button" aria-label="Archivar artículo"
+              (click)="archivarArticulo(articulo, true)">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="archive-icon">
+                <path fill="currentColor" d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.2 3 17.5 3H6.5c-.7 0-1.38.21-1.65.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.83 1H5.41l.83-1zM5 19V8h14v11H5zm3-5h8v2H8z"/>
+              </svg>
+            </button>
+            } @else {
+            <button class="view-btn archive-btn" type="button" aria-label="Desarchivar artículo"
+              (click)="archivarArticulo(articulo, false)">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="archive-icon">
+                <path fill="currentColor" d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.2 3 17.5 3H6.5c-.7 0-1.38.21-1.65.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.83 1H5.41l.83-1zM5 19V8h14v11H5zm7-7l-4 4h3v3h2v-3h3z"/>
+              </svg>
+            </button>
+            }
+          }
+
           @if (articulo.etapaActual === 'DESCARTADO') {
           <button class="view-btn delete-btn" type="button" aria-label="Eliminar articulo"
             (click)="eliminarArticulo(articulo)">
@@ -433,5 +475,34 @@
   @if (articuloParaEliminar) {
   <app-modal-eliminar [articulo]="articuloParaEliminar" (cerrar)="cerrarModalEliminar()"
     (confirmar)="confirmarEliminacion($event)"></app-modal-eliminar>
+  }
+
+  @if (articuloParaArchivar) {
+  <div class="modal-overlay" (click)="cerrarModalArchivar()"></div>
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3>{{ archivandoAccion ? 'Archivar artículo' : 'Desarchivar artículo' }}</h3>
+      <button class="modal-close" (click)="cerrarModalArchivar()">×</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Estás seguro de que deseas {{ archivandoAccion ? 'archivar' : 'desarchivar' }} el artículo <strong>{{ articuloParaArchivar.codigo }} - {{ articuloParaArchivar.titulo }}</strong>?</p>
+      @if (archivandoAccion) {
+        <p class="text-info">El artículo será trasladado a la sección de archivos y no estará visible en la bandeja principal.</p>
+      } @else {
+        <p class="text-info">El artículo volverá a estar visible en la bandeja principal.</p>
+      }
+      @if (errorArchivar) {
+        <div class="error-banner" style="margin-top: 1rem; padding: 0.75rem; background-color: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; font-size: 0.875rem; border-radius: 0.25rem;">
+          <strong>Error:</strong> {{ errorArchivar }}
+        </div>
+      }
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="cerrarModalArchivar()" [disabled]="guardandoArchivo">Cancelar</button>
+      <button class="btn-primary" [style.background-color]="archivandoAccion ? '#0f766e' : '#2563eb'" (click)="confirmarArchivar()" [disabled]="guardandoArchivo">
+        {{ guardandoArchivo ? 'Procesando...' : (archivandoAccion ? 'Archivar' : 'Desarchivar') }}
+      </button>
+    </div>
+  </div>
   }
 </section>

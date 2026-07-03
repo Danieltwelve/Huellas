@@ -24,6 +24,7 @@ export interface EdicionRevistaBackend {
   fecha_estado: string;
   estado_id: EstadoEdicionBackend;
   pdf_completo?: string | null;
+  portada?: string | null;
 }
 
 export interface EdicionPublicadaBackend {

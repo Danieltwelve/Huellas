@@ -66,15 +66,27 @@ export class HistorialRevisionesComponent implements OnInit {
   formatoObservacionHtml(texto: string): string {
     if (!texto) return '';
 
+    let cleanText = texto;
+
+    // Eliminar "Calificación: X/5" (con o sin punto final y espacios)
+    cleanText = cleanText.replace(/Calificación:\s*\d+\/5[\s.,\r\n]*/gi, '');
+
+    // Reemplazar "Decisión: X" por "Estado: X" con la recomendación normalizada
+    cleanText = cleanText.replace(/Decisión:\s*(\w+)/gi, (match, p1) => {
+      const decisionNormalizada = p1.toLowerCase() === 'aceptar' ? 'Aceptar' :
+                                  p1.toLowerCase() === 'ajustes' ? 'Ajustes' : 'Rechazar';
+      return `Estado: ${decisionNormalizada}`;
+    });
+
     // Reemplazos de encabezados principales
-    let html = texto
-      .replace(/Calificación:/g, '<strong>Calificación:</strong>')
-      .replace(/Recomendación:/g, '<br/><strong>Recomendación:</strong>')
-      .replace(/Comentarios:/g, '<br/><strong>Comentarios:</strong>')
-      .replace(/Jurado evaluador:/g, '<br/><strong>Jurado evaluador:</strong>')
-      .replace(/Articulo:/g, '<br/><strong>Artículo:</strong>')
-      .replace(/Recomendación seleccionada:/g, '<br/><strong>Recomendación seleccionada:</strong>')
-      .replace(/Se aprueba para publicación:/g, '<br/><strong>Se aprueba para publicación:</strong>');
+    let html = cleanText
+      .replace(/Estado:/g, '<strong>Estado:</strong>')
+      .replace(/Recomendación:/g, '<strong>Recomendación:</strong>')
+      .replace(/Comentarios:/g, '<strong>Comentarios:</strong>')
+      .replace(/Jurado evaluador:/g, '<strong>Jurado evaluador:</strong>')
+      .replace(/Articulo:/g, '<strong>Artículo:</strong>')
+      .replace(/Recomendación seleccionada:/g, '<strong>Recomendación seleccionada:</strong>')
+      .replace(/Se aprueba para publicación:/g, '<strong>Se aprueba para publicación:</strong>');
 
     // Reemplazos de preguntas de rúbrica (del 1 al 15)
     for (let i = 1; i <= 15; i++) {

@@ -954,7 +954,7 @@ export class ArticulosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'director', 'monitor')
+  @Roles('admin', 'director', 'monitor', 'comite-editorial')
   @Patch(':id/archivar')
   async archivarArticulo(
     @Param('id', ParseIntPipe) id: number,

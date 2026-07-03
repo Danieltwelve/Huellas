@@ -2484,6 +2484,15 @@ export class FlujoTrabajoArticulo {
   }
 
   get isChecklistLocked(): boolean {
+    return (
+      this.decisionRevisionFinalGuardada !== null ||
+      this.procesandoRevisionFinal ||
+      (this.articulo?.revisionFinalChecklist !== null &&
+        this.articulo?.revisionFinalChecklist !== undefined)
+    );
+  }
+
+  get isDecisionLocked(): boolean {
     return this.decisionRevisionFinalGuardada !== null || this.procesandoRevisionFinal;
   }
 

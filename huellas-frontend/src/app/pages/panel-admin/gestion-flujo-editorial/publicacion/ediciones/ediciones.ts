@@ -12,6 +12,7 @@ import {
   EdicionesRevistaService,
   EdicionRevistaBackend,
 } from '../../../../../core/ediciones-revista/ediciones.revista.service';
+import { environment } from '../../../../../../environments/environments';
 import { ModalCrear } from './modal-crear/modal-crear';
 import { ModalEditar, OpenEditarEdicionData } from './modal-editar/modal-editar';
 import { ModalEliminar } from './modal-eliminar/modal-eliminar';
@@ -155,6 +156,10 @@ export class Ediciones implements OnInit {
     const estadoNombre = backend.estado_id?.estado ?? 'SIN ESTADO';
     const estadoId = backend.estado_id?.id ?? this.mapearEstadoId(estadoNombre);
 
+    const portadaUrl = backend.portada
+      ? `${environment.apiUrlBackend}/${backend.portada.replace(/\\/g, '/')}`
+      : null;
+
     return {
       id: backend.id,
       titulo: backend.titulo,
@@ -165,7 +170,7 @@ export class Ediciones implements OnInit {
       estado: estadoNombre,
       estadoId: estadoId,
       numeroArticulos: 0,
-      portada: null,
+      portada: portadaUrl,
     };
   }
 

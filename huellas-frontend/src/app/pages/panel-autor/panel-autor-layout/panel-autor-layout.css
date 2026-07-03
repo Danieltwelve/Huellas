@@ -177,6 +177,7 @@
   flex: 1;
   padding: 18px;
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
 }
 

@@ -185,6 +185,24 @@ export class DetalleArticuloComponent implements OnInit {
     }));
   }
 
+  get archivoOriginal(): { nombre: string; path: string } | null {
+    if (!this.articulo?.observaciones?.length) {
+      return null;
+    }
+    const ordenadas = [...this.articulo.observaciones].sort(
+      (a, b) => new Date(a.fechaSubida).getTime() - new Date(b.fechaSubida).getTime()
+    );
+    const primeraConArchivo = ordenadas.find((obs) => obs.archivos && obs.archivos.length > 0);
+    if (!primeraConArchivo || !primeraConArchivo.archivos?.length) {
+      return null;
+    }
+    const archivo = primeraConArchivo.archivos[0];
+    return {
+      nombre: normalizarNombreArchivo(archivo.archivoNombreOriginal),
+      path: archivo.archivoPath,
+    };
+  }
+
   get escenarioActual(): EscenarioAutor {
     const etapa = this.normalizar(this.articulo?.etapaActual?.nombre ?? '');
     const texto = this.normalizar(this.notificacionesArticulo.map((n) => `${n.titulo} ${n.detalle}`).join(' '));

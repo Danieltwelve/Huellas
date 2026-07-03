@@ -242,20 +242,20 @@ export class MiPanelComponent implements OnInit {
     }
 
     if (
+      articulo.correccion_pendiente ||
+      articulo.correccion_vencida ||
+      articulo.solicitud_prorroga_correccion_pendiente
+    ) {
+      return 'correccion';
+    }
+
+    if (
       valor.includes('certificaci') ||
       valor.includes('final') ||
       valor.includes('comite') ||
       valor.includes('pares')
     ) {
       return 'revision';
-    }
-
-    if (
-      articulo.correccion_pendiente ||
-      articulo.correccion_vencida ||
-      articulo.solicitud_prorroga_correccion_pendiente
-    ) {
-      return 'correccion';
     }
 
     return 'revision';

@@ -119,6 +119,21 @@
   overflow-y: auto;
 }
 
+.observation-box strong {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+  margin-top: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+
+.observation-box strong:first-of-type {
+  margin-top: 0;
+}
+
 .observation-box::-webkit-scrollbar {
   width: 6px;
 }

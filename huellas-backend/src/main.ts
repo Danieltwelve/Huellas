@@ -13,6 +13,8 @@ async function bootstrap() {
   app.use(
     helmet({
       contentSecurityPolicy: false, // Permitir que Swagger UI cargue sus recursos correctamente
+      crossOriginResourcePolicy: false, // Permitir que el frontend cargue imágenes/archivos del backend
+      crossOriginEmbedderPolicy: false,
     }),
   );
 

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import {
   ArticuloResumenBackend,
   ArticulosService,
@@ -13,8 +13,8 @@ import { ModalEditar } from './modal-editar/modal-editar';
 import { ModalEliminar } from './modal-eliminar/modal-eliminar';
 import { AuthService } from '../../../core/auth/auth.service';
 
-type EstadoEvaluacionComite = 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado';
-type EstadoFiltroComite = 'todos' | EstadoEvaluacionComite;
+type EstadoEvaluacionComite = 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado' | 'archivado';
+type EstadoFiltroComite = 'todos' | 'pendiente' | 'evaluado-aceptado' | 'evaluado-rechazado' | 'archivado';
 type OrdenArticulos =
   | 'llegada-reciente'
   | 'llegada-antigua'
@@ -57,6 +57,7 @@ export class Articulos implements OnInit, OnDestroy {
   private articulosService = inject(ArticulosService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
 
   searchTerm = '';
@@ -77,6 +78,10 @@ export class Articulos implements OnInit, OnDestroy {
   filtroEtapa: string = 'todas';
   articuloParaEditar: any = null;
   articuloParaEliminar: any = null;
+  articuloParaArchivar: ArticuloListado | null = null;
+  archivandoAccion = false;
+  guardandoArchivo = false;
+  errorArchivar: string | null = null;
 
   private authService = inject(AuthService);
 
@@ -157,8 +162,15 @@ export class Articulos implements OnInit, OnDestroy {
 
     let base = [...this.articulos];
 
-    if (this.committeeView && this.filtroEstadoComite !== 'todos') {
-      base = base.filter((articulo) => articulo.estadoEvaluacion === this.filtroEstadoComite);
+    if (this.committeeView) {
+      if (this.filtroEstadoComite === 'archivado') {
+        base = base.filter((articulo) => articulo.archivado);
+      } else {
+        base = base.filter((articulo) => !articulo.archivado);
+        if (this.filtroEstadoComite !== 'todos') {
+          base = base.filter((articulo) => articulo.estadoEvaluacion === this.filtroEstadoComite);
+        }
+      }
     }
 
     if (this.filtroEtapa !== 'todas') {
@@ -314,6 +326,7 @@ export class Articulos implements OnInit, OnDestroy {
 
     this.filtroEstadoComite = filtro;
     this.applySearch();
+    this.cdr.detectChanges();
   }
 
   private mapEstadoComite(
@@ -488,17 +501,19 @@ export class Articulos implements OnInit, OnDestroy {
   }
 
   get totalPendientes(): number {
-    return this.articulos.filter((articulo) => articulo.estadoEvaluacion === 'pendiente').length;
+    return this.articulos.filter((articulo) => !articulo.archivado && articulo.estadoEvaluacion === 'pendiente').length;
   }
 
   get totalAceptados(): number {
-    return this.articulos.filter((articulo) => articulo.estadoEvaluacion === 'evaluado-aceptado')
-      .length;
+    return this.articulos.filter((articulo) => !articulo.archivado && articulo.estadoEvaluacion === 'evaluado-aceptado').length;
   }
 
   get totalRechazados(): number {
-    return this.articulos.filter((articulo) => articulo.estadoEvaluacion === 'evaluado-rechazado')
-      .length;
+    return this.articulos.filter((articulo) => !articulo.archivado && articulo.estadoEvaluacion === 'evaluado-rechazado').length;
+  }
+
+  get totalArchivados(): number {
+    return this.articulos.filter((articulo) => articulo.archivado).length;
   }
 
   verArticulo(id: number): void {
@@ -533,11 +548,13 @@ export class Articulos implements OnInit, OnDestroy {
         this.articulos = response.map((articulo, index) => this.mapArticulo(articulo, index));
         this.loading = false;
         this.applySearch();
+        this.cdr.detectChanges();
       },
       error: (error) => {
         this.articulos = [];
         this.filteredArticulos = [];
         this.loading = false;
+        this.cdr.detectChanges();
         console.error('Error al recargar artículos:', error);
       },
     });
@@ -570,11 +587,42 @@ export class Articulos implements OnInit, OnDestroy {
   }
 
   archivarArticulo(articulo: ArticuloListado, archivado: boolean): void {
-    this.articulosService.archivarArticulo(articulo.id, archivado).subscribe({
+    this.abrirModalArchivar(articulo, archivado);
+  }
+
+  abrirModalArchivar(articulo: ArticuloListado, archivado: boolean): void {
+    this.articuloParaArchivar = articulo;
+    this.archivandoAccion = archivado;
+    this.errorArchivar = null;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalArchivar(): void {
+    this.articuloParaArchivar = null;
+    this.errorArchivar = null;
+    this.cdr.detectChanges();
+  }
+
+  confirmarArchivar(): void {
+    if (!this.articuloParaArchivar || this.guardandoArchivo) {
+      return;
+    }
+
+    this.guardandoArchivo = true;
+    this.errorArchivar = null;
+    this.cdr.detectChanges();
+
+    this.articulosService.archivarArticulo(this.articuloParaArchivar.id, this.archivandoAccion).subscribe({
       next: () => {
+        this.guardandoArchivo = false;
+        this.articuloParaArchivar = null;
         this.recargarArticulos();
+        this.cdr.detectChanges();
       },
       error: (err) => {
+        this.guardandoArchivo = false;
+        this.errorArchivar = err?.error?.message ?? 'No se pudo procesar la solicitud.';
+        this.cdr.detectChanges();
         console.error('Error al archivar/desarchivar artículo:', err);
       },
     });

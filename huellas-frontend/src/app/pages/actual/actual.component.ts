@@ -93,7 +93,7 @@ export class ActualComponent {
 
     let portadaUrl = this.portadaFallback;
     if (backendEd.portada) {
-      portadaUrl = `${environment.apiUrlBackend}/${backendEd.portada}`;
+      portadaUrl = `${environment.apiUrlBackend}/${backendEd.portada.replace(/\\/g, '/')}`;
     }
 
     let pdfUrl = '';
@@ -139,5 +139,12 @@ export class ActualComponent {
       const coincideAnio = this.anioFiltro ? ed.anio === Number(this.anioFiltro) : true;
       return coincideBusqueda && coincideAnio;
     });
+  }
+
+  onImageError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img) {
+      img.src = this.portadaFallback;
+    }
   }
 }
