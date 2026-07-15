@@ -17,6 +17,7 @@ export class Perfil implements OnInit {
   nombre = '';
   telefono = '';
   profesion = '';
+  institucion = '';
   programa = '';
   tienePosgrado = false;
   posgradoTipo = '';
@@ -33,6 +34,7 @@ export class Perfil implements OnInit {
         this.nombre = perfil.nombre ?? '';
         this.telefono = perfil.telefono ?? '';
         this.profesion = perfil.profesion ?? '';
+        this.institucion = perfil.institucion ?? '';
         this.programa = perfil.programa ?? '';
         this.tienePosgrado = perfil.tienePosgrado ?? false;
         this.posgradoTipo = perfil.posgradoTipo ?? '';
@@ -63,9 +65,10 @@ export class Perfil implements OnInit {
         telefono: this.telefono,
         profesion: this.profesion,
         programa: this.programa,
+        institucion: this.institucion,
         tienePosgrado: this.tienePosgrado,
-        posgradoTipo: (this.tienePosgrado || this.estudiantePosgrado) ? this.posgradoTipo : '',
-        posgradoDetalle: (this.tienePosgrado || this.estudiantePosgrado) ? this.posgradoDetalle : '',
+        posgradoTipo: this.tienePosgrado || this.estudiantePosgrado ? this.posgradoTipo : '',
+        posgradoDetalle: this.tienePosgrado || this.estudiantePosgrado ? this.posgradoDetalle : '',
         estudiantePosgrado: this.estudiantePosgrado,
         edad: this.edad,
       })
@@ -74,6 +77,7 @@ export class Perfil implements OnInit {
           this.nombre = perfil.nombre ?? '';
           this.telefono = perfil.telefono ?? '';
           this.profesion = perfil.profesion ?? '';
+          this.institucion = perfil.institucion ?? '';
           this.programa = perfil.programa ?? '';
           this.tienePosgrado = perfil.tienePosgrado ?? false;
           this.posgradoTipo = perfil.posgradoTipo ?? '';

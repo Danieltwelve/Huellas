@@ -19,12 +19,12 @@
     </p>
     }
 
-    <div class="field-group">
+    <div class="field-group full-width">
       <label for="editar-nombre">Nombre</label>
       <input id="editar-nombre" type="text" name="nombre" [(ngModel)]="editForm.nombre" />
     </div>
 
-    <div class="field-group">
+    <div class="field-group full-width">
       <label for="editar-correo">Correo electrónico</label>
       <input id="editar-correo" type="email" name="correo" [(ngModel)]="editForm.correo" />
       <button class="resend-verification-btn" type="button" (click)="resendVerificationEmail()"
@@ -44,6 +44,18 @@
       <label for="editar-telefono">Teléfono</label>
       <input id="editar-telefono" type="tel" name="telefono" [(ngModel)]="editForm.telefono" />
     </div>
+
+    <div class="field-group">
+      <label for="editar-institucion">Institución (opcional)</label>
+      <input id="editar-institucion" type="text" name="institucion" [(ngModel)]="editForm.institucion" />
+    </div>
+
+    @if (isRevisor) {
+    <div class="field-group full-width">
+      <label for="editar-perfil">Perfil académico (opcional)</label>
+      <textarea id="editar-perfil" rows="4" name="perfil" [(ngModel)]="editForm.perfil"></textarea>
+    </div>
+    }
 
     <div class="field-group">
       <label for="editar-estado">Estado de la cuenta</label>
@@ -91,6 +103,10 @@
     Nombre: {{ editForm.nombre }}<br>
     Correo: {{ editForm.correo }}<br>
     Teléfono: {{ editForm.telefono || '-' }}<br>
+    Institución: {{ editForm.institucion || '-' }}<br>
+    @if (isRevisor) {
+    Perfil: {{ editForm.perfil || '-' }}<br>
+    }
     Rol: {{ getRoleLabel(editForm.rol) }}<br>
     Estado: {{ editForm.estado }}
   </p>

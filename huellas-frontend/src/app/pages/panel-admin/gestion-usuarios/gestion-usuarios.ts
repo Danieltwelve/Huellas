@@ -13,6 +13,8 @@ interface Usuario {
   correo: string;
   telefono: string;
   correoVerificado: string;
+  institucion?: string;
+  perfil?: string;
   estado: string;
   rol: string;
   estadoClass: string;
@@ -62,44 +64,48 @@ export class GestionUsuarios implements OnInit {
     this.errorMessage = '';
     this.currentPage = page;
 
-    this.usersService.getAll({
-      page: this.currentPage,
-      limit: this.pageSize,
-      search: this.searchTerm.trim() || undefined,
-    }).subscribe({
-      next: (response) => {
-        const data = response.items;
-        const loggedUserEmail = this.auth.currentUser?.email?.trim().toLowerCase() ?? '';
-        const visibleUsers = loggedUserEmail
-          ? data.filter((u) => u.correo.toLowerCase() !== loggedUserEmail)
-          : data;
+    this.usersService
+      .getAll({
+        page: this.currentPage,
+        limit: this.pageSize,
+        search: this.searchTerm.trim() || undefined,
+      })
+      .subscribe({
+        next: (response) => {
+          const data = response.items;
+          const loggedUserEmail = this.auth.currentUser?.email?.trim().toLowerCase() ?? '';
+          const visibleUsers = loggedUserEmail
+            ? data.filter((u) => u.correo.toLowerCase() !== loggedUserEmail)
+            : data;
 
-        this.users = visibleUsers.map((u) => ({
-          id: u.id,
-          nombre: u.nombre || 'Sin nombre',
-          correo: u.correo || 'Sin correo',
-          telefono: u.telefono || '',
-          correoVerificado: u.correo_verificado ? 'Verificado' : 'Pendiente',
-          estado: u.estado_cuenta ? 'Activa' : 'Inactiva',
-          rol: u.roles?.map((r) => this.getRoleLabel(r.rol)).join(', ') ?? 'Sin rol',
-          estadoClass: u.estado_cuenta ? 'active' : 'inactive',
-          rolClass: this.getRoleClass(u.roles?.[0]?.rol ?? ''),
-        }));
-        this.filteredUsers = [...this.users];
-        this.totalUsersCount = response.meta.total;
-        this.activeUsersCount = response.meta.activeUsers;
-        this.pendingUsersCount = response.meta.pendingUsers;
-        this.roleUsersCountValue = response.meta.roleUsersCount;
-        this.totalPages = response.meta.totalPages;
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.errorMessage = 'No se pudieron cargar los usuarios. Intenta de nuevo.';
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-    });
+          this.users = visibleUsers.map((u) => ({
+            id: u.id,
+            nombre: u.nombre || 'Sin nombre',
+            correo: u.correo || 'Sin correo',
+            telefono: u.telefono || '',
+            institucion: u.institucion ?? '',
+            perfil: u.perfil ?? '',
+            correoVerificado: u.correo_verificado ? 'Verificado' : 'Pendiente',
+            estado: u.estado_cuenta ? 'Activa' : 'Inactiva',
+            rol: u.roles?.map((r) => this.getRoleLabel(r.rol)).join(', ') ?? 'Sin rol',
+            estadoClass: u.estado_cuenta ? 'active' : 'inactive',
+            rolClass: this.getRoleClass(u.roles?.[0]?.rol ?? ''),
+          }));
+          this.filteredUsers = [...this.users];
+          this.totalUsersCount = response.meta.total;
+          this.activeUsersCount = response.meta.activeUsers;
+          this.pendingUsersCount = response.meta.pendingUsers;
+          this.roleUsersCountValue = response.meta.roleUsersCount;
+          this.totalPages = response.meta.totalPages;
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.errorMessage = 'No se pudieron cargar los usuarios. Intenta de nuevo.';
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   onSearch(): void {
@@ -207,8 +213,7 @@ export class GestionUsuarios implements OnInit {
         this.showDeleteConfirmModal = false;
         this.deletingUserId = null;
         this.openRestrictionModal(
-          error?.error?.message ||
-          'No se pudo eliminar el usuario. Intenta de nuevo.',
+          error?.error?.message || 'No se pudo eliminar el usuario. Intenta de nuevo.',
         );
         this.cdr.detectChanges();
       },

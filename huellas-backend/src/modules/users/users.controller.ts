@@ -131,7 +131,7 @@ export class UsersController {
   @Put(':id')
   async updateUser(
     @Param('id') id: number,
-    @Body() data: Partial<User>,
+    @Body() data: Partial<User> & { perfil?: string },
     @Req() req: RequestWithUser,
   ) {
     const updated = await this.usersService.update(id, data);

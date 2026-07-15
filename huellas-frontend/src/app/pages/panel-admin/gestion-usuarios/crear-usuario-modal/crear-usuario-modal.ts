@@ -159,8 +159,7 @@ export class CrearUsuarioModal implements OnInit {
       rolId: Number(this.createForm.rol),
     };
 
-    const selectedRole = this.availableRoles.find((r) => r.id === this.createForm.rol);
-    if (selectedRole?.rol === 'revisor') {
+    if (this.isRevisorSelected) {
       payload.perfil = this.createForm.perfil?.trim() || '';
     }
 

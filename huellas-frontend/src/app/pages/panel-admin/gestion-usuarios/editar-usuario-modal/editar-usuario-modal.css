@@ -11,12 +11,12 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(520px, 92vw);
+  width: min(560px, 94vw);
   max-height: 90vh;
   overflow-y: auto;
   background: #fff;
   border-radius: 12px;
-  padding: 1.5rem 2rem;
+  padding: 1.8rem 2rem;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   z-index: 3300;
 }
@@ -31,10 +31,10 @@
 .modal-description {
   color: #64748b;
   font-size: 0.95rem;
-  line-height: 1.5;
+  line-height: 1.6;
   margin-top: 1rem;
   background: #f8fafc;
-  padding: 1rem;
+  padding: 1rem 1.25rem;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
 }
@@ -65,51 +65,67 @@
   height: 20px;
 }
 
+/* --- Grid de dos columnas --- */
 .modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.25rem;
 }
 
 .field-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
+}
+
+.field-group.full-width {
+  grid-column: 1 / -1;
 }
 
 .field-group label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #1e293b;
 }
 
 .field-group input,
-.field-group select {
-  height: 40px;
+.field-group select,
+.field-group textarea {
+  width: 100%;
   border-radius: 8px;
   border: 1px solid #cbd5e1;
-  padding: 0 0.85rem;
+  padding: 0.6rem 0.85rem;
   font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  background: #fff;
 }
 
 .field-group input:focus,
-.field-group select:focus {
+.field-group select:focus,
+.field-group textarea:focus {
   outline: none;
   border-color: #44b2a9;
   box-shadow: 0 0 0 3px rgba(68, 178, 169, 0.15);
 }
 
+.field-group textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+/* Botones de verificación dentro del campo correo */
 .resend-verification-btn {
-  margin-top: 0.55rem;
   align-self: flex-start;
   border: 1px solid #a8e0db;
   background: #e8f8f7;
   color: #1f766f;
   border-radius: 8px;
-  padding: 0.45rem 0.8rem;
+  padding: 0.4rem 1rem;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .resend-verification-btn:hover:not(:disabled) {
@@ -122,16 +138,17 @@
 }
 
 .verification-message {
-  margin: 0.35rem 0 0;
+  margin: 0.25rem 0 0;
   color: #0f766e;
   font-size: 0.85rem;
 }
 
 .actions {
+  grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   padding-top: 1.25rem;
   border-top: 1px solid #f1f5f9;
 }
@@ -141,9 +158,10 @@
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.6rem 1.5rem;
+  padding: 0.6rem 1.8rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .btn-save:hover:not(:disabled) {
@@ -155,11 +173,27 @@
   color: #64748b;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  padding: 0.6rem 1.5rem;
+  padding: 0.6rem 1.8rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .btn-cancel:hover {
   background: #f8fafc;
+}
+
+/* Responsive: en móviles vuelve a una columna */
+@media (max-width: 600px) {
+  .modal {
+    padding: 1.2rem;
+    width: 95vw;
+  }
+  .modal-form {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .field-group.full-width {
+    grid-column: 1;
+  }
 }

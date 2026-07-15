@@ -1,4 +1,6 @@
-/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
@@ -25,6 +27,7 @@ import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/a
 import { Observacion } from '../observaciones/entities/observacione.entity';
 import { UsersListQueryDto } from './dto/users-list.query.dto';
 import { Revisores } from '../revisores/entities/revisores.entity';
+import { error } from 'console';
 
 export interface UsersListMeta {
   page: number;
@@ -479,6 +482,7 @@ export class UsersService {
     const smtpConfig = this.getSmtpConfig();
 
     if (!smtpConfig) {
+      this.logger.warn('SMTP no configurado. No se puede enviar correo.');
       return false;
     }
 
@@ -511,6 +515,7 @@ export class UsersService {
 
       return true;
     } catch {
+      this.logger.error(`Error enviando correo a ${correo}:`, error);
       return false;
     }
   }
@@ -639,6 +644,12 @@ export class UsersService {
     const baseQuery = this.userRepository
       .createQueryBuilder('usuario')
       .leftJoinAndSelect('usuario.roles', 'rol')
+      .leftJoinAndMapOne(
+        'usuario.revisor',
+        Revisores,
+        'revisor',
+        'revisor.usuarioId = usuario.id',
+      )
       .orderBy('usuario.nombre', 'ASC')
       .addOrderBy('usuario.id', 'ASC');
 
@@ -664,6 +675,16 @@ export class UsersService {
       .take(limit)
       .getManyAndCount();
 
+    const itemsWithPerfil = items.map((user) => {
+      const revisor = (user as any).revisor;
+      const perfil = revisor?.perfil || '';
+      delete (user as any).revisor;
+      return {
+        ...user,
+        perfil,
+      };
+    });
+
     const [activeUsers, pendingUsers, roleUsersCount] = await Promise.all([
       this.userRepository.count({ where: { estado_cuenta: true } }),
       this.userRepository.count({ where: { correo_verificado: false } }),
@@ -678,7 +699,7 @@ export class UsersService {
     ]);
 
     return {
-      items,
+      items: itemsWithPerfil,
       meta: {
         page,
         limit,
@@ -758,26 +779,34 @@ export class UsersService {
 
     if (!user) throw new NotFoundException('Usuario no encontrado');
 
-    // Actualizar nombre y teléfono
+    // Actualizar campos básicos
     if (typeof data.nombre === 'string') user.nombre = data.nombre;
     if (typeof data.telefono === 'string') user.telefono = data.telefono;
-
-    // Actualizar nuevos campos
-    if (typeof data.profesion === 'string' || data.profesion === null) user.profesion = data.profesion;
-    if (typeof data.programa === 'string' || data.programa === null) user.programa = data.programa;
-    if (typeof data.tienePosgrado === 'boolean') user.tienePosgrado = data.tienePosgrado;
-    if (typeof data.posgradoTipo === 'string' || data.posgradoTipo === null) user.posgradoTipo = data.posgradoTipo;
-    if (typeof data.posgradoDetalle === 'string' || data.posgradoDetalle === null) user.posgradoDetalle = data.posgradoDetalle;
-    if (typeof data.estudiantePosgrado === 'boolean') user.estudiantePosgrado = data.estudiantePosgrado;
-    if (typeof data.edad === 'number' || data.edad === null) {
+    if (typeof data.institucion === 'string')
+      user.institucion = data.institucion; // ← NUEVO
+    if (typeof data.profesion === 'string' || data.profesion === null)
+      user.profesion = data.profesion;
+    if (typeof data.programa === 'string' || data.programa === null)
+      user.programa = data.programa;
+    if (typeof data.tienePosgrado === 'boolean')
+      user.tienePosgrado = data.tienePosgrado;
+    if (typeof data.posgradoTipo === 'string' || data.posgradoTipo === null)
+      user.posgradoTipo = data.posgradoTipo;
+    if (
+      typeof data.posgradoDetalle === 'string' ||
+      data.posgradoDetalle === null
+    )
+      user.posgradoDetalle = data.posgradoDetalle;
+    if (typeof data.estudiantePosgrado === 'boolean')
+      user.estudiantePosgrado = data.estudiantePosgrado;
+    if (typeof data.edad === 'number' || data.edad === null)
       user.edad = data.edad;
-    }
 
-    // Actualizar revisor si es el caso
+    // Actualizar revisor (si corresponde)
     const esRevisor = this.hasRoleName(user.roles, 'revisor');
     const tieneCamposRevisor =
       typeof data.perfilAcademico === 'string' ||
-      typeof data.institucion === 'string';
+      typeof data.institucion === 'string'; // ya estaba
     if (esRevisor && tieneCamposRevisor) {
       const revisorActual =
         revisor ??
@@ -788,12 +817,12 @@ export class UsersService {
         });
       if (typeof data.perfilAcademico === 'string')
         revisorActual.perfil = data.perfilAcademico;
+      // Nota: institucion no se guarda en revisor, solo en User (ya actualizado)
       await this.revisoresRepository.save(revisorActual);
     }
 
     await this.userRepository.save(user);
 
-    // Retornar datos actualizados
     const perfilRevisor = await this.revisoresRepository.findOne({
       where: { usuarioId },
     });
@@ -803,6 +832,7 @@ export class UsersService {
       telefono: user.telefono ?? '',
       correo: user.correo ?? '',
       perfilAcademico: perfilRevisor?.perfil ?? '',
+      institucion: user.institucion ?? '', // ← incluir en respuesta
       profesion: user.profesion ?? '',
       programa: user.programa ?? '',
       tienePosgrado: user.tienePosgrado ?? false,
@@ -812,7 +842,6 @@ export class UsersService {
       edad: user.edad ?? null,
     };
   }
-
   async findAvailableRoles(): Promise<Role[]> {
     return this.rolesRepository.find({ order: { id: 'ASC' } });
   }
@@ -893,7 +922,7 @@ export class UsersService {
     return await this.userRepository.save(user);
   }
 
-  async update(id: number, data: Partial<User>): Promise<User> {
+  async update(id: number, data: any): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: ['roles'],
@@ -955,6 +984,26 @@ export class UsersService {
 
     if (correoCambiado) {
       await this.sendVerificationEmail(correoNuevo, true);
+    }
+
+    if (data.perfil !== undefined) {
+      const esRevisor = this.hasRoleName(user.roles, 'revisor');
+      if (esRevisor) {
+        let revisor = await this.revisoresRepository.findOne({
+          where: { usuarioId: id },
+        });
+        if (!revisor) {
+          revisor = this.revisoresRepository.create({
+            usuarioId: id,
+            perfil: '',
+            cargaActual: 0,
+          });
+        }
+        revisor.perfil = data.perfil;
+        await this.revisoresRepository.save(revisor);
+      }
+      // Eliminar la propiedad perfil para no intentar asignarla a la entidad User
+      delete data.perfil;
     }
 
     Object.assign(user, data);

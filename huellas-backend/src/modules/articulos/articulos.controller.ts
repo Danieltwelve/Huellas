@@ -51,6 +51,7 @@ import { UploadCertificadoDto } from './dto/upload-certificado.dto';
 import { UpdateCertificadoDto } from './dto/update-certificado.dto';
 import { GuardarChecklistDto } from './dto/guardar-checklist.dto';
 import { PublicarMetadataDto } from './dto/publicar-metadata.dto';
+import { ActualizarArticuloDto } from './dto/actualizar-articulo.dto';
 
 const ARTICULO_UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
 const ARTICULO_ALLOWED_MIME_TYPES = new Set([
@@ -1003,5 +1004,23 @@ export class ArticulosController {
     @Param('autorId', ParseIntPipe) autorId: number,
   ): Promise<{ message: string }> {
     return this.articulosService.removerAutorArticulo(id, autorId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Get('resumen/:id')
+  async getArticuloResumen(@Param('id', ParseIntPipe) id: number) {
+    return this.articulosService.getArticuloResumen(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Patch(':id')
+  async actualizarArticulo(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: ActualizarArticuloDto,
+    @Req() req: any,
+  ) {
+    return this.articulosService.actualizarArticulo(id, data, req.user.userId);
   }
 }

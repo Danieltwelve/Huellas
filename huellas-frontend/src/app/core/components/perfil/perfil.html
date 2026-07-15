@@ -33,6 +33,11 @@
     </div>
 
     <div class="field">
+      <label for="institucion">Institución</label>
+      <input id="institucion" name="institucion" [(ngModel)]="institucion" placeholder="Ej. Universidad Nacional" />
+    </div>
+
+    <div class="field">
       <label for="programa">Carrera o Programa</label>
       <input id="programa" name="programa" [(ngModel)]="programa" placeholder="Programa académico al que pertenece" />
     </div>
@@ -52,20 +57,21 @@
     </div>
 
     @if (tienePosgrado || estudiantePosgrado) {
-      <div class="field">
-        <label for="posgradoTipo">Nivel de posgrado</label>
-        <select id="posgradoTipo" name="posgradoTipo" [(ngModel)]="posgradoTipo" class="select-field">
-          <option value="">Selecciona un nivel</option>
-          <option value="maestria">Maestría</option>
-          <option value="doctorado">Doctorado</option>
-          <option value="especializacion">Especialización</option>
-        </select>
-      </div>
+    <div class="field">
+      <label for="posgradoTipo">Nivel de posgrado</label>
+      <select id="posgradoTipo" name="posgradoTipo" [(ngModel)]="posgradoTipo" class="select-field">
+        <option value="">Selecciona un nivel</option>
+        <option value="maestria">Maestría</option>
+        <option value="doctorado">Doctorado</option>
+        <option value="especializacion">Especialización</option>
+      </select>
+    </div>
 
-      <div class="field">
-        <label for="posgradoDetalle">Programa / ¿De qué es el posgrado?</label>
-        <input id="posgradoDetalle" name="posgradoDetalle" [(ngModel)]="posgradoDetalle" placeholder="Ej. Inteligencia Artificial, Derecho Penal" />
-      </div>
+    <div class="field">
+      <label for="posgradoDetalle">Programa / ¿De qué es el posgrado?</label>
+      <input id="posgradoDetalle" name="posgradoDetalle" [(ngModel)]="posgradoDetalle"
+        placeholder="Ej. Inteligencia Artificial, Derecho Penal" />
+    </div>
     }
   </div>
 

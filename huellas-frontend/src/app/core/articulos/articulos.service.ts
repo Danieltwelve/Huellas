@@ -47,6 +47,13 @@ export interface ComiteEvaluacionHistorial {
   etapaActual: string;
 }
 
+export interface ArticuloResumenDetalle {
+  codigo: string;
+  titulo: string;
+  resumen: string;
+  palabrasClave: string[];
+}
+
 export interface ComiteEstadisticas {
   totalAsignadas: number;
   totalPendientes: number;
@@ -273,7 +280,7 @@ export class ArticulosService {
     return this.http.post(
       `${environment.apiUrlBackend}/articulos/${articuloId}/turnitin/evaluacion`,
       formData,
-      { reportProgress: true, observe: 'events' }
+      { reportProgress: true, observe: 'events' },
     );
   }
 
@@ -319,11 +326,15 @@ export class ArticulosService {
 
   getResumenArticulos(archivados?: boolean): Observable<ArticuloResumenBackend[]> {
     const query = archivados !== undefined ? `?archivados=${archivados}` : '';
-    return this.http.get<ArticuloResumenBackend[]>(`${environment.apiUrlBackend}/articulos/resumen${query}`);
+    return this.http.get<ArticuloResumenBackend[]>(
+      `${environment.apiUrlBackend}/articulos/resumen${query}`,
+    );
   }
 
   getNotificacionesEditorial(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrlBackend}/articulos/editoriales/notificaciones`);
+    return this.http.get<any[]>(
+      `${environment.apiUrlBackend}/articulos/editoriales/notificaciones`,
+    );
   }
 
   getArticulosEnPublicacion(): Observable<ArticuloPublicacionBackend[]> {
@@ -347,6 +358,12 @@ export class ArticulosService {
   getRevisoresCertificados(): Observable<UsuarioCertificadosBackend[]> {
     return this.http.get<UsuarioCertificadosBackend[]>(
       `${environment.apiUrlBackend}/usuarios/revisores`,
+    );
+  }
+
+  getArticuloResumen(id: number): Observable<ArticuloResumenDetalle> {
+    return this.http.get<ArticuloResumenDetalle>(
+      `${environment.apiUrlBackend}/articulos/resumen/${id}`,
     );
   }
 
@@ -443,7 +460,7 @@ export class ArticulosService {
     return this.http.post<any>(
       `${environment.apiUrlBackend}/articulos/${articuloId}/comite/evaluacion`,
       formData,
-      { reportProgress: true, observe: 'events' }
+      { reportProgress: true, observe: 'events' },
     );
   }
 
@@ -457,10 +474,9 @@ export class ArticulosService {
     return this.http.post<{
       message: string;
       comiteEditorial: { id: number; nombre: string; correo: string };
-    }>(
-      `${environment.apiUrlBackend}/articulos/${articuloId}/asignar-comite`,
-      { comiteEditorialId },
-    );
+    }>(`${environment.apiUrlBackend}/articulos/${articuloId}/asignar-comite`, {
+      comiteEditorialId,
+    });
   }
 
   crearArticulo(formData: FormData): Observable<any> {
@@ -520,7 +536,7 @@ export class ArticulosService {
     return this.http.post<any>(
       `${environment.apiUrlBackend}/articulos/${articuloId}/certificados`,
       formData,
-      { reportProgress: true, observe: 'events' }
+      { reportProgress: true, observe: 'events' },
     );
   }
 
@@ -605,10 +621,28 @@ export class ArticulosService {
     );
   }
 
-  archivarArticulo(articuloId: number, archivado: boolean): Observable<{ message: string; archivado: boolean }> {
+  archivarArticulo(
+    articuloId: number,
+    archivado: boolean,
+  ): Observable<{ message: string; archivado: boolean }> {
     return this.http.patch<{ message: string; archivado: boolean }>(
       `${environment.apiUrlBackend}/articulos/${articuloId}/archivar`,
-      { archivado }
+      { archivado },
+    );
+  }
+
+  actualizarArticulo(
+    id: number,
+    payload: {
+      codigo?: string;
+      titulo?: string;
+      resumen?: string;
+      palabrasClave?: string;
+    },
+  ): Observable<{ message: string; articulo: any }> {
+    return this.http.patch<{ message: string; articulo: any }>(
+      `${environment.apiUrlBackend}/articulos/${id}`,
+      payload,
     );
   }
 }

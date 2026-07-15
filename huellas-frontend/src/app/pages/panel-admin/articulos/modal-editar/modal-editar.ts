@@ -9,7 +9,10 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ArticulosService } from '../../../../core/articulos/articulos.service';
+import {
+  ArticuloResumenDetalle,
+  ArticulosService,
+} from '../../../../core/articulos/articulos.service';
 import { UsersService } from '../../../../core/users/users.service';
 import { Observable } from 'rxjs';
 
@@ -33,13 +36,20 @@ export class ModalEditar implements OnChanges {
   @Output() cerrar = new EventEmitter<void>();
   @Output() cambioAutores = new EventEmitter<void>();
 
+  codigo: string = '';
+  titulo: string = '';
+  resumen: string = '';
+  palabrasClave: string = '';
+  loadingDetalles = false;
+
+  detallesArticulo: ArticuloResumenDetalle | null = null;
+
   // Copia de los datos originales para comparar cambios
   autoresIniciales: Autor[] = [];
   autoresActuales: Autor[] = [];
   autoresDisponibles: Autor[] = [];
   autoresDisponiblesFiltrados: Autor[] = [];
   searchTerm = '';
-
   showConfirmModal = false;
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -49,7 +59,24 @@ export class ModalEditar implements OnChanges {
   }
 
   private cargarDatosIniciales(): void {
-    // Cargar autores del artículo
+    // Cargar detalles del artículo
+    this.loadingDetalles = true;
+    this.articulosService.getArticuloResumen(this.articulo.id).subscribe({
+      next: (data) => {
+        this.detallesArticulo = data;
+        this.codigo = data.codigo;
+        this.titulo = data.titulo;
+        this.resumen = data.resumen;
+        this.palabrasClave = data.palabrasClave.join(', ');
+        this.loadingDetalles = false;
+      },
+      error: () => {
+        this.detallesArticulo = null;
+        this.loadingDetalles = false;
+      },
+    });
+
+    // Cargar autores
     this.articulosService.getAutoresDeArticulo(this.articulo.id).subscribe({
       next: (data) => {
         this.autoresIniciales = data || [];
@@ -121,22 +148,33 @@ export class ModalEditar implements OnChanges {
   }
 
   hayCambios(): boolean {
-    if (this.autoresActuales.length !== this.autoresIniciales.length) return true;
-    const idsActuales = new Set(this.autoresActuales.map((a) => a.id));
-    const idsIniciales = new Set(this.autoresIniciales.map((a) => a.id));
-    for (const id of idsActuales) if (!idsIniciales.has(id)) return true;
-    for (const id of idsIniciales) if (!idsActuales.has(id)) return true;
-    return false;
+    return this.hayCambiosCampos() || this.hayCambiosAutores();
   }
 
   confirmarGuardado(): void {
     this.showConfirmModal = false;
-    if (!this.hayCambios()) {
+
+    if (!this.hayCambios() && !this.hayCambiosCampos()) {
       this.cerrar.emit();
       return;
     }
 
-    // Calcular diferencias
+    // 1. Preparar datos del artículo
+    const payloadArticulo: any = {};
+    if (this.codigo !== this.detallesArticulo?.codigo) {
+      payloadArticulo.codigo = this.codigo;
+    }
+    if (this.titulo !== this.detallesArticulo?.titulo) {
+      payloadArticulo.titulo = this.titulo;
+    }
+    if (this.resumen !== this.detallesArticulo?.resumen) {
+      payloadArticulo.resumen = this.resumen;
+    }
+    if (this.palabrasClave !== this.detallesArticulo?.palabrasClave.join(', ')) {
+      payloadArticulo.palabrasClave = this.palabrasClave;
+    }
+
+    // 2. Calcular cambios de autores (igual que antes)
     const idsActuales = new Set(this.autoresActuales.map((a) => a.id));
     const idsIniciales = new Set(this.autoresIniciales.map((a) => a.id));
     const idsAgregar = [...idsActuales].filter((id) => !idsIniciales.has(id));
@@ -144,6 +182,12 @@ export class ModalEditar implements OnChanges {
 
     const promises: Observable<any>[] = [];
 
+    // Llamada para actualizar campos del artículo (si hay cambios)
+    if (Object.keys(payloadArticulo).length > 0) {
+      promises.push(this.articulosService.actualizarArticulo(this.articulo.id, payloadArticulo));
+    }
+
+    // Operaciones de autores (agregar/remover)
     idsAgregar.forEach((id) => {
       promises.push(this.articulosService.agregarAutorArticulo(this.articulo.id, id));
     });
@@ -156,14 +200,18 @@ export class ModalEditar implements OnChanges {
       return;
     }
 
-    // Ejecutar todas las peticiones
+    // Ejecutar todas las peticiones en paralelo
     import('rxjs').then(({ forkJoin }) => {
       forkJoin(promises).subscribe({
         next: () => {
           this.cambioAutores.emit();
           this.cerrar.emit();
         },
-        error: () => alert('Ocurrió un error al guardar los cambios.'),
+        error: (err) => {
+          // Manejar errores (mostrar mensaje específico si el código está duplicado)
+          const mensaje = err?.error?.message || 'Ocurrió un error al guardar los cambios.';
+          alert(mensaje);
+        },
       });
     });
   }
@@ -182,5 +230,24 @@ export class ModalEditar implements OnChanges {
 
   cancelar(): void {
     this.cerrar.emit();
+  }
+
+  hayCambiosCampos(): boolean {
+    if (!this.detallesArticulo) return false;
+    return (
+      this.codigo !== this.detallesArticulo.codigo ||
+      this.titulo !== this.detallesArticulo.titulo ||
+      this.resumen !== this.detallesArticulo.resumen ||
+      this.palabrasClave !== this.detallesArticulo.palabrasClave.join(', ')
+    );
+  }
+
+  hayCambiosAutores(): boolean {
+    if (this.autoresActuales.length !== this.autoresIniciales.length) return true;
+    const idsActuales = new Set(this.autoresActuales.map((a) => a.id));
+    const idsIniciales = new Set(this.autoresIniciales.map((a) => a.id));
+    for (const id of idsActuales) if (!idsIniciales.has(id)) return true;
+    for (const id of idsIniciales) if (!idsActuales.has(id)) return true;
+    return false;
   }
 }

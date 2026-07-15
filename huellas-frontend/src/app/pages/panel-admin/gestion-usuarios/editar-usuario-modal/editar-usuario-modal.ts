@@ -17,6 +17,8 @@ interface EditUserData {
   nombre: string;
   correo: string;
   telefono: string;
+  institucion?: string;
+  perfil?: string;
   estado: string;
   rol: string;
 }
@@ -25,6 +27,8 @@ interface EditUserForm {
   nombre: string;
   correo: string;
   telefono: string;
+  institucion: string;
+  perfil: string;
   estado: 'Activa' | 'Inactiva';
   rol: string;
 }
@@ -58,6 +62,8 @@ export class EditarUsuarioModal implements OnInit, OnChanges {
     nombre: '',
     correo: '',
     telefono: '',
+    perfil: '',
+    institucion: '',
     estado: 'Activa',
     rol: 'autor',
   };
@@ -85,6 +91,8 @@ export class EditarUsuarioModal implements OnInit, OnChanges {
       nombre: this.user.nombre,
       correo: this.user.correo,
       telefono: this.user.telefono,
+      institucion: this.user.institucion ?? '',
+      perfil: this.user.perfil ?? '',
       estado: this.user.estado === 'Inactiva' ? 'Inactiva' : 'Activa',
       rol: this.editForm.rol, // valor temporal
     };
@@ -229,6 +237,8 @@ export class EditarUsuarioModal implements OnInit, OnChanges {
       nombre: this.editForm.nombre,
       correo: correoNormalizado,
       telefono: this.editForm.telefono,
+      institucion: this.editForm.institucion,
+      perfil: this.editForm.perfil,
       estado_cuenta: estadoCuenta,
       roles: [{ id: selectedRole.id, rol: selectedRole.rol }],
     };
@@ -287,11 +297,17 @@ export class EditarUsuarioModal implements OnInit, OnChanges {
     });
   }
 
+  get isRevisor(): boolean {
+    return this.user?.rol?.toLowerCase().includes('revisor') ?? false;
+  }
+
   private resetForm(): void {
     this.editForm = {
       nombre: '',
       correo: '',
       telefono: '',
+      institucion: '',
+      perfil: '',
       estado: 'Activa',
       rol: 'autor',
     };

@@ -39,6 +39,7 @@ import { Tema } from '../temas/entities/tema.entity';
 import { ArticulosConfiguracion } from './entities/articulos-configuracion.entity';
 import { ArticuloCertificado } from './entities/articulo-certificado.entity';
 import { Revisores } from '../revisores/entities/revisores.entity';
+import { ActualizarArticuloDto } from './dto/actualizar-articulo.dto';
 
 @Injectable()
 export class ArticulosService {
@@ -4806,6 +4807,85 @@ export class ArticulosService {
         ? 'Artículo archivado correctamente'
         : 'Artículo desarchivado correctamente',
       archivado: articulo.archivado,
+    };
+  }
+
+  async getArticuloResumen(articuloId: number): Promise<{
+    codigo: string;
+    titulo: string;
+    resumen: string;
+    palabrasClave: string[];
+  }> {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id: articuloId },
+      select: ['codigo', 'titulo', 'resumen', 'palabrasClave'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    // Convertir palabrasClave de string a array
+    const palabrasClaveArray = articulo.palabrasClave
+      ? articulo.palabrasClave
+          .split(',')
+          .map((p) => p.trim())
+          .filter(Boolean)
+      : [];
+
+    return {
+      codigo: articulo.codigo,
+      titulo: articulo.titulo,
+      resumen: articulo.resumen,
+      palabrasClave: palabrasClaveArray,
+    };
+  }
+
+  async actualizarArticulo(
+    id: number,
+    data: ActualizarArticuloDto,
+    usuarioId: number,
+  ): Promise<{ message: string; articulo: Partial<Articulo> }> {
+    const articulo = await this.articuloRepository.findOne({
+      where: { id },
+      select: ['id', 'codigo', 'titulo', 'resumen', 'palabrasClave'],
+    });
+
+    if (!articulo) {
+      throw new NotFoundException('Artículo no encontrado');
+    }
+
+    // Validar unicidad del código si se envía y cambia
+    if (data.codigo !== undefined && data.codigo !== articulo.codigo) {
+      const existe = await this.articuloRepository.findOne({
+        where: { codigo: data.codigo },
+        select: ['id'],
+      });
+      if (existe) {
+        throw new BadRequestException(
+          `El código "${data.codigo}" ya está en uso por otro artículo.`,
+        );
+      }
+      articulo.codigo = data.codigo;
+    }
+
+    // Actualizar campos
+    if (data.titulo !== undefined) articulo.titulo = data.titulo;
+    if (data.resumen !== undefined) articulo.resumen = data.resumen;
+    if (data.palabrasClave !== undefined)
+      articulo.palabrasClave = data.palabrasClave;
+
+    const articuloActualizado = await this.articuloRepository.save(articulo);
+
+    return {
+      message: 'Artículo actualizado correctamente',
+      articulo: {
+        id: articuloActualizado.id,
+        codigo: articuloActualizado.codigo,
+        titulo: articuloActualizado.titulo,
+        resumen: articuloActualizado.resumen,
+        palabrasClave: articuloActualizado.palabrasClave,
+      },
     };
   }
 }

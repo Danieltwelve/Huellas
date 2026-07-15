@@ -5,7 +5,31 @@
     <button class="modal-close" (click)="cancelar()">×</button>
   </div>
   <div class="modal-body">
-    <!-- Autores actuales -->
+    @if (loadingDetalles) {
+    <p class="loading-text">Cargando detalles...</p>
+    } @else {
+    <div class="field-group">
+      <label for="edit-codigo">Código</label>
+      <input id="edit-codigo" type="text" class="field-input" [(ngModel)]="codigo" />
+    </div>
+
+    <div class="field-group">
+      <label for="edit-titulo">Título</label>
+      <input id="edit-titulo" type="text" class="field-input" [(ngModel)]="titulo" />
+    </div>
+
+    <div class="field-group">
+      <label for="edit-resumen">Resumen</label>
+      <textarea id="edit-resumen" class="field-input" rows="4" [(ngModel)]="resumen"></textarea>
+    </div>
+
+    <div class="field-group">
+      <label for="edit-palabras-clave">Palabras clave (separadas por coma)</label>
+      <input id="edit-palabras-clave" type="text" class="field-input" [(ngModel)]="palabrasClave" />
+    </div>
+    }
+
+    <!-- === AUTORES === -->
     <div class="field-group">
       <label>Autores asociados (máx. 3)</label>
       <div class="autores-chips">
@@ -21,7 +45,7 @@
       </div>
     </div>
 
-    <!-- Agregar nuevo autor (solo si hay cupo) -->
+    <!-- Agregar autor (solo si hay cupo) -->
     @if (autoresActuales.length < 3) { <div class="field-group">
       <label>Agregar nuevo autor</label>
       <div class="agregar-autor">

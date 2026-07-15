@@ -8,6 +8,8 @@ export interface UsuarioBackend {
   nombre: string;
   correo: string;
   telefono: string;
+  perfil?: string;
+  institucion?: string;
   correo_verificado: boolean;
   estado_cuenta: boolean;
   roles: { id: number; rol: string }[];
@@ -35,7 +37,7 @@ export interface AdminCreateUserPayload {
   contraseña: string;
   telefono?: string;
   institucion?: string;
-  perfil?: string,
+  perfil?: string;
   rolId: number;
 }
 
@@ -52,6 +54,7 @@ export interface PerfilUsuarioResponse {
   profesion?: string;
   programa?: string;
   tienePosgrado?: boolean;
+  institucion?: string;
   posgradoTipo?: string;
   posgradoDetalle?: string;
   estudiantePosgrado?: boolean;
@@ -63,6 +66,7 @@ export interface PerfilUsuarioUpdatePayload {
   telefono: string;
   profesion?: string;
   programa?: string;
+  institucion?: string;
   tienePosgrado?: boolean;
   posgradoTipo?: string;
   posgradoDetalle?: string;
@@ -101,7 +105,9 @@ export class UsersService {
   }
 
   getCommitteeMembers(): Observable<UsuarioBackend[]> {
-    return this.http.get<UsuarioBackend[]>(`${environment.apiUrlBackend}/usuarios/comite-editorial`);
+    return this.http.get<UsuarioBackend[]>(
+      `${environment.apiUrlBackend}/usuarios/comite-editorial`,
+    );
   }
 
   createAdmin(payload: AdminCreateUserPayload): Observable<UsuarioBackend> {
