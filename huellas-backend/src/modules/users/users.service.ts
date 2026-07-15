@@ -751,6 +751,7 @@ export class UsersService {
       correo: user.correo ?? '',
       perfilAcademico: revisor?.perfil ?? '',
       profesion: user.profesion ?? '',
+      institucion: user.institucion ?? '',
       programa: user.programa ?? '',
       tienePosgrado: user.tienePosgrado ?? false,
       posgradoTipo: user.posgradoTipo ?? '',
@@ -839,7 +840,7 @@ export class UsersService {
       telefono: user.telefono ?? '',
       correo: user.correo ?? '',
       perfilAcademico: perfilRevisor?.perfil ?? '',
-      institucion: user.institucion ?? '', // ← incluir en respuesta
+      institucion: user.institucion ?? '',
       profesion: user.profesion ?? '',
       programa: user.programa ?? '',
       tienePosgrado: user.tienePosgrado ?? false,
