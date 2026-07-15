@@ -514,8 +514,11 @@ export class UsersService {
       });
 
       return true;
-    } catch {
-      this.logger.error(`Error enviando correo a ${correo}:`, error);
+    } catch (error) {
+      this.logger.error(
+        `Error enviando correo de verificación a ${correo} por SMTP:`,
+        error,
+      );
       return false;
     }
   }
@@ -558,7 +561,11 @@ export class UsersService {
       });
 
       return true;
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        `Error enviando correo de recuperación a ${correo} por SMTP:`,
+        error,
+      );
       return false;
     }
   }
