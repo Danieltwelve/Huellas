@@ -106,8 +106,8 @@
         </div>
         <div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.8rem 1rem; margin-top: 0.6rem;">
           <span style="font-weight: 600; color: #334155; font-size: 0.95rem;">{{ documentoArticuloInicial.nombre }}</span>
-          <button type="button" class="btn-outline-sm" (click)="descargarDocumento(documentoArticuloInicial.path, documentoArticuloInicial.nombre)"
-            style="background: #1f4e5b; color: #ffffff; border: none; border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+          <button type="button" (click)="descargarDocumento(documentoArticuloInicial.path, documentoArticuloInicial.nombre)"
+            style="background: #1f4e5b; color: #ffffff; border: none; border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center;">
             Descargar
           </button>
         </div>
