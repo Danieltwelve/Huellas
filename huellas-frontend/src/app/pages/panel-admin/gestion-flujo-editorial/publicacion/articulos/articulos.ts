@@ -1,6 +1,7 @@
 // articulos.ts
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import {
   ArticuloPublicable,
   ArticulosService,
@@ -9,7 +10,7 @@ import {
 @Component({
   selector: 'app-articulos',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './articulos.html',
   styleUrls: ['./articulos.css'],
 })
@@ -22,6 +23,7 @@ export class Articulos implements OnInit {
   articulos: ArticuloPublicable[] = [];
   loading = true;
   error = '';
+  terminoBusqueda = '';
 
   readonly MAX_SELECCION = 10;
 
@@ -43,7 +45,16 @@ export class Articulos implements OnInit {
     });
   }
 
-  // Getter para obtener los objetos completos de los artículos seleccionados
+  get articulosFiltrados(): ArticuloPublicable[] {
+    const q = this.terminoBusqueda.trim().toLowerCase();
+    if (!q) return this.articulos;
+    return this.articulos.filter(
+      (a) =>
+        a.titulo.toLowerCase().includes(q) ||
+        (a.codigo ?? '').toLowerCase().includes(q)
+    );
+  }
+
   get selectedArticulosList(): ArticuloPublicable[] {
     if (!this.articulos.length) return [];
     return this.articulos.filter((art) => this.seleccionadosIds.includes(art.id));
@@ -70,7 +81,6 @@ export class Articulos implements OnInit {
       if (nuevos.length < this.MAX_SELECCION) {
         nuevos.push(id);
       } else {
-        // Si ya llegó al límite, no hace nada
         return;
       }
     }
@@ -78,10 +88,15 @@ export class Articulos implements OnInit {
   }
 
   recargarArticulos(): void {
+    this.terminoBusqueda = '';
     this.cargarArtículos();
   }
 
   trackArticulo(_index: number, articulo: ArticuloPublicable): number {
     return articulo.id;
+  }
+
+  get skeletons(): number[] {
+    return Array.from({ length: 5 }, (_, i) => i);
   }
 }

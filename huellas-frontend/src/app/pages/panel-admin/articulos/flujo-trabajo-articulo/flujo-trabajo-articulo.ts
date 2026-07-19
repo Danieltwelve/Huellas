@@ -87,6 +87,7 @@ export class FlujoTrabajoArticulo {
     metadatosInglesEspanol: false,
   };
   guardandoChecklist = false;
+  editandoChecklistManual = false;
   decisionRevisionFinal: 'aceptar' | 'rechazar' | null = null;
   comentariosRevisionFinal = '';
   procesandoRevisionFinal = false;
@@ -162,6 +163,8 @@ export class FlujoTrabajoArticulo {
   badgeModalExito = 'Proceso completado';
   mostrarModalErrorTurnitin = false;
   mensajeErrorTurnitin: string | null = null;
+  mostrarModalErrorChecklist = false;
+  mensajeErrorChecklist = '';
   mostrarModalConfirmacionCorreccion = false;
   mostrarModalConfirmacionRechazoCorreccion = false;
   mostrarModalConfirmacionCertificado = false;
@@ -482,6 +485,19 @@ export class FlujoTrabajoArticulo {
         redaccionOrtografia: false,
         metadatosInglesEspanol: false,
       };
+    }
+
+    const decGuardada = this.decisionRevisionFinalGuardada;
+    if (decGuardada) {
+      this.decisionRevisionFinal = decGuardada;
+      const obs = data.observaciones ?? [];
+      const obsEtapa9 = obs.find(
+        (o) => o.etapa?.id === 9 && ((o.asunto ?? '').includes('APROBADO') || (o.asunto ?? '').includes('RECHAZADO'))
+      );
+      this.comentariosRevisionFinal = obsEtapa9?.comentarios ?? '';
+    } else if (!this.editandoChecklistManual) {
+      this.decisionRevisionFinal = null;
+      this.comentariosRevisionFinal = '';
     }
   }
 
@@ -1558,7 +1574,6 @@ export class FlujoTrabajoArticulo {
           this.accionExitosa = null;
           this.mensajeExitoMover = `El artículo avanzó correctamente a ${etapaSiguiente.titulo}.`;
           this.mostrarModalExitoMover = true;
-          this.programarCierreModalExitoMover();
         });
       },
       error: (err) => {
@@ -2129,11 +2144,14 @@ export class FlujoTrabajoArticulo {
       this.evaluandoComite ||
       this.asignandoComite ||
       this.guardandoChecklist ||
+      this.editandoChecklistManual ||
       this.mostrarModalConfirmacionMover ||
+      this.mostrarModalExitoMover ||
       this.mostrarModalConfirmacionAsignacion ||
       this.mostrarModalExitoAsignacion ||
       this.mostrarModalConfirmacionTurnitin ||
       this.mostrarModalExitoTurnitin ||
+      this.mostrarModalErrorChecklist ||
       this.mostrarModalConfirmacionCertificado ||
       this.mostrarModalConfirmacionCorreccion ||
       this.mostrarModalConfirmacionRechazoCorreccion ||
@@ -2484,6 +2502,9 @@ export class FlujoTrabajoArticulo {
   }
 
   get isChecklistLocked(): boolean {
+    if (this.editandoChecklistManual) {
+      return false;
+    }
     return (
       this.decisionRevisionFinalGuardada !== null ||
       this.procesandoRevisionFinal ||
@@ -2493,6 +2514,9 @@ export class FlujoTrabajoArticulo {
   }
 
   get isDecisionLocked(): boolean {
+    if (this.editandoChecklistManual) {
+      return false;
+    }
     return this.decisionRevisionFinalGuardada !== null || this.procesandoRevisionFinal;
   }
 
@@ -2516,6 +2540,10 @@ export class FlujoTrabajoArticulo {
     return Math.round((this.completedChecklistItemsCount / total) * 100);
   }
 
+  get isChecklistIncomplete(): boolean {
+    return this.completedChecklistItemsCount < this.totalChecklistItemsCount;
+  }
+
   guardarChecklistFinal(): void {
     if (!this.articuloIdActual) return;
     this.guardandoChecklist = true;
@@ -2527,11 +2555,12 @@ export class FlujoTrabajoArticulo {
       .subscribe({
         next: (res) => {
           this.guardandoChecklist = false;
+          this.editandoChecklistManual = false;
           this.tituloModalExito = 'Lista de chequeo guardada';
-          this.mensajeExitoTurnitin = 'La lista de chequeo de la revisión final ha sido guardada correctamente.';
+          this.mensajeExitoTurnitin = res.message || 'Lista de chequeo de revisión final guardada exitosamente.';
           this.badgeModalExito = 'Chequeo Guardado';
           this.mostrarModalExitoTurnitin = true;
-          this.accionExitosa = res.message || 'Lista de chequeo guardada exitosamente.';
+          this.accionExitosa = null;
           this.cargarArticulo(this.articuloIdActual!);
         },
         error: (err) => {
@@ -2557,8 +2586,10 @@ export class FlujoTrabajoArticulo {
       ];
       const todosListos = items.every((val) => val === true);
       if (!todosListos) {
-        this.accionError = 'Todos los ítems de la lista de chequeo deben estar marcados antes de aprobar el artículo.';
+        this.mensajeErrorChecklist = 'Todos los ítems de la lista de chequeo deben estar marcados antes de aprobar el artículo.';
+        this.mostrarModalErrorChecklist = true;
         this.accionExitosa = null;
+        this.accionError = null;
         return;
       }
     } else {
@@ -2597,8 +2628,10 @@ export class FlujoTrabajoArticulo {
       ];
       const todosListos = items.every((val) => val === true);
       if (!todosListos) {
-        this.accionError = 'Todos los ítems de la lista de chequeo deben estar marcados antes de aprobar el artículo.';
+        this.mensajeErrorChecklist = 'Todos los ítems de la lista de chequeo deben estar marcados antes de aprobar el artículo.';
+        this.mostrarModalErrorChecklist = true;
         this.accionExitosa = null;
+        this.accionError = null;
         return;
       }
     } else {
@@ -2632,9 +2665,16 @@ export class FlujoTrabajoArticulo {
             .subscribe({
               next: () => {
                 this.procesandoRevisionFinal = false;
-                this.accionExitosa = isAceptar
+                const msg = isAceptar
                   ? 'La decisión ha sido guardada. El artículo ha sido aprobado; ahora puedes avanzar a Certificación usando el botón de abajo.'
                   : 'La decisión ha sido guardada. El artículo ha sido rechazado; ahora puedes marcarlo como Descartado usando el botón de abajo.';
+                
+                this.tituloModalExito = isAceptar ? 'Decisión Registrada' : 'Artículo Rechazado';
+                this.mensajeExitoTurnitin = msg;
+                this.badgeModalExito = isAceptar ? 'Aprobado' : 'Rechazado';
+                this.mostrarModalExitoTurnitin = true;
+                
+                this.accionExitosa = null;
                 this.resetFormularioRevisionFinal();
                 this.cargarArticulo(this.articuloIdActual!);
               },
@@ -2654,6 +2694,15 @@ export class FlujoTrabajoArticulo {
   resetFormularioRevisionFinal(): void {
     this.decisionRevisionFinal = null;
     this.comentariosRevisionFinal = '';
+  }
+
+  habilitarEdicionChecklist(): void {
+    this.editandoChecklistManual = true;
+  }
+
+  cerrarModalErrorChecklist(): void {
+    this.mostrarModalErrorChecklist = false;
+    this.mensajeErrorChecklist = '';
   }
 
   recargarArticulo(): void {

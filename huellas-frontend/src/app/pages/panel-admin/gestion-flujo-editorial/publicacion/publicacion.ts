@@ -34,6 +34,11 @@ export class Publicacion implements OnInit {
   edicionIdSeleccionada: number | null = null;
   selectedArticuloIds: number[] = [];
 
+  // Archivos de la edición estándar
+  portadaEstandarFile: File | null = null;
+  pdfEstandarFile: File | null = null;
+  portadaPreviewUrl: string | null = null;
+
   // Modales de Confirmación
   showConfirmEstandarModal = false;
   showConfirmRapidaModal = false;
@@ -91,9 +96,43 @@ export class Publicacion implements OnInit {
 
   limpiarFormulario(): void {
     this.edicionIdSeleccionada = null;
-    this.selectedArticuloIds = []; // reiniciar selección
+    this.selectedArticuloIds = [];
+    this.portadaEstandarFile = null;
+    this.pdfEstandarFile = null;
+    this.portadaPreviewUrl = null;
     this.error = null;
     this.success = null;
+  }
+
+  onPortadaEstandarSelected(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.portadaEstandarFile = file;
+    // Generar preview en el browser sin subir al servidor
+    const reader = new FileReader();
+    reader.onload = (e) => { this.portadaPreviewUrl = e.target?.result as string; };
+    reader.readAsDataURL(file);
+  }
+
+  onPdfEstandarSelected(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) this.pdfEstandarFile = file;
+  }
+
+  /** Objeto completo de la edición seleccionada actualmente */
+  get edicionSeleccionadaDetalle(): EdicionRevistaBackend | null {
+    if (!this.edicionIdSeleccionada) return null;
+    return this.ediciones.find((e) => e.id === this.edicionIdSeleccionada) ?? null;
+  }
+
+  /** Mensaje que explica por qué el botón está deshabilitado */
+  get tooltipPublicar(): string {
+    const faltantes: string[] = [];
+    if (this.selectedArticuloIds.length !== 10)
+      faltantes.push(`${10 - this.selectedArticuloIds.length} artículo(s) más`);
+    if (!this.edicionIdSeleccionada) faltantes.push('una edición');
+    if (faltantes.length === 0) return 'Publicar edición';
+    return `Falta seleccionar: ${faltantes.join(' y ')}.`;
   }
 
   onSeleccionArticulosCambia(nuevosIds: number[]): void {
@@ -142,19 +181,34 @@ export class Publicacion implements OnInit {
     this.showConfirmEstandarModal = false;
     this.publishing = true;
 
-    const payload = {
-      edicionId: this.edicionIdSeleccionada!,
-      articuloIds: this.selectedArticuloIds,
-    };
+    const payload = { edicionId: this.edicionIdSeleccionada!, articuloIds: this.selectedArticuloIds };
 
     this.edicionesService.publicarEdicion(payload).subscribe({
       next: (res) => {
-        this.success = res?.message ?? 'Edición publicada correctamente.';
-        this.publishing = false;
-        this.limpiarFormulario();
-        this.cargarEdiciones();
-        this.articulosComponent?.recargarArticulos();
-        this.edicionesComponent?.cargarEdiciones();
+        const edicionId = this.edicionIdSeleccionada!;
+        const tieneArchivos = this.portadaEstandarFile || this.pdfEstandarFile;
+
+        const finalizar = (msg: string) => {
+          this.success = msg;
+          this.publishing = false;
+          this.limpiarFormulario();
+          this.cargarEdiciones();
+          this.articulosComponent?.recargarArticulos();
+          this.edicionesComponent?.cargarEdiciones();
+        };
+
+        if (tieneArchivos) {
+          // Subir archivos (portada / PDF) a la edición recién publicada
+          const fd = new FormData();
+          if (this.portadaEstandarFile) fd.append('portada', this.portadaEstandarFile);
+          if (this.pdfEstandarFile) fd.append('pdfCompleto', this.pdfEstandarFile);
+          this.edicionesService.updateEdicionConPortada(edicionId, fd).subscribe({
+            next: () => finalizar(res?.message ?? 'Edición publicada y archivos subidos correctamente.'),
+            error: () => finalizar((res?.message ?? 'Edición publicada.') + ' (No se pudieron subir los archivos)'),
+          });
+        } else {
+          finalizar(res?.message ?? 'Edición publicada correctamente.');
+        }
       },
       error: (err) => {
         this.error = err?.message ?? 'Error al publicar edición.';
