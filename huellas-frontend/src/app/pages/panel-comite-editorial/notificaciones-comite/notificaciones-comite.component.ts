@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, OnDestroy } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -19,6 +19,7 @@ interface NotificacionUI {
   codigo?: string;
   fecha: Date;
   diasRestantes?: number | null;
+  leida: boolean;
 }
 
 interface ResumenNotificaciones {
@@ -31,15 +32,19 @@ interface ResumenNotificaciones {
 @Component({
   selector: 'app-notificaciones-comite',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   templateUrl: './notificaciones-comite.component.html',
   styleUrl: './notificaciones-comite.component.css',
 })
 export class NotificacionesComiteComponent implements OnInit, OnDestroy {
   private readonly articulosService = inject(ArticulosService);
+  private readonly router = inject(Router);
   private readonly destroy$ = new Subject<void>();
 
+  private readonly storageKey = 'comite-notificaciones-leidas';
+
   notificaciones: NotificacionUI[] = [];
+  filtro: 'todas' | 'no-leidas' = 'todas';
   resumen: ResumenNotificaciones = {
     totalPendientes: 0,
     totalVencidos: 0,
@@ -47,6 +52,17 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
     totalNuevosUltimos3Dias: 0,
   };
   loading = true;
+
+  get visibles(): NotificacionUI[] {
+    if (this.filtro === 'no-leidas') {
+      return this.notificaciones.filter((n) => !n.leida);
+    }
+    return this.notificaciones;
+  }
+
+  setFiltro(value: 'todas' | 'no-leidas'): void {
+    this.filtro = value;
+  }
 
   ngOnInit(): void {
     this.cargarNotificaciones();
@@ -57,9 +73,50 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  marcarTodasLeidas(): void {
+    const ids = new Set(this.notificaciones.map((n) => n.id));
+    this.notificaciones = this.notificaciones.map((n) => ({ ...n, leida: true }));
+    this.guardarIdsLeidas(ids);
+    window.dispatchEvent(new CustomEvent('huellas-notifications-updated'));
+  }
+
+  abrirNotificacion(n: NotificacionUI): void {
+    if (!n.leida) {
+      n.leida = true;
+      const ids = this.obtenerIdsLeidas();
+      ids.add(n.id);
+      this.guardarIdsLeidas(ids);
+      window.dispatchEvent(new CustomEvent('huellas-notifications-updated'));
+    }
+    this.router.navigate(['/panel-comite-editorial/articulos', n.articuloId]);
+  }
+
+  formatearFecha(fecha: Date): string {
+    if (!(fecha instanceof Date) || isNaN(fecha.getTime())) {
+      return 'Sin fecha';
+    }
+
+    const ahora = Date.now();
+    const diffMs = Math.max(0, ahora - fecha.getTime());
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHoras = Math.floor(diffMin / 60);
+    const diffDias = Math.floor(diffHoras / 24);
+
+    if (diffMin < 1) return 'Hace unos segundos';
+    if (diffMin < 60) return `Hace ${diffMin} min`;
+    if (diffHoras < 24) return `Hace ${diffHoras} h`;
+    if (diffDias === 1) return 'Ayer';
+    if (diffDias < 7) return `Hace ${diffDias} dias`;
+
+    return fecha.toLocaleDateString('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
   private cargarNotificaciones(): void {
     this.loading = true;
-    console.log('[Notificaciones] Iniciando carga de notificaciones...');
 
     forkJoin({
       articulos: this.articulosService.getArticulosComiteAsignados().pipe(
@@ -78,24 +135,6 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: ({ articulos, vencimientos }) => {
-          console.log('[Notificaciones] ✓ Artículos asignados:', articulos.length, 'items');
-          if (articulos.length > 0) {
-            console.table(articulos.map(a => ({
-              id: a.id,
-              codigo: a.codigo,
-              titulo: a.titulo,
-              estado: a.estado_evaluacion,
-              diasRestantes: a.dias_restantes
-            })));
-          } else {
-            console.warn('[Notificaciones] ⚠ Sin artículos asignados al usuario actual');
-          }
-
-          console.log('[Notificaciones] ✓ Vencimientos:', vencimientos.length, 'items');
-          if (vencimientos.length > 0) {
-            console.table(vencimientos);
-          }
-
           const idsActuales = articulos.map((a) => a.id);
           const keyVistos = 'comite-notificaciones-vistos';
           const keyHistorial = 'comite-historial-notificaciones-nuevos';
@@ -103,7 +142,6 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
           const vistosRaw = localStorage.getItem(keyVistos);
           const vistos = vistosRaw ? this.parseIds(vistosRaw) : [];
 
-          // Cargar historial
           const historialRaw = localStorage.getItem(keyHistorial);
           let historial: any[] = [];
           if (historialRaw) {
@@ -114,7 +152,6 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
             }
           }
 
-          // Identificar nuevos: si el historial está vacío, poblamos con todos los artículos actuales como estado inicial
           const nuevos = (vistosRaw && historial.length > 0)
             ? articulos.filter((a) => !vistos.includes(a.id))
             : articulos;
@@ -138,25 +175,16 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
             localStorage.setItem(keyVistos, JSON.stringify(idsActuales));
           }
 
-          // Construir notificaciones
-          const nuevosNotifs = this.construirNotificacionesNuevosArticulos(articulos);
-          const sinRevisar = this.construirNotificacionesSinRevisar(articulos);
-          const recordatorios = this.construirNotificacionesRecordatorio(vencimientos);
+          const idsLeidas = this.obtenerIdsLeidas();
 
-          console.log('[Notificaciones] Categorías:', {
-            nuevos: nuevosNotifs.length,
-            sinRevisar: sinRevisar.length,
-            recordatorios: recordatorios.length,
-          });
+          const nuevosNotifs = this.construirNotificacionesNuevosArticulos(articulos, idsLeidas);
+          const sinRevisar = this.construirNotificacionesSinRevisar(articulos, idsLeidas);
+          const recordatorios = this.construirNotificacionesRecordatorio(vencimientos, idsLeidas);
 
-          // Combinar todas las notificaciones
           this.notificaciones = [...recordatorios, ...nuevosNotifs, ...sinRevisar].sort(
             (a, b) => b.fecha.getTime() - a.fecha.getTime(),
           );
 
-          console.log('[Notificaciones] ✓ Total notificaciones combinadas:', this.notificaciones.length);
-
-          // Calcular resumen
           this.calcularResumen(articulos, vencimientos);
           this.loading = false;
         },
@@ -168,25 +196,30 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
       });
   }
 
-  private construirNotificacionesNuevosArticulos(articulos: ArticuloResumenBackend[]): NotificacionUI[] {
-    const keyHistorial = 'comite-historial-notificaciones-nuevos';
-    const historialRaw = localStorage.getItem(keyHistorial);
-    let historial: any[] = [];
-    if (historialRaw) {
-      try {
-        historial = JSON.parse(historialRaw);
-      } catch {
-        historial = [];
-      }
-    }
-
-    return historial.map((n: any) => ({
-      ...n,
-      fecha: new Date(n.fecha),
-    }));
+  private construirNotificacionesNuevosArticulos(
+    articulos: ArticuloResumenBackend[],
+    idsLeidas: Set<string>,
+  ): NotificacionUI[] {
+    return articulos.map((articulo) => {
+      const id = `nuevo-${articulo.id}`;
+      return {
+        id,
+        tipo: 'nuevo-articulo' as const,
+        titulo: 'Nuevo artículo asignado',
+        mensaje: `Se te asignó ${articulo.codigo}: ${articulo.titulo}`,
+        articuloId: articulo.id,
+        codigo: articulo.codigo,
+        fecha: articulo.fecha_asignacion ? new Date(articulo.fecha_asignacion) : new Date(),
+        leida: idsLeidas.has(id),
+      };
+    });
   }
 
-  private construirNotificacionesSinRevisar(articulos: ArticuloResumenBackend[]): NotificacionUI[] {
+
+  private construirNotificacionesSinRevisar(
+    articulos: ArticuloResumenBackend[],
+    idsLeidas: Set<string>,
+  ): NotificacionUI[] {
     return articulos
       .filter(
         (a) =>
@@ -196,16 +229,20 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
           a.dias_restantes > 5,
       )
       .slice(0, 5)
-      .map((articulo) => ({
-        id: `sin-revisar-${articulo.id}`,
-        tipo: 'sin-revisar',
-        titulo: 'Artículo pendiente de revisión',
-        mensaje: `${articulo.codigo}: ${articulo.titulo} - Vence en ${articulo.dias_restantes} días`,
-        articuloId: articulo.id,
-        codigo: articulo.codigo,
-        diasRestantes: articulo.dias_restantes,
-        fecha: new Date(),
-      }));
+      .map((articulo) => {
+        const id = `sin-revisar-${articulo.id}`;
+        return {
+          id,
+          tipo: 'sin-revisar' as const,
+          titulo: 'Artículo pendiente de revisión',
+          mensaje: `${articulo.codigo}: ${articulo.titulo} - Vence en ${articulo.dias_restantes} días`,
+          articuloId: articulo.id,
+          codigo: articulo.codigo,
+          diasRestantes: articulo.dias_restantes,
+          fecha: new Date(),
+          leida: idsLeidas.has(id),
+        };
+      });
   }
 
   private calcularResumen(
@@ -228,16 +265,23 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
     };
   }
 
-  private construirNotificacionesRecordatorio(items: ComiteNotificacionVencimiento[]): NotificacionUI[] {
-    return items.map((n) => ({
-      id: `rev-${n.articuloId}-${n.tipo}`,
-      tipo: n.tipo,
-      titulo: n.tipo === 'vencido' ? 'Revisión vencida' : 'Recordatorio de revisión',
-      mensaje: n.mensaje,
-      articuloId: n.articuloId,
-      codigo: n.codigo,
-      fecha: new Date(),
-    }));
+  private construirNotificacionesRecordatorio(
+    items: ComiteNotificacionVencimiento[],
+    idsLeidas: Set<string>,
+  ): NotificacionUI[] {
+    return items.map((n) => {
+      const id = `rev-${n.articuloId}-${n.tipo}`;
+      return {
+        id,
+        tipo: n.tipo as 'vencido' | 'proximo-vencer',
+        titulo: n.tipo === 'vencido' ? 'Revisión vencida' : 'Recordatorio de revisión',
+        mensaje: n.mensaje,
+        articuloId: n.articuloId,
+        codigo: n.codigo,
+        fecha: new Date(),
+        leida: idsLeidas.has(id),
+      };
+    });
   }
 
   private parseIds(raw: string): number[] {
@@ -249,19 +293,18 @@ export class NotificacionesComiteComponent implements OnInit, OnDestroy {
     }
   }
 
-  getTipoClase(tipo: NotificacionUI['tipo']): string {
-    if (tipo === 'nuevo-articulo') {
-      return 'tipo-nuevo';
+  private obtenerIdsLeidas(): Set<string> {
+    try {
+      const raw = localStorage.getItem(this.storageKey);
+      if (!raw) return new Set<string>();
+      const parsed = JSON.parse(raw) as string[];
+      return new Set(parsed.filter((id) => typeof id === 'string'));
+    } catch {
+      return new Set<string>();
     }
+  }
 
-    if (tipo === 'vencido') {
-      return 'tipo-vencido';
-    }
-
-    if (tipo === 'proximo-vencer') {
-      return 'tipo-recordatorio';
-    }
-
-    return 'tipo-sin-revisar';
+  private guardarIdsLeidas(ids: Set<string>): void {
+    localStorage.setItem(this.storageKey, JSON.stringify(Array.from(ids)));
   }
 }

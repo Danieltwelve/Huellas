@@ -1,56 +1,43 @@
 <section class="notify-page">
-  <div class="notify-header">
-    <div class="header-title-area">
-      <h1>Centro de Notificaciones</h1>
-      <p>Alertas de asignación, plazos y mensajes editoriales.</p>
-    </div>
-  </div>
-
-  <div class="filters-row">
-    <div class="filters">
+  <div class="notify-toolbar">
+    <div class="notify-filters">
       <button type="button" [class.active]="filtro === 'todas'" (click)="setFiltro('todas')">Todas</button>
-      <button type="button" [class.active]="filtro === 'no-leidas'" (click)="setFiltro('no-leidas')">No leídas</button>
+      <button type="button" [class.active]="filtro === 'no-leidas'" (click)="setFiltro('no-leidas')">No leidas</button>
     </div>
-    <button type="button" class="btn-mark-all" (click)="marcarTodasComoLeidas()">
-      Marcar todo como leído
-    </button>
+    <button type="button" class="ghost" (click)="marcarTodasComoLeidas()">Marcar todo como leido</button>
   </div>
 
+  <br>
   <div class="notify-list">
     @if (loading) {
-      <div class="loading-state">Cargando notificaciones...</div>
-    } @else if (error) {
-      <div class="error-state">{{ error }}</div>
-    } @else {
-      @for (item of visibles; track item.id) {
-        <article class="notify-card" [class.unread]="!item.leida" (click)="abrirNotificacion(item)" tabindex="0" role="button" aria-label="Abrir notificación">
-          <div class="indicator-column">
-            <span class="indicator-dot" 
-                  [class.orange]="item.tipo === 'plazo' || item.tipo === 'mensaje' || item.tipo === 'vencido' || item.tipo === 'proximo-vencer'" 
-                  [class.blue]="item.tipo === 'asignacion' || item.tipo === 'nuevo-articulo'" 
-                  [class.green]="item.tipo === 'exito'"
-                  [class.read]="item.leida"></span>
-          </div>
-          
-          <div class="content-column">
-            <h2>{{ item.titulo }}</h2>
-            <p class="detail">{{ item.detalle }}</p>
-            @if (item.codigoArticulo) {
-              <span class="articulo-ref">{{ item.codigoArticulo }}</span>
-            }
-          </div>
+      <article class="notify-empty">Cargando notificaciones...</article>
+    }
 
-          <div class="time-column">
-            <small class="relative-time">{{ getTiempoTranscurrido(item.fecha) }}</small>
-          </div>
-        </article>
-      }
+    @if (!loading && error) {
+      <article class="notify-empty notify-empty--error">{{ error }}</article>
+    }
 
-      @if (visibles.length === 0) {
-        <div class="empty-card">
-          <p class="empty-text">No tienes notificaciones en este momento.</p>
+    @for (item of visibles; track item.id) {
+      <article class="notify-item" [class.unread]="!item.leida" (click)="abrirNotificacion(item)">
+        <span class="type"
+              [class.type-action]="item.tipo === 'plazo' || item.tipo === 'mensaje' || item.tipo === 'vencido' || item.tipo === 'proximo-vencer'"
+              [class.type-info]="item.tipo === 'asignacion' || item.tipo === 'nuevo-articulo'"
+              [class.type-success]="item.tipo === 'exito'"></span>
+        <div>
+          <h3>{{ item.titulo }}</h3>
+          <p>{{ item.detalle }}</p>
+          @if (item.codigoArticulo) {
+            <small class="article-ref">{{ item.codigoArticulo }}</small>
+          }
         </div>
-      }
+        <span class="date">{{ formatearFecha(item.fecha) }}</span>
+      </article>
+    }
+
+    @if (!loading && !error && visibles.length === 0) {
+      <article class="notify-empty">
+        No hay notificaciones pendientes para este filtro.
+      </article>
     }
   </div>
 </section>

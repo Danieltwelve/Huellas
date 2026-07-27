@@ -1,65 +1,40 @@
-<section class="notificaciones-page">
-  <header class="notificaciones-header">
-    <h1>Centro de Notificaciones</h1>
-    <p>Alertas de nuevos artículos y recordatorios de revisión.</p>
-  </header>
-
-  @if (loading) {
-  <div class="estado-carga">Cargando notificaciones...</div>
-  }
-
-  @if (!loading) {
-  <div class="resumen-cards">
-    <article class="resumen-card" [class.highlight]="resumen.totalVencidos > 0">
-      <strong class="resumen-label">Vencidos</strong>
-      <span class="resumen-valor">{{ resumen.totalVencidos }}</span>
-    </article>
-    <article class="resumen-card" [class.highlight]="resumen.totalProximoVencer > 0">
-      <strong class="resumen-label">Por vencer (≤5d)</strong>
-      <span class="resumen-valor">{{ resumen.totalProximoVencer }}</span>
-    </article>
-    <article class="resumen-card">
-      <strong class="resumen-label">Pendientes de revisar</strong>
-      <span class="resumen-valor">{{ resumen.totalPendientes }}</span>
-    </article>
-    <article class="resumen-card">
-      <strong class="resumen-label">Nuevos (últimos 3d)</strong>
-      <span class="resumen-valor">{{ resumen.totalNuevosUltimos3Dias }}</span>
-    </article>
+<section class="notify-page">
+  <div class="notify-toolbar">
+    <div class="notify-filters">
+      <button type="button" [class.active]="filtro === 'todas'" (click)="setFiltro('todas')">Todas</button>
+      <button type="button" [class.active]="filtro === 'no-leidas'" (click)="setFiltro('no-leidas')">No leidas</button>
+    </div>
+    <button type="button" class="ghost" (click)="marcarTodasLeidas()">Marcar todo como leido</button>
   </div>
-  }
 
-  @if (!loading && !notificaciones.length) {
-  <div class="estado-vacio">
-    <h2>Sin notificaciones pendientes</h2>
-    <p>Cuando se te asigne un artículo o esté por vencer una revisión, aparecerá aquí.</p>
-  </div>
-  }
+  <br>
+  <div class="notify-list">
+    @if (loading) {
+      <article class="notify-empty">Cargando notificaciones...</article>
+    }
 
-  @if (!loading && notificaciones.length) {
-  <div class="notificaciones-lista">
-    <h2>Notificaciones activas</h2>
-    @for (n of notificaciones; track n.id) {
-    <article class="notificacion-item" [ngClass]="getTipoClase(n.tipo)">
-      <div class="notificacion-top">
-        <strong>{{ n.titulo }}</strong>
-        <span class="chip" [ngClass]="getTipoClase(n.tipo)">
-          @switch (n.tipo) {
-          @case ('nuevo-articulo') { Nuevo }
-          @case ('vencido') { Vencido }
-          @case ('proximo-vencer') { Recordatorio }
-          @case ('sin-revisar') { Pendiente }
+    @if (!loading && !notificaciones.length) {
+      <article class="notify-empty">
+        No hay notificaciones pendientes para este filtro.
+      </article>
+    }
+
+    @for (n of visibles; track n.id) {
+      <article class="notify-item" [class.unread]="!n.leida" (click)="abrirNotificacion(n)">
+        <span class="type"
+              [class.type-action]="n.tipo === 'vencido' || n.tipo === 'proximo-vencer'"
+              [class.type-info]="n.tipo === 'nuevo-articulo' || n.tipo === 'sin-revisar'"></span>
+        <div>
+          <h3>{{ n.titulo }}</h3>
+          @if (n.mensaje) {
+            <p>{{ n.mensaje }}</p>
           }
-        </span>
-      </div>
-
-      <p>{{ n.mensaje }}</p>
-
-      <a class="ver-articulo" [routerLink]="['/panel-comite-editorial/articulos', n.articuloId]">
-        Ver artículo
-      </a>
-    </article>
+          @if (n.codigo) {
+            <small class="article-ref">{{ n.codigo }}</small>
+          }
+        </div>
+        <span class="date">{{ formatearFecha(n.fecha) }}</span>
+      </article>
     }
   </div>
-  }
 </section>

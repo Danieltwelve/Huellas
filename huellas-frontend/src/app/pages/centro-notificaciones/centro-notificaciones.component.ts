@@ -50,6 +50,8 @@ export class CentroNotificacionesComponent implements OnInit {
         this.userRole = 'autor';
       } else if (roles.includes('comite-editorial')) {
         this.userRole = 'comite-editorial';
+      } else {
+        this.userRole = 'admin';
       }
       this.cargarNotificaciones();
     });
@@ -281,17 +283,28 @@ export class CentroNotificacionesComponent implements OnInit {
     }
   }
 
-  getTiempoTranscurrido(fecha: Date): string {
-    const diffMs = Date.now() - fecha.getTime();
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHor = Math.floor(diffMin / 60);
-    const diffDia = Math.floor(diffHor / 24);
+  formatearFecha(fecha: Date): string {
+    if (!(fecha instanceof Date) || isNaN(fecha.getTime())) {
+      return 'Sin fecha';
+    }
 
-    if (diffSec < 60) return 'Hace unos segundos';
+    const ahora = Date.now();
+    const diffMs = Math.max(0, ahora - fecha.getTime());
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHoras = Math.floor(diffMin / 60);
+    const diffDias = Math.floor(diffHoras / 24);
+
+    if (diffMin < 1) return 'Hace unos segundos';
     if (diffMin < 60) return `Hace ${diffMin} min`;
-    if (diffHor < 24) return `Hace ${diffHor} h`;
-    return `Hace ${diffDia} d`;
+    if (diffHoras < 24) return `Hace ${diffHoras} h`;
+    if (diffDias === 1) return 'Ayer';
+    if (diffDias < 7) return `Hace ${diffDias} dias`;
+
+    return fecha.toLocaleDateString('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
   }
 
   private extractCode(text: string): string | undefined {
