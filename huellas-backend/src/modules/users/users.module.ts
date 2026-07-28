@@ -13,6 +13,7 @@ import { Observacion } from '../observaciones/entities/observacione.entity';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
 import { Revisores } from '../revisores/entities/revisores.entity';
 import { UsersRemindersJob } from './users-reminders.job';
+import { EmailModule } from 'src/common/email/email.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { UsersRemindersJob } from './users-reminders.job';
       Revisores,
     ]),
     FirebaseAdminModule,
+    EmailModule,
   ],
   controllers: [UsersController],
   providers: [
