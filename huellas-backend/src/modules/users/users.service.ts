@@ -495,21 +495,22 @@ export class UsersService {
     const lookup = promisify(dns.lookup);
 
     try {
-      // Forzar resolución IPv4
       const { address } = await lookup(smtpConfig.host, { family: 4 });
-
       this.logger.log(
         `[SMTP] Resolviendo ${smtpConfig.host} -> ${address} (IPv4)`,
       );
-
       return nodemailer.createTransport({
-        host: address, // <--- Usamos la IP directamente
+        host: address,
         port: smtpConfig.port,
         secure: smtpConfig.secure,
         auth:
           smtpConfig.user && smtpConfig.pass
             ? { user: smtpConfig.user, pass: smtpConfig.pass }
             : undefined,
+        // Aumentar timeouts (en milisegundos)
+        connectionTimeout: 30000, // 30 segundos
+        greetingTimeout: 30000,
+        socketTimeout: 60000,
       } as any);
     } catch (error) {
       this.logger.error(
