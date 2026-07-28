@@ -75,6 +75,12 @@
         </label>
       </div>
 
+      @if (errorMessage) {
+      <div class="field-error" style="margin-bottom: 12px; padding: 10px 14px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; font-size: 0.875rem; color: #b91c1c;">
+        {{ errorMessage }}
+      </div>
+      }
+
       <button class="register-btn" type="submit" [disabled]="registerForm.invalid">
         Registrarse
       </button>

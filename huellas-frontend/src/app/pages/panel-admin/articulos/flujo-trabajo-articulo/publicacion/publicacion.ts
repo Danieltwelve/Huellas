@@ -38,6 +38,25 @@ export class Publicacion implements OnInit, OnChanges {
     return this.edicionIdInicial !== null || this.etapaActualTerminada;
   }
 
+  // DOI: letras, números y caracteres válidos (puntos, slashes, guiones)
+  readonly doiPattern = /^[a-zA-Z0-9.\-/_]+$/;
+  // ISSN: letras y números (alfanumérico)
+  readonly issnPattern = /^[a-zA-Z0-9]+$/;
+
+  get doiValido(): boolean {
+    const v = this.doiPublicacion.trim();
+    return v === '' || this.doiPattern.test(v);
+  }
+
+  get issnValido(): boolean {
+    const v = this.issnPublicacion.trim();
+    return v === '' || this.issnPattern.test(v);
+  }
+
+  get formularioValido(): boolean {
+    return !!this.edicionSeleccionadaId && this.doiValido && this.issnValido;
+  }
+
   ngOnInit(): void {
     this.cargarEdiciones();
     this.sincronizarValoresIniciales();
@@ -103,12 +122,12 @@ export class Publicacion implements OnInit, OnChanges {
         doi: this.doiPublicacion.trim() || undefined,
         issn: this.issnPublicacion.trim() || undefined,
         paginas: this.paginasPublicacion.trim() || undefined,
-        publicar: false, // Siempre guardar como borrador (no cerrar la etapa)
+        publicar: false,
       })
       .subscribe({
-        next: (res) => {
+        next: (_res) => {
           this.guardandoMetadata = false;
-          this.publicacionCompletada.emit(); // Notificar al padre para recargar
+          this.publicacionCompletada.emit();
         },
         error: (err) => {
           this.guardandoMetadata = false;

@@ -350,16 +350,29 @@ export class AuthService {
         credential.contraseña,
       );
 
-      await updateProfile(userCredential.user, {
-        displayName: registerData.nombre.trim(),
-      });
+      try {
+        await updateProfile(userCredential.user, {
+          displayName: registerData.nombre.trim(),
+        });
 
-      await this.sendVerificationEmail(userCredential.user);
-      const idToken = await userCredential.user.getIdToken();
-      await this.sendEmailTokenToBackend(idToken, registerData);
+        await this.sendVerificationEmail(userCredential.user);
+        const idToken = await userCredential.user.getIdToken();
+        await this.sendEmailTokenToBackend(idToken, registerData);
 
-      await signOut(this.auth);
-      this.claimsSubject.next({});
+        await signOut(this.auth);
+        this.claimsSubject.next({});
+      } catch (error) {
+        // Si algo falla después de crear el usuario en Firebase,
+        // lo eliminamos para evitar auth/email-already-in-use en el próximo intento
+        try {
+          await userCredential.user.delete();
+        } catch (deleteError) {
+          console.error('No se pudo eliminar el usuario de Firebase tras el error:', deleteError);
+        }
+        await signOut(this.auth).catch(() => {});
+        this.claimsSubject.next({});
+        throw error;
+      }
     });
   }
 

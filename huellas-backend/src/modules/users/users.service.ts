@@ -21,7 +21,7 @@ import { AdminCreateUserDto } from './dto/admin.create.users.dto';
 import { Auth } from 'firebase-admin/auth';
 import { FIREBASE_AUTH } from '../../common/firebase/firebase-admin.constants';
 import { ConfigService } from '@nestjs/config';
-import nodemailer from 'nodemailer';
+import { EmailService } from '../../common/email/email.service';
 import { Articulo } from '../articulos/entities/articulo.entity';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
 import { Observacion } from '../observaciones/entities/observacione.entity';
@@ -48,15 +48,6 @@ interface FirebaseAdminError {
   code?: string;
 }
 
-interface SmtpConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  user?: string;
-  pass?: string;
-  fromEmail: string;
-  fromName: string;
-}
 
 @Injectable()
 export class UsersService {
@@ -79,6 +70,7 @@ export class UsersService {
     private readonly revisoresRepository: Repository<Revisores>,
     @Inject(FIREBASE_AUTH) private readonly firebaseAuth: Auth,
     private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
 
   async createWithAdmin(adminCreateDto: AdminCreateUserDto): Promise<User> {
@@ -212,14 +204,19 @@ export class UsersService {
   }
 
   async restoreFirebaseAccess(id: number): Promise<void> {
+    this.logger.log(`[RESET] Iniciando restoreFirebaseAccess para usuario id=${id}`);
     const user = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
+    this.logger.log(`[RESET] Usuario encontrado: ${user.correo}`);
+
     const { existsInFirebase } =
       await this.syncVerificationStatusFromFirebase(user);
+
+    this.logger.log(`[RESET] existsInFirebase=${existsInFirebase} para ${user.correo}`);
 
     if (!existsInFirebase) {
       await this.createFirebaseUserForRecovery(user.correo, user.estado_cuenta);
@@ -231,6 +228,7 @@ export class UsersService {
     await this.userRepository.save(user);
 
     await this.sendPasswordResetEmail(user.correo, true);
+    this.logger.log(`[RESET] Proceso completado para ${user.correo}`);
   }
 
   async deleteUser(id: number): Promise<void> {
@@ -381,25 +379,30 @@ export class UsersService {
       `[SMTP-DEBUG] Enlace de verificación para ${correo}: ${verificationLink}`,
     );
 
-    const sentBySmtp = await this.sendVerificationEmailBySmtp(
-      correo,
-      verificationLink,
-    );
+    const sent = await this.emailService.sendEmail({
+      to: correo,
+      subject: 'Verifica tu correo electrónico en Huellas',
+      html: `
+        <p>Hola,</p>
+        <p>Tu correo fue actualizado en Huellas.</p>
+        <p>Para verificar el nuevo correo, haz clic en el siguiente enlace:</p>
+        <p><a href="${verificationLink}" target="_blank" rel="noopener noreferrer">Verificar correo</a></p>
+        <p>Si no solicitaste este cambio, contacta al administrador.</p>
+      `,
+    });
 
-    if (sentBySmtp) {
-      return;
-    }
-
-    const isProduction =
-      this.configService.get<string>('NODE_ENV') === 'production';
-    if (strictSmtp && isProduction) {
-      throw new InternalServerErrorException(
-        'No fue posible enviar el correo de verificación. Verifica la configuración SMTP.',
-      );
-    } else if (!isProduction) {
-      this.logger.warn(
-        `[SMTP-WARNING] No se pudo enviar el correo de verificación a ${correo} por SMTP, pero se omitió el error por estar en desarrollo. Enlace: ${verificationLink}`,
-      );
+    if (!sent) {
+      const isProduction =
+        this.configService.get<string>('NODE_ENV') === 'production';
+      if (strictSmtp && isProduction) {
+        throw new InternalServerErrorException(
+          'No fue posible enviar el correo de verificación. Verifica la configuración SMTP.',
+        );
+      } else {
+        this.logger.warn(
+          `[EMAIL-WARNING] No se pudo enviar el correo de verificación a ${correo}. Enlace: ${verificationLink}`,
+        );
+      }
     }
   }
 
@@ -407,168 +410,40 @@ export class UsersService {
     correo: string,
     strictSmtp: boolean,
   ): Promise<void> {
+    this.logger.log(`[RESET] Generando link de restablecimiento para ${correo}...`);
     const resetLink = await this.firebaseAuth.generatePasswordResetLink(correo);
 
     this.logger.log(
       `[SMTP-DEBUG] Enlace de restablecimiento de contraseña para ${correo}: ${resetLink}`,
     );
 
-    const sentBySmtp = await this.sendPasswordResetEmailBySmtp(
-      correo,
-      resetLink,
-    );
+    const sent = await this.emailService.sendEmail({
+      to: correo,
+      subject: 'Restablece tu acceso a Huellas',
+      html: `
+        <p>Hola,</p>
+        <p>Tu acceso fue restablecido por un administrador.</p>
+        <p>Para definir una nueva contraseña, haz clic en el siguiente enlace:</p>
+        <p><a href="${resetLink}" target="_blank" rel="noopener noreferrer">Restablecer contraseña</a></p>
+        <p>Si no solicitaste este cambio, contacta al administrador.</p>
+      `,
+    });
 
-    if (sentBySmtp) {
-      return;
-    }
-
-    const isProduction =
-      this.configService.get<string>('NODE_ENV') === 'production';
-    if (strictSmtp && isProduction) {
-      throw new InternalServerErrorException(
-        'No fue posible enviar el correo para restablecer el acceso. Verifica la configuración SMTP.',
-      );
-    } else if (!isProduction) {
-      this.logger.warn(
-        `[SMTP-WARNING] No se pudo enviar el correo de restablecimiento de contraseña a ${correo} por SMTP, pero se omitió el error por estar en desarrollo. Enlace: ${resetLink}`,
-      );
-    }
-  }
-
-  private getSmtpConfig(): SmtpConfig | null {
-    const host =
-      this.configService.get<string>('SMTP_HOST') || process.env.SMTP_HOST;
-    const portRaw =
-      this.configService.get<string>('SMTP_PORT') || process.env.SMTP_PORT;
-    const secureRaw =
-      this.configService.get<string>('SMTP_SECURE') || process.env.SMTP_SECURE;
-    const user =
-      this.configService.get<string>('SMTP_USER') || process.env.SMTP_USER;
-    const pass =
-      this.configService.get<string>('SMTP_PASS') || process.env.SMTP_PASS;
-    const fromEmail =
-      this.configService.get<string>('SMTP_FROM_EMAIL') ||
-      process.env.SMTP_FROM_EMAIL;
-    const fromName =
-      this.configService.get<string>('SMTP_FROM_NAME') ||
-      process.env.SMTP_FROM_NAME ||
-      'Revista Huellas';
-
-    if (!host || !portRaw || !fromEmail) {
-      return null;
-    }
-
-    const port = Number(portRaw);
-
-    if (Number.isNaN(port)) {
-      return null;
-    }
-
-    return {
-      host,
-      port,
-      secure: secureRaw === 'true',
-      user,
-      pass,
-      fromEmail,
-      fromName,
-    };
-  }
-
-  private async sendVerificationEmailBySmtp(
-    correo: string,
-    verificationLink: string,
-  ): Promise<boolean> {
-    const smtpConfig = this.getSmtpConfig();
-
-    if (!smtpConfig) {
-      this.logger.warn('SMTP no configurado. No se puede enviar correo.');
-      return false;
-    }
-
-    try {
-      const transport = nodemailer.createTransport({
-        host: smtpConfig.host,
-        port: smtpConfig.port,
-        secure: smtpConfig.secure,
-        auth:
-          smtpConfig.user && smtpConfig.pass
-            ? {
-                user: smtpConfig.user,
-                pass: smtpConfig.pass,
-              }
-            : undefined,
-      });
-
-      await transport.sendMail({
-        from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
-        to: correo,
-        subject: 'Verifica tu nuevo correo electrónico',
-        html: `
-          <p>Hola,</p>
-          <p>Tu correo fue actualizado en Huellas.</p>
-          <p>Para verificar el nuevo correo, haz clic en el siguiente enlace:</p>
-          <p><a href="${verificationLink}" target="_blank" rel="noopener noreferrer">Verificar correo</a></p>
-          <p>Si no solicitaste este cambio, contacta al administrador.</p>
-        `,
-      });
-
-      return true;
-    } catch (error) {
-      this.logger.error(
-        `Error enviando correo de verificación a ${correo} por SMTP:`,
-        error,
-      );
-      return false;
+    if (!sent) {
+      const isProduction =
+        this.configService.get<string>('NODE_ENV') === 'production';
+      if (strictSmtp && isProduction) {
+        throw new InternalServerErrorException(
+          'No fue posible enviar el correo para restablecer el acceso. Verifica la configuración SMTP.',
+        );
+      } else {
+        this.logger.warn(
+          `[EMAIL-WARNING] No se pudo enviar el correo de restablecimiento a ${correo}. Enlace: ${resetLink}`,
+        );
+      }
     }
   }
 
-  private async sendPasswordResetEmailBySmtp(
-    correo: string,
-    resetLink: string,
-  ): Promise<boolean> {
-    const smtpConfig = this.getSmtpConfig();
-
-    if (!smtpConfig) {
-      return false;
-    }
-
-    try {
-      const transport = nodemailer.createTransport({
-        host: smtpConfig.host,
-        port: smtpConfig.port,
-        secure: smtpConfig.secure,
-        auth:
-          smtpConfig.user && smtpConfig.pass
-            ? {
-                user: smtpConfig.user,
-                pass: smtpConfig.pass,
-              }
-            : undefined,
-      });
-
-      await transport.sendMail({
-        from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
-        to: correo,
-        subject: 'Restablece tu acceso a Huellas',
-        html: `
-          <p>Hola,</p>
-          <p>Tu acceso fue restablecido por un administrador.</p>
-          <p>Para definir una nueva contraseña, haz clic en el siguiente enlace:</p>
-          <p><a href="${resetLink}" target="_blank" rel="noopener noreferrer">Restablecer contraseña</a></p>
-          <p>Si no solicitaste este cambio, contacta al administrador.</p>
-        `,
-      });
-
-      return true;
-    } catch (error) {
-      this.logger.error(
-        `Error enviando correo de recuperación a ${correo} por SMTP:`,
-        error,
-      );
-      return false;
-    }
-  }
 
   async sendEvaluationReminderEmail(
     correo: string,
@@ -577,52 +452,19 @@ export class UsersService {
     rol: string,
     diasTranscurridos: number,
   ): Promise<boolean> {
-    const smtpConfig = this.getSmtpConfig();
-
-    if (!smtpConfig) {
-      this.logger.warn(
-        'No hay configuración SMTP activa para enviar el recordatorio.',
-      );
-      return false;
-    }
-
-    try {
-      const transport = nodemailer.createTransport({
-        host: smtpConfig.host,
-        port: smtpConfig.port,
-        secure: smtpConfig.secure,
-        auth:
-          smtpConfig.user && smtpConfig.pass
-            ? {
-                user: smtpConfig.user,
-                pass: smtpConfig.pass,
-              }
-            : undefined,
-      });
-
-      await transport.sendMail({
-        from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
-        to: correo,
-        subject: `Recordatorio: Evaluación de Artículo Pendiente (${rol})`,
-        html: `
-          <p>Estimado/a <strong>${nombre}</strong>,</p>
-          <p>Le recordamos que tiene asignada la evaluación del artículo titulado: <strong>"${tituloArticulo}"</strong> en calidad de <strong>${rol}</strong>.</p>
-          <p>Han transcurrido <strong>${diasTranscurridos} días</strong> desde la asignación y aún no hemos registrado su evaluación.</p>
-          <p>Por favor, ingrese a la plataforma de Revista Huellas para registrar su criterio y continuar con el flujo editorial.</p>
-          <br>
-          <p>Atentamente,</p>
-          <p><strong>Equipo Editorial - Revista Huellas</strong></p>
-        `,
-      });
-
-      return true;
-    } catch (error) {
-      this.logger.error(
-        `Error al enviar correo de recordatorio a ${correo}:`,
-        error,
-      );
-      return false;
-    }
+    return this.emailService.sendEmail({
+      to: correo,
+      subject: `Recordatorio: Evaluación de Artículo Pendiente (${rol})`,
+      html: `
+        <p>Estimado/a <strong>${nombre}</strong>,</p>
+        <p>Le recordamos que tiene asignada la evaluación del artículo titulado: <strong>"${tituloArticulo}"</strong> en calidad de <strong>${rol}</strong>.</p>
+        <p>Han transcurrido <strong>${diasTranscurridos} días</strong> desde la asignación y aún no hemos registrado su evaluación.</p>
+        <p>Por favor, ingrese a la plataforma de Revista Huellas para registrar su criterio y continuar con el flujo editorial.</p>
+        <br>
+        <p>Atentamente,</p>
+        <p><strong>Equipo Editorial - Revista Huellas</strong></p>
+      `,
+    });
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -1284,6 +1126,13 @@ export class UsersService {
 
         return { existsInFirebase: false, emailVerified: false };
       }
+
+      this.logger.error(
+        `[FIREBASE-ERROR] syncVerificationStatusFromFirebase falló para ${user.correo}:`,
+        (error as any)?.code,
+        (error as any)?.message,
+        error,
+      );
 
       throw new InternalServerErrorException(
         'No fue posible validar el estado del correo en Firebase.',

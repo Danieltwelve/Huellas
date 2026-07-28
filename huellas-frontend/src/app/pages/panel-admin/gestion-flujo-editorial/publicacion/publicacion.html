@@ -178,7 +178,7 @@
               <span class="label-text">Portada de la Edición (Imagen)</span>
               <div class="upload-dropzone">
                 <input type="file" (change)="onPortadaSelected($event)" accept="image/*" />
-                <p>{{ portadaFile ? '✓ ' + portadaFile.name : 'Seleccionar portada (.png, .jpg)' }}</p>
+                <p [title]="portadaFile ? portadaFile.name : ''">{{ portadaFile ? '✓ ' + portadaFile.name : 'Seleccionar portada (.png, .jpg)' }}</p>
               </div>
             </div>
 
@@ -186,7 +186,7 @@
               <span class="label-text">PDF Completo de la Edición (Revista)</span>
               <div class="upload-dropzone upload-dropzone--required" [class.has-file]="pdfCompletoFile">
                 <input type="file" (change)="onPdfCompletoSelected($event)" accept="application/pdf" />
-                <p>{{ pdfCompletoFile ? '✓ ' + pdfCompletoFile.name : 'Subir archivo PDF de la revista completa *' }}</p>
+                <p [title]="pdfCompletoFile ? pdfCompletoFile.name : ''">{{ pdfCompletoFile ? '✓ ' + pdfCompletoFile.name : 'Subir archivo PDF de la revista completa *' }}</p>
               </div>
             </div>
           </div>
@@ -245,7 +245,7 @@
                   </div>
 
                   <div class="file-btn-wrapper" style="margin-top: 0.25rem;">
-                    <label class="file-btn-label" [class.has-file]="art.file">
+                    <label class="file-btn-label" [class.has-file]="art.file" [title]="art.file ? art.file.name : ''">
                       <input type="file" (change)="onArticuloFileSelected($event, $index)" accept=".pdf,.docx,.doc" />
                       <span>{{ art.file ? '✓ ' + art.file.name : 'Subir PDF del Artículo *' }}</span>
                     </label>

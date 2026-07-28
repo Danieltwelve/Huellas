@@ -534,6 +534,11 @@ app-articulos {
   margin: 0;
   color: #64748b;
   font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .upload-dropzone:hover {
@@ -606,6 +611,9 @@ app-articulos {
   gap: 0.75rem;
   position: relative;
   transition: all 0.2s ease;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .articulo-row-card:hover {
@@ -671,12 +679,20 @@ app-articulos {
 /* File Upload Button inside list */
 .file-btn-wrapper {
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .file-btn-label {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   background: #fff;
   border: 2px solid #cbd5e1;
   border-radius: 10px;
@@ -688,8 +704,15 @@ app-articulos {
   text-align: center;
   transition: all 0.2s;
   overflow: hidden;
-  white-space: nowrap;
+}
+
+.file-btn-label span {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-btn-label input {
@@ -740,6 +763,19 @@ app-articulos {
 @media (max-width: 1024px) {
   .rapida-columns {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .articulo-row-meta {
+    grid-template-columns: 1fr;
+  }
+  .articulos-card-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .articulos-card-footer button {
+    width: 100%;
   }
 }
 
