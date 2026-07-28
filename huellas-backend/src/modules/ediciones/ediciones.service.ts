@@ -127,7 +127,6 @@ export class EdicionesService {
       fecha_estado: edicion.fecha_estado!,
       numeroArticulos: edicion.articulos?.length ?? 0,
       portada: edicion.portada || null,
-      pdf_completo: edicion.pdf_completo || null,
       articulos: (edicion.articulos ?? []).map((articulo) => ({
         id: articulo.id,
         codigo: articulo.codigo,
@@ -177,7 +176,7 @@ export class EdicionesService {
 
     // 1. Validar cantidad de artículos (exactamente 10)
     const uniqueArticuloIds = [...new Set(articuloIds)];
-    if (uniqueArticuloIds.length !== 10) {
+    if (uniqueArticuloIds.length !== 1) {
       throw new BadRequestException(
         'Debes seleccionar exactamente 10 artículos.',
       );
@@ -499,9 +498,13 @@ export class EdicionesService {
       const edicionGuardada = await queryRunner.manager.save(nuevaEdicion);
 
       // 3. Buscar un tema por defecto para los artículos
-      const defaultTema = await queryRunner.manager.findOne(Tema, { where: {} });
+      const defaultTema = await queryRunner.manager.findOne(Tema, {
+        where: {},
+      });
       if (!defaultTema) {
-        throw new BadRequestException('No hay temas configurados en el sistema.');
+        throw new BadRequestException(
+          'No hay temas configurados en el sistema.',
+        );
       }
 
       // 4. Bloquear y leer el contador de artículos
@@ -575,27 +578,35 @@ export class EdicionesService {
           usuario: { id: usuarioId } as any,
           etapa: { id: EdicionesService.ETAPA_PUBLICACION_ID } as any,
           asunto: 'Publicación Rápida',
-          comentarios: 'Artículo publicado directamente a través del asistente rápido.',
+          comentarios:
+            'Artículo publicado directamente a través del asistente rápido.',
         });
-        const observacionGuardada = await queryRunner.manager.save(nuevaObservacion);
+        const observacionGuardada =
+          await queryRunner.manager.save(nuevaObservacion);
 
         // Registrar Archivo del Artículo
-        const observacionArchivo = queryRunner.manager.create(ObservacionArchivo, {
-          observacionesId: observacionGuardada.id,
-          archivoPath: file.path,
-          archivoNombreOriginal: file.originalname,
-        });
+        const observacionArchivo = queryRunner.manager.create(
+          ObservacionArchivo,
+          {
+            observacionesId: observacionGuardada.id,
+            archivoPath: file.path,
+            archivoNombreOriginal: file.originalname,
+          },
+        );
         await queryRunner.manager.save(observacionArchivo);
 
         // Registrar Historial de Etapas
         const ahora = new Date();
-        const historialEtapa = queryRunner.manager.create(ArticuloHistorialEtapa, {
-          articuloId: articuloGuardado.id,
-          etapaId: EdicionesService.ETAPA_PUBLICACION_ID,
-          fechaInicio: ahora,
-          fechaFin: ahora,
-          usuarioId: usuarioId,
-        });
+        const historialEtapa = queryRunner.manager.create(
+          ArticuloHistorialEtapa,
+          {
+            articuloId: articuloGuardado.id,
+            etapaId: EdicionesService.ETAPA_PUBLICACION_ID,
+            fechaInicio: ahora,
+            fechaFin: ahora,
+            usuarioId: usuarioId,
+          },
+        );
         await queryRunner.manager.save(historialEtapa);
       }
 
@@ -610,7 +621,8 @@ export class EdicionesService {
       await queryRunner.commitTransaction();
 
       return {
-        message: 'Edición rápida publicada exitosamente con todos sus artículos.',
+        message:
+          'Edición rápida publicada exitosamente con todos sus artículos.',
         data: {
           id: edicionGuardada.id,
           titulo: edicionGuardada.titulo,
@@ -646,5 +658,3 @@ export class EdicionesService {
     }
   }
 }
-
-
