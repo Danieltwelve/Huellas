@@ -529,20 +529,36 @@ export class UsersService {
         to: correo,
         subject: 'Verifica tu nuevo correo electrónico',
         html: `
-          <p>Hola,</p>
-          <p>Tu correo fue actualizado en Huellas.</p>
-          <p>Para verificar el nuevo correo, haz clic en el siguiente enlace:</p>
-          <p><a href="${verificationLink}" target="_blank" rel="noopener noreferrer">Verificar correo</a></p>
-          <p>Si no solicitaste este cambio, contacta al administrador.</p>
-        `,
+        <p>Hola,</p>
+        <p>Tu correo fue actualizado en Huellas.</p>
+        <p>Para verificar el nuevo correo, haz clic en el siguiente enlace:</p>
+        <p><a href="${verificationLink}" target="_blank" rel="noopener noreferrer">Verificar correo</a></p>
+        <p>Si no solicitaste este cambio, contacta al administrador.</p>
+      `,
       });
 
       return true;
     } catch (error) {
+      // Log detallado del error
       this.logger.error(
         `Error enviando correo de verificación a ${correo} por SMTP:`,
         error,
       );
+
+      // Acceder a propiedades específicas con type guard
+      if (error && typeof error === 'object') {
+        const err = error as any;
+        if (err.response) {
+          this.logger.error(`Respuesta SMTP: ${JSON.stringify(err.response)}`);
+        }
+        if (err.code) {
+          this.logger.error(`Código SMTP: ${err.code}`);
+        }
+        if (err.command) {
+          this.logger.error(`Comando SMTP: ${err.command}`);
+        }
+      }
+
       return false;
     }
   }
@@ -565,12 +581,12 @@ export class UsersService {
         to: correo,
         subject: 'Restablece tu acceso a Huellas',
         html: `
-          <p>Hola,</p>
-          <p>Tu acceso fue restablecido por un administrador.</p>
-          <p>Para definir una nueva contraseña, haz clic en el siguiente enlace:</p>
-          <p><a href="${resetLink}" target="_blank" rel="noopener noreferrer">Restablecer contraseña</a></p>
-          <p>Si no solicitaste este cambio, contacta al administrador.</p>
-        `,
+        <p>Hola,</p>
+        <p>Tu acceso fue restablecido por un administrador.</p>
+        <p>Para definir una nueva contraseña, haz clic en el siguiente enlace:</p>
+        <p><a href="${resetLink}" target="_blank" rel="noopener noreferrer">Restablecer contraseña</a></p>
+        <p>Si no solicitaste este cambio, contacta al administrador.</p>
+      `,
       });
 
       return true;
@@ -579,6 +595,25 @@ export class UsersService {
         `Error enviando correo de recuperación a ${correo} por SMTP:`,
         error,
       );
+
+      // Detalles adicionales del error
+      if (error && typeof error === 'object') {
+        const err = error as any;
+        if (err.response) {
+          this.logger.error(`Respuesta SMTP: ${JSON.stringify(err.response)}`);
+        }
+        if (err.code) {
+          this.logger.error(`Código SMTP: ${err.code}`);
+        }
+        if (err.command) {
+          this.logger.error(`Comando SMTP: ${err.command}`);
+        }
+        // También puedes loguear el stack completo
+        if (err.stack) {
+          this.logger.error(`Stack: ${err.stack}`);
+        }
+      }
+
       return false;
     }
   }
