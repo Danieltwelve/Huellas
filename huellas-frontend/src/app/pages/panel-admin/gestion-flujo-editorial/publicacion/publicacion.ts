@@ -39,9 +39,11 @@ export class Publicacion implements OnInit {
   pdfEstandarFile: File | null = null;
   portadaPreviewUrl: string | null = null;
 
-  // Modales de Confirmación
+  // Modales de Confirmación y Éxito
   showConfirmEstandarModal = false;
   showConfirmRapidaModal = false;
+  showSuccessRapidaModal = false;
+  ultimaEdicionRapidaCount = 10;
 
   // Campos para Publicación Rápida
   edicionRapida = {
@@ -332,6 +334,8 @@ export class Publicacion implements OnInit {
       next: (res) => {
         this.success = res?.message ?? 'Edición y artículos publicados exitosamente.';
         this.publishing = false;
+        this.ultimaEdicionRapidaCount = this.articulosRapidos.length;
+        this.showSuccessRapidaModal = true;
         
         // Resetear formulario rápido
         this.edicionRapida = {

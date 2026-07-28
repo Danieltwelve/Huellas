@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,7 +11,9 @@ import {
   Patch,
   Post,
   Put,
+  Req,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -21,10 +24,10 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UpdateEdicionRevistaDto } from './dtos/update-edicion-revista.dto';
 import { PublicarEdicionRevistaDto } from './dtos/publicar-edicion-revista.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { promises as fs } from 'fs';
+import { existsSync, mkdirSync, promises as fs } from 'fs';
 
 const portadaStorage = diskStorage({
   destination: './uploads/portadas',
@@ -32,6 +35,26 @@ const portadaStorage = diskStorage({
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = extname(file.originalname);
     cb(null, `portada-${uniqueSuffix}${ext}`);
+  },
+});
+
+const rapidaStorage = diskStorage({
+  destination: (req, file, cb) => {
+    let dest = './uploads/observaciones-archivos';
+    if (file.fieldname === 'portada') {
+      dest = './uploads/portadas';
+    } else if (file.fieldname === 'pdfCompleto') {
+      dest = './uploads/ediciones-pdf';
+    }
+    if (!existsSync(dest)) {
+      mkdirSync(dest, { recursive: true });
+    }
+    cb(null, dest);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = extname(file.originalname).toLowerCase();
+    cb(null, `${uniqueSuffix}${ext}`);
   },
 });
 
@@ -100,6 +123,78 @@ export class EdicionesController {
     return await this.edicionService.publicarEdicion(body);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'comite-editorial')
+  @Post('publicacion-rapida')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'portada', maxCount: 1 },
+        { name: 'pdfCompleto', maxCount: 1 },
+        { name: 'archivosArticulos', maxCount: 50 },
+      ],
+      { storage: rapidaStorage },
+    ),
+  )
+  async publicacionRapida(
+    @Body() body: any,
+    @UploadedFiles()
+    files: {
+      portada?: Express.Multer.File[];
+      pdfCompleto?: Express.Multer.File[];
+      archivosArticulos?: Express.Multer.File[];
+    },
+    @Req() req: any,
+  ) {
+    const portadaFile = files?.portada?.[0];
+    const pdfCompletoFile = files?.pdfCompleto?.[0];
+    const articuloFiles = files?.archivosArticulos ?? [];
+
+    if (!pdfCompletoFile) {
+      throw new BadRequestException(
+        'El archivo PDF completo de la edición es obligatorio.',
+      );
+    }
+
+    let articulosParsed: any[] = [];
+    if (typeof body.articulos === 'string') {
+      try {
+        articulosParsed = JSON.parse(body.articulos);
+      } catch {
+        throw new BadRequestException('El formato de los artículos es inválido.');
+      }
+    } else if (Array.isArray(body.articulos)) {
+      articulosParsed = body.articulos;
+    }
+
+    if (articulosParsed.length < 10) {
+      throw new BadRequestException('Se requieren al menos 10 artículos.');
+    }
+
+    if (articuloFiles.length !== articulosParsed.length) {
+      throw new BadRequestException(
+        `Debes subir el archivo correspondiente para cada uno de los ${articulosParsed.length} artículos.`,
+      );
+    }
+
+    const dto = {
+      titulo: body.titulo,
+      volumen: Number(body.volumen),
+      numero: Number(body.numero),
+      anio: Number(body.anio),
+      portadaPath: portadaFile ? portadaFile.path : undefined,
+      pdfCompletoPath: pdfCompletoFile.path,
+      articulos: articulosParsed,
+      articuloFiles,
+    };
+
+    return await this.edicionService.crearPublicacionRapida(
+      dto,
+      req.user.userId,
+    );
+  }
+
   @Delete(':id/with-message')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'comite-editorial')
@@ -164,3 +259,4 @@ export class EdicionesController {
     return await this.edicionService.unpublishEdicion(id);
   }
 }
+

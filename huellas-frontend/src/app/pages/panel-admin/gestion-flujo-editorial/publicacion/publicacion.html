@@ -309,4 +309,24 @@
       </div>
     </div>
   }
+
+  <!-- Modal Éxito Publicación Rápida -->
+  @if (showSuccessRapidaModal) {
+    <div class="modal-overlay">
+      <div class="modal-container modal-container--success">
+        <div class="modal-success-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <h3 style="border-bottom: none; background: transparent; padding-bottom: 0.25rem;">¡Publicación Exitosa!</h3>
+        <p style="padding-top: 0.5rem; color: #475569;">La edición rápida y sus {{ ultimaEdicionRapidaCount }} artículos se han publicado correctamente y ya están disponibles en la revista.</p>
+        <div class="modal-buttons" style="justify-content: center; border-top: none; padding-top: 0.5rem;">
+          <button type="button" class="btn-aceptar" style="padding: 0.75rem 2rem; font-size: 0.95rem;" (click)="showSuccessRapidaModal = false">Entendido</button>
+        </div>
+      </div>
+    </div>
+  }
 </section>
+
