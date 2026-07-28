@@ -212,14 +212,23 @@ export class UsersService {
   }
 
   async restoreFirebaseAccess(id: number): Promise<void> {
+    this.logger.log(
+      `[RESET] Iniciando restoreFirebaseAccess para usuario id=${id}`,
+    );
     const user = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
+    this.logger.log(`[RESET] Usuario encontrado: ${user.correo}`);
+
     const { existsInFirebase } =
       await this.syncVerificationStatusFromFirebase(user);
+
+    this.logger.log(
+      `[RESET] existsInFirebase=${existsInFirebase} para ${user.correo}`,
+    );
 
     if (!existsInFirebase) {
       await this.createFirebaseUserForRecovery(user.correo, user.estado_cuenta);
@@ -231,6 +240,7 @@ export class UsersService {
     await this.userRepository.save(user);
 
     await this.sendPasswordResetEmail(user.correo, true);
+    this.logger.log(`[RESET] Proceso completado para ${user.correo}`);
   }
 
   async deleteUser(id: number): Promise<void> {
@@ -407,6 +417,9 @@ export class UsersService {
     correo: string,
     strictSmtp: boolean,
   ): Promise<void> {
+    this.logger.log(
+      `[RESET] Generando link de restablecimiento para ${correo}...`,
+    );
     const resetLink = await this.firebaseAuth.generatePasswordResetLink(correo);
 
     this.logger.log(
@@ -1284,6 +1297,13 @@ export class UsersService {
 
         return { existsInFirebase: false, emailVerified: false };
       }
+
+      this.logger.error(
+        `[FIREBASE-ERROR] syncVerificationStatusFromFirebase falló para ${user.correo}:`,
+        (error as any)?.code,
+        (error as any)?.message,
+        error,
+      );
 
       throw new InternalServerErrorException(
         'No fue posible validar el estado del correo en Firebase.',
