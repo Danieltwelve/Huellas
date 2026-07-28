@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -488,6 +489,27 @@ export class UsersService {
     };
   }
 
+  private createSmtpTransporter(smtpConfig: SmtpConfig) {
+    // Leer SMTP_FAMILY desde el entorno (default 4)
+    const family = parseInt(
+      this.configService.get<string>('SMTP_FAMILY') ||
+        process.env.SMTP_FAMILY ||
+        '4',
+      10,
+    );
+
+    return nodemailer.createTransport({
+      host: smtpConfig.host,
+      port: smtpConfig.port,
+      secure: smtpConfig.secure,
+      auth:
+        smtpConfig.user && smtpConfig.pass
+          ? { user: smtpConfig.user, pass: smtpConfig.pass }
+          : undefined,
+      family: 4, // <--- CLAVE: forzar IPv4
+    } as any);
+  }
+
   private async sendVerificationEmailBySmtp(
     correo: string,
     verificationLink: string,
@@ -500,18 +522,7 @@ export class UsersService {
     }
 
     try {
-      const transport = nodemailer.createTransport({
-        host: smtpConfig.host,
-        port: smtpConfig.port,
-        secure: smtpConfig.secure,
-        auth:
-          smtpConfig.user && smtpConfig.pass
-            ? {
-                user: smtpConfig.user,
-                pass: smtpConfig.pass,
-              }
-            : undefined,
-      });
+      const transport = this.createSmtpTransporter(smtpConfig);
 
       await transport.sendMail({
         from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
@@ -547,18 +558,7 @@ export class UsersService {
     }
 
     try {
-      const transport = nodemailer.createTransport({
-        host: smtpConfig.host,
-        port: smtpConfig.port,
-        secure: smtpConfig.secure,
-        auth:
-          smtpConfig.user && smtpConfig.pass
-            ? {
-                user: smtpConfig.user,
-                pass: smtpConfig.pass,
-              }
-            : undefined,
-      });
+      const transport = this.createSmtpTransporter(smtpConfig);
 
       await transport.sendMail({
         from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
@@ -600,18 +600,7 @@ export class UsersService {
     }
 
     try {
-      const transport = nodemailer.createTransport({
-        host: smtpConfig.host,
-        port: smtpConfig.port,
-        secure: smtpConfig.secure,
-        auth:
-          smtpConfig.user && smtpConfig.pass
-            ? {
-                user: smtpConfig.user,
-                pass: smtpConfig.pass,
-              }
-            : undefined,
-      });
+      const transport = this.createSmtpTransporter(smtpConfig);
 
       await transport.sendMail({
         from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
