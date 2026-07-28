@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -13,8 +12,6 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import dns from 'dns';
-import { promisify } from 'util';
 import { User } from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, In, Repository } from 'typeorm';
@@ -24,7 +21,7 @@ import { AdminCreateUserDto } from './dto/admin.create.users.dto';
 import { Auth } from 'firebase-admin/auth';
 import { FIREBASE_AUTH } from '../../common/firebase/firebase-admin.constants';
 import { ConfigService } from '@nestjs/config';
-import nodemailer from 'nodemailer';
+import { EmailService } from '../../common/email/email.service';
 import { Articulo } from '../articulos/entities/articulo.entity';
 import { ArticuloHistorialEtapa } from '../articulos-historial-etapas/entities/articulos-historial-etapa.entity';
 import { Observacion } from '../observaciones/entities/observacione.entity';
@@ -51,16 +48,6 @@ interface FirebaseAdminError {
   code?: string;
 }
 
-interface SmtpConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  user?: string;
-  pass?: string;
-  fromEmail: string;
-  fromName: string;
-}
-
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -82,6 +69,7 @@ export class UsersService {
     private readonly revisoresRepository: Repository<Revisores>,
     @Inject(FIREBASE_AUTH) private readonly firebaseAuth: Auth,
     private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
 
   async createWithAdmin(adminCreateDto: AdminCreateUserDto): Promise<User> {
@@ -394,25 +382,30 @@ export class UsersService {
       `[SMTP-DEBUG] Enlace de verificación para ${correo}: ${verificationLink}`,
     );
 
-    const sentBySmtp = await this.sendVerificationEmailBySmtp(
-      correo,
-      verificationLink,
-    );
+    const sent = await this.emailService.sendEmail({
+      to: correo,
+      subject: 'Verifica tu correo electrónico en Huellas',
+      html: `
+        <p>Hola,</p>
+        <p>Tu correo fue actualizado en Huellas.</p>
+        <p>Para verificar el nuevo correo, haz clic en el siguiente enlace:</p>
+        <p><a href="${verificationLink}" target="_blank" rel="noopener noreferrer">Verificar correo</a></p>
+        <p>Si no solicitaste este cambio, contacta al administrador.</p>
+      `,
+    });
 
-    if (sentBySmtp) {
-      return;
-    }
-
-    const isProduction =
-      this.configService.get<string>('NODE_ENV') === 'production';
-    if (strictSmtp && isProduction) {
-      throw new InternalServerErrorException(
-        'No fue posible enviar el correo de verificación. Verifica la configuración SMTP.',
-      );
-    } else if (!isProduction) {
-      this.logger.warn(
-        `[SMTP-WARNING] No se pudo enviar el correo de verificación a ${correo} por SMTP, pero se omitió el error por estar en desarrollo. Enlace: ${verificationLink}`,
-      );
+    if (!sent) {
+      const isProduction =
+        this.configService.get<string>('NODE_ENV') === 'production';
+      if (strictSmtp && isProduction) {
+        throw new InternalServerErrorException(
+          'No fue posible enviar el correo de verificación. Verifica la configuración SMTP.',
+        );
+      } else {
+        this.logger.warn(
+          `[EMAIL-WARNING] No se pudo enviar el correo de verificación a ${correo}. Enlace: ${verificationLink}`,
+        );
+      }
     }
   }
 
@@ -429,212 +422,30 @@ export class UsersService {
       `[SMTP-DEBUG] Enlace de restablecimiento de contraseña para ${correo}: ${resetLink}`,
     );
 
-    const sentBySmtp = await this.sendPasswordResetEmailBySmtp(
-      correo,
-      resetLink,
-    );
-
-    if (sentBySmtp) {
-      return;
-    }
-
-    const isProduction =
-      this.configService.get<string>('NODE_ENV') === 'production';
-    if (strictSmtp && isProduction) {
-      throw new InternalServerErrorException(
-        'No fue posible enviar el correo para restablecer el acceso. Verifica la configuración SMTP.',
-      );
-    } else if (!isProduction) {
-      this.logger.warn(
-        `[SMTP-WARNING] No se pudo enviar el correo de restablecimiento de contraseña a ${correo} por SMTP, pero se omitió el error por estar en desarrollo. Enlace: ${resetLink}`,
-      );
-    }
-  }
-
-  private getSmtpConfig(): SmtpConfig | null {
-    const host =
-      this.configService.get<string>('SMTP_HOST') || process.env.SMTP_HOST;
-    const portRaw =
-      this.configService.get<string>('SMTP_PORT') || process.env.SMTP_PORT;
-    const secureRaw =
-      this.configService.get<string>('SMTP_SECURE') || process.env.SMTP_SECURE;
-    const user =
-      this.configService.get<string>('SMTP_USER') || process.env.SMTP_USER;
-    const pass =
-      this.configService.get<string>('SMTP_PASS') || process.env.SMTP_PASS;
-    const fromEmail =
-      this.configService.get<string>('SMTP_FROM_EMAIL') ||
-      process.env.SMTP_FROM_EMAIL;
-    const fromName =
-      this.configService.get<string>('SMTP_FROM_NAME') ||
-      process.env.SMTP_FROM_NAME ||
-      'Revista Huellas';
-
-    if (!host || !portRaw || !fromEmail) {
-      return null;
-    }
-
-    const port = Number(portRaw);
-
-    if (Number.isNaN(port)) {
-      return null;
-    }
-
-    return {
-      host,
-      port,
-      secure: secureRaw === 'true',
-      user,
-      pass,
-      fromEmail,
-      fromName,
-    };
-  }
-
-  private async createSmtpTransporter(smtpConfig: SmtpConfig) {
-    const lookup = promisify(dns.lookup);
-
-    try {
-      const { address } = await lookup(smtpConfig.host, { family: 4 });
-      this.logger.log(
-        `[SMTP] Resolviendo ${smtpConfig.host} -> ${address} (IPv4)`,
-      );
-      return nodemailer.createTransport({
-        host: address,
-        port: smtpConfig.port,
-        secure: smtpConfig.secure,
-        auth:
-          smtpConfig.user && smtpConfig.pass
-            ? { user: smtpConfig.user, pass: smtpConfig.pass }
-            : undefined,
-        // Aumentar timeouts (en milisegundos)
-        connectionTimeout: 30000, // 30 segundos
-        greetingTimeout: 30000,
-        socketTimeout: 60000,
-      } as any);
-    } catch (error) {
-      this.logger.error(
-        `[SMTP] Error resolviendo DNS para ${smtpConfig.host}:`,
-        error,
-      );
-      // Fallback: usar el hostname original (puede que falle, pero es mejor que nada)
-      return nodemailer.createTransport({
-        host: smtpConfig.host,
-        port: smtpConfig.port,
-        secure: smtpConfig.secure,
-        auth:
-          smtpConfig.user && smtpConfig.pass
-            ? { user: smtpConfig.user, pass: smtpConfig.pass }
-            : undefined,
-      } as any);
-    }
-  }
-
-  private async sendVerificationEmailBySmtp(
-    correo: string,
-    verificationLink: string,
-  ): Promise<boolean> {
-    const smtpConfig = this.getSmtpConfig();
-
-    if (!smtpConfig) {
-      this.logger.warn('SMTP no configurado. No se puede enviar correo.');
-      return false;
-    }
-
-    try {
-      const transport = await this.createSmtpTransporter(smtpConfig);
-
-      await transport.sendMail({
-        from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
-        to: correo,
-        subject: 'Verifica tu nuevo correo electrónico',
-        html: `
-        <p>Hola,</p>
-        <p>Tu correo fue actualizado en Huellas.</p>
-        <p>Para verificar el nuevo correo, haz clic en el siguiente enlace:</p>
-        <p><a href="${verificationLink}" target="_blank" rel="noopener noreferrer">Verificar correo</a></p>
-        <p>Si no solicitaste este cambio, contacta al administrador.</p>
-      `,
-      });
-
-      return true;
-    } catch (error) {
-      // Log detallado del error
-      this.logger.error(
-        `Error enviando correo de verificación a ${correo} por SMTP:`,
-        error,
-      );
-
-      // Acceder a propiedades específicas con type guard
-      if (error && typeof error === 'object') {
-        const err = error as any;
-        if (err.response) {
-          this.logger.error(`Respuesta SMTP: ${JSON.stringify(err.response)}`);
-        }
-        if (err.code) {
-          this.logger.error(`Código SMTP: ${err.code}`);
-        }
-        if (err.command) {
-          this.logger.error(`Comando SMTP: ${err.command}`);
-        }
-      }
-
-      return false;
-    }
-  }
-
-  private async sendPasswordResetEmailBySmtp(
-    correo: string,
-    resetLink: string,
-  ): Promise<boolean> {
-    const smtpConfig = this.getSmtpConfig();
-
-    if (!smtpConfig) {
-      return false;
-    }
-
-    try {
-      const transport = await this.createSmtpTransporter(smtpConfig);
-
-      await transport.sendMail({
-        from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
-        to: correo,
-        subject: 'Restablece tu acceso a Huellas',
-        html: `
+    const sent = await this.emailService.sendEmail({
+      to: correo,
+      subject: 'Restablece tu acceso a Huellas',
+      html: `
         <p>Hola,</p>
         <p>Tu acceso fue restablecido por un administrador.</p>
         <p>Para definir una nueva contraseña, haz clic en el siguiente enlace:</p>
         <p><a href="${resetLink}" target="_blank" rel="noopener noreferrer">Restablecer contraseña</a></p>
         <p>Si no solicitaste este cambio, contacta al administrador.</p>
       `,
-      });
+    });
 
-      return true;
-    } catch (error) {
-      this.logger.error(
-        `Error enviando correo de recuperación a ${correo} por SMTP:`,
-        error,
-      );
-
-      // Detalles adicionales del error
-      if (error && typeof error === 'object') {
-        const err = error as any;
-        if (err.response) {
-          this.logger.error(`Respuesta SMTP: ${JSON.stringify(err.response)}`);
-        }
-        if (err.code) {
-          this.logger.error(`Código SMTP: ${err.code}`);
-        }
-        if (err.command) {
-          this.logger.error(`Comando SMTP: ${err.command}`);
-        }
-        // También puedes loguear el stack completo
-        if (err.stack) {
-          this.logger.error(`Stack: ${err.stack}`);
-        }
+    if (!sent) {
+      const isProduction =
+        this.configService.get<string>('NODE_ENV') === 'production';
+      if (strictSmtp && isProduction) {
+        throw new InternalServerErrorException(
+          'No fue posible enviar el correo para restablecer el acceso. Verifica la configuración SMTP.',
+        );
+      } else {
+        this.logger.warn(
+          `[EMAIL-WARNING] No se pudo enviar el correo de restablecimiento a ${correo}. Enlace: ${resetLink}`,
+        );
       }
-
-      return false;
     }
   }
 
@@ -645,41 +456,19 @@ export class UsersService {
     rol: string,
     diasTranscurridos: number,
   ): Promise<boolean> {
-    const smtpConfig = this.getSmtpConfig();
-
-    if (!smtpConfig) {
-      this.logger.warn(
-        'No hay configuración SMTP activa para enviar el recordatorio.',
-      );
-      return false;
-    }
-
-    try {
-      const transport = await this.createSmtpTransporter(smtpConfig);
-
-      await transport.sendMail({
-        from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
-        to: correo,
-        subject: `Recordatorio: Evaluación de Artículo Pendiente (${rol})`,
-        html: `
-          <p>Estimado/a <strong>${nombre}</strong>,</p>
-          <p>Le recordamos que tiene asignada la evaluación del artículo titulado: <strong>"${tituloArticulo}"</strong> en calidad de <strong>${rol}</strong>.</p>
-          <p>Han transcurrido <strong>${diasTranscurridos} días</strong> desde la asignación y aún no hemos registrado su evaluación.</p>
-          <p>Por favor, ingrese a la plataforma de Revista Huellas para registrar su criterio y continuar con el flujo editorial.</p>
-          <br>
-          <p>Atentamente,</p>
-          <p><strong>Equipo Editorial - Revista Huellas</strong></p>
-        `,
-      });
-
-      return true;
-    } catch (error) {
-      this.logger.error(
-        `Error al enviar correo de recordatorio a ${correo}:`,
-        error,
-      );
-      return false;
-    }
+    return this.emailService.sendEmail({
+      to: correo,
+      subject: `Recordatorio: Evaluación de Artículo Pendiente (${rol})`,
+      html: `
+        <p>Estimado/a <strong>${nombre}</strong>,</p>
+        <p>Le recordamos que tiene asignada la evaluación del artículo titulado: <strong>"${tituloArticulo}"</strong> en calidad de <strong>${rol}</strong>.</p>
+        <p>Han transcurrido <strong>${diasTranscurridos} días</strong> desde la asignación y aún no hemos registrado su evaluación.</p>
+        <p>Por favor, ingrese a la plataforma de Revista Huellas para registrar su criterio y continuar con el flujo editorial.</p>
+        <br>
+        <p>Atentamente,</p>
+        <p><strong>Equipo Editorial - Revista Huellas</strong></p>
+      `,
+    });
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {

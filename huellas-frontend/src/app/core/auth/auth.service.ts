@@ -16,7 +16,7 @@ import {
   UserCredential,
 } from 'firebase/auth';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../environments/environments';
 
 export interface AccessClaims {
   roles?: string[];
@@ -51,13 +51,14 @@ export class AuthService {
   private ngZone = inject(NgZone);
 
   readonly user$: Observable<User | null> = authState(this.auth).pipe(
-    (source) => new Observable<User | null>(subscriber => {
-      return source.subscribe({
-        next: (user) => this.ngZone.run(() => subscriber.next(user)),
-        error: (err) => this.ngZone.run(() => subscriber.error(err)),
-        complete: () => this.ngZone.run(() => subscriber.complete())
-      });
-    })
+    (source) =>
+      new Observable<User | null>((subscriber) => {
+        return source.subscribe({
+          next: (user) => this.ngZone.run(() => subscriber.next(user)),
+          error: (err) => this.ngZone.run(() => subscriber.error(err)),
+          complete: () => this.ngZone.run(() => subscriber.complete()),
+        });
+      }),
   );
 
   private claimsSubject = new BehaviorSubject<AccessClaims>({});
@@ -350,16 +351,29 @@ export class AuthService {
         credential.contraseña,
       );
 
-      await updateProfile(userCredential.user, {
-        displayName: registerData.nombre.trim(),
-      });
+      try {
+        await updateProfile(userCredential.user, {
+          displayName: registerData.nombre.trim(),
+        });
 
-      await this.sendVerificationEmail(userCredential.user);
-      const idToken = await userCredential.user.getIdToken();
-      await this.sendEmailTokenToBackend(idToken, registerData);
+        await this.sendVerificationEmail(userCredential.user);
+        const idToken = await userCredential.user.getIdToken();
+        await this.sendEmailTokenToBackend(idToken, registerData);
 
-      await signOut(this.auth);
-      this.claimsSubject.next({});
+        await signOut(this.auth);
+        this.claimsSubject.next({});
+      } catch (error) {
+        // Si algo falla después de crear el usuario en Firebase,
+        // lo eliminamos para evitar auth/email-already-in-use en el próximo intento
+        try {
+          await userCredential.user.delete();
+        } catch (deleteError) {
+          console.error('No se pudo eliminar el usuario de Firebase tras el error:', deleteError);
+        }
+        await signOut(this.auth).catch(() => {});
+        this.claimsSubject.next({});
+        throw error;
+      }
     });
   }
 
@@ -397,10 +411,7 @@ export class AuthService {
 
   getPostLoginRoute(): string {
     const claims = this.claimsSubject.value;
-    if (
-      this.hasAnyRole(['admin']) ||
-      claims.canManageUsers
-    ) {
+    if (this.hasAnyRole(['admin']) || claims.canManageUsers) {
       return '/gestion-usuarios';
     }
     if (this.hasAnyRole(['comite-editorial']) || claims.canManageArticulos) {

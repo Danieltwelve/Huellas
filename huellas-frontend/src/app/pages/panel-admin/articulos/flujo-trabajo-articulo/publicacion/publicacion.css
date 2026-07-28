@@ -12,6 +12,18 @@
   transition: box-shadow 0.2s ease;
 }
 
+.input-control.input-error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.field-error {
+  font-size: 0.78rem;
+  color: #dc2626;
+  margin-top: 0.1rem;
+  line-height: 1.4;
+}
+
 .card-publicacion:hover {
   box-shadow: 0 22px 40px -32px rgba(15, 23, 42, 0.6);
 }

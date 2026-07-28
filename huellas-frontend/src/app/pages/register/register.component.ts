@@ -43,6 +43,8 @@ export class RegisterComponent {
     }),
   });
 
+  errorMessage = '';
+
   async signUp(): Promise<void> {
     if (!this.registerForm.valid) {
       this.registerForm.markAllAsTouched();
@@ -59,11 +61,17 @@ export class RegisterComponent {
       correo: this.registerForm.value.correo!,
     };
 
+    this.errorMessage = '';
     try {
       await this.authService.signUpWithEmailAndPassword(credentials, registerAttributes);
       this.showVerificationModal = true;
-    } catch (error) {
-      this.showWrongModal = true;
+    } catch (error: any) {
+      if (error?.code === 'auth/email-already-in-use') {
+        this.errorMessage =
+          'Este correo ya está registrado. Si no recibiste el correo de verificación, intenta recuperar tu contraseña.';
+      } else {
+        this.showWrongModal = true;
+      }
     }
   }
 

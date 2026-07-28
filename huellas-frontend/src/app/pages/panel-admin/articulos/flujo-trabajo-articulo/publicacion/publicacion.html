@@ -31,14 +31,22 @@
     <div class="input-group">
       <label for="doiInput">DOI</label>
       <input id="doiInput" type="text" class="input-control" [(ngModel)]="doiPublicacion"
-        placeholder="e.g. 10.12345/huellas.v1i1.100" [disabled]="guardandoMetadata || datosGuardados" />
+        [class.input-error]="!doiValido" placeholder="e.g. 10.12345/huellas.v1i1.100"
+        [disabled]="guardandoMetadata || datosGuardados" />
+      <small class="field-error" *ngIf="!doiValido">
+        El DOI contiene caracteres no válidos.
+      </small>
     </div>
 
     <!-- ISSN -->
     <div class="input-group">
       <label for="issnInput">ISSN (Opcional)</label>
       <input id="issnInput" type="text" class="input-control" [(ngModel)]="issnPublicacion"
-        placeholder="e.g. 2448-6515" [disabled]="guardandoMetadata || datosGuardados" />
+        [class.input-error]="!issnValido" placeholder="e.g. 24486515"
+        [disabled]="guardandoMetadata || datosGuardados" />
+      <small class="field-error" *ngIf="!issnValido">
+        El ISSN solo puede contener <strong>letras y números</strong>.
+      </small>
     </div>
 
     <!-- Páginas -->
@@ -50,7 +58,7 @@
 
     <!-- Botón único -->
     <button class="btn-guardar" type="button" (click)="guardarMetadatosPublicacion()"
-      [disabled]="guardandoMetadata || datosGuardados || !edicionSeleccionadaId">
+      [disabled]="guardandoMetadata || datosGuardados || !formularioValido">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
         <polyline points="17 21 17 13 7 13 7 21"></polyline>
@@ -65,7 +73,8 @@
     <section class="modal-confirmacion" role="dialog" aria-modal="true" aria-label="Confirmar guardar datos"
       (click)="$event.stopPropagation()">
       <h3>Confirmar metadatos de publicación</h3>
-      <p>¿Estás seguro de que deseas guardar los metadatos de publicación para este artículo? Una vez guardados, los campos quedarán bloqueados y no podrán ser modificados en esta etapa.</p>
+      <p>¿Estás seguro de que deseas guardar los metadatos de publicación para este artículo? Una vez guardados, los
+        campos quedarán bloqueados y no podrán ser modificados en esta etapa.</p>
       <div class="modal-acciones">
         <button type="button" class="btn-secundario" (click)="cancelarGuardado()">Cancelar</button>
         <button type="button" class="btn-primario" (click)="confirmarGuardarMetadatos()">Sí, guardar datos</button>
