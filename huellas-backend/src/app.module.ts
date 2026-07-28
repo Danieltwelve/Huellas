@@ -31,46 +31,14 @@ import { AvisosModule } from './modules/avisos/avisos.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const host =
-          configService.get<string>('DB_HOST') ??
-          configService.get<string>('DATABASE_HOST') ??
-          'localhost';
-        const port = Number(
-          configService.get<string>('DB_PORT') ??
-            configService.get<string>('DATABASE_PORT') ??
-            5432,
-        );
-        const username =
-          configService.get<string>('DB_USERNAME') ??
-          configService.get<string>('DATABASE_USER') ??
-          'huellas_user';
-        const password =
-          configService.get<string>('DB_PASSWORD') ??
-          configService.get<string>('DATABASE_PASSWORD') ??
-          'huellas_password';
-        const database =
-          configService.get<string>('DB_DATABASE') ??
-          configService.get<string>('DATABASE_NAME') ??
-          'huellas_db';
-        const synchronize =
-          (configService.get<string>('DB_SYNC') ?? 'false') === 'true' ||
-          (configService.get<string>('DATABASE_SYNCHRONIZE') ?? 'true') ===
-            'true';
-        const ssl =
-          configService.get<string>('DB_SSL') === 'true'
-            ? { rejectUnauthorized: false }
-            : false;
+        const databaseUrl = configService.get<string>('DATABASE_URL');
 
         return {
           type: 'postgres',
-          host,
-          port,
-          username,
-          password,
-          database,
+          url: databaseUrl,
           autoLoadEntities: true,
-          synchronize,
-          ssl,
+          synchronize: false, // En producción siempre false
+          ssl: { rejectUnauthorized: false },
         };
       },
     }),
