@@ -361,4 +361,36 @@ export class Publicacion implements OnInit {
       },
     });
   }
+
+  // ── Validaciones de teclado ──────────────────────────────────────────────
+
+  /** Permite solo dígitos y el guion para el rango de páginas (ej: 10-25). */
+  soloNumerosYGuion(event: KeyboardEvent): void {
+    const patron = /^[0-9\-]$/;
+    if (!patron.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  /** Permite solo letras (incluyendo acentuadas), espacios, comas y puntos para nombres de autores. */
+  soloLetras(event: KeyboardEvent): void {
+    const patron = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ ,.]$/;
+    if (!patron.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  /** Filtra el texto pegado en el campo de rango de páginas, dejando solo dígitos y guiones. */
+  onPegadoPaginas(event: ClipboardEvent, art: { paginas: string }): void {
+    event.preventDefault();
+    const texto = event.clipboardData?.getData('text') ?? '';
+    art.paginas = texto.replace(/[^0-9\-]/g, '');
+  }
+
+  /** Filtra el texto pegado en el campo de otros autores, dejando solo letras, espacios, comas y puntos. */
+  onPegadoLetras(event: ClipboardEvent, art: any, campo: string): void {
+    event.preventDefault();
+    const texto = event.clipboardData?.getData('text') ?? '';
+    art[campo] = texto.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ ,.]/g, '');
+  }
 }
