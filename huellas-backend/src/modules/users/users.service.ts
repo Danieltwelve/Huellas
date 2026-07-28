@@ -13,6 +13,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import dns from 'dns';
+import { promisify } from 'util';
 import { User } from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, In, Repository } from 'typeorm';
@@ -489,25 +491,42 @@ export class UsersService {
     };
   }
 
-  private createSmtpTransporter(smtpConfig: SmtpConfig) {
-    // Leer SMTP_FAMILY desde el entorno (default 4)
-    const family = parseInt(
-      this.configService.get<string>('SMTP_FAMILY') ||
-        process.env.SMTP_FAMILY ||
-        '4',
-      10,
-    );
+  private async createSmtpTransporter(smtpConfig: SmtpConfig) {
+    const lookup = promisify(dns.lookup);
 
-    return nodemailer.createTransport({
-      host: smtpConfig.host,
-      port: smtpConfig.port,
-      secure: smtpConfig.secure,
-      auth:
-        smtpConfig.user && smtpConfig.pass
-          ? { user: smtpConfig.user, pass: smtpConfig.pass }
-          : undefined,
-      family: 4, // <--- CLAVE: forzar IPv4
-    } as any);
+    try {
+      // Forzar resolución IPv4
+      const { address } = await lookup(smtpConfig.host, { family: 4 });
+
+      this.logger.log(
+        `[SMTP] Resolviendo ${smtpConfig.host} -> ${address} (IPv4)`,
+      );
+
+      return nodemailer.createTransport({
+        host: address, // <--- Usamos la IP directamente
+        port: smtpConfig.port,
+        secure: smtpConfig.secure,
+        auth:
+          smtpConfig.user && smtpConfig.pass
+            ? { user: smtpConfig.user, pass: smtpConfig.pass }
+            : undefined,
+      } as any);
+    } catch (error) {
+      this.logger.error(
+        `[SMTP] Error resolviendo DNS para ${smtpConfig.host}:`,
+        error,
+      );
+      // Fallback: usar el hostname original (puede que falle, pero es mejor que nada)
+      return nodemailer.createTransport({
+        host: smtpConfig.host,
+        port: smtpConfig.port,
+        secure: smtpConfig.secure,
+        auth:
+          smtpConfig.user && smtpConfig.pass
+            ? { user: smtpConfig.user, pass: smtpConfig.pass }
+            : undefined,
+      } as any);
+    }
   }
 
   private async sendVerificationEmailBySmtp(
@@ -522,7 +541,7 @@ export class UsersService {
     }
 
     try {
-      const transport = this.createSmtpTransporter(smtpConfig);
+      const transport = await this.createSmtpTransporter(smtpConfig);
 
       await transport.sendMail({
         from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
@@ -574,7 +593,7 @@ export class UsersService {
     }
 
     try {
-      const transport = this.createSmtpTransporter(smtpConfig);
+      const transport = await this.createSmtpTransporter(smtpConfig);
 
       await transport.sendMail({
         from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
@@ -635,7 +654,7 @@ export class UsersService {
     }
 
     try {
-      const transport = this.createSmtpTransporter(smtpConfig);
+      const transport = await this.createSmtpTransporter(smtpConfig);
 
       await transport.sendMail({
         from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
