@@ -16,7 +16,7 @@ import {
   UserCredential,
 } from 'firebase/auth';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { environment } from '../../../environments/environments';
+import { environment } from '../../../environments/environment';
 
 export interface AccessClaims {
   roles?: string[];
