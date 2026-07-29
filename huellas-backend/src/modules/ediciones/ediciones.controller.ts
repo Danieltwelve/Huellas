@@ -1,7 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
@@ -12,14 +9,12 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   ParseIntPipe,
   Patch,
   Post,
   Put,
   Req,
-  Res,
   UploadedFile,
   UploadedFiles,
   UseGuards,
@@ -37,8 +32,8 @@ import {
   FileInterceptor,
 } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { basename, extname, join } from 'path';
-import { createReadStream, existsSync, promises as fs, mkdirSync } from 'fs';
+import { extname } from 'path';
+import { existsSync, mkdirSync, promises as fs } from 'fs';
 
 const portadaStorage = diskStorage({
   destination: './uploads/portadas',
@@ -46,6 +41,26 @@ const portadaStorage = diskStorage({
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = extname(file.originalname);
     cb(null, `portada-${uniqueSuffix}${ext}`);
+  },
+});
+
+const rapidaStorage = diskStorage({
+  destination: (req, file, cb) => {
+    let dest = './uploads/observaciones-archivos';
+    if (file.fieldname === 'portada') {
+      dest = './uploads/portadas';
+    } else if (file.fieldname === 'pdfCompleto') {
+      dest = './uploads/ediciones-pdf';
+    }
+    if (!existsSync(dest)) {
+      mkdirSync(dest, { recursive: true });
+    }
+    cb(null, dest);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = extname(file.originalname).toLowerCase();
+    cb(null, `${uniqueSuffix}${ext}`);
   },
 });
 
@@ -114,6 +129,80 @@ export class EdicionesController {
     return await this.edicionService.publicarEdicion(body);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'comite-editorial')
+  @Post('publicacion-rapida')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'portada', maxCount: 1 },
+        { name: 'pdfCompleto', maxCount: 1 },
+        { name: 'archivosArticulos', maxCount: 50 },
+      ],
+      { storage: rapidaStorage },
+    ),
+  )
+  async publicacionRapida(
+    @Body() body: any,
+    @UploadedFiles()
+    files: {
+      portada?: Express.Multer.File[];
+      pdfCompleto?: Express.Multer.File[];
+      archivosArticulos?: Express.Multer.File[];
+    },
+    @Req() req: any,
+  ) {
+    const portadaFile = files?.portada?.[0];
+    const pdfCompletoFile = files?.pdfCompleto?.[0];
+    const articuloFiles = files?.archivosArticulos ?? [];
+
+    if (!pdfCompletoFile) {
+      throw new BadRequestException(
+        'El archivo PDF completo de la edición es obligatorio.',
+      );
+    }
+
+    let articulosParsed: any[] = [];
+    if (typeof body.articulos === 'string') {
+      try {
+        articulosParsed = JSON.parse(body.articulos);
+      } catch {
+        throw new BadRequestException(
+          'El formato de los artículos es inválido.',
+        );
+      }
+    } else if (Array.isArray(body.articulos)) {
+      articulosParsed = body.articulos;
+    }
+
+    if (articulosParsed.length < 10) {
+      throw new BadRequestException('Se requieren al menos 10 artículos.');
+    }
+
+    if (articuloFiles.length !== articulosParsed.length) {
+      throw new BadRequestException(
+        `Debes subir el archivo correspondiente para cada uno de los ${articulosParsed.length} artículos.`,
+      );
+    }
+
+    const dto = {
+      titulo: body.titulo,
+      volumen: Number(body.volumen),
+      numero: Number(body.numero),
+      anio: Number(body.anio),
+      portadaPath: portadaFile ? portadaFile.path : undefined,
+      pdfCompletoPath: pdfCompletoFile.path,
+      articulos: articulosParsed,
+      articuloFiles,
+    };
+
+    return await this.edicionService.crearPublicacionRapida(
+      dto,
+      req.user.userId,
+    );
+  }
+
   @Delete(':id/with-message')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'comite-editorial')
@@ -173,130 +262,8 @@ export class EdicionesController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  @Post('publicacion-rapida')
-  @UseInterceptors(
-    FileFieldsInterceptor(
-      [
-        { name: 'portada', maxCount: 1 },
-        { name: 'pdfCompleto', maxCount: 1 },
-        { name: 'archivosArticulos', maxCount: 30 },
-      ],
-      {
-        storage: diskStorage({
-          destination: (req, file, cb) => {
-            let dest = './uploads/ediciones/pdfs';
-            if (file.fieldname === 'portada') {
-              dest = './uploads/portadas';
-            } else if (file.fieldname === 'archivosArticulos') {
-              dest = './uploads/articulos';
-            }
-            if (!existsSync(dest)) {
-              mkdirSync(dest, { recursive: true });
-            }
-            cb(null, dest);
-          },
-          filename: (req, file, cb) => {
-            const uniqueSuffix =
-              Date.now() + '-' + Math.round(Math.random() * 1e9);
-            const ext = extname(file.originalname).toLowerCase();
-            cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-          },
-        }),
-      },
-    ),
-  )
-  async publicacionRapida(
-    @Body() body: any,
-    @Req() req: any,
-    @UploadedFiles()
-    files: {
-      portada?: Express.Multer.File[];
-      pdfCompleto?: Express.Multer.File[];
-      archivosArticulos?: Express.Multer.File[];
-    },
-  ) {
-    if (!files.pdfCompleto || files.pdfCompleto.length === 0) {
-      throw new BadRequestException(
-        'El PDF completo de la edición es obligatorio.',
-      );
-    }
-    if (!files.archivosArticulos || files.archivosArticulos.length < 10) {
-      throw new BadRequestException(
-        'Se requieren al menos 10 artículos para la publicación.',
-      );
-    }
-
-    const titulo = body.titulo;
-    const volumen = parseInt(body.volumen, 10);
-    const numero = parseInt(body.numero, 10);
-    const anio = parseInt(body.anio, 10);
-
-    if (!titulo || isNaN(volumen) || isNaN(numero) || isNaN(anio)) {
-      throw new BadRequestException('Los datos de la edición son inválidos.');
-    }
-
-    let articulosData: any[];
-    try {
-      articulosData = JSON.parse(body.articulos);
-    } catch (e) {
-      throw new BadRequestException('El formato de los artículos es inválido.');
-    }
-
-    if (!Array.isArray(articulosData) || articulosData.length < 10) {
-      throw new BadRequestException(
-        'Se deben proporcionar al menos 10 artículos.',
-      );
-    }
-
-    if (articulosData.length !== files.archivosArticulos.length) {
-      throw new BadRequestException(
-        'La cantidad de artículos y archivos de artículos no coincide.',
-      );
-    }
-
-    const user = req.user;
-    if (!user || !user.userId) {
-      throw new BadRequestException(
-        'No se pudo identificar al usuario que realiza la acción.',
-      );
-    }
-
-    return await this.edicionService.crearPublicacionRapida(
-      {
-        titulo,
-        volumen,
-        numero,
-        anio,
-        portadaPath: files.portada?.[0]?.path,
-        pdfCompletoPath: files.pdfCompleto[0].path,
-        articulos: articulosData,
-        articuloFiles: files.archivosArticulos,
-      },
-      user.userId,
-    );
-  }
-
-  @Get('pdf/:filename')
-  async descargarPdf(@Param('filename') filename: string, @Res() res: any) {
-    try {
-      const safeName = basename(filename);
-      const filePath = join(
-        process.cwd(),
-        'uploads',
-        'ediciones',
-        'pdfs',
-        safeName,
-      );
-      if (!existsSync(filePath)) {
-        throw new NotFoundException('Archivo no encontrado');
-      }
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
-      createReadStream(filePath).pipe(res);
-    } catch (error) {
-      res
-        .status(HttpStatus.NOT_FOUND)
-        .json({ message: 'Archivo no encontrado' });
-    }
+  @Patch(':id/unpublish')
+  async unpublish(@Param('id', ParseIntPipe) id: number) {
+    return await this.edicionService.unpublishEdicion(id);
   }
 }
